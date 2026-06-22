@@ -18,7 +18,12 @@ import {
 import { Can } from '../../auth/Can';
 import { ApiError } from '../../api/problemDetails';
 import { formatarData, formatarMoeda } from '../../i18n/format';
-import { useCalcularFolha, useFecharFolha, useFolhaPorCompetencia } from './api';
+import {
+  useApurarDescontosLegais,
+  useCalcularFolha,
+  useFecharFolha,
+  useFolhaPorCompetencia,
+} from './api';
 import type { FolhaResumo } from './api';
 import { PERM_RH_GERENCIAR, situacaoFolhaTagVariant } from './recursosHumanos.helpers';
 import { AdicionarEventoFormModal } from './AdicionarEventoFormModal';
@@ -50,8 +55,21 @@ export function FolhaDetailPage() {
   const temCompetencia = Number.isInteger(state.ano) && Number.isInteger(state.mes);
   const query = useFolhaPorCompetencia(state.ano ?? 0, state.mes ?? 0, temCompetencia);
 
+  const apurar = useApurarDescontosLegais();
   const calcular = useCalcularFolha();
   const fechar = useFecharFolha();
+
+  function executarApuracao(): void {
+    apurar.mutate(folhaId, {
+      onSuccess: () => toast.success('Descontos legais (INSS/RPPS/IRRF) apurados.', 'Sucesso'),
+      onError: (error) =>
+        toast.error(
+          error instanceof ApiError
+            ? error.userMessage
+            : 'Não foi possível apurar os descontos legais.',
+        ),
+    });
+  }
 
   function executarCalculo(): void {
     calcular.mutate(folhaId, {
@@ -148,6 +166,15 @@ export function FolhaDetailPage() {
                       </Button>
                       <Button
                         variant="secondary"
+                        onClick={executarApuracao}
+                        loading={apurar.isPending}
+                        disabled={folha.situacao !== 'Aberta'}
+                      >
+                        <i className="fas fa-scale-balanced" aria-hidden="true" /> Apurar
+                        descontos legais
+                      </Button>
+                      <Button
+                        variant="secondary"
                         onClick={executarCalculo}
                         loading={calcular.isPending}
                         disabled={folha.situacao !== 'Aberta'}
@@ -175,8 +202,8 @@ export function FolhaDetailPage() {
                     </Button>
                   </div>
                   <p className="text-down-01 text-gray-60 mt-3 mb-0">
-                    Lançamentos e cálculo só são permitidos com a folha Aberta; o fechamento exige
-                    a folha Calculada; o pagamento exige a folha Fechada.
+                    Com a folha Aberta: lance os eventos, apure os descontos legais (INSS/RPPS/IRRF)
+                    e calcule. O fechamento exige a folha Calculada; o pagamento exige a folha Fechada.
                   </p>
                 </Card>
 

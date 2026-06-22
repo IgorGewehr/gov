@@ -1,5 +1,6 @@
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Events;
+using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
@@ -73,7 +74,8 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
         TipoTributo tipoTributo,
         Competencia competencia,
         ValorMonetario valorPrincipal,
-        DateOnly vencimento)
+        DateOnly vencimento,
+        ImovelId? imovelId)
         : base(id)
     {
         TenantId = tenantId;
@@ -82,6 +84,7 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
         Competencia = competencia;
         ValorPrincipal = valorPrincipal;
         Vencimento = vencimento;
+        ImovelId = imovelId;
         Situacao = SituacaoLancamento.Aberto;
         RaiseDomainEvent(new CreditoTributarioLancado(id, contribuinteId, valorPrincipal.Valor));
     }
@@ -104,6 +107,12 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     /// <summary>Data de vencimento.</summary>
     public DateOnly Vencimento { get; private set; }
 
+    /// <summary>
+    /// Imóvel de origem, quando o lançamento decorre do cadastro imobiliário (IPTU). Nulo para
+    /// lançamentos não vinculados a imóvel (ex.: ISS).
+    /// </summary>
+    public ImovelId? ImovelId { get; private set; }
+
     /// <summary>Situação atual.</summary>
     public SituacaoLancamento Situacao { get; private set; }
 
@@ -125,7 +134,38 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     {
         ArgumentNullException.ThrowIfNull(competencia);
         ArgumentNullException.ThrowIfNull(valorPrincipal);
-        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento);
+        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, imovelId: null);
+    }
+
+    /// <summary>
+    /// Lança o IPTU anual de ofício (CTN art. 142/149) de um imóvel: uma constituição por exercício,
+    /// vinculada ao imóvel de origem. A competência usa o mês 1 (lançamento anual).
+    /// </summary>
+    /// <param name="tenantId">Tenant dono do registro.</param>
+    /// <param name="contribuinteId">Contribuinte (proprietário do imóvel).</param>
+    /// <param name="imovelId">Imóvel de origem.</param>
+    /// <param name="exercicio">Exercício fiscal (ano).</param>
+    /// <param name="valorPrincipal">IPTU devido apurado.</param>
+    /// <param name="vencimento">Vencimento da cota única / 1ª parcela.</param>
+    /// <returns>Novo <see cref="Lancamento"/> de IPTU em aberto.</returns>
+    public static Lancamento LancarIptu(
+        Guid tenantId,
+        ContribuinteId contribuinteId,
+        ImovelId imovelId,
+        int exercicio,
+        ValorMonetario valorPrincipal,
+        DateOnly vencimento)
+    {
+        ArgumentNullException.ThrowIfNull(valorPrincipal);
+        return new Lancamento(
+            LancamentoId.New(),
+            tenantId,
+            contribuinteId,
+            TipoTributo.Iptu,
+            Competencia.De(exercicio, 1),
+            valorPrincipal,
+            vencimento,
+            imovelId);
     }
 
     /// <summary>Registra a quitação do lançamento.</summary>

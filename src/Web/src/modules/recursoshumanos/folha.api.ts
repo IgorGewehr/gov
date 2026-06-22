@@ -88,6 +88,10 @@ function adicionarEvento(folhaId: string, input: AdicionarEventoInput): Promise<
   return http.post<void>(`/recursoshumanos/folhas/${folhaId}/eventos`, input);
 }
 
+function apurarDescontosLegais(folhaId: string): Promise<void> {
+  return http.post<void>(`/recursoshumanos/folhas/${folhaId}/apuracao-legal`);
+}
+
 function calcularFolha(folhaId: string): Promise<void> {
   return http.post<void>(`/recursoshumanos/folhas/${folhaId}/calculo`);
 }
@@ -140,6 +144,17 @@ export function useAdicionarEvento(folhaId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: AdicionarEventoInput) => adicionarEvento(folhaId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rhKeys.folhas() });
+    },
+  });
+}
+
+/** Apura INSS/RPPS/IRRF por servidor (motor + tabelas legais) com a folha aberta. */
+export function useApurarDescontosLegais() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: apurarDescontosLegais,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rhKeys.folhas() });
     },

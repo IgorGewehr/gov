@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
+using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
@@ -34,6 +35,12 @@ public sealed class LancamentoConfiguration : IEntityTypeConfiguration<Lancament
 
         builder.Property(lancamento => lancamento.Situacao).HasConversion<string>().HasMaxLength(30);
 
+        builder.Property(lancamento => lancamento.ImovelId)
+            .HasConversion(
+                id => id == null ? (Guid?)null : id.Value.Value,
+                value => value == null ? (ImovelId?)null : new ImovelId(value.Value));
+
         builder.HasIndex(lancamento => new { lancamento.TenantId, lancamento.ContribuinteId });
+        builder.HasIndex(lancamento => lancamento.ImovelId);
     }
 }

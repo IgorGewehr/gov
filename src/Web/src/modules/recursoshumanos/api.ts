@@ -10,4 +10,6 @@ export type { CriacaoResponse } from './rhKeys';
 
 export * from './servidor.api';
 export * from './cargo.api';
+export * from './rubrica.api';
+export * from './tabelaLegal.api';
 export * from './folha.api';

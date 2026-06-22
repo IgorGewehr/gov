@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
+using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
 
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 
@@ -29,6 +32,18 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>NFS-e sincronizadas do Ambiente Nacional (read model fiscal — ADR-0003).</summary>
     public DbSet<NotaFiscalServico> NotasFiscaisServico => Set<NotaFiscalServico>();
+
+    /// <summary>Imóveis do cadastro imobiliário (BCI).</summary>
+    public DbSet<Imovel> Imoveis => Set<Imovel>();
+
+    /// <summary>Plantas Genéricas de Valores (PGV), versionadas por exercício.</summary>
+    public DbSet<PlantaValores> PlantasValores => Set<PlantaValores>();
+
+    /// <summary>Tabelas de alíquotas do IPTU, versionadas por exercício.</summary>
+    public DbSet<TabelaAliquotaIptu> TabelasAliquotaIptu => Set<TabelaAliquotaIptu>();
+
+    /// <summary>Documentos de Arrecadação Municipal (guias/carnês).</summary>
+    public DbSet<Dam> Dams => Set<Dam>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

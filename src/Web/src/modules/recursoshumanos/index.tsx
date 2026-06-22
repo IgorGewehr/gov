@@ -25,6 +25,12 @@ const CargosListPage = lazy(() =>
 const CargoDetailPage = lazy(() =>
   import('./CargoDetailPage').then((m) => ({ default: m.CargoDetailPage })),
 );
+const RubricasListPage = lazy(() =>
+  import('./RubricasListPage').then((m) => ({ default: m.RubricasListPage })),
+);
+const TabelasLegaisPage = lazy(() =>
+  import('./TabelasLegaisPage').then((m) => ({ default: m.TabelasLegaisPage })),
+);
 const FolhaListPage = lazy(() =>
   import('./FolhaListPage').then((m) => ({ default: m.FolhaListPage })),
 );
@@ -47,6 +53,8 @@ const MODULE: ModuleDefinition = {
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },
+        { path: 'rubricas', element: <RubricasListPage /> },
+        { path: 'tabelas-legais', element: <TabelasLegaisPage /> },
         { path: 'folhas', element: <FolhaListPage /> },
         { path: 'folhas/:folhaId', element: <FolhaDetailPage /> },
       ],

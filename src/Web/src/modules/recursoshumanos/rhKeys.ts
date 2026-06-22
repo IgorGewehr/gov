@@ -21,6 +21,10 @@ export const rhKeys = {
     [...rhKeys.cargos(), 'com-vagas', tipo ?? 'todos'] as const,
   cargo: (id: string) => [...rhKeys.cargos(), 'detalhe', id] as const,
 
+  rubricas: () => [...rhKeys.all, 'rubricas'] as const,
+  rubricasVigentes: (ano: number, mes: number) =>
+    [...rhKeys.rubricas(), 'vigentes', ano, mes] as const,
+
   folhas: () => [...rhKeys.all, 'folhas'] as const,
   folhaPorCompetencia: (ano: number, mes: number) =>
     [...rhKeys.folhas(), 'competencia', ano, mes] as const,

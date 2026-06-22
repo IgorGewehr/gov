@@ -76,6 +76,38 @@ export const TIPOS_EVENTO: SelectOption[] = [
   { value: '2', label: 'Desconto' },
 ];
 
+/** Opções de natureza de rubrica (rótulo → enum numérico do backend, S-1010). */
+export const NATUREZAS_RUBRICA: SelectOption[] = [
+  { value: '1', label: 'Provento' },
+  { value: '2', label: 'Desconto' },
+  { value: '3', label: 'Informativa' },
+  { value: '4', label: 'Informativa dedutora' },
+];
+
+/** Mapeia a natureza da rubrica para a variante semântica da Tag. */
+export function naturezaRubricaTagVariant(natureza: string): TagVariant {
+  switch (natureza) {
+    case 'Provento':
+      return 'success';
+    case 'Desconto':
+      return 'danger';
+    case 'Informativa':
+    case 'InformativaDedutora':
+      return 'info';
+    default:
+      return 'default';
+  }
+}
+
+/** Formata uma fração decimal (ex.: 0,14) como percentual PT-BR (ex.: "14%"). */
+export function formatarAliquota(fracao: number): string {
+  return fracao.toLocaleString('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 /** Opções de mês (1–12) para seletor de competência. */
 export const MESES: SelectOption[] = [
   { value: '1', label: 'Janeiro' },

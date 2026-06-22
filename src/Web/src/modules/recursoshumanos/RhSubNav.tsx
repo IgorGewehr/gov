@@ -13,6 +13,8 @@ interface Aba {
 const ABAS: Aba[] = [
   { to: '/recursoshumanos', label: 'Servidores', end: true },
   { to: '/recursoshumanos/cargos', label: 'Cargos' },
+  { to: '/recursoshumanos/rubricas', label: 'Rubricas' },
+  { to: '/recursoshumanos/tabelas-legais', label: 'Tabelas Legais' },
   { to: '/recursoshumanos/folhas', label: 'Folha de Pagamento' },
 ];
 

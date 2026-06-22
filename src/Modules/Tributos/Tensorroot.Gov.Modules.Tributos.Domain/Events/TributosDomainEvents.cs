@@ -1,6 +1,9 @@
+using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
 using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.Tributos.Domain.Events;
@@ -43,3 +46,50 @@ public sealed record ParcelamentoFirmado(DividaAtivaId DividaAtivaId) : IDomainE
 /// <summary>Dívida Ativa quitada.</summary>
 /// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
 public sealed record DividaQuitada(DividaAtivaId DividaAtivaId) : IDomainEvent;
+
+/// <summary>Imóvel cadastrado no cadastro imobiliário.</summary>
+/// <param name="ImovelId">Identificador do imóvel.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ProprietarioId">Contribuinte proprietário.</param>
+public sealed record ImovelCadastrado(ImovelId ImovelId, Guid TenantId, ContribuinteId ProprietarioId) : IDomainEvent;
+
+/// <summary>Imóvel atualizado (características, endereço, titularidade ou inativação).</summary>
+/// <param name="ImovelId">Identificador do imóvel.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ImovelAtualizado(ImovelId ImovelId, Guid TenantId) : IDomainEvent;
+
+/// <summary>Planta Genérica de Valores (PGV) criada.</summary>
+/// <param name="PlantaValoresId">Identificador da PGV.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record PlantaValoresCriada(PlantaValoresId PlantaValoresId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Planta Genérica de Valores (PGV) publicada (vigente).</summary>
+/// <param name="PlantaValoresId">Identificador da PGV.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record PlantaValoresPublicada(PlantaValoresId PlantaValoresId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Tabela de alíquotas do IPTU criada.</summary>
+/// <param name="TabelaAliquotaIptuId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaAliquotaIptuCriada(TabelaAliquotaIptuId TabelaAliquotaIptuId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Tabela de alíquotas do IPTU publicada (vigente).</summary>
+/// <param name="TabelaAliquotaIptuId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaAliquotaIptuPublicada(TabelaAliquotaIptuId TabelaAliquotaIptuId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>DAM (guia/carnê) gerado para um lançamento.</summary>
+/// <param name="DamId">Identificador do DAM.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="LancamentoId">Lançamento de origem.</param>
+public sealed record DamGerado(DamId DamId, Guid TenantId, LancamentoId LancamentoId) : IDomainEvent;
+
+/// <summary>DAM totalmente quitado (todas as parcelas pagas).</summary>
+/// <param name="DamId">Identificador do DAM.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="LancamentoId">Lançamento de origem.</param>
+public sealed record DamQuitado(DamId DamId, Guid TenantId, LancamentoId LancamentoId) : IDomainEvent;

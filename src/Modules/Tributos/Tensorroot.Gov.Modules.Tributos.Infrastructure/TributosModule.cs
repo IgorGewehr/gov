@@ -57,6 +57,10 @@ public sealed class TributosModule : IModule
         services.AddScoped<ILancamentoRepository, LancamentoRepository>();
         services.AddScoped<IDividaAtivaRepository, DividaAtivaRepository>();
         services.AddScoped<INotaFiscalServicoRepository, NotaFiscalServicoRepository>();
+        services.AddScoped<IImovelRepository, ImovelRepository>();
+        services.AddScoped<IPlantaValoresRepository, PlantaValoresRepository>();
+        services.AddScoped<ITabelaAliquotaIptuRepository, TabelaAliquotaIptuRepository>();
+        services.AddScoped<IDamRepository, DamRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
 
         // Gateway NFS-e/ADN: HTTP resiliente (Polly) em produção; simulado para dev/testes.
@@ -78,7 +82,11 @@ public sealed class TributosModule : IModule
     }
 
     /// <inheritdoc />
-    public void MapEndpoints(IEndpointRouteBuilder endpoints) => TributosEndpoints.Map(endpoints);
+    public void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        TributosEndpoints.Map(endpoints);
+        IptuEndpoints.Map(endpoints);
+    }
 
     /// <inheritdoc />
     public async Task MigrarBancoAsync(string connectionString, string provider, Guid tenantId, IServiceProvider serviceProvider, CancellationToken cancellationToken)
