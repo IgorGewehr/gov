@@ -1,3 +1,4 @@
+using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
 
 namespace Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
@@ -36,10 +37,12 @@ public sealed class CondicaoDeSaude : Entity<CondicaoDeSaudeId>
         Ativa = true;
     }
 
-    /// <summary>Codigo CID-10 ou CIAP-2.</summary>
+    /// <summary>Codigo CID-10 ou CIAP-2 — dado clinico sensivel, redigido na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public string Codigo { get; private set; } = default!;
 
-    /// <summary>Descricao da condicao.</summary>
+    /// <summary>Descricao da condicao — dado clinico sensivel, redigido na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public string Descricao { get; private set; } = default!;
 
     /// <summary>Data do registro da condicao.</summary>

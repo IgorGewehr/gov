@@ -117,7 +117,14 @@ public static class Permissoes
     /// <summary>Gerenciar usuarios e papeis (RBAC) do tenant — modulo Identidade.</summary>
     public const string IdentidadeUsuariosGerenciar = "identidade.usuarios.gerenciar";
 
-    /// <summary>Configurar a ativacao modular do tenant (tabela TenantModule).</summary>
+    /// <summary>
+    /// Configurar a ativacao modular do tenant (tabela TenantModule). ATENCAO: e operacao de
+    /// CONTROLE/COMERCIAL (escreve no banco de PLATAFORMA, nao isolado por tenant) — por isso
+    /// migrou para a permissao de PLATAFORMA <see cref="PlataformaModulosConfigurar"/> e NAO
+    /// pertence mais a <see cref="Todas"/> (achado XT-1: admin de A nao licencia modulos de B).
+    /// Mantida como constante apenas para referencia/compatibilidade do catalogo; nao e mais o gate
+    /// dos endpoints de modulo.
+    /// </summary>
     public const string AdminModulosConfigurar = "admin.modulos.configurar";
 
     /// <summary>Gerenciar os certificados digitais A1 (.pfx) do tenant no Key Vault.</summary>
@@ -173,6 +180,15 @@ public static class Permissoes
     /// </summary>
     public const string PlataformaTenantsProvisionar = "plataforma.tenants.provisionar";
 
+    /// <summary>
+    /// PLATAFORMA: configurar a ativacao modular (licencas) de um tenant — endpoints
+    /// <c>/api/admin/tenants/{tenantId}/modulos</c>, que escrevem no banco de CONTROLE
+    /// (<c>TenantModule</c>) por tenant arbitrario da rota. Acao de OPERADOR DA PLATAFORMA, NAO de
+    /// administrador de tenant. NAO pertence a <see cref="Todas"/> (nunca concedida pelo papel
+    /// "Administrador" de um tenant) — fecha o achado XT-1 (admin de A licenciava modulos de B).
+    /// </summary>
+    public const string PlataformaModulosConfigurar = "plataforma.modulos.configurar";
+
     /// <summary>Conjunto canonico, imutavel e ordenado de todas as permissoes conhecidas.</summary>
     public static readonly FrozenSet<string> Todas = new[]
     {
@@ -207,7 +223,10 @@ public static class Permissoes
         TransparenciaVer,
         TransparenciaGerenciar,
         IdentidadeUsuariosGerenciar,
-        AdminModulosConfigurar,
+
+        // NOTA (XT-1): AdminModulosConfigurar foi DELIBERADAMENTE removida de "Todas". Licenciar
+        // modulos e operacao de CONTROLE/plataforma (banco nao isolado por tenant) — agora gated por
+        // PlataformaModulosConfigurar, fora deste conjunto (admin de tenant nunca a recebe).
         AdminCertificadoGerenciar,
         AdminAuditoriaVer,
         AdminAuditoriaVerificar,

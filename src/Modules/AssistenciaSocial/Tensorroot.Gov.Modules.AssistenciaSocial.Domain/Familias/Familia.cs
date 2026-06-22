@@ -76,10 +76,12 @@ public sealed class Familia : AggregateRoot<FamiliaId>, IMustHaveTenant
     /// <summary>Tenant (municipio) dono do registro.</summary>
     public Guid TenantId { get; private set; }
 
-    /// <summary>NIS do responsavel familiar (chave do CadUnico).</summary>
+    /// <summary>NIS do responsavel familiar (chave do CadUnico) — PII redigida na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public Nis Nis { get; private set; } = default!;
 
-    /// <summary>CPF do responsavel familiar.</summary>
+    /// <summary>CPF do responsavel familiar — PII redigida na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public Cpf CpfResponsavel { get; private set; } = default!;
 
     /// <summary>Endereco com territorio/area de cobertura.</summary>

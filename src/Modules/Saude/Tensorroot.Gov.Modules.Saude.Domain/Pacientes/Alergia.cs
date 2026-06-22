@@ -1,3 +1,4 @@
+using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
 
 namespace Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
@@ -35,10 +36,12 @@ public sealed class Alergia : Entity<AlergiaId>
         DataRegistro = dataRegistro;
     }
 
-    /// <summary>Substancia/agente da alergia.</summary>
+    /// <summary>Substancia/agente da alergia — dado clinico sensivel, redigido na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public string Substancia { get; private set; } = default!;
 
-    /// <summary>Gravidade da reacao.</summary>
+    /// <summary>Gravidade da reacao — dado clinico sensivel, redigido na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public string Gravidade { get; private set; } = default!;
 
     /// <summary>Data do registro da alergia.</summary>

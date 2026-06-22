@@ -101,16 +101,18 @@ internal static class AssistenciaSocialEndpoints
             return Results.NoContent();
         }).RequirePermission("assistenciasocial.gerenciar");
 
+        // LG-1: o usuario do acesso e SEMPRE o principal autenticado (claim 'sub'), derivado no
+        // handler — nunca um valor da query string/body do cliente. So o motivo e entrada validada.
         grupo.MapPost("/prontuarios/{prontuarioId:guid}/acessos", async (
             Guid prontuarioId, RegistrarAcessoPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new RegistrarAcessoProntuarioCommand(prontuarioId, payload.UsuarioId, payload.MotivoAcesso), cancellationToken);
+            await sender.Send(new RegistrarAcessoProntuarioCommand(prontuarioId, payload.MotivoAcesso), cancellationToken);
             return Results.NoContent();
         }).RequirePermission("assistenciasocial.gerenciar");
 
         grupo.MapGet("/familias/{familiaId:guid}/prontuario", async (
-            Guid familiaId, Guid usuarioId, string motivoAcesso, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterProntuarioDaFamiliaQuery(familiaId, usuarioId, motivoAcesso), cancellationToken)))
+            Guid familiaId, string motivoAcesso, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterProntuarioDaFamiliaQuery(familiaId, motivoAcesso), cancellationToken)))
             .RequirePermission("assistenciasocial.ver");
 
         grupo.MapGet("/prontuarios/{prontuarioId:guid}/trilha-acesso", async (
@@ -131,5 +133,6 @@ internal static class AssistenciaSocialEndpoints
 
     private sealed record EncerrarPayload(string MotivoEncerramento);
 
-    private sealed record RegistrarAcessoPayload(Guid UsuarioId, string MotivoAcesso);
+    // LG-1: o UsuarioId NAO faz parte do payload — e derivado do principal autenticado no handler.
+    private sealed record RegistrarAcessoPayload(string MotivoAcesso);
 }

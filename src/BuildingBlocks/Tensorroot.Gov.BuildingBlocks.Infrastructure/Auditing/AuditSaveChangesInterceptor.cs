@@ -106,9 +106,10 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser, TimePr
             var affected = new List<string>();
             object? primaryKey = null;
 
-            // Colunas sensiveis (material cifrado) que NUNCA podem ser serializadas na trilha — o
-            // valor e substituido por um marcador opaco (A1-DESIGN §2/§7 risco 6, CLAUDE.md §6).
-            var redactadas = entry.Entity is IHasRedactedAuditFields sensivel
+            // LG-3: redacao DENY-BY-DEFAULT de PII. Material cifrado (Cofre) continua via opt-in, mas
+            // CPF/NIS/CNS/dado clinico sao redigidos por CONVENCAO (atributo/nome) mesmo sem opt-in —
+            // a politica unica decide por propriedade (PoliticaRedacaoAuditoria). CLAUDE.md §6.
+            var colunasCifradas = entry.Entity is IHasRedactedAuditFields sensivel
                 ? sensivel.ColunasAuditoriaRedactadas
                 : null;
 
@@ -120,7 +121,7 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser, TimePr
                     primaryKey = property.CurrentValue;
                 }
 
-                var redactar = redactadas is not null && redactadas.Contains(name);
+                var redactar = PoliticaRedacaoAuditoria.DeveRedigir(property.Metadata, colunasCifradas);
 
                 switch (entry.State)
                 {
@@ -151,8 +152,14 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser, TimePr
                 EntityName = entry.Metadata.ClrType.Name,
                 EntityId = primaryKey is null ? null : Convert.ToString(primaryKey, CultureInfo.InvariantCulture),
                 Action = entry.State.ToString(),
-                OldValues = oldValues.Count > 0 ? JsonSerializer.Serialize(oldValues) : null,
-                NewValues = newValues.Count > 0 ? JsonSerializer.Serialize(newValues) : null,
+                // LG-3: a redacao por-propriedade acima cobre colunas escalares (CPF/NIS/CNS). PII
+                // guardada DENTRO de um Value Object OWNED serializado como sub-objeto (ex.: o Paciente
+                // grava Identificacao como JSON aninhado com Cpf.Digitos) escaparia da checagem por
+                // nome de propriedade EF. Passamos o blob final pela mesma politica RECURSIVA do
+                // visualizador para mascarar PII em qualquer profundidade ANTES de selar/encadear —
+                // deny-by-default, nada de PII em claro na trilha.
+                OldValues = oldValues.Count > 0 ? PoliticaRedacaoAuditoria.MascararJson(JsonSerializer.Serialize(oldValues)) : null,
+                NewValues = newValues.Count > 0 ? PoliticaRedacaoAuditoria.MascararJson(JsonSerializer.Serialize(newValues)) : null,
                 AffectedColumns = affected.Count > 0 ? JsonSerializer.Serialize(affected) : null,
                 UserId = currentUser.UserId,
                 IpAddress = currentUser.IpAddress,

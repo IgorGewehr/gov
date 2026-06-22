@@ -1,6 +1,7 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
+using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 
@@ -25,10 +26,23 @@ public sealed record PacienteResumo(
 
 /// <summary>
 /// Obtem o resumo de um paciente pelo CNS (sempre tenant-scoped via Global Query Filter).
-/// Requer claim de leitura (<c>saude.ler</c>) e gera trilha de acesso ao prontuario.
+/// Dado pessoal SENSIVEL (LGPD art. 11): requer claim de leitura e, por implementar
+/// <see cref="ISensivelLgpd"/>, GERA TRILHA DE ACESSO (LG-2). O CNS e PII e NAO vai para a trilha
+/// (<see cref="EntidadeId"/> nulo — leitura por chave de negocio). Base legal: tutela da saude.
 /// </summary>
 /// <param name="Cns">Cartao Nacional de Saude a consultar.</param>
-public sealed record ObterPacientePorCnsQuery(string Cns) : IQuery<PacienteResumo?>;
+public sealed record ObterPacientePorCnsQuery(string Cns)
+    : IQuery<PacienteResumo?>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(Paciente);
+
+    /// <inheritdoc />
+    public string? EntidadeId => null;
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+}
 
 /// <summary>Handler da consulta de paciente por CNS.</summary>
 public sealed class ObterPacientePorCnsHandler(IPacienteRepository pacientes)

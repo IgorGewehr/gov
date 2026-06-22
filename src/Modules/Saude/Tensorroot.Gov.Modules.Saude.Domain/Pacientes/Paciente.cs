@@ -51,7 +51,8 @@ public sealed class Paciente : AggregateRoot<PacienteId>, IMustHaveTenant
     /// <summary>Tenant (ente publico) dono do registro.</summary>
     public Guid TenantId { get; private set; }
 
-    /// <summary>Cartao Nacional de Saude (chave de negocio, imutavel apos o cadastro).</summary>
+    /// <summary>Cartao Nacional de Saude (chave de negocio, imutavel apos o cadastro) — PII redigida na trilha (LG-3).</summary>
+    [CampoSensivelLgpd]
     public Cns Cns { get; private set; }
 
     /// <summary>Dados civis do paciente.</summary>

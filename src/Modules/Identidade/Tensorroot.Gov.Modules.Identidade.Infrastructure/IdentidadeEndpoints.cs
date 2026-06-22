@@ -98,8 +98,18 @@ internal static class IdentidadeEndpoints
         admin.MapPut("/usuarios/{usuarioId:guid}/papeis", async (
             Guid usuarioId, DefinirPapeisPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new DefinirPapeisDoUsuarioCommand(usuarioId, payload.PapeisIds), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new DefinirPapeisDoUsuarioCommand(usuarioId, payload.PapeisIds), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // I4 reprovou a atribuicao GLOBAL de papeis (AA-2) → 403 com motivo claro (deny-by-default).
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         // --- Atribuicoes de papel COM ESCOPO de UO (RBAC+ABAC) — APLICAM A REGRA I4 no dominio ---
@@ -163,14 +173,36 @@ internal static class IdentidadeEndpoints
             => Results.Ok(await sender.Send(new ListarPapeisQuery(), cancellationToken)));
 
         admin.MapPost("/papeis", async (
-            CriarPapelCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }));
+            CriarPapelCommand comando, ISender sender, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(new { id = await sender.Send(comando, cancellationToken) });
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // I4 reprovou a COMPOSICAO do papel (AA-1) → 403 com motivo claro (deny-by-default).
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+        });
 
         admin.MapPut("/papeis/{papelId:guid}/permissoes", async (
             Guid papelId, DefinirPermissoesPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new DefinirPermissoesDoPapelCommand(papelId, payload.Permissoes), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new DefinirPermissoesDoPapelCommand(papelId, payload.Permissoes), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // I4 reprovou a COMPOSICAO do papel (AA-1) → 403 com motivo claro (deny-by-default).
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         // Catalogo canonico de permissoes (auxilia o front a montar a tela de papeis).

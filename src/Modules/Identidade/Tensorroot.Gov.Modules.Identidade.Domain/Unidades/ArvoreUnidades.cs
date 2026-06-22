@@ -76,6 +76,37 @@ public sealed class ArvoreUnidades
     public bool Contem(UnidadeOrganizacionalId unidadeId) => _paiPorId.ContainsKey(unidadeId);
 
     /// <summary>
+    /// Raiz UNICA da arvore (UO sem pai, ou cujo pai nao pertence ao conjunto do tenant). Retorna
+    /// <c>null</c> quando a arvore esta vazia OU quando ha mais de uma raiz (topologia ambigua) — caso
+    /// em que o chamador deve negar por padrao, pois nao ha um escopo "global" inequivoco. Usada pela
+    /// composicao de papel (I4 global): o compositor precisa cobrir a raiz com toda a subarvore.
+    /// </summary>
+    public UnidadeOrganizacionalId? Raiz
+    {
+        get
+        {
+            UnidadeOrganizacionalId? raiz = null;
+            foreach (var (id, paiId) in _paiPorId)
+            {
+                var ehRaiz = paiId is not { } pai || !_paiPorId.ContainsKey(pai);
+                if (!ehRaiz)
+                {
+                    continue;
+                }
+
+                if (raiz is not null)
+                {
+                    return null; // mais de uma raiz: topologia ambigua, sem escopo global inequivoco.
+                }
+
+                raiz = id;
+            }
+
+            return raiz;
+        }
+    }
+
+    /// <summary>
     /// Expande um escopo de atribuicao em o CONJUNTO de UOs efetivamente alcancadas: apenas a UO
     /// quando <paramref name="incluiSubunidades"/> e falso; a UO mais todos os descendentes quando
     /// verdadeiro (invariante I5 — subarvore conexa).

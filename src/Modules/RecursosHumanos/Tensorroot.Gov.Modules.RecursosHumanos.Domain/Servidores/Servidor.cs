@@ -51,7 +51,8 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     /// <summary>Tenant (ente publico) dono do registro.</summary>
     public Guid TenantId { get; private set; }
 
-    /// <summary>CPF do servidor (dado sensivel — mascarado em logs/projecoes).</summary>
+    /// <summary>CPF do servidor (dado sensivel — mascarado em logs/projecoes e redigido na trilha — LG-3).</summary>
+    [CampoSensivelLgpd]
     public Cpf Cpf { get; private set; } = default!;
 
     /// <summary>Matricula unica do vinculo no tenant.</summary>

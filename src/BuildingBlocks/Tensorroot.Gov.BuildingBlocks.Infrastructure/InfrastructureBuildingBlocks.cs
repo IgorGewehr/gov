@@ -37,6 +37,10 @@ public static class InfrastructureBuildingBlocks
         services.AddScoped<ScopeDbContextHolder>();
         services.AddScoped<IUnitOfWork, ModuleUnitOfWork>();
         services.AddScoped<IIntegrationEventWriter, ModuleIntegrationEventWriter>();
+
+        // LG-2: trilha de ACESSO a dado sensivel (leitura). Sela {Tenant,UserId,Ip,Entidade,
+        // EntityId,BaseLegal,Ts} na cadeia de hash da auditoria, no DbContext de modulo ativo.
+        services.AddScoped<IRegistroAcessoSensivel, RegistroAcessoSensivel>();
         return services;
     }
 }

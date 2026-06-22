@@ -2,7 +2,9 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Abstractions;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Identidade;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
+using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.AssistenciaSocial.Application.Prontuarios;
 
@@ -34,14 +36,27 @@ public sealed record ProntuarioDetalhe(
 /// <summary>
 /// Obtem o conteudo sigiloso do prontuario de uma familia. Leitura sigilosa: exige
 /// <see cref="MotivoAcesso"/> e registra a trilha de acesso antes de projetar (I-7).
+/// <para>
+/// LG-1: o identificador do usuario NUNCA vem do cliente — e derivado da claim <c>sub</c> do JWT
+/// (<see cref="ICurrentUser"/>) no handler, tornando a trilha NAO forjavel. O cliente so informa o
+/// <see cref="MotivoAcesso"/> (entrada validada).
+/// </para>
 /// </summary>
 /// <param name="FamiliaId">Familia cujo prontuario sera lido.</param>
-/// <param name="UsuarioId">Usuario que realiza a leitura.</param>
 /// <param name="MotivoAcesso">Justificativa obrigatoria do acesso.</param>
 public sealed record ObterProntuarioDaFamiliaQuery(
     Guid FamiliaId,
-    Guid UsuarioId,
-    string MotivoAcesso) : IQuery<ProntuarioDetalhe>;
+    string MotivoAcesso) : IQuery<ProntuarioDetalhe>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(ProntuarioSuas);
+
+    /// <inheritdoc />
+    public string? EntidadeId => FamiliaId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.PoliticaPublica;
+}
 
 /// <summary>Regras de validacao da leitura sigilosa do prontuario da familia.</summary>
 public sealed class ObterProntuarioDaFamiliaValidator : AbstractValidator<ObterProntuarioDaFamiliaQuery>
@@ -50,7 +65,6 @@ public sealed class ObterProntuarioDaFamiliaValidator : AbstractValidator<ObterP
     public ObterProntuarioDaFamiliaValidator()
     {
         RuleFor(consulta => consulta.FamiliaId).NotEmpty().WithMessage("Familia e obrigatoria.");
-        RuleFor(consulta => consulta.UsuarioId).NotEmpty().WithMessage("Usuario do acesso e obrigatorio.");
         RuleFor(consulta => consulta.MotivoAcesso).NotEmpty().MaximumLength(400).WithMessage("Motivo de acesso ao prontuario e obrigatorio.");
     }
 }
@@ -58,10 +72,15 @@ public sealed class ObterProntuarioDaFamiliaValidator : AbstractValidator<ObterP
 /// <summary>
 /// Handler da leitura sigilosa do prontuario da familia. Antes de projetar o conteudo, registra
 /// o acesso na trilha imutavel (I-7) e persiste essa anotacao; o conteudo nunca cruza tenants (I-9).
+/// <para>
+/// LG-1: o usuario do acesso e o principal autenticado (claim <c>sub</c> via
+/// <see cref="ICurrentUser"/>), nunca um valor do cliente — trilha NAO forjavel.
+/// </para>
 /// </summary>
 public sealed class ObterProntuarioDaFamiliaHandler(
     IProntuarioSuasRepository prontuarios,
     IUnitOfWork unitOfWork,
+    ICurrentUser currentUser,
     TimeProvider timeProvider)
     : IQueryHandler<ObterProntuarioDaFamiliaQuery, ProntuarioDetalhe>
 {
@@ -70,12 +89,16 @@ public sealed class ObterProntuarioDaFamiliaHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        // LG-1: identidade derivada do principal (claim 'sub'), nao do cliente. Falha-alto sem auth.
+        var usuarioId = UsuarioDoAcesso.Resolver(currentUser);
+
         var prontuario = await prontuarios.ObterPorFamiliaAsync(request.FamiliaId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Prontuario nao encontrado.");
 
         // I-7: toda leitura de conteudo sigiloso registra a trilha de acesso (append-only) antes de projetar.
+        // O IpAddress do principal e selado pela trilha de auditoria (AuditSaveChangesInterceptor) ao persistir.
         var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
-        prontuario.RegistrarAcesso(request.UsuarioId, request.MotivoAcesso, agoraUtc);
+        prontuario.RegistrarAcesso(usuarioId, request.MotivoAcesso, agoraUtc);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         var registros = prontuario.Registros

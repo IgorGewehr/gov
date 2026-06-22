@@ -5,6 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- XT-1: expoe a decisao pura de defesa cross-tenant (AdminEndpoints) aos testes de arquitetura. -->
+    <InternalsVisibleTo Include="Tensorroot.Gov.ArchitectureTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Modules/Administracao/Tensorroot.Gov.Modules.Administracao.Infrastructure/Tensorroot.Gov.Modules.Administracao.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/Identidade/Tensorroot.Gov.Modules.Identidade.Infrastructure/Tensorroot.Gov.Modules.Identidade.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/Financas/Tensorroot.Gov.Modules.Financas.Infrastructure/Tensorroot.Gov.Modules.Financas.Infrastructure.csproj" />

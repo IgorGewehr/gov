@@ -1,6 +1,7 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
+using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 
@@ -28,10 +29,24 @@ public sealed record HistoricoClinicoDto(
 
 /// <summary>
 /// Obtem o historico clinico (condicoes/alergias) de um paciente (sempre tenant-scoped).
-/// Dado sensivel: requer claim <c>saude.atender</c>/<c>saude.ler</c> e gera trilha de acesso ao prontuario.
+/// Dado pessoal SENSIVEL (LGPD art. 11): requer claim de leitura e, por implementar
+/// <see cref="ISensivelLgpd"/>, GERA TRILHA DE ACESSO (LG-2) — o pipeline sela
+/// <c>{Tenant,UserId,Ip,Entidade,EntityId,BaseLegal,Ts}</c> apos a leitura. Base legal: tutela da
+/// saude (art. 11, II, "f").
 /// </summary>
 /// <param name="PacienteId">Paciente a consultar.</param>
-public sealed record ObterHistoricoClinicoDoPacienteQuery(Guid PacienteId) : IQuery<HistoricoClinicoDto>;
+public sealed record ObterHistoricoClinicoDoPacienteQuery(Guid PacienteId)
+    : IQuery<HistoricoClinicoDto>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(Paciente);
+
+    /// <inheritdoc />
+    public string? EntidadeId => PacienteId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+}
 
 /// <summary>Handler da consulta de historico clinico do paciente.</summary>
 public sealed class ObterHistoricoClinicoDoPacienteHandler(IPacienteRepository pacientes)
