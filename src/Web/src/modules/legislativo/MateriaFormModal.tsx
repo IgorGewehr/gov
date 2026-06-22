@@ -51,7 +51,11 @@ export function MateriaFormModal({ open, onClose, edicaoId }: MateriaFormModalPr
     setErrors(validacao);
     if (Object.keys(validacao).length > 0) return;
 
-    const input: MateriaInput = { tipo: Number(tipo), titulo: titulo.trim(), conteudo: conteudo.trim() };
+    const input: MateriaInput = {
+      tipoMateria: Number(tipo),
+      titulo: titulo.trim(),
+      conteudo: conteudo.trim(),
+    };
 
     adicionar.mutate(input, {
       onSuccess: () => {

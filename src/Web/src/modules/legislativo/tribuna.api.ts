@@ -9,31 +9,46 @@ import { legislativoKeys, type CriacaoResponse } from './legislativo.shared';
 // DTOs
 // ---------------------------------------------------------------------------
 
-/** Inscricao de um orador na Tribuna de uma sessao. */
+/** Inscricao de um orador na Tribuna de uma sessao (back: InscricaoDto). */
 export interface InscricaoResumo {
-  id: string;
+  /** Identificador da inscricao (back: InscricaoId). */
+  inscricaoId: string;
   ordem: number;
   vereadorId: string;
-  vereadorNome: string;
+  /** Fase de uso da palavra (back: Fase, string). */
+  fase: string;
   situacao: string;
   /** Tempo concedido (segundos). */
   tempoConcedidoSegundos: number;
-  /** Tempo ja consumido (segundos), acumulado e fechado em pausas. */
-  tempoConsumidoSegundos: number;
+  /** Indica se a fala esta pausada (back: Pausada). */
+  pausada: boolean;
+  /** Tempo utilizado apos encerrar (segundos) — back: TempoUtilizadoSegundos, nullable. */
+  tempoUtilizadoSegundos: number | null;
+  /** Excedente apos encerrar (segundos) — back: ExcedenteSegundos, nullable. */
+  excedenteSegundos: number | null;
   /** Instante de inicio do trecho em andamento (ISO) ou null se parado. */
   iniciadoEm: string | null;
 }
 
-/** Painel da Tribuna de uma sessao. */
+/** Painel da Tribuna de uma sessao (back: TribunaDto). */
 export interface TribunaPainel {
+  /** Identificador da tribuna (back: TribunaId) — necessario nos comandos. */
+  tribunaId: string;
   sessaoId: string;
-  situacaoSessao: string;
+  /** Tempo padrao por orador (segundos) — back: TempoPadraoSegundos. */
+  tempoPadraoSegundos: number;
+  /** Inscricao do orador em uso (back: OradorAtualId), se houver. */
+  oradorAtualId: string | null;
   inscricoes: InscricaoResumo[];
 }
 
-/** Payload de inscricao de um orador. */
+/** Payload de inscricao de um orador (InscreverOradorPayload). */
 export interface InscricaoInput {
+  /** Tribuna alvo (back: TribunaId, obrigatorio). */
+  tribunaId: string;
   vereadorId: string;
+  /** Fase de uso da palavra (back: Fase, obrigatorio, int). */
+  fase: number;
   tempoConcedidoSegundos: number;
 }
 
@@ -53,9 +68,16 @@ async function inscrever(sessaoId: string, input: InscricaoInput): Promise<strin
   return id;
 }
 
-function comandar(sessaoId: string, inscricaoId: string, verbo: string): Promise<void> {
+function comandar(
+  sessaoId: string,
+  inscricaoId: string,
+  verbo: string,
+  tribunaId: string,
+): Promise<void> {
+  // O backend exige { tribunaId } no corpo (TribunaControlePayload).
   return http.post<void>(
     `/legislativo/sessoes/${sessaoId}/tribuna/inscricoes/${inscricaoId}/${verbo}`,
+    { tribunaId },
   );
 }
 
@@ -66,14 +88,15 @@ function comandar(sessaoId: string, inscricaoId: string, verbo: string): Promise
 /**
  * Painel da Tribuna com auto-refresh por polling ENQUANTO a sessao estiver
  * Aberta — mantem o cronometro dos oradores sincronizado com o servidor.
+ * O backend NAO envia a situacao da sessao no painel; quem chama informa
+ * `sessaoAberta` (resolvido via `useSessao`) para controlar o polling.
  */
-export function useTribuna(sessaoId: string, intervaloMs = 2000) {
+export function useTribuna(sessaoId: string, sessaoAberta: boolean, intervaloMs = 2000) {
   return useQuery({
     queryKey: legislativoKeys.tribuna(sessaoId),
     queryFn: ({ signal }) => obterTribuna(sessaoId, signal),
     enabled: sessaoId.trim().length > 0,
-    refetchInterval: (query) =>
-      query.state.data?.situacaoSessao === 'Aberta' ? intervaloMs : false,
+    refetchInterval: sessaoAberta ? intervaloMs : false,
   });
 }
 
@@ -94,11 +117,18 @@ export function useInscreverOrador(sessaoId: string) {
   });
 }
 
+/** Variaveis dos comandos de cronometro: inscricao alvo + tribuna (exigida pelo backend). */
+export interface ComandoInscricaoVars {
+  inscricaoId: string;
+  tribunaId: string;
+}
+
 /** Fabrica de hooks de comando do cronometro (inicio/pausa/retomada/encerramento). */
 function useComandoInscricao(sessaoId: string, verbo: string) {
   const invalidar = useInvalidarTribuna(sessaoId);
   return useMutation({
-    mutationFn: (inscricaoId: string) => comandar(sessaoId, inscricaoId, verbo),
+    mutationFn: ({ inscricaoId, tribunaId }: ComandoInscricaoVars) =>
+      comandar(sessaoId, inscricaoId, verbo, tribunaId),
     onSuccess: invalidar,
   });
 }

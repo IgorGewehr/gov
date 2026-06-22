@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
+import { FASES_USO_PALAVRA } from './legislativo.shared';
 import { tratarErroCampos, mensagemErro } from './legislativoAcao.shared';
 import { useVereadores } from './vereadores.api';
 import { useInscreverOrador, type InscricaoInput } from './tribuna.api';
@@ -12,6 +13,8 @@ export interface TribunaInscricaoModalProps {
   onClose: () => void;
   /** Identificador da sessao. */
   sessaoId: string;
+  /** Identificador da tribuna (obrigatorio no payload do backend). */
+  tribunaId: string;
 }
 
 interface FormErrors {
@@ -21,18 +24,20 @@ interface FormErrors {
 
 const CAMPOS: Record<string, number> = { vereadorId: 1, tempoConcedidoSegundos: 1 };
 
-export function TribunaInscricaoModal({ open, onClose, sessaoId }: TribunaInscricaoModalProps) {
+export function TribunaInscricaoModal({ open, onClose, sessaoId, tribunaId }: TribunaInscricaoModalProps) {
   const toast = useToast();
   const vereadores = useVereadores();
   const inscrever = useInscreverOrador(sessaoId);
 
   const [vereadorId, setVereadorId] = useState('');
+  const [fase, setFase] = useState<string>(String(FASES_USO_PALAVRA[0].value));
   const [minutos, setMinutos] = useState('5');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (!open) return;
     setVereadorId('');
+    setFase(String(FASES_USO_PALAVRA[0].value));
     setMinutos('5');
     setErrors({});
   }, [open]);
@@ -52,7 +57,9 @@ export function TribunaInscricaoModal({ open, onClose, sessaoId }: TribunaInscri
     if (Object.keys(validacao).length > 0) return;
 
     const input: InscricaoInput = {
+      tribunaId,
       vereadorId,
+      fase: Number(fase),
       tempoConcedidoSegundos: Math.round(Number(minutos) * 60),
     };
 
@@ -99,6 +106,19 @@ export function TribunaInscricaoModal({ open, onClose, sessaoId }: TribunaInscri
                 value: v.id,
                 label: `${v.nomeParlamentar} (${v.partido})`,
               }))}
+            />
+          )}
+        </FormField>
+
+        <FormField label="Fase de uso da palavra" required>
+          {({ id, describedBy, invalid }) => (
+            <Select
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              value={fase}
+              onChange={(e) => setFase(e.target.value)}
+              options={FASES_USO_PALAVRA.map((f) => ({ value: String(f.value), label: f.label }))}
             />
           )}
         </FormField>

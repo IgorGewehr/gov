@@ -9,18 +9,16 @@ import {
   Alert,
   Button,
   Card,
-  DataTable,
   EmptyState,
   FormField,
   Input,
   PageHeader,
   QueryState,
 } from '../../components/ui';
-import type { Column } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
 import { usePreviewItbi } from './itbi.api';
-import type { MemoriaItbiLinha, PreviewItbi } from './itbi.api';
+import type { PreviewItbi } from './itbi.api';
 import { formatarPercentual } from './iptu.helpers';
 import { TributosSubNav } from './TributosSubNav';
 import { LancarItbiModal } from './LancarItbiModal';
@@ -70,12 +68,6 @@ export function TransmitirItbiPage() {
     }
     setConsulta({ imovelId: imovelId.trim(), exercicio: ano, valorDeclarado: valor, sfh: sfhCampo });
   }
-
-  const colunasMemoria: Column<MemoriaItbiLinha>[] = [
-    { key: 'rotulo', header: 'Componente', render: (l) => l.rotulo },
-    { key: 'detalhe', header: 'Memória', render: (l) => l.detalhe },
-    { key: 'valor', header: 'Valor', align: 'end', render: (l) => formatarMoeda(l.valor) },
-  ];
 
   return (
     <>
@@ -168,31 +160,31 @@ export function TransmitirItbiPage() {
                 <dl className="row">
                   <Linha rotulo="Valor venal de referência">{formatarMoeda(preview.valorVenalReferencia)}</Linha>
                   <Linha rotulo="Valor declarado">{formatarMoeda(preview.valorDeclarado)}</Linha>
-                  <Linha rotulo="Base de cálculo (maior dos dois)" destaque>
+                  <Linha rotulo="Base de cálculo" destaque>
                     {formatarMoeda(preview.baseCalculo)}
                   </Linha>
-                  <Linha rotulo={`Alíquota aplicada${preview.sfh ? ' (SFH)' : ''}`}>
-                    {formatarPercentual(preview.aliquotaPercentual)}
+                  {/* Alíquota vem em % do backend (ex.: 2.0 = 2%); convertemos p/ fração. */}
+                  <Linha rotulo={`Alíquota aplicada${consulta.sfh ? ' (SFH)' : ''}`}>
+                    {formatarPercentual(preview.aliquotaPercentual / 100)}
                   </Linha>
+                  <Linha rotulo="Imposto bruto">{formatarMoeda(preview.impostoBruto)}</Linha>
+                  <Linha rotulo="Isenção">{formatarMoeda(preview.valorIsencao)}</Linha>
                   <Linha rotulo="Imposto devido" destaque>
                     {formatarMoeda(preview.impostoDevido)}
                   </Linha>
                 </dl>
 
                 <Alert variant="info" title="Base de cálculo do ITBI">
-                  A base é o <strong>maior</strong> valor entre o venal de referência e o declarado, conforme
-                  a memória de cálculo abaixo.
+                  A base é o <strong>valor declarado</strong> (Tema 1.113/STJ — presunção de veracidade). O
+                  valor venal de referência só dispara a triagem.
                 </Alert>
+                {preview.haDivergenciaReferencia && (
+                  <Alert variant="warning" title="Divergência com o valor de referência">
+                    O valor declarado diverge do venal de referência. A base permanece o declarado; eventual
+                    arbitramento exige processo com contraditório.
+                  </Alert>
+                )}
               </Card>
-
-              <h2 className="text-up-01 mb-2">Memória de cálculo</h2>
-              <DataTable
-                caption={`Memória de cálculo do ITBI do imóvel ${preview.imovelId}`}
-                columns={colunasMemoria}
-                rows={preview.memoria}
-                rowKey={(l) => l.rotulo}
-                empty={<EmptyState title="Sem detalhamento de memória para este preview." />}
-              />
 
               <LancarItbiModal
                 open={lancarAberto}
@@ -200,7 +192,7 @@ export function TransmitirItbiPage() {
                 imovelId={preview.imovelId}
                 exercicio={preview.exercicio}
                 valorDeclarado={preview.valorDeclarado}
-                sfh={preview.sfh}
+                sfh={consulta.sfh}
                 baseCalculo={preview.baseCalculo}
                 impostoDevido={preview.impostoDevido}
               />

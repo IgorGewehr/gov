@@ -8,7 +8,7 @@ import type { Column } from '../../components/ui';
 import { formatarData } from '../../i18n/format';
 import { Can } from '../../auth/Can';
 import { useNorma } from './normas.api';
-import type { NormaDetalhe, NormaVinculoResumo } from './normas.api';
+import type { EventoVigencia, NormaDetalhe } from './normas.api';
 import { situacaoNormaTagVariant } from './legislativo.helpers';
 import { NormaAcaoModal } from './NormaAcaoModal';
 
@@ -21,17 +21,22 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
   );
 }
 
-const COLUNAS_VINCULO: Column<NormaVinculoResumo>[] = [
-  { key: 'tipo', header: 'Tipo', render: (v) => v.tipo },
+const COLUNAS_EVENTO: Column<EventoVigencia>[] = [
+  { key: 'tipo', header: 'Tipo', render: (e) => e.tipo },
+  { key: 'data', header: 'Data', render: (e) => formatarData(e.data) },
   {
     key: 'norma',
-    header: 'Norma',
-    render: (v) => (
-      <Link className="br-button tertiary small" to={`/legislativo/normas/${v.normaId}`}>
-        {v.numero}
-      </Link>
-    ),
+    header: 'Norma referenciada',
+    render: (e) =>
+      e.normaReferenciaId ? (
+        <Link className="br-button tertiary small" to={`/legislativo/normas/${e.normaReferenciaId}`}>
+          Ver norma
+        </Link>
+      ) : (
+        '—'
+      ),
   },
+  { key: 'obs', header: 'Observação', render: (e) => e.observacao ?? '—' },
 ];
 
 type AcaoAtiva = null | 'revogar' | 'alterar';
@@ -65,15 +70,15 @@ export function NormaDetailPage() {
                 <Campo rotulo="Situação">
                   <Tag variant={situacaoNormaTagVariant(norma.situacao)}>{norma.situacao}</Tag>
                 </Campo>
-                <Campo rotulo="Data de publicação">{formatarData(norma.dataPublicacao)}</Campo>
+                <Campo rotulo="Data de promulgação">{formatarData(norma.dataPromulgacao)}</Campo>
                 <div className="col-12 mb-3">
                   <dt className="text-gray-60 text-down-01">Ementa</dt>
                   <dd className="mb-0">{norma.ementa}</dd>
                 </div>
                 <div className="col-12">
-                  <dt className="text-gray-60 text-down-01">Texto integral</dt>
+                  <dt className="text-gray-60 text-down-01">Texto articulado</dt>
                   <dd className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
-                    {norma.textoIntegral}
+                    {norma.textoArticulado ?? '—'}
                   </dd>
                 </div>
               </dl>
@@ -103,32 +108,17 @@ export function NormaDetailPage() {
               />
             </Can>
 
-            <h2 className="text-up-01 mb-3">Normas revogadas por esta</h2>
+            <h2 className="text-up-01 mb-3">Histórico de vigência</h2>
             <DataTable
-              caption="Normas revogadas"
-              columns={COLUNAS_VINCULO}
-              rows={norma.revogaNormas}
-              rowKey={(v) => v.normaId}
+              caption="Trilha de vigência da norma (revogações e alterações)"
+              columns={COLUNAS_EVENTO}
+              rows={norma.historico}
+              rowKey={(e) => `${e.tipo}-${e.data}-${e.normaReferenciaId ?? 'sem-ref'}`}
               empty={
                 <EmptyState
-                  icon="fas fa-ban"
-                  title="Nenhuma revogação"
-                  description="Esta norma não revoga outras normas."
-                />
-              }
-            />
-
-            <h2 className="text-up-01 mb-3 mt-4">Normas alteradas por esta</h2>
-            <DataTable
-              caption="Normas alteradas"
-              columns={COLUNAS_VINCULO}
-              rows={norma.alteraNormas}
-              rowKey={(v) => v.normaId}
-              empty={
-                <EmptyState
-                  icon="fas fa-pen"
-                  title="Nenhuma alteração"
-                  description="Esta norma não altera outras normas."
+                  icon="fas fa-clock-rotate-left"
+                  title="Sem eventos de vigência"
+                  description="Esta norma não possui revogações ou alterações registradas."
                 />
               }
             />

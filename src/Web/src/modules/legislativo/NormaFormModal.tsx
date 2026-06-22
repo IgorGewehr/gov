@@ -16,16 +16,16 @@ interface FormErrors {
   numero?: string;
   ano?: string;
   ementa?: string;
-  textoIntegral?: string;
-  dataPublicacao?: string;
+  textoArticulado?: string;
+  dataPromulgacao?: string;
 }
 
 const CAMPOS: Record<string, number> = {
   numero: 1,
   ano: 1,
   ementa: 1,
-  textoIntegral: 1,
-  dataPublicacao: 1,
+  textoArticulado: 1,
+  dataPromulgacao: 1,
 };
 
 export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
@@ -36,8 +36,8 @@ export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
   const [numero, setNumero] = useState('');
   const [ano, setAno] = useState('');
   const [ementa, setEmenta] = useState('');
-  const [textoIntegral, setTextoIntegral] = useState('');
-  const [dataPublicacao, setDataPublicacao] = useState('');
+  const [textoArticulado, setTextoArticulado] = useState('');
+  const [dataPromulgacao, setDataPromulgacao] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
@@ -46,18 +46,19 @@ export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
     setNumero('');
     setAno('');
     setEmenta('');
-    setTextoIntegral('');
-    setDataPublicacao('');
+    setTextoArticulado('');
+    setDataPromulgacao('');
     setErrors({});
   }, [open]);
 
   function validar(): FormErrors {
     const next: FormErrors = {};
-    if (numero.trim() === '') next.numero = 'Informe o número da norma.';
+    if (numero.trim() === '' || !Number.isInteger(Number(numero)) || Number(numero) <= 0)
+      next.numero = 'Informe um número válido (inteiro).';
     if (ano.trim() === '' || Number.isNaN(Number(ano))) next.ano = 'Informe um ano válido.';
     if (ementa.trim() === '') next.ementa = 'Informe a ementa.';
-    if (textoIntegral.trim() === '') next.textoIntegral = 'Informe o texto integral.';
-    if (dataPublicacao === '') next.dataPublicacao = 'Informe a data de publicação.';
+    if (textoArticulado.trim() === '') next.textoArticulado = 'Informe o texto articulado.';
+    if (dataPromulgacao === '') next.dataPromulgacao = 'Informe a data de promulgação.';
     return next;
   }
 
@@ -69,11 +70,11 @@ export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
 
     const input: NormaInput = {
       tipo: Number(tipo),
-      numero: numero.trim(),
+      numero: Number(numero),
       ano: Number(ano),
       ementa: ementa.trim(),
-      textoIntegral: textoIntegral.trim(),
-      dataPublicacao,
+      textoArticulado: textoArticulado.trim(),
+      dataPromulgacao,
     };
 
     criar.mutate(input, {
@@ -126,9 +127,10 @@ export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
                   id={id}
                   aria-describedby={describedBy}
                   invalid={invalid}
+                  type="number"
                   value={numero}
                   onChange={(e) => setNumero(e.target.value)}
-                  placeholder="Ex.: 1.234"
+                  placeholder="Ex.: 1234"
                 />
               )}
             </FormField>
@@ -163,28 +165,28 @@ export function NormaFormModal({ open, onClose }: NormaFormModalProps) {
           )}
         </FormField>
 
-        <FormField label="Texto integral" required error={errors.textoIntegral}>
+        <FormField label="Texto articulado" required error={errors.textoArticulado}>
           {({ id, describedBy, invalid }) => (
             <Textarea
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
-              value={textoIntegral}
-              onChange={(e) => setTextoIntegral(e.target.value)}
+              value={textoArticulado}
+              onChange={(e) => setTextoArticulado(e.target.value)}
               rows={6}
             />
           )}
         </FormField>
 
-        <FormField label="Data de publicação" required error={errors.dataPublicacao}>
+        <FormField label="Data de promulgação" required error={errors.dataPromulgacao}>
           {({ id, describedBy, invalid }) => (
             <Input
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
               type="date"
-              value={dataPublicacao}
-              onChange={(e) => setDataPublicacao(e.target.value)}
+              value={dataPromulgacao}
+              onChange={(e) => setDataPromulgacao(e.target.value)}
             />
           )}
         </FormField>

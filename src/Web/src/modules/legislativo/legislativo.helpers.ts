@@ -109,15 +109,16 @@ export function situacaoEdicaoTagVariant(situacao: string): TagVariant {
 
 /** Mapeia a situacao de uma inscricao na Tribuna para a variante semantica da Tag. */
 export function situacaoInscricaoTagVariant(situacao: string): TagVariant {
+  // Espelha o enum SituacaoInscricao do backend (Inscrito/EmUso/Concluido/Cancelado).
   switch (situacao) {
-    case 'EmUsoDaPalavra':
+    case 'EmUso':
       return 'success';
-    case 'Pausada':
-      return 'warning';
-    case 'Aguardando':
+    case 'Inscrito':
       return 'info';
-    case 'Encerrada':
+    case 'Concluido':
       return 'default';
+    case 'Cancelado':
+      return 'danger';
     default:
       return 'default';
   }

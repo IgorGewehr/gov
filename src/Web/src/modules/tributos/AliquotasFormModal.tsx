@@ -1,22 +1,16 @@
-// Formulário de PUBLICAÇÃO da tabela de alíquotas do IPTU (command
-// PublicarTabelaAliquotas): regime ÚNICA ou PROGRESSIVA, com alíquotas distintas
-// PREDIAL × TERRITORIAL. Percentuais digitados em % são convertidos para FRAÇÃO
-// DECIMAL no payload. No regime progressivo expõe faixas por valor venal.
+// Formulário de PUBLICAÇÃO das tabelas de alíquotas do IPTU. O backend modela UMA
+// tabela por chamada (`edificado` define PREDIAL × TERRITORIAL) com FAIXAS de
+// progressividade por valor venal. Este formulário coleta ambas as tabelas e faz
+// DUAS chamadas (predial e territorial). Alíquotas em % (ex.: 1,00 = 1%) — o
+// backend espera o valor percentual, não fração.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
-import type { SelectOption } from '../../components/ui';
+import { Alert, Button, FormField, Input, Modal, useToast } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
-import { REGIME_ALIQUOTA_VALOR, usePublicarAliquotas } from './iptu.api';
-import type { FaixaAliquotaInput, PublicarAliquotasInput, RegimeAliquota } from './iptu.api';
-import { REGIME_ALIQUOTA_LABEL, percentualParaFracao } from './iptu.helpers';
+import { usePublicarAliquotas } from './iptu.api';
+import type { FaixaAliquotaInput, PublicarAliquotasInput } from './iptu.api';
 
 const ANO_ATUAL = new Date().getFullYear();
-
-const REGIME_OPCOES: SelectOption[] = (['Unica', 'Progressiva'] as RegimeAliquota[]).map((r) => ({
-  value: r,
-  label: REGIME_ALIQUOTA_LABEL[r],
-}));
 
 export interface AliquotasFormModalProps {
   open: boolean;
@@ -24,43 +18,41 @@ export interface AliquotasFormModalProps {
 }
 
 interface FaixaLinha {
-  ate: string;
+  minimo: string;
+  maximo: string;
   aliquota: string;
 }
+
+const FAIXA_VAZIA: FaixaLinha = { minimo: '', maximo: '', aliquota: '' };
 
 export function AliquotasFormModal({ open, onClose }: AliquotasFormModalProps) {
   const toast = useToast();
   const mutation = usePublicarAliquotas();
 
   const [exercicio, setExercicio] = useState(String(ANO_ATUAL));
-  const [regime, setRegime] = useState<RegimeAliquota>('Unica');
-  const [aliquotaPredial, setPredial] = useState('');
-  const [aliquotaTerritorial, setTerritorial] = useState('');
-  const [faixasPredial, setFaixasPredial] = useState<FaixaLinha[]>([]);
-  const [faixasTerritorial, setFaixasTerritorial] = useState<FaixaLinha[]>([]);
-  const [descontoCotaUnica, setDesconto] = useState('');
-  const [quantidadeParcelas, setParcelas] = useState('1');
+  const [fundamentoLegal, setFundamentoLegal] = useState('');
+  const [faixasPredial, setFaixasPredial] = useState<FaixaLinha[]>([{ ...FAIXA_VAZIA }]);
+  const [faixasTerritorial, setFaixasTerritorial] = useState<FaixaLinha[]>([{ ...FAIXA_VAZIA }]);
   const [erro, setErro] = useState<string | null>(null);
-
-  const progressiva = regime === 'Progressiva';
 
   function fechar(): void {
     setExercicio(String(ANO_ATUAL));
-    setRegime('Unica');
-    setPredial('');
-    setTerritorial('');
-    setFaixasPredial([]);
-    setFaixasTerritorial([]);
-    setDesconto('');
-    setParcelas('1');
+    setFundamentoLegal('');
+    setFaixasPredial([{ ...FAIXA_VAZIA }]);
+    setFaixasTerritorial([{ ...FAIXA_VAZIA }]);
     setErro(null);
     onClose();
   }
 
   function mapearFaixas(linhas: FaixaLinha[]): FaixaAliquotaInput[] {
     return linhas
-      .filter((f) => f.ate.trim() !== '' && f.aliquota.trim() !== '')
-      .map((f) => ({ ateValorVenal: Number(f.ate), aliquota: percentualParaFracao(f.aliquota) }));
+      .filter((f) => f.maximo.trim() !== '' && f.aliquota.trim() !== '')
+      .map((f) => ({
+        valorVenalMinimo: f.minimo.trim() === '' ? 0 : Number(f.minimo),
+        valorVenalMaximo: Number(f.maximo),
+        // O backend espera o percentual (1.0 = 1%), não a fração.
+        aliquotaPercentual: Number(f.aliquota.replace(',', '.')),
+      }));
   }
 
   function submeter(event: FormEvent): void {
@@ -70,44 +62,37 @@ export function AliquotasFormModal({ open, onClose }: AliquotasFormModalProps) {
       setErro('Informe um exercício válido.');
       return;
     }
-    const predial = percentualParaFracao(aliquotaPredial);
-    const territorial = percentualParaFracao(aliquotaTerritorial);
-    const fxPredial = progressiva ? mapearFaixas(faixasPredial) : [];
-    const fxTerritorial = progressiva ? mapearFaixas(faixasTerritorial) : [];
-    if (!progressiva && (Number.isNaN(predial) || predial <= 0 || Number.isNaN(territorial) || territorial <= 0)) {
-      setErro('Informe as alíquotas predial e territorial (%) maiores que zero.');
+    if (fundamentoLegal.trim() === '') {
+      setErro('Informe o fundamento legal (lei municipal de alíquotas).');
       return;
     }
-    if (progressiva && (fxPredial.length === 0 || fxTerritorial.length === 0)) {
-      setErro('No regime progressivo, cadastre ao menos uma faixa predial e uma territorial.');
-      return;
-    }
-    const desconto = descontoCotaUnica.trim() === '' ? 0 : percentualParaFracao(descontoCotaUnica);
-    if (Number.isNaN(desconto) || desconto < 0 || desconto >= 1) {
-      setErro('O desconto de cota única deve ser um percentual entre 0% e 100%.');
-      return;
-    }
-    const parcelas = Number(quantidadeParcelas);
-    if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 12) {
-      setErro('Informe de 1 a 12 parcelas.');
+    const predial = mapearFaixas(faixasPredial);
+    const territorial = mapearFaixas(faixasTerritorial);
+    if (predial.length === 0 || territorial.length === 0) {
+      setErro('Cadastre ao menos uma faixa predial e uma territorial (valor venal máximo + alíquota).');
       return;
     }
     setErro(null);
 
-    const input: PublicarAliquotasInput = {
-      exercicio: ano,
-      regime: REGIME_ALIQUOTA_VALOR[regime],
-      aliquotaPredial: progressiva ? 0 : predial,
-      aliquotaTerritorial: progressiva ? 0 : territorial,
-      faixasPredial: fxPredial,
-      faixasTerritorial: fxTerritorial,
-      descontoCotaUnica: desconto,
-      quantidadeParcelas: parcelas,
-    };
-    mutation.mutate(input, {
-      onSuccess: (r) => {
-        toast.success(`Tabela de alíquotas ${ano} publicada (id ${r.id}).`, 'Sucesso');
-        fechar();
+    const base = { exercicio: ano, fundamentoLegal: fundamentoLegal.trim() } as const;
+    const tabelaPredial: PublicarAliquotasInput = { ...base, edificado: true, faixas: predial };
+    const tabelaTerritorial: PublicarAliquotasInput = { ...base, edificado: false, faixas: territorial };
+
+    // Duas chamadas: predial primeiro, territorial em seguida.
+    mutation.mutate(tabelaPredial, {
+      onSuccess: () => {
+        mutation.mutate(tabelaTerritorial, {
+          onSuccess: () => {
+            toast.success(`Tabelas de alíquotas ${ano} (predial e territorial) publicadas.`, 'Sucesso');
+            fechar();
+          },
+          onError: (error) =>
+            toast.error(
+              error instanceof ApiError
+                ? error.userMessage
+                : 'Tabela predial publicada, mas falhou ao publicar a territorial.',
+            ),
+        });
       },
       onError: (error) =>
         toast.error(error instanceof ApiError ? error.userMessage : 'Não foi possível publicar as alíquotas.'),
@@ -124,28 +109,35 @@ export function AliquotasFormModal({ open, onClose }: AliquotasFormModalProps) {
         <legend className="text-up-01 text-semi-bold">{titulo}</legend>
         {linhas.map((f, idx) => (
           <div className="row align-items-end" key={idx}>
-            <div className="col-sm-6">
-              <FormField label="Até valor venal (R$)">
+            <div className="col-sm-4">
+              <FormField label="Venal mínimo (R$)">
                 {({ id }) => (
-                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" value={f.ate} onChange={(e) => setLinhas((p) => p.map((it, i) => (i === idx ? { ...it, ate: e.target.value } : it)))} />
+                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" value={f.minimo} placeholder="0,00" onChange={(e) => setLinhas((p) => p.map((it, i) => (i === idx ? { ...it, minimo: e.target.value } : it)))} />
                 )}
               </FormField>
             </div>
             <div className="col-sm-4">
-              <FormField label="Alíquota (%)">
+              <FormField label="Venal máximo (R$)">
                 {({ id }) => (
-                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" value={f.aliquota} placeholder="2,00" onChange={(e) => setLinhas((p) => p.map((it, i) => (i === idx ? { ...it, aliquota: e.target.value } : it)))} />
+                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" value={f.maximo} onChange={(e) => setLinhas((p) => p.map((it, i) => (i === idx ? { ...it, maximo: e.target.value } : it)))} />
                 )}
               </FormField>
             </div>
-            <div className="col-sm-2 mb-3">
+            <div className="col-sm-3">
+              <FormField label="Alíquota (%)">
+                {({ id }) => (
+                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" value={f.aliquota} placeholder="1,00" onChange={(e) => setLinhas((p) => p.map((it, i) => (i === idx ? { ...it, aliquota: e.target.value } : it)))} />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-1 mb-3">
               <Button variant="tertiary" onClick={() => setLinhas((p) => p.filter((_, i) => i !== idx))} aria-label={`Remover faixa ${idx + 1}`}>
                 <i className="fas fa-trash" aria-hidden="true" />
               </Button>
             </div>
           </div>
         ))}
-        <Button variant="secondary" onClick={() => setLinhas((p) => [...p, { ate: '', aliquota: '' }])}>
+        <Button variant="secondary" onClick={() => setLinhas((p) => [...p, { ...FAIXA_VAZIA }])}>
           <i className="fas fa-plus" aria-hidden="true" /> Adicionar faixa
         </Button>
       </fieldset>
@@ -156,7 +148,7 @@ export function AliquotasFormModal({ open, onClose }: AliquotasFormModalProps) {
     <Modal
       open={open}
       onClose={fechar}
-      title="Publicar tabela de alíquotas do IPTU"
+      title="Publicar tabelas de alíquotas do IPTU"
       size="large"
       footer={
         <>
@@ -177,62 +169,24 @@ export function AliquotasFormModal({ open, onClose }: AliquotasFormModalProps) {
         )}
 
         <div className="row">
-          <div className="col-md-6">
+          <div className="col-md-4">
             <FormField label="Exercício" required>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} type="number" min={1900} inputMode="numeric" aria-describedby={describedBy} invalid={invalid} value={exercicio} onChange={(e) => setExercicio(e.target.value)} />
               )}
             </FormField>
           </div>
-          <div className="col-md-6">
-            <FormField label="Regime" required>
-              {({ id, describedBy }) => (
-                <Select id={id} aria-describedby={describedBy} options={REGIME_OPCOES} value={regime} onChange={(e) => setRegime(e.target.value as RegimeAliquota)} />
+          <div className="col-md-8">
+            <FormField label="Fundamento legal" required help="Lei municipal de alíquotas do IPTU.">
+              {({ id, describedBy, invalid }) => (
+                <Input id={id} aria-describedby={describedBy} invalid={invalid} value={fundamentoLegal} onChange={(e) => setFundamentoLegal(e.target.value)} placeholder="Lei Municipal nº 1.234/2026" />
               )}
             </FormField>
           </div>
         </div>
 
-        {progressiva ? (
-          <>
-            {renderFaixas('Faixas — predial', faixasPredial, setFaixasPredial)}
-            {renderFaixas('Faixas — territorial', faixasTerritorial, setFaixasTerritorial)}
-          </>
-        ) : (
-          <div className="row">
-            <div className="col-md-6">
-              <FormField label="Alíquota predial (%)" required help="Ex.: 1,00 para 1%.">
-                {({ id, describedBy, invalid }) => (
-                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" aria-describedby={describedBy} invalid={invalid} value={aliquotaPredial} onChange={(e) => setPredial(e.target.value)} placeholder="1,00" />
-                )}
-              </FormField>
-            </div>
-            <div className="col-md-6">
-              <FormField label="Alíquota territorial (%)" required help="Imóveis sem construção.">
-                {({ id, describedBy, invalid }) => (
-                  <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" aria-describedby={describedBy} invalid={invalid} value={aliquotaTerritorial} onChange={(e) => setTerritorial(e.target.value)} placeholder="3,00" />
-                )}
-              </FormField>
-            </div>
-          </div>
-        )}
-
-        <div className="row">
-          <div className="col-md-6">
-            <FormField label="Desconto cota única (%)" help="Opcional; 0% se não houver.">
-              {({ id, describedBy, invalid }) => (
-                <Input id={id} type="number" min="0" max="100" step="0.01" inputMode="decimal" aria-describedby={describedBy} invalid={invalid} value={descontoCotaUnica} onChange={(e) => setDesconto(e.target.value)} placeholder="10,00" />
-              )}
-            </FormField>
-          </div>
-          <div className="col-md-6">
-            <FormField label="Parcelas padrão" required help="Quantidade sugerida no lançamento (1 a 12).">
-              {({ id, describedBy, invalid }) => (
-                <Input id={id} type="number" min={1} max={12} inputMode="numeric" aria-describedby={describedBy} invalid={invalid} value={quantidadeParcelas} onChange={(e) => setParcelas(e.target.value)} />
-              )}
-            </FormField>
-          </div>
-        </div>
+        {renderFaixas('Faixas — predial (edificado)', faixasPredial, setFaixasPredial)}
+        {renderFaixas('Faixas — territorial (não edificado)', faixasTerritorial, setFaixasTerritorial)}
       </form>
     </Modal>
   );

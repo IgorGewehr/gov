@@ -13,7 +13,10 @@ export interface VereadorResumo {
   id: string;
   nomeParlamentar: string;
   partido: string;
-  legislatura: string;
+  /** Ano inicial da legislatura (back: LegislaturaInicio). */
+  legislaturaInicio: number;
+  /** Ano final da legislatura (back: LegislaturaFim). */
+  legislaturaFim: number;
   cargoMesa: string;
   situacao: string;
 }
@@ -28,8 +31,12 @@ export interface VereadorInput {
   nomeCivil: string;
   nomeParlamentar: string;
   partido: string;
-  legislatura: string;
+  /** Ano inicial da legislatura (back: LegislaturaInicio, obrigatorio no cadastro). */
+  legislaturaInicio: number;
+  /** Ano final da legislatura (back: LegislaturaFim, obrigatorio no cadastro). */
+  legislaturaFim: number;
   cargoMesa: number;
+  /** Usado apenas na edicao (PUT); ignorado pelo backend no cadastro. */
   situacao: number;
 }
 

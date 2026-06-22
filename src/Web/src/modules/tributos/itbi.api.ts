@@ -14,54 +14,70 @@ import { http } from '../../api/http';
 // Projeções de leitura
 // ---------------------------------------------------------------------------
 
-/** Linha da memória de cálculo do preview/lançamento de ITBI. */
-export interface MemoriaItbiLinha {
-  rotulo: string;
-  detalhe: string;
-  valor: number;
-}
-
-/** Projeção do PREVIEW do ITBI (GET .../preview). Base = maior venal × declarado. */
+/**
+ * Projeção do PREVIEW do ITBI (GET .../preview) — espelha ResultadoItbi.
+ * Base = VALOR DECLARADO (Tema 1.113/STJ); o venal de referência só dispara a
+ * triagem (`haDivergenciaReferencia`). `aliquotaPercentual` em % (ex.: 2.0 = 2%).
+ */
 export interface PreviewItbi {
   imovelId: string;
   exercicio: number;
   valorVenalReferencia: number;
   valorDeclarado: number;
   baseCalculo: number;
-  sfh: boolean;
+  /** Origem da base de cálculo (back: Origem, string/enum). */
+  origem: string;
+  /** Há divergência com o valor venal de referência (back: HaDivergenciaReferencia). */
+  haDivergenciaReferencia: boolean;
   aliquotaPercentual: number;
+  impostoBruto: number;
+  valorIsencao: number;
   impostoDevido: number;
-  memoria: MemoriaItbiLinha[];
 }
 
-/** Resultado do LANÇAMENTO de ITBI (POST .../lancar): gera guia/DAM. */
+/** Resultado do LANÇAMENTO de ITBI (POST .../lancar) — espelha ResultadoLancamentoItbi. */
 export interface LancamentoItbiResultado {
+  transmissaoId: string;
   lancamentoId: string;
-  guiaNumero: string;
+  damId: string;
   baseCalculo: number;
+  /** Origem da base de cálculo (back: Origem). */
+  origem: string;
+  haDivergenciaReferencia: boolean;
   impostoDevido: number;
-  vencimento: string;
 }
 
 // ---------------------------------------------------------------------------
 // Entradas de comando (espelham os Commands/Payloads reais)
 // ---------------------------------------------------------------------------
 
-/** ConfigurarAliquotasItbiCommand (geral e SFH por exercício; frações decimais). */
+/** ConfigurarAliquotaItbiCommand (geral e SFH por exercício; alíquotas em %). */
 export interface ConfigurarAliquotasItbiInput {
   exercicio: number;
-  aliquotaGeral: number;
-  aliquotaSfh: number;
+  /** Alíquota geral em % (back: AliquotaGeralPercentual). */
+  aliquotaGeralPercentual: number;
+  /** Alíquota SFH financiada em % (back: AliquotaSfhFinanciadaPercentual). */
+  aliquotaSfhFinanciadaPercentual: number;
+  /** Lei municipal de alíquota (back: FundamentoLegal, obrigatório). */
+  fundamentoLegal: string;
+  publicar?: boolean;
 }
 
-/** LancarItbiCommand (transmissão -> gera guia/DAM; base = maior venal × declarado). */
+/** LancarItbiCommand (transmissão -> lança ITBI pela base declarada + DAM). */
 export interface LancarItbiInput {
   imovelId: string;
+  /** Transmitente (back: TransmitenteId, Guid do contribuinte). */
+  transmitenteId: string;
+  /** Adquirente (back: AdquirenteId, Guid do contribuinte). */
+  adquirenteId: string;
   exercicio: number;
   valorDeclarado: number;
-  sfh: boolean;
-  transmitente: string;
-  adquirente: string;
+  /** Vencimento da guia (back: Vencimento, "yyyy-MM-dd", obrigatório). */
+  vencimento: string;
+  /** Usar a alíquota de SFH financiada (back: UsarAliquotaSfh). */
+  usarAliquotaSfh: boolean;
+  /** Percentual de isenção (back: PercentualIsencao, default 0). */
+  percentualIsencao?: number;
 }
 
 // ---------------------------------------------------------------------------

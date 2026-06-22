@@ -7,10 +7,10 @@ export const SITUACAO_DIVIDA_LABEL: Record<SituacaoDividaAtiva, string> = {
   Inscrita: 'Inscrita',
   CdaEmitida: 'CDA emitida',
   Protestada: 'Protestada',
+  EmExecucaoFiscal: 'Em execução fiscal',
   Parcelada: 'Parcelada',
   Quitada: 'Quitada',
   Cancelada: 'Cancelada',
-  Prescrita: 'Prescrita',
 };
 
 /** Rótulo legível em PT-BR para a espécie tributária. */
@@ -30,12 +30,13 @@ export function situacaoTagVariant(situacao: SituacaoDividaAtiva): TagVariant {
       return 'info';
     case 'Protestada':
       return 'danger';
+    case 'EmExecucaoFiscal':
+      return 'danger';
     case 'Parcelada':
       return 'info';
     case 'Quitada':
       return 'success';
     case 'Cancelada':
-    case 'Prescrita':
       return 'danger';
     default:
       return 'default';

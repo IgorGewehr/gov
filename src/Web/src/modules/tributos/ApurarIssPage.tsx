@@ -10,22 +10,17 @@ import {
   Alert,
   Button,
   Card,
-  DataTable,
   EmptyState,
   FormField,
   Input,
   PageHeader,
-  Tag,
   useToast,
 } from '../../components/ui';
-import type { Column } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { ApiError } from '../../api/problemDetails';
-import { formatarData, formatarMoeda } from '../../i18n/format';
+import { formatarMoeda } from '../../i18n/format';
 import { useApurarIss, useSincronizarNfse } from './iss.api';
-import type { ApuracaoIss, LivroEletronicoLinha } from './iss.api';
-import { formatarPercentual } from './iptu.helpers';
-import { FORMA_RECOLHIMENTO_LABEL, formaRecolhimentoTagVariant } from './iss.helpers';
+import type { ApuracaoIss } from './iss.api';
 import { TributosSubNav } from './TributosSubNav';
 import { IssAliquotasFormModal } from './IssAliquotasFormModal';
 
@@ -34,6 +29,12 @@ const PERM_GERENCIAR = 'tributos.gerenciar';
 function competenciaAtual(): string {
   const agora = new Date();
   return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Converte "AAAA-MM" em { ano, mes }. */
+function partesCompetencia(competencia: string): { ano: number; mes: number } {
+  const [ano, mes] = competencia.split('-').map(Number);
+  return { ano, mes };
 }
 
 function Totalizador({ rotulo, valor, destaque }: { rotulo: string; valor: number; destaque?: boolean }) {
@@ -51,6 +52,8 @@ export function ApurarIssPage() {
   const toast = useToast();
   const [contribuinteId, setContribuinteId] = useState('');
   const [competencia, setCompetencia] = useState(competenciaAtual());
+  const [vencimento, setVencimento] = useState('');
+  const [prestadores, setPrestadores] = useState('');
   const [resultado, setResultado] = useState<ApuracaoIss | null>(null);
   const [aliquotasAberto, setAliquotasAberto] = useState(false);
 
@@ -70,15 +73,21 @@ export function ApurarIssPage() {
   }
 
   function sincronizarNfse(): void {
-    if (!validarFiltro()) return;
+    const listaPrestadores = prestadores
+      .split(/[\s,;]+/)
+      .map((p) => p.trim())
+      .filter((p) => p !== '');
+    if (listaPrestadores.length === 0) {
+      toast.error('Informe ao menos um CNPJ de prestador para sincronizar.');
+      return;
+    }
+    // Janela "desde" = primeiro dia da competência selecionada.
+    const desde = /^\d{4}-\d{2}$/.test(competencia) ? `${competencia}-01` : `${competenciaAtual()}-01`;
     sincronizar.mutate(
-      { contribuinteId: contribuinteId.trim(), competencia },
+      { prestadores: listaPrestadores, desde },
       {
         onSuccess: (r) =>
-          toast.success(
-            `NFS-e sincronizadas: ${r.notasNovas} nova(s), ${r.notasDuplicadas} duplicada(s).`,
-            'Ingestão concluída',
-          ),
+          toast.success(`NFS-e sincronizadas: ${r.importadas} importada(s).`, 'Ingestão concluída'),
         onError: (error) =>
           toast.error(
             error instanceof ApiError ? error.userMessage : 'Não foi possível sincronizar as NFS-e.',
@@ -90,34 +99,23 @@ export function ApurarIssPage() {
   function apurarIss(event: FormEvent): void {
     event.preventDefault();
     if (!validarFiltro()) return;
+    if (vencimento.trim() === '') {
+      toast.error('Informe o vencimento do ISS próprio.');
+      return;
+    }
+    const { ano, mes } = partesCompetencia(competencia);
     apurar.mutate(
-      { competencia },
+      { ano, mes, vencimentoIssProprio: vencimento.trim() },
       {
         onSuccess: (r) => {
           setResultado(r);
-          toast.success(`ISS da competência ${r.competencia} apurado.`, 'Sucesso');
+          toast.success(`ISS da competência ${competencia} apurado.`, 'Sucesso');
         },
         onError: (error) =>
           toast.error(error instanceof ApiError ? error.userMessage : 'Não foi possível apurar o ISS.'),
       },
     );
   }
-
-  const colunas: Column<LivroEletronicoLinha>[] = [
-    { key: 'nfse', header: 'NFS-e', render: (l) => l.numeroNfse },
-    { key: 'emissao', header: 'Emissão', render: (l) => formatarData(l.dataEmissao) },
-    { key: 'item', header: 'Item LC 116', render: (l) => l.itemListaServico },
-    { key: 'base', header: 'Base de cálculo', align: 'end', render: (l) => formatarMoeda(l.baseCalculo) },
-    { key: 'aliquota', header: 'Alíquota', align: 'end', render: (l) => formatarPercentual(l.aliquotaPercentual) },
-    {
-      key: 'forma',
-      header: 'Forma',
-      render: (l) => (
-        <Tag variant={formaRecolhimentoTagVariant(l.forma)}>{FORMA_RECOLHIMENTO_LABEL[l.forma]}</Tag>
-      ),
-    },
-    { key: 'iss', header: 'ISS devido', align: 'end', render: (l) => formatarMoeda(l.issDevido) },
-  ];
 
   return (
     <>
@@ -166,6 +164,40 @@ export function ApurarIssPage() {
                 )}
               </FormField>
             </div>
+            <div className="col-md-3">
+              <FormField label="Vencimento do ISS próprio" required help="Para a apuração.">
+                {({ id, describedBy, invalid }) => (
+                  <Input
+                    id={id}
+                    type="date"
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                    value={vencimento}
+                    onChange={(e) => setVencimento(e.target.value)}
+                  />
+                )}
+              </FormField>
+            </div>
+          </div>
+
+          <div className="row align-items-end">
+            <div className="col-md-9">
+              <FormField
+                label="Prestadores (CNPJ) para sincronizar"
+                help="Um ou mais CNPJs separados por vírgula/espaço; necessário só p/ a sincronização."
+              >
+                {({ id, describedBy, invalid }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                    value={prestadores}
+                    onChange={(e) => setPrestadores(e.target.value)}
+                    placeholder="00.000.000/0001-00, 11.111.111/0001-11"
+                  />
+                )}
+              </FormField>
+            </div>
             <div className="col-md-3 mb-3 d-flex" style={{ gap: '0.5rem' }}>
               <Can permission={PERM_GERENCIAR}>
                 <Button variant="secondary" onClick={sincronizarNfse} loading={sincronizar.isPending}>
@@ -194,44 +226,20 @@ export function ApurarIssPage() {
           description="Selecione o contribuinte e a competência e clique em Apurar para gerar o livro fiscal."
         />
       ) : (
-        <>
-          <Card
-            className="mb-4"
-            header={<strong>Apuração do ISS — competência {resultado.competencia}</strong>}
-          >
-            <dl className="row">
-              <Totalizador rotulo="ISS próprio" valor={resultado.totais.issProprio} />
-              <Totalizador rotulo="ISS retido na fonte" valor={resultado.totais.issRetido} />
-              <Totalizador rotulo="ISS por substituição" valor={resultado.totais.issSubstituicao} />
-              <Totalizador rotulo="ISS total devido" valor={resultado.issTotalDevido} destaque />
-            </dl>
-            <p className="mb-0 text-gray-60">
-              {resultado.quantidadeNotas} nota(s) processada(s); base de cálculo total{' '}
-              <strong>{formatarMoeda(resultado.baseCalculoTotal)}</strong>.
-            </p>
-            {resultado.lancamentoId && (
-              <Alert variant="success" title="Lançamento do ISS próprio">
-                Lançamento <strong>{resultado.lancamentoId}</strong> constituído para a competência{' '}
-                {resultado.competencia}.
-              </Alert>
-            )}
-          </Card>
-
-          <h2 className="text-up-01 mb-2">Livro fiscal eletrônico</h2>
-          <DataTable
-            caption={`Livro fiscal eletrônico do ISS — competência ${resultado.competencia}`}
-            columns={colunas}
-            rows={resultado.livro}
-            rowKey={(l) => l.chaveAcesso}
-            empty={
-              <EmptyState
-                icon="fas fa-file-circle-question"
-                title="Sem NFS-e na competência"
-                description="Não há notas ingeridas para este contribuinte nesta competência. Sincronize as NFS-e e apure novamente."
-              />
-            }
-          />
-        </>
+        <Card className="mb-4" header={<strong>Apuração do ISS — competência {competencia}</strong>}>
+          <dl className="row">
+            <Totalizador rotulo="ISS próprio" valor={resultado.issProprio} destaque />
+            <Totalizador rotulo="ISS retido na fonte" valor={resultado.issRetido} />
+            <Totalizador rotulo="ISS por substituição" valor={resultado.issSubstituicao} />
+          </dl>
+          <p className="mb-0 text-gray-60">{resultado.quantidadeNotas} nota(s) processada(s).</p>
+          {resultado.lancamentoId && (
+            <Alert variant="success" title="Lançamento do ISS próprio">
+              Lançamento <strong>{resultado.lancamentoId}</strong> constituído (apuração{' '}
+              {resultado.apuracaoId}).
+            </Alert>
+          )}
+        </Card>
       )}
 
       <IssAliquotasFormModal open={aliquotasAberto} onClose={() => setAliquotasAberto(false)} />

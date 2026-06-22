@@ -9,7 +9,7 @@ import type { InscricaoResumo } from './tribuna.api';
 
 /** Tempo decorrido (segundos) considerando o trecho em andamento, se houver. */
 function calcularDecorrido(inscricao: InscricaoResumo, agora: number): number {
-  const base = inscricao.tempoConsumidoSegundos;
+  const base = inscricao.tempoUtilizadoSegundos ?? 0;
   if (!inscricao.iniciadoEm) return base;
   const inicio = new Date(inscricao.iniciadoEm).getTime();
   if (Number.isNaN(inicio)) return base;

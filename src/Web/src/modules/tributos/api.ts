@@ -21,10 +21,10 @@ export type SituacaoDividaAtiva =
   | 'Inscrita'
   | 'CdaEmitida'
   | 'Protestada'
+  | 'EmExecucaoFiscal'
   | 'Parcelada'
   | 'Quitada'
-  | 'Cancelada'
-  | 'Prescrita';
+  | 'Cancelada';
 
 /** Espécie tributária — enum TipoTributo (1..4). */
 export type TipoTributo = 'Iptu' | 'Iss' | 'Itbi' | 'Taxa';

@@ -70,7 +70,8 @@ export interface VotacaoResumo {
 /** Voto nominal exibido no painel ao vivo (inclui o nome do vereador). */
 export interface VotoNominalPainel {
   vereadorId: string;
-  nomeVereador: string;
+  /** Nome parlamentar (back: NomeParlamentar). */
+  nomeParlamentar: string;
   sentido: string;
 }
 

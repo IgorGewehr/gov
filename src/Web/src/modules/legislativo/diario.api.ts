@@ -3,7 +3,11 @@
 // lista de edicoes, detalhe, montagem (criar + adicionar materias) e publicacao.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../api/http';
-import { legislativoKeys, type CriacaoResponse } from './legislativo.shared';
+import {
+  legislativoKeys,
+  type CriacaoResponse,
+  type PaginaResultado,
+} from './legislativo.shared';
 
 // ---------------------------------------------------------------------------
 // DTOs
@@ -13,8 +17,11 @@ import { legislativoKeys, type CriacaoResponse } from './legislativo.shared';
 export interface EdicaoResumo {
   id: string;
   numero: number;
-  dataReferencia: string;
+  /** Ano da edicao (back: Ano; o backend gera o numero sequencial). */
+  ano: number;
   situacao: string;
+  /** Data oficial de publicacao (back: DataPublicacao, ISO) ou null se em montagem. */
+  dataPublicacao: string | null;
   totalMaterias: number;
 }
 
@@ -24,28 +31,35 @@ export interface MateriaResumo {
   ordem: number;
   tipo: string;
   titulo: string;
-  conteudo: string;
+  /** Conteudo bruto (back: Conteudo, opcional quando ha ReferenciaId). */
+  conteudo: string | null;
+  /** Referencia a entidade de origem (back: ReferenciaId), se houver. */
+  referenciaId?: string | null;
 }
 
 /** Detalhe de uma edicao (cabecalho + materias + dados de publicacao). */
 export interface EdicaoDetalhe {
   id: string;
   numero: number;
-  dataReferencia: string;
+  ano: number;
   situacao: string;
-  publicadaEm: string | null;
+  /** Data oficial de publicacao (back: DataPublicacao, ISO) ou null se em montagem. */
+  dataPublicacao: string | null;
+  /** Edicao original, se esta for retificacao (back: EdicaoOriginalId). */
+  edicaoOriginalId?: string | null;
   materias: MateriaResumo[];
 }
 
-/** Payload de criacao (montagem) de uma edicao do Diario. */
+/** Payload de criacao (montagem) de uma edicao do Diario (back gera o numero). */
 export interface EdicaoInput {
-  numero: number;
-  dataReferencia: string;
+  /** Ano da edicao (back: Ano, obrigatorio, 1900–2100). */
+  ano: number;
 }
 
 /** Payload de inclusao de materia em uma edicao. */
 export interface MateriaInput {
-  tipo: number;
+  /** Especie da materia (back: TipoMateria, int). */
+  tipoMateria: number;
   titulo: string;
   conteudo: string;
 }
@@ -54,8 +68,12 @@ export interface MateriaInput {
 // Acesso HTTP
 // ---------------------------------------------------------------------------
 
-function listarEdicoes(signal?: AbortSignal): Promise<EdicaoResumo[]> {
-  return http.get<EdicaoResumo[]>('/legislativo/diario/edicoes', { signal });
+async function listarEdicoes(signal?: AbortSignal): Promise<EdicaoResumo[]> {
+  // O backend devolve um envelope paginado { itens, total, pagina, tamanho }.
+  const pagina = await http.get<PaginaResultado<EdicaoResumo>>('/legislativo/diario/edicoes', {
+    signal,
+  });
+  return pagina.itens;
 }
 
 function obterEdicao(id: string, signal?: AbortSignal): Promise<EdicaoDetalhe> {

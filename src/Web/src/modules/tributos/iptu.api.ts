@@ -17,155 +17,158 @@ import { http } from '../../api/http';
 // Enums (string no domínio; INT no payload via *_VALOR)
 // ---------------------------------------------------------------------------
 
-/** Uso predominante do imóvel — enum UsoImovel. */
-export type UsoImovel = 'Residencial' | 'Comercial' | 'Industrial' | 'Servicos' | 'Territorial';
+/** Uso predominante do imóvel — enum TipoUsoImovel (back). */
+export type UsoImovel =
+  | 'Residencial'
+  | 'Comercial'
+  | 'Industrial'
+  | 'Servicos'
+  | 'Misto'
+  | 'Territorial';
 
+/** Valores INT do enum TipoUsoImovel (back: 1..6). */
 export const USO_IMOVEL_VALOR: Record<UsoImovel, number> = {
   Residencial: 1,
   Comercial: 2,
   Industrial: 3,
   Servicos: 4,
-  Territorial: 5,
+  Misto: 5,
+  Territorial: 6,
 };
 
-/** Padrão construtivo do imóvel — enum PadraoConstrutivo. */
+/**
+ * Padrão construtivo do imóvel. NO BACKEND É UMA STRING LIVRE (NotEmpty,
+ * MaxLength 30), não um enum — o cadastro envia o texto (ex.: "Normal").
+ */
 export type PadraoConstrutivo = 'Baixo' | 'Normal' | 'Alto' | 'Luxo';
-
-export const PADRAO_CONSTRUTIVO_VALOR: Record<PadraoConstrutivo, number> = {
-  Baixo: 1,
-  Normal: 2,
-  Alto: 3,
-  Luxo: 4,
-};
-
-/** Regime de alíquota da tabela de IPTU — enum RegimeAliquota. */
-export type RegimeAliquota = 'Unica' | 'Progressiva';
-
-export const REGIME_ALIQUOTA_VALOR: Record<RegimeAliquota, number> = {
-  Unica: 1,
-  Progressiva: 2,
-};
 
 // ---------------------------------------------------------------------------
 // Projeções de leitura
 // ---------------------------------------------------------------------------
 
-/** Projeção de resumo (ObterImoveisDoContribuinte). */
+/** Projeção de resumo (ObterImoveisDoContribuinte) — espelha ImovelResumo (back). */
 export interface ImovelResumo {
   id: string;
-  contribuinteId: string;
-  inscricaoImobiliaria: string;
+  inscricaoMunicipal: string;
+  cibCodigo: string | null;
   logradouro: string;
-  numero: string;
-  bairro: string;
-  zona: string;
-  uso: UsoImovel;
-  padrao: PadraoConstrutivo;
-  anoConstrucao: number | null;
+  zonaFiscal: string;
   areaTerreno: number;
   areaConstruida: number;
+  /** Tipo de uso (back: TipoUso, string). */
+  tipoUso: UsoImovel;
+  ativo: boolean;
 }
 
-/** Linha da memória de cálculo (ApurarIptu). */
-export interface MemoriaCalculoLinha {
-  rotulo: string;
-  detalhe: string;
-  valor: number;
-}
-
-/** Projeção da APURAÇÃO de IPTU (GET .../iptu/{exercicio}). */
+/**
+ * Projeção da APURAÇÃO de IPTU (GET .../iptu/{exercicio}) — espelha ResultadoIptu
+ * (achatado; o backend NÃO devolve memória de cálculo). `aliquotaPercentual` em %
+ * (ex.: 1.0 = 1%).
+ */
 export interface ApuracaoIptu {
   imovelId: string;
   exercicio: number;
+  valorVenal: number;
   valorTerreno: number;
   valorConstrucao: number;
-  valorVenal: number;
   aliquotaPercentual: number;
   impostoBruto: number;
+  valorIsencao: number;
+  valorDesconto: number;
   impostoDevido: number;
-  descontoCotaUnica: number;
-  valorCotaUnica: number;
-  memoria: MemoriaCalculoLinha[];
 }
 
-/** Parcela do DAM gerado pelo lançamento (LancarIptu). */
-export interface ParcelaDam {
-  numero: number;
-  valor: number;
-  vencimento: string;
-}
-
-/** Resultado do LANÇAMENTO de IPTU (POST .../iptu/lancar). */
+/** Resultado do LANÇAMENTO de IPTU (POST .../iptu/lancar) — espelha ResultadoLancamentoIptu. */
 export interface LancamentoIptuResultado {
   lancamentoId: string;
-  exercicio: number;
-  valorTotal: number;
-  parcelas: ParcelaDam[];
+  damId: string;
+  impostoDevido: number;
 }
 
 // ---------------------------------------------------------------------------
 // Entradas de comando (espelham os Commands/Payloads reais)
 // ---------------------------------------------------------------------------
 
-/** CadastrarImovelCommand. */
+/** CadastrarImovelCommand — bind direto (camelCase do record do backend). */
 export interface CadastrarImovelInput {
-  contribuinteId: string;
-  inscricaoImobiliaria: string;
+  /** Contribuinte proprietário/possuidor (back: ProprietarioId). */
+  proprietarioId: string;
+  /** Inscrição municipal cadastral (back: InscricaoMunicipal). */
+  inscricaoMunicipal: string;
   logradouro: string;
-  numero: string;
+  numero?: string | null;
   bairro: string;
-  zona: string;
-  uso: number;
-  padrao: number;
-  anoConstrucao: number | null;
+  /** Setor/quadra/lote (back: SetorQuadraLote, obrigatório). */
+  setorQuadraLote: string;
+  /** Zona fiscal da PGV (back: ZonaFiscal). */
+  zonaFiscal: string;
+  /** Tipo de uso (back: TipoUso, enum int). */
+  tipoUso: number;
+  /** Padrão construtivo (back: PadraoConstrutivo) — STRING livre, não int. */
+  padraoConstrutivo: string;
+  anoConstrucao?: number | null;
   areaTerreno: number;
   areaConstruida: number;
 }
 
-/** Zona da Planta Genérica de Valores (VUT por m² de terreno; VUC por m² construído). */
+/** Zona da PGV (back: ZonaPgvInput) — VUT por m² de terreno; VUC por m² construído. */
 export interface ZonaPgvInput {
-  zona: string;
-  vut: number;
-  vuc: number;
+  zonaFiscal: string;
+  valorM2Terreno: number;
+  valorM2Construcao: number;
 }
 
-/** Fator de correção da PGV (fração decimal multiplicadora). */
+/** Fator de correção da PGV (back: FatorPgvInput). */
 export interface FatorPgvInput {
+  /** Categoria do fator (back: Tipo — TipoFatorPgv, int). */
+  tipo: number;
   chave: string;
-  descricao: string;
-  fator: number;
+  /** Multiplicador (> 0) (back: Multiplicador). */
+  multiplicador: number;
 }
 
-/** PublicarPlantaDeValoresCommand. */
+/** ConfigurarPlantaValoresCommand. */
 export interface PublicarPgvInput {
   exercicio: number;
+  /** Lei/decreto municipal que institui a PGV (back: FundamentoLegal, obrigatório). */
+  fundamentoLegal: string;
   zonas: ZonaPgvInput[];
   fatores: FatorPgvInput[];
+  publicar?: boolean;
 }
 
-/** Faixa de alíquota progressiva (limite superior do valor venal -> alíquota fração). */
+/** Faixa de progressividade (back: FaixaAliquotaInput). `aliquotaPercentual` em % (1.0 = 1%). */
 export interface FaixaAliquotaInput {
-  ateValorVenal: number;
-  aliquota: number;
+  valorVenalMinimo: number;
+  valorVenalMaximo: number;
+  aliquotaPercentual: number;
 }
 
-/** PublicarTabelaAliquotasCommand (predial × territorial; única ou progressiva). */
+/**
+ * ConfigurarTabelaAliquotaIptuCommand — UMA tabela por chamada (`edificado`
+ * define predial × territorial). Chamar duas vezes p/ cobrir ambas.
+ */
 export interface PublicarAliquotasInput {
   exercicio: number;
-  regime: number;
-  aliquotaPredial: number;
-  aliquotaTerritorial: number;
-  faixasPredial: FaixaAliquotaInput[];
-  faixasTerritorial: FaixaAliquotaInput[];
-  descontoCotaUnica: number;
-  quantidadeParcelas: number;
+  /** Tabela predial (true) ou territorial (false) (back: Edificado). */
+  edificado: boolean;
+  /** Lei municipal de alíquotas (back: FundamentoLegal, obrigatório). */
+  fundamentoLegal: string;
+  faixas: FaixaAliquotaInput[];
+  publicar?: boolean;
 }
 
-/** LancarIptuCommand (apura e gera lançamento + DAM parcelado). */
+/** LancarIptuPayload (apura e gera lançamento + DAM). */
 export interface LancarIptuInput {
   exercicio: number;
-  quantidadeParcelas: number;
-  vencimentoPrimeiraParcela: string;
+  /** Vencimento da cota única / 1ª parcela (back: PrimeiroVencimento, "yyyy-MM-dd"). */
+  primeiroVencimento: string;
+  /** Número de parcelas (back: NumeroParcelas, default 1). */
+  numeroParcelas: number;
+  /** Percentual de isenção (back: PercentualIsencao, default 0). */
+  percentualIsencao?: number;
+  /** Percentual de desconto (back: PercentualDesconto, default 0). */
+  percentualDesconto?: number;
 }
 
 // ---------------------------------------------------------------------------

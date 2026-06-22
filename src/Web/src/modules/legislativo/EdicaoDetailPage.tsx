@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Button, Card, EmptyState, PageHeader, QueryState, Tag } from '../../components/ui';
-import { formatarData } from '../../i18n/format';
 import { formatarDataHora } from './legislativo.helpers';
 import { Can } from '../../auth/Can';
 import { ConfirmarAcaoModal } from './ConfirmarAcaoModal';
@@ -22,7 +21,7 @@ function Materia({ materia }: { materia: MateriaResumo }) {
         <strong>{materia.titulo}</strong>
       </div>
       <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
-        {materia.conteudo}
+        {materia.conteudo ?? ''}
       </p>
     </Card>
   );
@@ -65,12 +64,12 @@ export function EdicaoDetailPage() {
                     </dd>
                   </div>
                   <div className="col-sm-4 mb-3">
-                    <dt className="text-gray-60 text-down-01">Data de referência</dt>
-                    <dd className="mb-0 text-semi-bold">{formatarData(edicao.dataReferencia)}</dd>
+                    <dt className="text-gray-60 text-down-01">Ano</dt>
+                    <dd className="mb-0 text-semi-bold">{edicao.ano}</dd>
                   </div>
                   <div className="col-sm-4 mb-3">
                     <dt className="text-gray-60 text-down-01">Publicada em</dt>
-                    <dd className="mb-0 text-semi-bold">{formatarDataHora(edicao.publicadaEm)}</dd>
+                    <dd className="mb-0 text-semi-bold">{formatarDataHora(edicao.dataPublicacao)}</dd>
                   </div>
                 </dl>
               </Card>

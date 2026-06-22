@@ -65,6 +65,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         className="br-toast-region"
+        role="region"
         aria-live="polite"
         aria-label="Notificações"
         style={{

@@ -109,7 +109,7 @@ export function PainelPlacar({ painel, atualizando }: PainelPlacarProps) {
               key={v.vereadorId}
               className="br-item d-flex justify-content-between align-items-center"
             >
-              <span className="text-semi-bold">{v.nomeVereador}</span>
+              <span className="text-semi-bold">{v.nomeParlamentar}</span>
               <Tag variant={sentidoVariant(v.sentido)}>{v.sentido}</Tag>
             </li>
           ))}

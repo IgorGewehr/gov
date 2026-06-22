@@ -107,28 +107,40 @@ export const TIPOS_MATERIA = [
   { value: 5, label: 'Aviso' },
 ] as const;
 
-/** Natureza de uma comissao parlamentar (TipoComissao). */
+/** Natureza de uma comissao parlamentar (TipoComissao — backend so tem 1=Permanente, 2=Temporaria). */
 export const TIPOS_COMISSAO = [
   { value: 1, label: 'Permanente' },
   { value: 2, label: 'Temporária' },
-  { value: 3, label: 'Especial' },
-  { value: 4, label: 'CPI' },
 ] as const;
 
-/** Cargo de um membro na composicao de uma comissao (CargoComissao). */
+/** Papel de um membro na comissao (PapelMembro). */
+export const PAPEIS_MEMBRO = [
+  { value: 1, label: 'Efetivo (titular)' },
+  { value: 2, label: 'Suplente' },
+] as const;
+
+/** Cargo de direcao de um membro na comissao (CargoComissao — Nenhum=0). */
 export const CARGOS_COMISSAO = [
+  { value: 0, label: 'Membro (sem cargo)' },
   { value: 1, label: 'Presidente' },
   { value: 2, label: 'Vice-Presidente' },
   { value: 3, label: 'Relator' },
-  { value: 4, label: 'Membro' },
 ] as const;
 
-/** Situacao da inscricao de um orador na Tribuna (SituacaoInscricao). */
+/** Fase de uso da palavra na sessao (FaseUsoPalavra). */
+export const FASES_USO_PALAVRA = [
+  { value: 1, label: 'Pequeno Expediente' },
+  { value: 2, label: 'Grande Expediente' },
+  { value: 3, label: 'Explicação Pessoal' },
+  { value: 4, label: 'Tribuna Livre' },
+] as const;
+
+/** Situacao da inscricao de um orador na Tribuna (SituacaoInscricao — backend). */
 export const SITUACOES_INSCRICAO = [
-  { value: 1, label: 'Aguardando' },
+  { value: 1, label: 'Inscrito' },
   { value: 2, label: 'Em uso da palavra' },
-  { value: 3, label: 'Pausada' },
-  { value: 4, label: 'Encerrada' },
+  { value: 3, label: 'Concluído' },
+  { value: 4, label: 'Cancelado' },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -173,7 +185,8 @@ export const legislativoKeys = {
 export interface PaginaResultado<T> {
   itens: T[];
   pagina: number;
-  tamanhoPagina: number;
+  /** Tamanho da pagina (back: `tamanho`). */
+  tamanho: number;
   total: number;
 }
 

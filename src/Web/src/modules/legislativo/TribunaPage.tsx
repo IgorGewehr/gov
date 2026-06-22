@@ -19,6 +19,8 @@ import { mensagemErro } from './legislativoAcao.shared';
 import { LegislativoSecoesNav } from './LegislativoSecoesNav';
 import { TribunaCronometro } from './TribunaCronometro';
 import { TribunaInscricaoModal } from './TribunaInscricaoModal';
+import { useSessao } from './sessao.api';
+import { useVereadores } from './vereadores.api';
 import {
   useEncerrarFala,
   useIniciarFala,
@@ -29,7 +31,17 @@ import {
 import type { InscricaoResumo, TribunaPainel } from './tribuna.api';
 
 /** Controles do cronometro de uma inscricao, dependentes da sua situacao. */
-function ControlesInscricao({ sessaoId, inscricao }: { sessaoId: string; inscricao: InscricaoResumo }) {
+function ControlesInscricao({
+  sessaoId,
+  tribunaId,
+  inscricao,
+  nome,
+}: {
+  sessaoId: string;
+  tribunaId: string;
+  inscricao: InscricaoResumo;
+  nome: string;
+}) {
   const toast = useToast();
   const iniciar = useIniciarFala(sessaoId);
   const pausar = usePausarFala(sessaoId);
@@ -37,21 +49,25 @@ function ControlesInscricao({ sessaoId, inscricao }: { sessaoId: string; inscric
   const encerrar = useEncerrarFala(sessaoId);
 
   function disparar(mutation: ReturnType<typeof useIniciarFala>, falha: string): void {
-    mutation.mutate(inscricao.id, {
-      onError: (error) => toast.error(mensagemErro(error, falha)),
-    });
+    mutation.mutate(
+      { inscricaoId: inscricao.inscricaoId, tribunaId },
+      {
+        onError: (error) => toast.error(mensagemErro(error, falha)),
+      },
+    );
   }
 
-  const encerrada = inscricao.situacao === 'Encerrada';
-  const emUso = inscricao.situacao === 'EmUsoDaPalavra';
-  const pausada = inscricao.situacao === 'Pausada';
-  const aguardando = inscricao.situacao === 'Aguardando';
+  // Espelha o enum SituacaoInscricao do backend; a pausa e um flag (Pausada) sobre EmUso.
+  const encerrada = inscricao.situacao === 'Concluido' || inscricao.situacao === 'Cancelado';
+  const emUso = inscricao.situacao === 'EmUso' && !inscricao.pausada;
+  const pausada = inscricao.situacao === 'EmUso' && inscricao.pausada;
+  const aguardando = inscricao.situacao === 'Inscrito';
   const ocupado = iniciar.isPending || pausar.isPending || retomar.isPending || encerrar.isPending;
 
   if (encerrada) return null;
 
   return (
-    <div className="d-flex flex-wrap gap-2" role="group" aria-label={`Controles de ${inscricao.vereadorNome}`}>
+    <div className="d-flex flex-wrap gap-2" role="group" aria-label={`Controles de ${nome}`}>
       {aguardando && (
         <Button variant="primary" onClick={() => disparar(iniciar, 'Não foi possível iniciar a fala.')} loading={iniciar.isPending} disabled={ocupado}>
           <i className="fas fa-play" aria-hidden="true" /> Iniciar
@@ -77,6 +93,13 @@ function ControlesInscricao({ sessaoId, inscricao }: { sessaoId: string; inscric
 }
 
 function ListaOradores({ painel }: { painel: TribunaPainel }) {
+  // O backend nao envia o nome do orador no painel — resolvemos via cadastro.
+  const vereadores = useVereadores();
+  const nomePorVereador = useMemo(
+    () => new Map((vereadores.data ?? []).map((v) => [v.id, v.nomeParlamentar])),
+    [vereadores.data],
+  );
+
   const inscricoes = useMemo(
     () => [...painel.inscricoes].sort((a, b) => a.ordem - b.ordem),
     [painel.inscricoes],
@@ -94,24 +117,31 @@ function ListaOradores({ painel }: { painel: TribunaPainel }) {
 
   return (
     <ol className="p-0" style={{ listStyle: 'none' }}>
-      {inscricoes.map((inscricao) => (
-        <li key={inscricao.id}>
-          <Card className="mb-3">
-            <div className="d-flex flex-wrap justify-content-between align-items-center" style={{ gap: '1rem' }}>
-              <div>
-                <span className="text-gray-60">{inscricao.ordem}.</span>{' '}
-                <strong>{inscricao.vereadorNome}</strong>
+      {inscricoes.map((inscricao) => {
+        const nome = nomePorVereador.get(inscricao.vereadorId) ?? inscricao.vereadorId;
+        return (
+          <li key={inscricao.inscricaoId}>
+            <Card className="mb-3">
+              <div className="d-flex flex-wrap justify-content-between align-items-center" style={{ gap: '1rem' }}>
+                <div>
+                  <span className="text-gray-60">{inscricao.ordem}.</span> <strong>{nome}</strong>
+                </div>
+                <TribunaCronometro inscricao={inscricao} />
               </div>
-              <TribunaCronometro inscricao={inscricao} />
-            </div>
-            <Can permission="legislativo.tribuna.controlar">
-              <div className="mt-3">
-                <ControlesInscricao sessaoId={painel.sessaoId} inscricao={inscricao} />
-              </div>
-            </Can>
-          </Card>
-        </li>
-      ))}
+              <Can permission="legislativo.tribuna.controlar">
+                <div className="mt-3">
+                  <ControlesInscricao
+                    sessaoId={painel.sessaoId}
+                    tribunaId={painel.tribunaId}
+                    inscricao={inscricao}
+                    nome={nome}
+                  />
+                </div>
+              </Can>
+            </Card>
+          </li>
+        );
+      })}
     </ol>
   );
 }
@@ -121,7 +151,11 @@ export function TribunaPage() {
   const [sessaoId, setSessaoId] = useState('');
   const [inscricaoAberta, setInscricaoAberta] = useState(false);
 
-  const painel = useTribuna(sessaoId);
+  // A situacao da sessao nao vem no painel da tribuna — buscamos via useSessao
+  // para controlar o polling e habilitar/desabilitar a inscricao de oradores.
+  const sessao = useSessao(sessaoId);
+  const sessaoAberta = sessao.data?.situacao === 'Aberta';
+  const painel = useTribuna(sessaoId, sessaoAberta);
 
   function carregar(event: FormEvent): void {
     event.preventDefault();
@@ -198,6 +232,7 @@ export function TribunaPage() {
             open={inscricaoAberta}
             onClose={() => setInscricaoAberta(false)}
             sessaoId={sessaoId}
+            tribunaId={painel.data?.tribunaId ?? ''}
           />
         </>
       )}

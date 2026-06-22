@@ -1,25 +1,26 @@
-// Modal de acao de Norma (revogacao/alteracao). Captura a norma afetada (a que
-// esta norma revoga/altera) e a justificativa. Mutation + validacao + Toast.
+// Modal de acao de Norma (revogacao/alteracao). Captura a data do evento e a norma
+// referenciada (que revoga/altera esta). Mutation + validacao + Toast.
+//   Revogar  -> { dataRevogacao, normaRevogadoraId? }   (norma referenciada opcional)
+//   Alterar  -> { dataReferencia, normaAlteradoraId }   (norma referenciada obrigatoria)
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, FormField, Input, Modal, Textarea, useToast } from '../../components/ui';
-import { tratarErroCampos, mensagemErro } from './legislativoAcao.shared';
-import { useAlterarNorma, useRevogarNorma, type NormaAcaoInput } from './normas.api';
+import { Button, FormField, Input, Modal, useToast } from '../../components/ui';
+import { ApiError } from '../../api/problemDetails';
+import { mensagemErro } from './legislativoAcao.shared';
+import { useAlterarNorma, useRevogarNorma } from './normas.api';
 
 export interface NormaAcaoModalProps {
   open: boolean;
   onClose: () => void;
-  /** Identificador da norma que revoga/altera. */
+  /** Identificador da norma que sera revogada/alterada. */
   id: string;
   tipo: 'revogar' | 'alterar';
 }
 
 interface FormErrors {
-  normaAfetadaId?: string;
-  justificativa?: string;
+  data?: string;
+  normaReferenciaId?: string;
 }
-
-const CAMPOS: Record<string, number> = { normaAfetadaId: 1, justificativa: 1 };
 
 const TEXTOS = {
   revogar: {
@@ -27,12 +28,21 @@ const TEXTOS = {
     rotulo: 'Revogar',
     sucesso: 'Revogação registrada.',
     erro: 'Não foi possível registrar a revogação.',
+    rotuloData: 'Data da revogação',
+    rotuloNorma: 'Norma revogadora (opcional)',
+    normaObrigatoria: false,
+    // mapeamento campo-backend(camelCase) -> campo do form (para exibir erros do backend)
+    campos: { dataRevogacao: 'data', normaRevogadoraId: 'normaReferenciaId' } as Record<string, keyof FormErrors>,
   },
   alterar: {
     title: 'Registrar alteração',
     rotulo: 'Registrar',
     sucesso: 'Alteração registrada.',
     erro: 'Não foi possível registrar a alteração.',
+    rotuloData: 'Data da alteração',
+    rotuloNorma: 'Norma alteradora',
+    normaObrigatoria: true,
+    campos: { dataReferencia: 'data', normaAlteradoraId: 'normaReferenciaId' } as Record<string, keyof FormErrors>,
   },
 } as const;
 
@@ -43,21 +53,22 @@ export function NormaAcaoModal({ open, onClose, id, tipo }: NormaAcaoModalProps)
   const mutation = tipo === 'revogar' ? revogar : alterar;
   const textos = TEXTOS[tipo];
 
-  const [normaAfetadaId, setNormaAfetadaId] = useState('');
-  const [justificativa, setJustificativa] = useState('');
+  const [data, setData] = useState('');
+  const [normaReferenciaId, setNormaReferenciaId] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (!open) return;
-    setNormaAfetadaId('');
-    setJustificativa('');
+    setData('');
+    setNormaReferenciaId('');
     setErrors({});
   }, [open]);
 
   function validar(): FormErrors {
     const next: FormErrors = {};
-    if (normaAfetadaId.trim() === '') next.normaAfetadaId = 'Informe a norma afetada.';
-    if (justificativa.trim() === '') next.justificativa = 'Informe a justificativa.';
+    if (data === '') next.data = 'Informe a data.';
+    if (textos.normaObrigatoria && normaReferenciaId.trim() === '')
+      next.normaReferenciaId = 'Informe a norma.';
     return next;
   }
 
@@ -67,21 +78,35 @@ export function NormaAcaoModal({ open, onClose, id, tipo }: NormaAcaoModalProps)
     setErrors(validacao);
     if (Object.keys(validacao).length > 0) return;
 
-    const input: NormaAcaoInput = {
-      normaAfetadaId: normaAfetadaId.trim(),
-      justificativa: justificativa.trim(),
+    const referencia = normaReferenciaId.trim();
+    const onError = (error: unknown) => {
+      if (error instanceof ApiError) {
+        const mapped: FormErrors = {};
+        for (const [field, messages] of Object.entries(error.fieldErrors)) {
+          const key = field.charAt(0).toLowerCase() + field.slice(1);
+          const alvo = textos.campos[key];
+          if (alvo) mapped[alvo] = messages[0];
+        }
+        setErrors(mapped);
+      }
+      toast.error(mensagemErro(error, textos.erro));
+    };
+    const onSuccess = () => {
+      toast.success(textos.sucesso, 'Sucesso');
+      onClose();
     };
 
-    mutation.mutate(input, {
-      onSuccess: () => {
-        toast.success(textos.sucesso, 'Sucesso');
-        onClose();
-      },
-      onError: (error) => {
-        setErrors(tratarErroCampos(error, CAMPOS));
-        toast.error(mensagemErro(error, textos.erro));
-      },
-    });
+    if (tipo === 'revogar') {
+      revogar.mutate(
+        { dataRevogacao: data, normaRevogadoraId: referencia === '' ? undefined : referencia },
+        { onSuccess, onError },
+      );
+    } else {
+      alterar.mutate(
+        { dataReferencia: data, normaAlteradoraId: referencia },
+        { onSuccess, onError },
+      );
+    }
   }
 
   return (
@@ -101,33 +126,33 @@ export function NormaAcaoModal({ open, onClose, id, tipo }: NormaAcaoModalProps)
       }
     >
       <form id="form-norma-acao" className="br-form" onSubmit={submeter} noValidate>
+        <FormField label={textos.rotuloData} required error={errors.data}>
+          {({ id: fieldId, describedBy, invalid }) => (
+            <Input
+              id={fieldId}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+          )}
+        </FormField>
+
         <FormField
-          label="Norma afetada"
-          required
-          error={errors.normaAfetadaId}
-          help="Identificador da norma que será revogada/alterada por esta."
+          label={textos.rotuloNorma}
+          required={textos.normaObrigatoria}
+          error={errors.normaReferenciaId}
+          help="Identificador da norma que revoga/altera esta."
         >
           {({ id: fieldId, describedBy, invalid }) => (
             <Input
               id={fieldId}
               aria-describedby={describedBy}
               invalid={invalid}
-              value={normaAfetadaId}
-              onChange={(e) => setNormaAfetadaId(e.target.value)}
+              value={normaReferenciaId}
+              onChange={(e) => setNormaReferenciaId(e.target.value)}
               placeholder="00000000-0000-0000-0000-000000000000"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Justificativa" required error={errors.justificativa}>
-          {({ id: fieldId, describedBy, invalid }) => (
-            <Textarea
-              id={fieldId}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              value={justificativa}
-              onChange={(e) => setJustificativa(e.target.value)}
-              rows={4}
             />
           )}
         </FormField>

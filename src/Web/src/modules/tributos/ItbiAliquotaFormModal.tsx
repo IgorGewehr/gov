@@ -1,13 +1,12 @@
-// Formulário de CONFIGURAÇÃO das alíquotas do ITBI (command ConfigurarAliquotasItbi):
-// por exercício, a alíquota GERAL e a alíquota do SFH (Sistema Financeiro de
-// Habitação), ambas digitadas em % e convertidas para FRAÇÃO DECIMAL. Acessível.
+// Formulário de CONFIGURAÇÃO das alíquotas do ITBI (ConfigurarAliquotaItbi): por
+// exercício, a alíquota GERAL e a do SFH (Sistema Financeiro de Habitação), em %
+// (o backend espera o valor percentual), além do fundamento legal. Acessível.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Button, FormField, Input, Modal, useToast } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
 import { useConfigurarAliquotasItbi } from './itbi.api';
 import type { ConfigurarAliquotasItbiInput } from './itbi.api';
-import { percentualParaFracao } from './iptu.helpers';
 
 const ANO_ATUAL = new Date().getFullYear();
 
@@ -23,12 +22,14 @@ export function ItbiAliquotaFormModal({ open, onClose }: ItbiAliquotaFormModalPr
   const [exercicio, setExercicio] = useState(String(ANO_ATUAL));
   const [aliquotaGeral, setGeral] = useState('');
   const [aliquotaSfh, setSfh] = useState('');
+  const [fundamentoLegal, setFundamentoLegal] = useState('');
   const [erro, setErro] = useState<string | null>(null);
 
   function fechar(): void {
     setExercicio(String(ANO_ATUAL));
     setGeral('');
     setSfh('');
+    setFundamentoLegal('');
     setErro(null);
     onClose();
   }
@@ -40,22 +41,28 @@ export function ItbiAliquotaFormModal({ open, onClose }: ItbiAliquotaFormModalPr
       setErro('Informe um exercício válido.');
       return;
     }
-    const geral = percentualParaFracao(aliquotaGeral);
-    const sfh = percentualParaFracao(aliquotaSfh);
-    if (Number.isNaN(geral) || geral <= 0 || geral >= 1) {
+    // O backend espera o percentual (2.0 = 2%), não a fração.
+    const geral = Number(aliquotaGeral.replace(',', '.'));
+    const sfh = Number(aliquotaSfh.replace(',', '.'));
+    if (Number.isNaN(geral) || geral <= 0 || geral >= 100) {
       setErro('Informe a alíquota geral (%) maior que zero.');
       return;
     }
-    if (Number.isNaN(sfh) || sfh <= 0 || sfh >= 1) {
+    if (Number.isNaN(sfh) || sfh <= 0 || sfh >= 100) {
       setErro('Informe a alíquota do SFH (%) maior que zero.');
+      return;
+    }
+    if (fundamentoLegal.trim() === '') {
+      setErro('Informe o fundamento legal (lei municipal de alíquota do ITBI).');
       return;
     }
     setErro(null);
 
     const input: ConfigurarAliquotasItbiInput = {
       exercicio: ano,
-      aliquotaGeral: geral,
-      aliquotaSfh: sfh,
+      aliquotaGeralPercentual: geral,
+      aliquotaSfhFinanciadaPercentual: sfh,
+      fundamentoLegal: fundamentoLegal.trim(),
     };
     mutation.mutate(input, {
       onSuccess: (r) => {
@@ -114,6 +121,12 @@ export function ItbiAliquotaFormModal({ open, onClose }: ItbiAliquotaFormModalPr
             </FormField>
           </div>
         </div>
+
+        <FormField label="Fundamento legal" required help="Lei municipal de alíquota do ITBI.">
+          {({ id, describedBy, invalid }) => (
+            <Input id={id} aria-describedby={describedBy} invalid={invalid} value={fundamentoLegal} onChange={(e) => setFundamentoLegal(e.target.value)} placeholder="Lei Municipal nº 1.234/2026" />
+          )}
+        </FormField>
       </form>
     </Modal>
   );

@@ -60,8 +60,8 @@ export function VereadorListPage() {
     {
       key: 'legislatura',
       header: 'Legislatura',
-      sortAccessor: (v) => v.legislatura,
-      render: (v) => v.legislatura,
+      sortAccessor: (v) => v.legislaturaInicio,
+      render: (v) => `${v.legislaturaInicio}–${v.legislaturaFim}`,
     },
     { key: 'cargoMesa', header: 'Cargo na Mesa', render: (v) => v.cargoMesa },
     {

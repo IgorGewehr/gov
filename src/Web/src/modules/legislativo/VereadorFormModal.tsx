@@ -24,14 +24,16 @@ interface FormErrors {
   nomeCivil?: string;
   nomeParlamentar?: string;
   partido?: string;
-  legislatura?: string;
+  legislaturaInicio?: string;
+  legislaturaFim?: string;
 }
 
 const CAMPOS: ReadonlyArray<keyof FormErrors> = [
   'nomeCivil',
   'nomeParlamentar',
   'partido',
-  'legislatura',
+  'legislaturaInicio',
+  'legislaturaFim',
 ];
 
 export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModalProps) {
@@ -44,7 +46,8 @@ export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModal
   const [nomeCivil, setNomeCivil] = useState('');
   const [nomeParlamentar, setNomeParlamentar] = useState('');
   const [partido, setPartido] = useState('');
-  const [legislatura, setLegislatura] = useState('');
+  const [legislaturaInicio, setLegislaturaInicio] = useState('');
+  const [legislaturaFim, setLegislaturaFim] = useState('');
   const [cargoMesa, setCargoMesa] = useState<string>(String(CARGOS_MESA[0].value));
   const [situacao, setSituacao] = useState<string>(String(SITUACOES_VEREADOR[0].value));
   const [errors, setErrors] = useState<FormErrors>({});
@@ -55,7 +58,8 @@ export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModal
     setNomeCivil(vereador?.nomeCivil ?? '');
     setNomeParlamentar(vereador?.nomeParlamentar ?? '');
     setPartido(vereador?.partido ?? '');
-    setLegislatura(vereador?.legislatura ?? '');
+    setLegislaturaInicio(vereador?.legislaturaInicio != null ? String(vereador.legislaturaInicio) : '');
+    setLegislaturaFim(vereador?.legislaturaFim != null ? String(vereador.legislaturaFim) : '');
     setCargoMesa(String(CARGOS_MESA[0].value));
     setSituacao(String(SITUACOES_VEREADOR[0].value));
     setErrors({});
@@ -66,7 +70,12 @@ export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModal
     if (nomeCivil.trim() === '') next.nomeCivil = 'Informe o nome civil.';
     if (nomeParlamentar.trim() === '') next.nomeParlamentar = 'Informe o nome parlamentar.';
     if (partido.trim() === '') next.partido = 'Informe o partido.';
-    if (legislatura.trim() === '') next.legislatura = 'Informe a legislatura (ex.: 2021-2024).';
+    const ini = Number(legislaturaInicio);
+    const fim = Number(legislaturaFim);
+    if (legislaturaInicio.trim() === '' || !Number.isInteger(ini) || ini < 1900)
+      next.legislaturaInicio = 'Informe o ano inicial (ex.: 2021).';
+    if (legislaturaFim.trim() === '' || !Number.isInteger(fim) || fim < ini)
+      next.legislaturaFim = 'Informe o ano final (≥ inicial, ex.: 2024).';
     return next;
   }
 
@@ -80,7 +89,8 @@ export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModal
       nomeCivil: nomeCivil.trim(),
       nomeParlamentar: nomeParlamentar.trim(),
       partido: partido.trim(),
-      legislatura: legislatura.trim(),
+      legislaturaInicio: Number(legislaturaInicio),
+      legislaturaFim: Number(legislaturaFim),
       cargoMesa: Number(cargoMesa),
       situacao: Number(situacao),
     };
@@ -161,19 +171,39 @@ export function VereadorFormModal({ open, onClose, vereador }: VereadorFormModal
         </FormField>
 
         <FormField
-          label="Legislatura"
+          label="Legislatura — ano inicial"
           required
-          error={errors.legislatura}
-          help="Período do mandato (ex.: 2021-2024)."
+          error={errors.legislaturaInicio}
+          help="Ano de início do mandato (ex.: 2021)."
         >
           {({ id, describedBy, invalid }) => (
             <Input
               id={id}
+              type="number"
               aria-describedby={describedBy}
               invalid={invalid}
-              value={legislatura}
-              onChange={(e) => setLegislatura(e.target.value)}
-              placeholder="2021-2024"
+              value={legislaturaInicio}
+              onChange={(e) => setLegislaturaInicio(e.target.value)}
+              placeholder="2021"
+            />
+          )}
+        </FormField>
+
+        <FormField
+          label="Legislatura — ano final"
+          required
+          error={errors.legislaturaFim}
+          help="Ano de término do mandato (ex.: 2024)."
+        >
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              type="number"
+              aria-describedby={describedBy}
+              invalid={invalid}
+              value={legislaturaFim}
+              onChange={(e) => setLegislaturaFim(e.target.value)}
+              placeholder="2024"
             />
           )}
         </FormField>

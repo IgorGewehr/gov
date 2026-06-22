@@ -1,16 +1,19 @@
-// Formulário de CONFIGURAÇÃO das alíquotas do ISS (command ConfigurarAliquotasIss):
-// uma linha POR ITEM da Lista de Serviços (LC 116/2003), com a alíquota (digitada em
-// % e convertida para FRAÇÃO DECIMAL) e os indicadores de RETENÇÃO na fonte e
-// SUBSTITUIÇÃO tributária. Lista dinâmica (adicionar/remover). Acessível (Modal).
+// Formulário de CONFIGURAÇÃO das alíquotas do ISS (ConfigurarTabelaAliquotaIss):
+// vigência (AAAAMM) + fundamento legal + uma linha POR ITEM da Lista de Serviços
+// (LC 116/2003), com a alíquota em % (o backend espera o valor percentual) e os
+// indicadores de RETENÇÃO na fonte e SUBSTITUIÇÃO tributária. Acessível (Modal).
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Button, FormField, Input, Modal, useToast } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
 import { useConfigurarAliquotasIss } from './iss.api';
 import type { ConfigurarAliquotasIssInput, ItemAliquotaIssInput } from './iss.api';
-import { percentualParaFracao } from './iptu.helpers';
 
-const ANO_ATUAL = new Date().getFullYear();
+/** Vigência padrão = AAAAMM do mês corrente. */
+function aaaaMmAtual(): string {
+  const agora = new Date();
+  return `${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export interface IssAliquotasFormModalProps {
   open: boolean;
@@ -37,7 +40,8 @@ export function IssAliquotasFormModal({ open, onClose }: IssAliquotasFormModalPr
   const toast = useToast();
   const mutation = useConfigurarAliquotasIss();
 
-  const [exercicio, setExercicio] = useState(String(ANO_ATUAL));
+  const [vigencia, setVigencia] = useState(aaaaMmAtual());
+  const [fundamentoLegal, setFundamentoLegal] = useState('');
   const [itens, setItens] = useState<ItemLinha[]>([{ ...ITEM_VAZIO }]);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -46,7 +50,8 @@ export function IssAliquotasFormModal({ open, onClose }: IssAliquotasFormModalPr
   }
 
   function fechar(): void {
-    setExercicio(String(ANO_ATUAL));
+    setVigencia(aaaaMmAtual());
+    setFundamentoLegal('');
     setItens([{ ...ITEM_VAZIO }]);
     setErro(null);
     onClose();
@@ -54,9 +59,13 @@ export function IssAliquotasFormModal({ open, onClose }: IssAliquotasFormModalPr
 
   function submeter(event: FormEvent): void {
     event.preventDefault();
-    const ano = Number(exercicio);
-    if (!Number.isInteger(ano) || ano < 1900) {
-      setErro('Informe um exercício válido.');
+    const aaaamm = Number(vigencia);
+    if (!Number.isInteger(aaaamm) || aaaamm < 190001) {
+      setErro('Informe a vigência no formato AAAAMM (ex.: 202601).');
+      return;
+    }
+    if (fundamentoLegal.trim() === '') {
+      setErro('Informe o fundamento legal (lei municipal de alíquotas do ISS).');
       return;
     }
     const validos = itens.filter((i) => i.itemListaServico.trim() !== '');
@@ -66,22 +75,26 @@ export function IssAliquotasFormModal({ open, onClose }: IssAliquotasFormModalPr
     }
     const itensInput: ItemAliquotaIssInput[] = validos.map((i) => ({
       itemListaServico: i.itemListaServico.trim(),
-      descricao: i.descricao.trim(),
-      aliquota: percentualParaFracao(i.aliquota),
-      retencao: i.retencao,
-      substituicao: i.substituicao,
+      // O backend espera o percentual (2.0 = 2%), não a fração.
+      aliquotaPercentual: Number(i.aliquota.replace(',', '.')),
+      retencaoObrigatoria: i.retencao,
+      substituicaoTributaria: i.substituicao,
     }));
-    // LC 116: alíquota mínima 2% e máxima 5%; validamos a faixa legal.
-    if (itensInput.some((i) => Number.isNaN(i.aliquota) || i.aliquota < 0.02 || i.aliquota > 0.05)) {
+    // LC 116: alíquota mínima 2% e máxima 5%; validamos a faixa legal (em %).
+    if (itensInput.some((i) => Number.isNaN(i.aliquotaPercentual) || i.aliquotaPercentual < 2 || i.aliquotaPercentual > 5)) {
       setErro('As alíquotas do ISS devem estar entre 2% e 5% (LC 116/2003).');
       return;
     }
     setErro(null);
 
-    const input: ConfigurarAliquotasIssInput = { exercicio: ano, itens: itensInput };
+    const input: ConfigurarAliquotasIssInput = {
+      vigenciaInicioAaaaMm: aaaamm,
+      fundamentoLegal: fundamentoLegal.trim(),
+      itens: itensInput,
+    };
     mutation.mutate(input, {
       onSuccess: (r) => {
-        toast.success(`Alíquotas do ISS ${ano} configuradas (id ${r.id}).`, 'Sucesso');
+        toast.success(`Alíquotas do ISS (vigência ${vigencia}) configuradas (id ${r.id}).`, 'Sucesso');
         fechar();
       },
       onError: (error) =>
@@ -115,11 +128,22 @@ export function IssAliquotasFormModal({ open, onClose }: IssAliquotasFormModalPr
           </Alert>
         )}
 
-        <FormField label="Exercício" required>
-          {({ id, describedBy, invalid }) => (
-            <Input id={id} type="number" min={1900} inputMode="numeric" aria-describedby={describedBy} invalid={invalid} value={exercicio} onChange={(e) => setExercicio(e.target.value)} />
-          )}
-        </FormField>
+        <div className="row">
+          <div className="col-md-4">
+            <FormField label="Vigência (AAAAMM)" required help="Ex.: 202601.">
+              {({ id, describedBy, invalid }) => (
+                <Input id={id} type="number" min={190001} inputMode="numeric" aria-describedby={describedBy} invalid={invalid} value={vigencia} onChange={(e) => setVigencia(e.target.value)} />
+              )}
+            </FormField>
+          </div>
+          <div className="col-md-8">
+            <FormField label="Fundamento legal" required help="Lei municipal de alíquotas do ISS.">
+              {({ id, describedBy, invalid }) => (
+                <Input id={id} aria-describedby={describedBy} invalid={invalid} value={fundamentoLegal} onChange={(e) => setFundamentoLegal(e.target.value)} placeholder="Lei Municipal nº 1.234/2026" />
+              )}
+            </FormField>
+          </div>
+        </div>
 
         <fieldset className="mb-3">
           <legend className="text-up-01 text-semi-bold">Itens da Lista de Serviços</legend>

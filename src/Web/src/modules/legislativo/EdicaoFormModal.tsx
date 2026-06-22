@@ -1,5 +1,6 @@
-// Formulario de montagem (criacao) de uma edicao do Diario Oficial: numero
-// sequencial + data de referencia. Mutation + validacao por campo + Toast.
+// Formulario de montagem (criacao) de uma edicao do Diario Oficial: o backend
+// gera o numero sequencial; o operador informa apenas o ANO. Mutation +
+// validacao por campo + Toast.
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, FormField, Input, Modal, useToast } from '../../components/ui';
@@ -12,31 +13,29 @@ export interface EdicaoFormModalProps {
 }
 
 interface FormErrors {
-  numero?: string;
-  dataReferencia?: string;
+  ano?: string;
 }
 
-const CAMPOS: Record<string, number> = { numero: 1, dataReferencia: 1 };
+const CAMPOS: Record<string, number> = { ano: 1 };
 
 export function EdicaoFormModal({ open, onClose }: EdicaoFormModalProps) {
   const toast = useToast();
   const criar = useCriarEdicao();
 
-  const [numero, setNumero] = useState('');
-  const [dataReferencia, setDataReferencia] = useState('');
+  const [ano, setAno] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (!open) return;
-    setNumero('');
-    setDataReferencia('');
+    setAno('');
     setErrors({});
   }, [open]);
 
   function validar(): FormErrors {
     const next: FormErrors = {};
-    if (numero.trim() === '' || Number.isNaN(Number(numero))) next.numero = 'Informe o número da edição.';
-    if (dataReferencia === '') next.dataReferencia = 'Informe a data de referência.';
+    const valor = Number(ano);
+    if (ano.trim() === '' || !Number.isInteger(valor) || valor < 1900 || valor > 2100)
+      next.ano = 'Informe um ano válido (1900–2100).';
     return next;
   }
 
@@ -46,7 +45,7 @@ export function EdicaoFormModal({ open, onClose }: EdicaoFormModalProps) {
     setErrors(validacao);
     if (Object.keys(validacao).length > 0) return;
 
-    const input: EdicaoInput = { numero: Number(numero), dataReferencia };
+    const input: EdicaoInput = { ano: Number(ano) };
 
     criar.mutate(input, {
       onSuccess: () => {
@@ -78,29 +77,21 @@ export function EdicaoFormModal({ open, onClose }: EdicaoFormModalProps) {
       }
     >
       <form id="form-edicao" className="br-form" onSubmit={submeter} noValidate>
-        <FormField label="Número da edição" required error={errors.numero}>
+        <FormField
+          label="Ano da edição"
+          required
+          error={errors.ano}
+          help="O número sequencial é gerado automaticamente pelo sistema."
+        >
           {({ id, describedBy, invalid }) => (
             <Input
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
               type="number"
-              value={numero}
-              onChange={(e) => setNumero(e.target.value)}
-              placeholder="Ex.: 142"
-            />
-          )}
-        </FormField>
-
-        <FormField label="Data de referência" required error={errors.dataReferencia}>
-          {({ id, describedBy, invalid }) => (
-            <Input
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              type="date"
-              value={dataReferencia}
-              onChange={(e) => setDataReferencia(e.target.value)}
+              value={ano}
+              onChange={(e) => setAno(e.target.value)}
+              placeholder="Ex.: 2026"
             />
           )}
         </FormField>

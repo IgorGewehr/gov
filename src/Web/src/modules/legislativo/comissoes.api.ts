@@ -17,10 +17,11 @@ export interface ComissaoResumo {
   totalMembros: number;
 }
 
-/** Membro (vereador) de uma comissao. */
+/** Membro (vereador) de uma comissao. O backend NAO envia o nome — resolver via useVereadores. */
 export interface MembroComissaoResumo {
   vereadorId: string;
-  vereadorNome: string;
+  /** Papel do membro (Titular/Suplente) — string (enum) do backend. */
+  papel: string;
   cargo: string;
 }
 
@@ -29,20 +30,21 @@ export interface ComissaoDetalhe {
   id: string;
   nome: string;
   tipo: string;
-  finalidade: string;
+  /** Situacao da comissao (string/enum do backend). */
+  situacao: string;
   membros: MembroComissaoResumo[];
 }
 
-/** Payload de criacao de comissao. */
+/** Payload de criacao de comissao (backend so aceita Nome + Tipo). */
 export interface ComissaoInput {
   nome: string;
   tipo: number;
-  finalidade: string;
 }
 
-/** Payload de inclusao de membro na comissao. */
+/** Payload de inclusao de membro na comissao (Papel obrigatorio no backend). */
 export interface MembroInput {
   vereadorId: string;
+  papel: number;
   cargo: number;
 }
 

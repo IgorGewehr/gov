@@ -26,73 +26,63 @@ export const FORMA_RECOLHIMENTO_VALOR: Record<FormaRecolhimentoIss, number> = {
 // Projeções de leitura
 // ---------------------------------------------------------------------------
 
-/** Linha do livro fiscal eletrônico apurado (uma NFS-e processada). */
-export interface LivroEletronicoLinha {
-  chaveAcesso: string;
-  numeroNfse: string;
-  dataEmissao: string;
-  itemListaServico: string;
-  baseCalculo: number;
-  aliquotaPercentual: number;
-  forma: FormaRecolhimentoIss;
-  issDevido: number;
-}
-
-/** Totais por forma de recolhimento (próprio/retido/substituição). */
-export interface TotaisPorForma {
+/**
+ * Resultado da APURAÇÃO mensal do ISS (POST .../apurar) — espelha
+ * ResultadoApuracaoIss (achatado; o backend NÃO devolve livro/competência).
+ */
+export interface ApuracaoIss {
+  apuracaoId: string;
+  lancamentoId: string | null;
+  quantidadeNotas: number;
   issProprio: number;
   issRetido: number;
   issSubstituicao: number;
 }
 
-/** Projeção da APURAÇÃO mensal do ISS (POST .../apurar). */
-export interface ApuracaoIss {
-  contribuinteId: string;
-  competencia: string;
-  quantidadeNotas: number;
-  baseCalculoTotal: number;
-  totais: TotaisPorForma;
-  issTotalDevido: number;
-  lancamentoId: string | null;
-  livro: LivroEletronicoLinha[];
-}
-
-/** Resultado da SINCRONIZAÇÃO sob demanda das NFS-e do ADN (ingestão passiva). */
+/** Resultado da SINCRONIZAÇÃO sob demanda das NFS-e do ADN (back: { importadas }). */
 export interface SincronizacaoNfseResultado {
-  notasRecebidas: number;
-  notasNovas: number;
-  notasDuplicadas: number;
-  ultimaSincronizacao: string;
+  importadas: number;
 }
 
 // ---------------------------------------------------------------------------
 // Entradas de comando (espelham os Commands/Payloads reais)
 // ---------------------------------------------------------------------------
 
-/** Alíquota de um item da Lista de Serviços (LC 116/2003). */
+/** Alíquota de um item da Lista de Serviços (LC 116/2003) — back: ItemAliquotaIssInput. */
 export interface ItemAliquotaIssInput {
   itemListaServico: string;
-  descricao: string;
-  aliquota: number;
-  retencao: boolean;
-  substituicao: boolean;
+  /** Alíquota em % (ex.: 2.0 = 2%) (back: AliquotaPercentual). */
+  aliquotaPercentual: number;
+  /** Retenção na fonte obrigatória (back: RetencaoObrigatoria). */
+  retencaoObrigatoria: boolean;
+  /** Substituição tributária (back: SubstituicaoTributaria). */
+  substituicaoTributaria: boolean;
 }
 
-/** ConfigurarAliquotasIssCommand (alíquotas por item da LC 116, com retenção/substituição). */
+/** ConfigurarTabelaAliquotaIssCommand (alíquotas por item da LC 116). */
 export interface ConfigurarAliquotasIssInput {
-  exercicio: number;
+  /** Início de vigência em AAAAMM (ex.: 202601) (back: VigenciaInicioAaaaMm). */
+  vigenciaInicioAaaaMm: number;
+  /** Lei municipal de alíquotas (back: FundamentoLegal, obrigatório). */
+  fundamentoLegal: string;
   itens: ItemAliquotaIssInput[];
+  publicar?: boolean;
 }
 
-/** ApurarIssCommand (apuração mensal -> livro + lançamento ISS próprio). */
+/** ApurarIssPayload (apuração mensal -> lançamento ISS próprio). */
 export interface ApurarIssInput {
-  competencia: string;
+  ano: number;
+  mes: number;
+  /** Vencimento do ISS próprio (back: VencimentoIssProprio, "yyyy-MM-dd", obrigatório). */
+  vencimentoIssProprio: string;
 }
 
-/** SincronizarNfseCommand (ingestão sob demanda do ADN; passiva). */
+/** SincronizarNfsePayload (ingestão sob demanda do ADN; passiva). */
 export interface SincronizarNfseInput {
-  contribuinteId: string;
-  competencia: string;
+  /** CNPJs dos prestadores (back: Prestadores). */
+  prestadores: string[];
+  /** Data inicial da janela (back: Desde, "yyyy-MM-dd"). */
+  desde: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -102,8 +92,8 @@ export interface SincronizarNfseInput {
 export const issKeys = {
   all: ['tributos', 'iss'] as const,
   apuracoes: () => [...issKeys.all, 'apuracao'] as const,
-  apuracao: (contribuinteId: string, competencia: string) =>
-    [...issKeys.apuracoes(), contribuinteId, competencia] as const,
+  apuracao: (contribuinteId: string, ano: number, mes: number) =>
+    [...issKeys.apuracoes(), contribuinteId, ano, mes] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -131,14 +121,14 @@ export function useConfigurarAliquotasIss() {
   return useMutation({ mutationFn: configurarAliquotas });
 }
 
-/** APURA o ISS mensal do contribuinte (gera livro + lançamento próprio). */
+/** APURA o ISS mensal do contribuinte (gera lançamento próprio). */
 export function useApurarIss(contribuinteId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: ApurarIssInput) => apurarIss(contribuinteId, input),
-    onSuccess: (resultado) => {
+    onSuccess: (resultado, variables) => {
       queryClient.setQueryData(
-        issKeys.apuracao(contribuinteId, resultado.competencia),
+        issKeys.apuracao(contribuinteId, variables.ano, variables.mes),
         resultado,
       );
     },

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, FormField, Modal, Select, useToast } from '../../components/ui';
-import { CARGOS_COMISSAO } from './legislativo.shared';
+import { CARGOS_COMISSAO, PAPEIS_MEMBRO } from './legislativo.shared';
 import { tratarErroCampos, mensagemErro } from './legislativoAcao.shared';
 import { useVereadores } from './vereadores.api';
 import { useAdicionarMembro, type MembroInput } from './comissoes.api';
@@ -27,12 +27,14 @@ export function MembroComissaoModal({ open, onClose, comissaoId }: MembroComissa
   const adicionar = useAdicionarMembro(comissaoId);
 
   const [vereadorId, setVereadorId] = useState('');
+  const [papel, setPapel] = useState<string>(String(PAPEIS_MEMBRO[0].value));
   const [cargo, setCargo] = useState<string>(String(CARGOS_COMISSAO[0].value));
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (!open) return;
     setVereadorId('');
+    setPapel(String(PAPEIS_MEMBRO[0].value));
     setCargo(String(CARGOS_COMISSAO[0].value));
     setErrors({});
   }, [open]);
@@ -49,7 +51,7 @@ export function MembroComissaoModal({ open, onClose, comissaoId }: MembroComissa
     setErrors(validacao);
     if (Object.keys(validacao).length > 0) return;
 
-    const input: MembroInput = { vereadorId, cargo: Number(cargo) };
+    const input: MembroInput = { vereadorId, papel: Number(papel), cargo: Number(cargo) };
 
     adicionar.mutate(input, {
       onSuccess: () => {
@@ -94,6 +96,19 @@ export function MembroComissaoModal({ open, onClose, comissaoId }: MembroComissa
                 value: v.id,
                 label: `${v.nomeParlamentar} (${v.partido})`,
               }))}
+            />
+          )}
+        </FormField>
+
+        <FormField label="Papel">
+          {({ id, describedBy, invalid }) => (
+            <Select
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              value={papel}
+              onChange={(e) => setPapel(e.target.value)}
+              options={PAPEIS_MEMBRO.map((p) => ({ value: String(p.value), label: p.label }))}
             />
           )}
         </FormField>

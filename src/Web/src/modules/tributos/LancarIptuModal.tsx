@@ -1,22 +1,13 @@
-// Ação de LANÇAR o IPTU apurado (command LancarIptu): gera o lançamento + DAM
-// parcelado. Pede a quantidade de parcelas e o vencimento da 1ª. Ao concluir,
-// exibe as parcelas geradas (número/valor/vencimento). Acessível (Modal).
+// Ação de LANÇAR o IPTU apurado (command LancarIptu): constitui o lançamento e
+// gera o DAM. Pede a quantidade de parcelas e o vencimento da 1ª. Ao concluir,
+// exibe o lançamento/DAM e o imposto devido. Acessível (Modal).
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import {
-  Alert,
-  Button,
-  DataTable,
-  FormField,
-  Input,
-  Modal,
-  useToast,
-} from '../../components/ui';
-import type { Column } from '../../components/ui';
+import { Alert, Button, FormField, Input, Modal, useToast } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
-import { formatarData, formatarMoeda } from '../../i18n/format';
+import { formatarMoeda } from '../../i18n/format';
 import { useLancarIptu } from './iptu.api';
-import type { LancamentoIptuResultado, ParcelaDam } from './iptu.api';
+import type { LancamentoIptuResultado } from './iptu.api';
 
 export interface LancarIptuModalProps {
   open: boolean;
@@ -28,8 +19,8 @@ export interface LancarIptuModalProps {
 }
 
 interface FormErrors {
-  quantidadeParcelas?: string;
-  vencimentoPrimeiraParcela?: string;
+  numeroParcelas?: string;
+  primeiroVencimento?: string;
 }
 
 const PARCELAS_MAX = 12;
@@ -53,8 +44,8 @@ export function LancarIptuModal({
     const next: FormErrors = {};
     const qtd = Number(quantidadeParcelas);
     if (!Number.isInteger(qtd) || qtd < 1 || qtd > PARCELAS_MAX)
-      next.quantidadeParcelas = `Informe de 1 a ${PARCELAS_MAX} parcelas.`;
-    if (vencimento.trim() === '') next.vencimentoPrimeiraParcela = 'Informe o vencimento da 1ª parcela.';
+      next.numeroParcelas = `Informe de 1 a ${PARCELAS_MAX} parcelas.`;
+    if (vencimento.trim() === '') next.primeiroVencimento = 'Informe o vencimento da 1ª parcela.';
     return next;
   }
 
@@ -75,13 +66,13 @@ export function LancarIptuModal({
     lancar.mutate(
       {
         exercicio,
-        quantidadeParcelas: Number(quantidadeParcelas),
-        vencimentoPrimeiraParcela: vencimento.trim(),
+        numeroParcelas: Number(quantidadeParcelas),
+        primeiroVencimento: vencimento.trim(),
       },
       {
         onSuccess: (res) => {
           setResultado(res);
-          toast.success(`IPTU ${res.exercicio} lançado (DAM ${res.lancamentoId}).`, 'Sucesso');
+          toast.success(`IPTU ${exercicio} lançado (DAM ${res.damId}).`, 'Sucesso');
         },
         onError: (error) => {
           if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
@@ -97,12 +88,6 @@ export function LancarIptuModal({
       },
     );
   }
-
-  const colunas: Column<ParcelaDam>[] = [
-    { key: 'numero', header: 'Parcela', render: (p) => `${p.numero}` },
-    { key: 'valor', header: 'Valor', align: 'end', render: (p) => formatarMoeda(p.valor) },
-    { key: 'vencimento', header: 'Vencimento', render: (p) => formatarData(p.vencimento) },
-  ];
 
   return (
     <Modal
@@ -127,18 +112,10 @@ export function LancarIptuModal({
       }
     >
       {resultado ? (
-        <>
-          <Alert variant="success" title="Lançamento gerado">
-            DAM <strong>{resultado.lancamentoId}</strong> — total {formatarMoeda(resultado.valorTotal)} em{' '}
-            {resultado.parcelas.length} parcela(s).
-          </Alert>
-          <DataTable
-            caption={`Parcelas do DAM do IPTU ${resultado.exercicio}`}
-            columns={colunas}
-            rows={resultado.parcelas}
-            rowKey={(p) => String(p.numero)}
-          />
-        </>
+        <Alert variant="success" title="Lançamento gerado">
+          Lançamento <strong>{resultado.lancamentoId}</strong> e DAM <strong>{resultado.damId}</strong>{' '}
+          gerados. Imposto devido: <strong>{formatarMoeda(resultado.impostoDevido)}</strong>.
+        </Alert>
       ) : (
         <form id="form-lancar-iptu" className="br-form" onSubmit={submeter} noValidate>
           <Alert variant="info" title="Constituição do crédito">
@@ -147,7 +124,7 @@ export function LancarIptuModal({
           </Alert>
           <div className="row">
             <div className="col-md-6">
-              <FormField label="Quantidade de parcelas" required error={errors.quantidadeParcelas}>
+              <FormField label="Quantidade de parcelas" required error={errors.numeroParcelas}>
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}
@@ -164,7 +141,7 @@ export function LancarIptuModal({
               </FormField>
             </div>
             <div className="col-md-6">
-              <FormField label="Vencimento da 1ª parcela" required error={errors.vencimentoPrimeiraParcela}>
+              <FormField label="Vencimento da 1ª parcela" required error={errors.primeiroVencimento}>
                 {({ id, describedBy, invalid }) => (
                   <Input
                     id={id}

@@ -27,10 +27,17 @@ export function DiarioListPage() {
       render: (e) => `Nº ${e.numero}`,
     },
     {
-      key: 'data',
-      header: 'Data de referência',
-      sortAccessor: (e) => e.dataReferencia,
-      render: (e) => formatarData(e.dataReferencia),
+      key: 'ano',
+      header: 'Ano',
+      align: 'center',
+      sortAccessor: (e) => e.ano,
+      render: (e) => e.ano,
+    },
+    {
+      key: 'publicacao',
+      header: 'Publicada em',
+      sortAccessor: (e) => e.dataPublicacao ?? '',
+      render: (e) => (e.dataPublicacao ? formatarData(e.dataPublicacao) : '—'),
     },
     {
       key: 'materias',

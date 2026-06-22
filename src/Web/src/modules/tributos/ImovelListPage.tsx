@@ -42,19 +42,19 @@ export function ImovelListPage() {
     {
       key: 'inscricao',
       header: 'Inscrição',
-      sortAccessor: (i) => i.inscricaoImobiliaria,
-      render: (i) => i.inscricaoImobiliaria,
+      sortAccessor: (i) => i.inscricaoMunicipal,
+      render: (i) => i.inscricaoMunicipal,
     },
     {
       key: 'endereco',
-      header: 'Endereço',
-      render: (i) => `${i.logradouro}, ${i.numero} — ${i.bairro}`,
+      header: 'Logradouro',
+      render: (i) => i.logradouro,
     },
-    { key: 'zona', header: 'Zona', sortAccessor: (i) => i.zona, render: (i) => i.zona },
+    { key: 'zona', header: 'Zona', sortAccessor: (i) => i.zonaFiscal, render: (i) => i.zonaFiscal },
     {
       key: 'uso',
       header: 'Uso',
-      render: (i) => <Tag variant={usoTagVariant(i.uso)}>{USO_IMOVEL_LABEL[i.uso]}</Tag>,
+      render: (i) => <Tag variant={usoTagVariant(i.tipoUso)}>{USO_IMOVEL_LABEL[i.tipoUso]}</Tag>,
     },
     {
       key: 'terreno',

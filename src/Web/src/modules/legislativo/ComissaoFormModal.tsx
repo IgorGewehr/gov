@@ -2,7 +2,7 @@
 // validacao por campo + Toast.
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, FormField, Input, Modal, Select, Textarea, useToast } from '../../components/ui';
+import { Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
 import { TIPOS_COMISSAO } from './legislativo.shared';
 import { tratarErroCampos, mensagemErro } from './legislativoAcao.shared';
 import { useCriarComissao, type ComissaoInput } from './comissoes.api';
@@ -14,10 +14,9 @@ export interface ComissaoFormModalProps {
 
 interface FormErrors {
   nome?: string;
-  finalidade?: string;
 }
 
-const CAMPOS: Record<string, number> = { nome: 1, finalidade: 1 };
+const CAMPOS: Record<string, number> = { nome: 1 };
 
 export function ComissaoFormModal({ open, onClose }: ComissaoFormModalProps) {
   const toast = useToast();
@@ -25,21 +24,18 @@ export function ComissaoFormModal({ open, onClose }: ComissaoFormModalProps) {
 
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState<string>(String(TIPOS_COMISSAO[0].value));
-  const [finalidade, setFinalidade] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
     if (!open) return;
     setNome('');
     setTipo(String(TIPOS_COMISSAO[0].value));
-    setFinalidade('');
     setErrors({});
   }, [open]);
 
   function validar(): FormErrors {
     const next: FormErrors = {};
     if (nome.trim() === '') next.nome = 'Informe o nome da comissão.';
-    if (finalidade.trim() === '') next.finalidade = 'Informe a finalidade.';
     return next;
   }
 
@@ -49,7 +45,7 @@ export function ComissaoFormModal({ open, onClose }: ComissaoFormModalProps) {
     setErrors(validacao);
     if (Object.keys(validacao).length > 0) return;
 
-    const input: ComissaoInput = { nome: nome.trim(), tipo: Number(tipo), finalidade: finalidade.trim() };
+    const input: ComissaoInput = { nome: nome.trim(), tipo: Number(tipo) };
 
     criar.mutate(input, {
       onSuccess: () => {
@@ -102,19 +98,6 @@ export function ComissaoFormModal({ open, onClose }: ComissaoFormModalProps) {
               value={tipo}
               onChange={(e) => setTipo(e.target.value)}
               options={TIPOS_COMISSAO.map((t) => ({ value: String(t.value), label: t.label }))}
-            />
-          )}
-        </FormField>
-
-        <FormField label="Finalidade" required error={errors.finalidade}>
-          {({ id, describedBy, invalid }) => (
-            <Textarea
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              value={finalidade}
-              onChange={(e) => setFinalidade(e.target.value)}
-              rows={3}
             />
           )}
         </FormField>

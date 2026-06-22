@@ -8,22 +8,40 @@ import type { Column } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { useComissao } from './comissoes.api';
 import type { ComissaoDetalhe, MembroComissaoResumo } from './comissoes.api';
+import { useVereadores } from './vereadores.api';
 import { MembroComissaoModal } from './MembroComissaoModal';
-
-const COLUNAS_MEMBRO: Column<MembroComissaoResumo>[] = [
-  { key: 'nome', header: 'Vereador', sortAccessor: (m) => m.vereadorNome, render: (m) => m.vereadorNome },
-  {
-    key: 'cargo',
-    header: 'Cargo',
-    sortAccessor: (m) => m.cargo,
-    render: (m) => <Tag variant="info">{m.cargo}</Tag>,
-  },
-];
 
 export function ComissaoDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const query = useComissao(id);
+  const vereadores = useVereadores();
   const [membroAberto, setMembroAberto] = useState(false);
+
+  // O backend nao envia o nome do vereador no membro — resolvemos no client.
+  const nomePorVereador = new Map(
+    (vereadores.data ?? []).map((v) => [v.id, v.nomeParlamentar]),
+  );
+
+  const colunasMembro: Column<MembroComissaoResumo>[] = [
+    {
+      key: 'nome',
+      header: 'Vereador',
+      sortAccessor: (m) => nomePorVereador.get(m.vereadorId) ?? m.vereadorId,
+      render: (m) => nomePorVereador.get(m.vereadorId) ?? '—',
+    },
+    {
+      key: 'papel',
+      header: 'Papel',
+      sortAccessor: (m) => m.papel,
+      render: (m) => <Tag variant="default">{m.papel}</Tag>,
+    },
+    {
+      key: 'cargo',
+      header: 'Cargo',
+      sortAccessor: (m) => m.cargo,
+      render: (m) => <Tag variant="info">{m.cargo}</Tag>,
+    },
+  ];
 
   return (
     <>
@@ -52,9 +70,11 @@ export function ComissaoDetailPage() {
                     <Tag variant="info">{comissao.tipo}</Tag>
                   </dd>
                 </div>
-                <div className="col-12">
-                  <dt className="text-gray-60 text-down-01">Finalidade</dt>
-                  <dd className="mb-0">{comissao.finalidade}</dd>
+                <div className="col-sm-4 mb-3">
+                  <dt className="text-gray-60 text-down-01">Situação</dt>
+                  <dd className="mb-0">
+                    <Tag variant="default">{comissao.situacao}</Tag>
+                  </dd>
                 </div>
               </dl>
             </Card>
@@ -70,7 +90,7 @@ export function ComissaoDetailPage() {
 
             <DataTable
               caption={`Composição da comissão ${comissao.nome}`}
-              columns={COLUNAS_MEMBRO}
+              columns={colunasMembro}
               rows={comissao.membros}
               rowKey={(m) => m.vereadorId}
               empty={

@@ -35,7 +35,7 @@ export function NormaListPage() {
   const [formAberto, setFormAberto] = useState(false);
 
   const query = useBuscaNormas(filtro);
-  const totalPaginas = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.tamanhoPagina)) : 1;
+  const totalPaginas = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.tamanho)) : 1;
 
   function buscar(event: FormEvent): void {
     event.preventDefault();
@@ -63,9 +63,9 @@ export function NormaListPage() {
     },
     {
       key: 'publicacao',
-      header: 'Publicação',
-      sortAccessor: (n) => n.dataPublicacao,
-      render: (n) => formatarData(n.dataPublicacao),
+      header: 'Promulgação',
+      sortAccessor: (n) => n.dataPromulgacao,
+      render: (n) => formatarData(n.dataPromulgacao),
     },
     {
       key: 'acoes',

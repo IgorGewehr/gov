@@ -1,6 +1,6 @@
 // Helpers de apresentação do submódulo IPTU / Cadastro Imobiliário.
 import type { TagVariant } from '../../components/ui';
-import type { PadraoConstrutivo, RegimeAliquota, UsoImovel } from './iptu.api';
+import type { PadraoConstrutivo, UsoImovel } from './iptu.api';
 
 /** Rótulo PT-BR para o uso predominante do imóvel. */
 export const USO_IMOVEL_LABEL: Record<UsoImovel, string> = {
@@ -8,21 +8,16 @@ export const USO_IMOVEL_LABEL: Record<UsoImovel, string> = {
   Comercial: 'Comercial',
   Industrial: 'Industrial',
   Servicos: 'Serviços',
+  Misto: 'Misto',
   Territorial: 'Territorial (sem construção)',
 };
 
-/** Rótulo PT-BR para o padrão construtivo. */
+/** Rótulo PT-BR para o padrão construtivo (string livre no backend). */
 export const PADRAO_CONSTRUTIVO_LABEL: Record<PadraoConstrutivo, string> = {
   Baixo: 'Baixo',
   Normal: 'Normal',
   Alto: 'Alto',
   Luxo: 'Luxo',
-};
-
-/** Rótulo PT-BR para o regime de alíquota. */
-export const REGIME_ALIQUOTA_LABEL: Record<RegimeAliquota, string> = {
-  Unica: 'Única',
-  Progressiva: 'Progressiva',
 };
 
 /** Variante de Tag para o uso (territorial em destaque). */
@@ -35,6 +30,8 @@ export function usoTagVariant(uso: UsoImovel): TagVariant {
       return 'info';
     case 'Industrial':
       return 'warning';
+    case 'Misto':
+      return 'info';
     case 'Territorial':
       return 'default';
     default:

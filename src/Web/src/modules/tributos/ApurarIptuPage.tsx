@@ -6,21 +6,18 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  Alert,
   Button,
   Card,
-  DataTable,
   EmptyState,
   FormField,
   Input,
   PageHeader,
   QueryState,
 } from '../../components/ui';
-import type { Column } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
 import { useApurarIptu } from './iptu.api';
-import type { ApuracaoIptu, MemoriaCalculoLinha } from './iptu.api';
+import type { ApuracaoIptu } from './iptu.api';
 import { formatarPercentual } from './iptu.helpers';
 import { TributosSubNav } from './TributosSubNav';
 import { LancarIptuModal } from './LancarIptuModal';
@@ -50,12 +47,6 @@ export function ApurarIptuPage() {
     const ano = Number(exercicioCampo);
     if (Number.isInteger(ano) && ano > 0) setExercicio(ano);
   }
-
-  const colunasMemoria: Column<MemoriaCalculoLinha>[] = [
-    { key: 'rotulo', header: 'Componente', render: (l) => l.rotulo },
-    { key: 'detalhe', header: 'Memória', render: (l) => l.detalhe },
-    { key: 'valor', header: 'Valor', align: 'end', render: (l) => formatarMoeda(l.valor) },
-  ];
 
   return (
     <>
@@ -133,30 +124,20 @@ export function ApurarIptuPage() {
                   <Linha rotulo="Valor venal (terreno + construção)" destaque>
                     {formatarMoeda(apuracao.valorVenal)}
                   </Linha>
-                  <Linha rotulo="Alíquota aplicada">{formatarPercentual(apuracao.aliquotaPercentual)}</Linha>
+                  {/* O backend devolve a alíquota em % (ex.: 1.0 = 1%); convertemos p/ fração. */}
+                  <Linha rotulo="Alíquota aplicada">
+                    {formatarPercentual(apuracao.aliquotaPercentual / 100)}
+                  </Linha>
                   <Linha rotulo="Imposto bruto (venal × alíquota)">
                     {formatarMoeda(apuracao.impostoBruto)}
                   </Linha>
+                  <Linha rotulo="Isenção">{formatarMoeda(apuracao.valorIsencao)}</Linha>
+                  <Linha rotulo="Desconto">{formatarMoeda(apuracao.valorDesconto)}</Linha>
                   <Linha rotulo="Imposto devido" destaque>
                     {formatarMoeda(apuracao.impostoDevido)}
                   </Linha>
                 </dl>
-
-                <Alert variant="success" title="Cota única">
-                  Pagamento em cota única com desconto de{' '}
-                  <strong>{formatarPercentual(apuracao.descontoCotaUnica)}</strong>:{' '}
-                  <strong>{formatarMoeda(apuracao.valorCotaUnica)}</strong>.
-                </Alert>
               </Card>
-
-              <h2 className="text-up-01 mb-2">Memória de cálculo</h2>
-              <DataTable
-                caption={`Memória de cálculo do IPTU ${apuracao.exercicio} do imóvel ${apuracao.imovelId}`}
-                columns={colunasMemoria}
-                rows={apuracao.memoria}
-                rowKey={(l) => l.rotulo}
-                empty={<EmptyState title="Sem detalhamento de memória para esta apuração." />}
-              />
 
               <LancarIptuModal
                 open={lancarAberto}
