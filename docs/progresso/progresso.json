@@ -1,14 +1,15 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-23 — run autônomo: M5(folha+ponto)+M6(IPTU+ISS+ITBI) provados; fechando riscos de auditoria",
-  "atividadeAtual": "🚀 RUN AUTÔNOMO — 8 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime: baseline → fix Outbox → trilha legislativa COMPLETA (back+front) → M5 FOLHA (motor INSS/IRRF/RPPS, líquido 6.034,77) + PONTO (AFD/AEJ posicional, CRC-16 66A7, jornada extras/faltas/banco) + frontends → M6 IPTU (venal 162.000→1.458) + ISS (próprio 50/retido 75 das NFS-e passivas) + ITBI (base=maior, 4.000) + frontends. Verify pegou 8+ bugs reais (teto=0; poison Outbox; H5 na assinatura do AFD; InvalidCast; IsInEnum...). 2 AVALIAÇÕES ISENTAS feitas (PoC: legislativa 78% APROVA / municipal 66%; engenharia: fundação SÓLIDA + 2 riscos ALTOS de auditoria). EM EXECUÇÃO: robustez de auditoria (A1 ordem interceptors W0.2 + A2 hash-chain imutável da trilha) + M5 ponto frontend. ACHADOS p/ o dono: PPA/LDO/LOA ausente (autoavaliação errou); ITBI base=maior conflita c/ Tema 1.113/STJ (validar c/ procuradoria). Pendências: MT/e-Validador oficial, A1 real, RPPS×RGPS, Azure, creds homologação.",
+  "atualizadoEm": "2026-06-23 — 7 commits no GitHub; robustez de auditoria PROVADA; 5 frentes de hardening/PoC + PPA/LDO/LOA",
+  "atividadeAtual": "🚀 RUN AUTÔNOMO — 7 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. ESPINHA FISCAL M0–M4 + TRILHA LEGISLATIVA COMPLETA (back+front) + M5 (folha motor INSS/IRRF/RPPS líquido 6.034,77 + ponto AFD/AEJ CRC-16 66A7) + M6 (IPTU 162.000→1.458, ISS próprio 50/retido 75, ITBI) — TODOS os motores [OFICIAL] PROVADOS, com frontends. ROBUSTEZ DE AUDITORIA PROVADA: trilha com HASH-CHAIN imutável (adulteração detectada em runtime, 409 aponta a linha exata) + ordem dos interceptors corrigida (W0.2). 2 avaliações isentas (PoC legislativa 78% APROVA / municipal 66%; engenharia: fundação SÓLIDA). Verify-don't-trust pegou 8+ bugs reais. EM EXECUÇÃO (hardening+PoC): red-team segurança+LGPD, reconciliação DTOs front↔back, acessibilidade WCAG AA, ITBI/Tema-1.113 (fix jurídico), PPA/LDO/LOA (implementando), RPPS + encerramento de exercício. ACHADOS p/ o dono: validação OFICIAL precisa de MT/PAD + A1 reais; ITBI×Tema 1.113 (procuradoria). Insumos seus: MT/e-Validador, A1, RPPS×RGPS, Azure, creds homologação.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
-    { "label": "Testes backend", "valor": "694 ✓", "cor": "verde" },
-    { "label": "Testes frontend", "valor": "181 ✓", "cor": "verde" },
+    { "label": "Testes backend", "valor": "852 ✓", "cor": "verde" },
+    { "label": "Testes frontend", "valor": "182 ✓", "cor": "verde" },
     { "label": "Módulos backend", "valor": "13", "cor": "azul" },
-    { "label": "Marcos concluídos", "valor": "5 / 11 · espinha fiscal ✓", "cor": "azul" }
+    { "label": "Commits no GitHub", "valor": "7 · verdes", "cor": "azul" },
+    { "label": "Marcos concluídos", "valor": "5 / 11 · M5·M6 motores ✓", "cor": "azul" }
   ],
   "marcos": [
     { "id": "M0", "titulo": "Destravar build + bugs críticos", "status": "done", "nota": "Build 0/0, 593 testes; ciclo da despesa de Finanças provado em runtime.", "workflows": [

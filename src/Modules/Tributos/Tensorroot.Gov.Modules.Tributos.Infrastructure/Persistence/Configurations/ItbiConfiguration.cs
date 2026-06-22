@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Configurations;
@@ -59,11 +60,50 @@ public sealed class TransmissaoImobiliariaConfiguration : IEntityTypeConfigurati
             .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
         builder.Property(t => t.BaseCalculo)
             .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
-        builder.Property(t => t.BaseFoiValorVenal);
+        builder.Property(t => t.Origem).HasConversion<string>().HasMaxLength(20);
+        builder.Property(t => t.ProcessoArbitramentoId);
         builder.Property(t => t.AliquotaPercentual).HasColumnType("decimal(9,4)");
         builder.Property(t => t.ImpostoDevido)
             .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
 
         builder.HasIndex(t => new { t.TenantId, t.ImovelId });
+    }
+}
+
+/// <summary>Mapeamento EF Core do agregado <see cref="ProcessoArbitramentoItbi"/> (arbitramento CTN art. 148).</summary>
+public sealed class ProcessoArbitramentoItbiConfiguration : IEntityTypeConfiguration<ProcessoArbitramentoItbi>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<ProcessoArbitramentoItbi> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("ProcessosArbitramentoItbi");
+        builder.HasKey(p => p.Id);
+        builder.Property(p => p.Id)
+            .HasConversion(id => id.Value, value => new ProcessoArbitramentoItbiId(value))
+            .ValueGeneratedNever();
+
+        builder.Property(p => p.TransmissaoImobiliariaId)
+            .HasConversion(id => id.Value, value => new TransmissaoImobiliariaId(value));
+
+        builder.Property(p => p.NumeroProcesso).HasMaxLength(60).IsRequired();
+        builder.Property(p => p.MotivoInstauracao).HasMaxLength(2000).IsRequired();
+        builder.Property(p => p.ValorPropostoFisco)
+            .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
+        builder.Property(p => p.FundamentacaoFisco).HasMaxLength(4000).IsRequired();
+        builder.Property(p => p.JustificativaContribuinte).HasMaxLength(4000);
+        builder.Property(p => p.ValorArbitradoFinal)
+            .HasConversion(v => v == null ? (decimal?)null : v.Valor, v => v == null ? null : ValorMonetario.De(v.Value))
+            .HasColumnType("decimal(18,2)");
+        builder.Property(p => p.Estado).HasConversion<string>().HasMaxLength(30);
+        builder.Property(p => p.ResponsavelId);
+        builder.Property(p => p.DataInstauracao);
+        builder.Property(p => p.DataAberturaContraditorio);
+        builder.Property(p => p.DataApresentacaoContraditorio);
+        builder.Property(p => p.DataDesfecho);
+
+        builder.HasIndex(p => new { p.TenantId, p.TransmissaoImobiliariaId });
+        builder.HasIndex(p => new { p.TenantId, p.NumeroProcesso }).IsUnique();
     }
 }

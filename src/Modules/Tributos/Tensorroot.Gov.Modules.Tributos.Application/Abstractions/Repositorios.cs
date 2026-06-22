@@ -4,6 +4,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
@@ -208,4 +209,18 @@ public interface ITransmissaoImobiliariaRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>A transmissão, ou <c>null</c>.</returns>
     Task<TransmissaoImobiliaria?> ObterPorIdAsync(TransmissaoImobiliariaId id, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="ProcessoArbitramentoItbi"/> (arbitramento CTN art. 148).</summary>
+public interface IProcessoArbitramentoItbiRepository
+{
+    /// <summary>Marca um novo processo de arbitramento para inserção.</summary>
+    /// <param name="processo">Processo a adicionar.</param>
+    void Adicionar(ProcessoArbitramentoItbi processo);
+
+    /// <summary>Obtém um processo de arbitramento por identificador, ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O processo, ou <c>null</c>.</returns>
+    Task<ProcessoArbitramentoItbi?> ObterPorIdAsync(ProcessoArbitramentoItbiId id, CancellationToken cancellationToken);
 }

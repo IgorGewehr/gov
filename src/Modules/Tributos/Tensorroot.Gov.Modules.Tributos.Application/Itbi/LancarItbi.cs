@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Calculo;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
@@ -16,21 +17,24 @@ namespace Tensorroot.Gov.Modules.Tributos.Application.Itbi;
 /// <param name="TransmissaoId">Transmissão imobiliária registrada.</param>
 /// <param name="LancamentoId">Lançamento do ITBI gerado.</param>
 /// <param name="DamId">DAM (guia avulsa) gerado.</param>
-/// <param name="BaseCalculo">Base adotada (R$).</param>
-/// <param name="BaseFoiValorVenal">Verdadeiro se a base foi o valor venal.</param>
+/// <param name="BaseCalculo">Base adotada — valor declarado (R$).</param>
+/// <param name="Origem">Origem da base (Declarada no lançamento inicial).</param>
+/// <param name="HaDivergenciaReferencia">Verdadeiro se a triagem sinalizou divergência relevante (não altera a base).</param>
 /// <param name="ImpostoDevido">ITBI devido (R$).</param>
 public sealed record ResultadoLancamentoItbi(
     Guid TransmissaoId,
     Guid LancamentoId,
     Guid DamId,
     decimal BaseCalculo,
-    bool BaseFoiValorVenal,
+    OrigemBaseCalculoItbi Origem,
+    bool HaDivergenciaReferencia,
     decimal ImpostoDevido);
 
 /// <summary>
-/// Registra uma transmissão imobiliária e lança o ITBI: apura a base (maior entre valor venal de
-/// referência e valor declarado), constitui o <see cref="Lancamento"/> de ITBI contra o adquirente e
-/// gera a guia avulsa (DAM, 1 parcela). Vincula imóvel + transmitente + adquirente. Ver M6-DESIGN §3.1.
+/// Registra uma transmissão imobiliária e lança o ITBI: base = VALOR DECLARADO (Tema 1.113/STJ —
+/// presunção de veracidade), constitui o <see cref="Lancamento"/> de ITBI contra o adquirente e gera a
+/// guia avulsa (DAM, 1 parcela). O valor venal de referência só dispara a triagem (não eleva a base).
+/// Vincula imóvel + transmitente + adquirente. Ver M6-DESIGN §3.1.
 /// </summary>
 /// <param name="ImovelId">Imóvel transmitido.</param>
 /// <param name="TransmitenteId">Contribuinte transmitente.</param>
@@ -40,6 +44,7 @@ public sealed record ResultadoLancamentoItbi(
 /// <param name="Vencimento">Vencimento da guia.</param>
 /// <param name="PercentualIsencao">Percentual de isenção (lei municipal); padrão 0.</param>
 /// <param name="UsarAliquotaSfh">Usa a alíquota reduzida do SFH; padrão falso.</param>
+/// <param name="MargemDivergenciaPercentual">Margem de tolerância da triagem em % (parametrizável por tenant); padrão 0.</param>
 public sealed record LancarItbiCommand(
     Guid ImovelId,
     Guid TransmitenteId,
@@ -48,7 +53,8 @@ public sealed record LancarItbiCommand(
     decimal ValorDeclarado,
     DateOnly Vencimento,
     decimal PercentualIsencao = 0m,
-    bool UsarAliquotaSfh = false) : ICommand<ResultadoLancamentoItbi>;
+    bool UsarAliquotaSfh = false,
+    decimal MargemDivergenciaPercentual = 0m) : ICommand<ResultadoLancamentoItbi>;
 
 /// <summary>Regras de validação do lançamento do ITBI.</summary>
 public sealed class LancarItbiValidator : AbstractValidator<LancarItbiCommand>
@@ -62,6 +68,7 @@ public sealed class LancarItbiValidator : AbstractValidator<LancarItbiCommand>
         RuleFor(c => c.Exercicio).GreaterThanOrEqualTo(1900);
         RuleFor(c => c.ValorDeclarado).GreaterThanOrEqualTo(0m);
         RuleFor(c => c.PercentualIsencao).InclusiveBetween(0m, 100m);
+        RuleFor(c => c.MargemDivergenciaPercentual).InclusiveBetween(0m, 100m);
         RuleFor(c => c.AdquirenteId).NotEqual(c => c.TransmitenteId)
             .WithMessage("O transmitente e o adquirente não podem ser o mesmo contribuinte.");
     }
@@ -94,6 +101,7 @@ public sealed class LancarItbiHandler(
             request.Exercicio,
             valorDeclarado,
             new ParametrosItbi(request.PercentualIsencao, request.UsarAliquotaSfh),
+            request.MargemDivergenciaPercentual,
             imoveis,
             plantas,
             aliquotas,
@@ -107,6 +115,13 @@ public sealed class LancarItbiHandler(
             request.Exercicio,
             valorDeclarado,
             memoria);
+
+        // Triagem (Tema 1.113/STJ): a guia segue SEMPRE pela base declarada. Se houver divergência
+        // relevante, apenas sinalizamos a fila de revisão fiscal — NUNCA elevamos a base de ofício.
+        if (memoria.HaDivergenciaReferencia)
+        {
+            transmissao.SinalizarDivergenciaTriagem(memoria.ValorVenalReferencia);
+        }
 
         // Contribuinte do ITBI = adquirente (CTN art. 42; usual). Lançamento avulso por transação.
         var lancamento = Lancamento.Lancar(
@@ -130,7 +145,8 @@ public sealed class LancarItbiHandler(
             lancamento.Id.Value,
             dam.Id.Value,
             memoria.BaseCalculo.Valor,
-            memoria.BaseFoiValorVenal,
+            memoria.Origem,
+            memoria.HaDivergenciaReferencia,
             memoria.ImpostoDevido.Valor);
     }
 }

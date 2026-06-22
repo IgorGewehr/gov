@@ -3,6 +3,7 @@ using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
@@ -104,4 +105,19 @@ public sealed class TransmissaoImobiliariaRepository(TributosDbContext context) 
     /// <inheritdoc />
     public Task<TransmissaoImobiliaria?> ObterPorIdAsync(TransmissaoImobiliariaId id, CancellationToken cancellationToken)
         => context.TransmissoesImobiliarias.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+}
+
+/// <summary>Implementação EF Core do repositório de processos de arbitramento do ITBI (CTN art. 148).</summary>
+public sealed class ProcessoArbitramentoItbiRepository(TributosDbContext context) : IProcessoArbitramentoItbiRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(ProcessoArbitramentoItbi processo)
+    {
+        ArgumentNullException.ThrowIfNull(processo);
+        context.ProcessosArbitramentoItbi.Add(processo);
+    }
+
+    /// <inheritdoc />
+    public Task<ProcessoArbitramentoItbi?> ObterPorIdAsync(ProcessoArbitramentoItbiId id, CancellationToken cancellationToken)
+        => context.ProcessosArbitramentoItbi.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 }

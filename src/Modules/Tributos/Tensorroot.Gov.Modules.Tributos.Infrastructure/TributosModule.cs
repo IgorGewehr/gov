@@ -66,6 +66,7 @@ public sealed class TributosModule : IModule
         services.AddScoped<INotaFiscalServicoConsulta, NotaFiscalServicoConsulta>();
         services.AddScoped<IAliquotaItbiRepository, AliquotaItbiRepository>();
         services.AddScoped<ITransmissaoImobiliariaRepository, TransmissaoImobiliariaRepository>();
+        services.AddScoped<IProcessoArbitramentoItbiRepository, ProcessoArbitramentoItbiRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
 
         // Gateway NFS-e/ADN: HTTP resiliente (Polly) em produção; simulado para dev/testes.

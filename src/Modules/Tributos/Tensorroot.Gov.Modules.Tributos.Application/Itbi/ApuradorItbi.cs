@@ -7,28 +7,31 @@ namespace Tensorroot.Gov.Modules.Tributos.Application.Itbi;
 
 /// <summary>
 /// Orquestra a apuração do ITBI: carrega o imóvel + PGV vigente (reusa o motor de valor venal do
-/// Imóvel/IPTU — part 1) para obter o valor venal de referência e a alíquota do ITBI vigente, e delega
-/// ao motor de domínio (base = maior entre valor venal e valor declarado). Reutilizado pela query de
-/// preview e pelo comando de lançamento — fonte única de verdade da apuração do ITBI. Ver M6-DESIGN §3.1.
+/// Imóvel/IPTU — part 1) para obter o valor venal de referência (apenas TRIAGEM) e a alíquota do ITBI
+/// vigente, e delega ao motor de domínio (base = VALOR DECLARADO, Tema 1.113/STJ). Reutilizado pela
+/// query de preview e pelo comando de lançamento — fonte única de verdade da apuração do ITBI.
+/// Ver M6-DESIGN §3.1 e docs/architecture/itbi-tema1113.
 /// </summary>
 internal static class ApuradorItbi
 {
     /// <summary>Apura o ITBI de uma transmissão, carregando os parâmetros vigentes.</summary>
     /// <param name="imovelId">Imóvel transmitido.</param>
     /// <param name="exercicio">Exercício do fato gerador.</param>
-    /// <param name="valorDeclarado">Valor declarado da transação.</param>
+    /// <param name="valorDeclarado">Valor declarado da transação (base de cálculo padrão).</param>
     /// <param name="parametros">Isenção/uso de alíquota SFH (lei municipal).</param>
+    /// <param name="margemDivergenciaPercentual">Margem de tolerância da triagem em % (parametrizável por tenant); só dispara alerta.</param>
     /// <param name="imoveis">Repositório de imóveis.</param>
     /// <param name="plantas">Repositório de PGV.</param>
     /// <param name="aliquotas">Repositório de alíquotas do ITBI.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    /// <returns>A memória de cálculo do ITBI.</returns>
+    /// <returns>A memória de cálculo do ITBI (base declarada).</returns>
     /// <exception cref="InvalidOperationException">Se o imóvel, a PGV ou a alíquota vigente não existirem.</exception>
     public static async Task<MemoriaItbi> ApurarAsync(
         ImovelId imovelId,
         int exercicio,
         ValorMonetario valorDeclarado,
         ParametrosItbi parametros,
+        decimal margemDivergenciaPercentual,
         IImovelRepository imoveis,
         IPlantaValoresRepository plantas,
         IAliquotaItbiRepository aliquotas,
@@ -59,6 +62,7 @@ internal static class ApuradorItbi
             valorDeclarado,
             aliquota.AliquotaGeralPercentual,
             aliquota.AliquotaSfhFinanciadaPercentual,
+            margemDivergenciaPercentual,
             parametros);
     }
 }

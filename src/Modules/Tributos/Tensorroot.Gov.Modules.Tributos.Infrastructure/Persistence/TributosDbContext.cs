@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
@@ -58,6 +59,9 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>Transmissões imobiliárias (fato gerador do ITBI).</summary>
     public DbSet<TransmissaoImobiliaria> TransmissoesImobiliarias => Set<TransmissaoImobiliaria>();
+
+    /// <summary>Processos de arbitramento da base de cálculo do ITBI (CTN art. 148, Tema 1.113/STJ).</summary>
+    public DbSet<ProcessoArbitramentoItbi> ProcessosArbitramentoItbi => Set<ProcessoArbitramentoItbi>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

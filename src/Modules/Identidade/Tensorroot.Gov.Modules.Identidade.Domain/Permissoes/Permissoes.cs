@@ -29,6 +29,14 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Tributos.</summary>
     public const string TributosGerenciar = "tributos.gerenciar";
 
+    /// <summary>
+    /// Instaurar/conduzir o processo de arbitramento da base de calculo do ITBI (CTN art. 148) —
+    /// afastar a presuncao do valor declarado (Tema 1.113/STJ). Verbo fino de Segregacao de Funcoes:
+    /// somente a autoridade lancadora pode arbitrar, separado da gestao geral do modulo.
+    /// TODO(a confirmar: matriz SoD/procuradoria do tenant).
+    /// </summary>
+    public const string TributosItbiArbitrar = "tributos.itbi.arbitrar";
+
     /// <summary>Visualizar dados do modulo Recursos Humanos (folha, cargos, ponto).</summary>
     public const string RecursosHumanosVer = "recursoshumanos.ver";
 
@@ -174,6 +182,7 @@ public static class Permissoes
         FinancasGerenciar,
         TributosVer,
         TributosGerenciar,
+        TributosItbiArbitrar,
         RecursosHumanosVer,
         RecursosHumanosGerenciar,
         PatrimonioVer,

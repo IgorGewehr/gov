@@ -9,6 +9,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
@@ -81,7 +82,7 @@ public sealed class IssItbiPersistenciaTests : IDisposable
     }
 
     [Fact]
-    public async Task Transmissao_itbi_persiste_com_base_maior_valor_e_isola_por_tenant()
+    public async Task Transmissao_itbi_persiste_com_base_declarada_e_isola_por_tenant()
     {
         await using (var contexto = CriarContexto(TenantA))
         {
@@ -101,8 +102,8 @@ public sealed class IssItbiPersistenciaTests : IDisposable
             aliquota.Publicar();
             contexto.AliquotasItbi.Add(aliquota);
 
-            // Venal R$ 200.000; declarado R$ 250.000 → base 250.000 × 2% = R$ 5.000.
-            var memoria = CalculadoraItbi.Calcular(ValorMonetario.De(200_000m), ValorMonetario.De(250_000m), 2.0m, 0.5m);
+            // Venal R$ 300.000; declarado R$ 250.000 → base DECLARADA 250.000 × 2% = R$ 5.000 (Tema 1.113).
+            var memoria = CalculadoraItbi.Calcular(ValorMonetario.De(300_000m), ValorMonetario.De(250_000m), 2.0m, 0.5m);
             var transmissao = TransmissaoImobiliaria.Registrar(TenantA, imovel.Id, transmitente.Id, adquirente.Id, 2026, ValorMonetario.De(250_000m), memoria);
             contexto.TransmissoesImobiliarias.Add(transmissao);
 
@@ -113,7 +114,8 @@ public sealed class IssItbiPersistenciaTests : IDisposable
         {
             var transmissao = await contexto.TransmissoesImobiliarias.SingleAsync();
             transmissao.BaseCalculo.Valor.Should().Be(250_000m);
-            transmissao.BaseFoiValorVenal.Should().BeFalse();
+            transmissao.Origem.Should().Be(OrigemBaseCalculoItbi.Declarada);
+            transmissao.ProcessoArbitramentoId.Should().BeNull();
             transmissao.ImpostoDevido.Valor.Should().Be(5_000m);
         }
 
@@ -122,6 +124,72 @@ public sealed class IssItbiPersistenciaTests : IDisposable
             (await contexto.TransmissoesImobiliarias.AnyAsync()).Should().BeFalse();
             (await contexto.AliquotasItbi.AnyAsync()).Should().BeFalse();
         }
+    }
+
+    [Fact]
+    public async Task Arbitramento_so_eleva_a_base_apos_processo_concluido()
+    {
+        Guid transmissaoId;
+
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var transmitente = Contribuinte.PessoaFisica(TenantA, Cpf.Create("529.982.247-25"), "Vendedor");
+            var adquirente = Contribuinte.PessoaFisica(TenantA, Cpf.Create("168.995.350-09"), "Comprador");
+            contexto.Contribuintes.AddRange(transmitente, adquirente);
+
+            var memoria = CalculadoraItbi.Calcular(ValorMonetario.De(300_000m), ValorMonetario.De(200_000m), 2.0m, 0.5m);
+            var transmissao = TransmissaoImobiliaria.Registrar(TenantA, new ImovelId(Guid.NewGuid()), transmitente.Id, adquirente.Id, 2026, ValorMonetario.De(200_000m), memoria);
+            transmissaoId = transmissao.Id.Value;
+            contexto.TransmissoesImobiliarias.Add(transmissao);
+
+            // Processo de arbitramento completo: instaurar → contraditório → análise → concluir.
+            var processo = ProcessoArbitramentoItbi.Instaurar(
+                TenantA, transmissao.Id, "ARB-2026-001",
+                "Declaração não fidedigna: preço muito abaixo de mercado, indícios de subfaturamento.",
+                ValorMonetario.De(320_000m), "Laudo de avaliação individualizado nº 12/2026.",
+                Guid.NewGuid(), new DateOnly(2026, 6, 1));
+            processo.AbrirContraditorio(new DateOnly(2026, 6, 2));
+            processo.RegistrarContraditorio("Apresento documentos do financiamento.", new DateOnly(2026, 6, 10));
+            var resultado = processo.Concluir(ValorMonetario.De(320_000m), new DateOnly(2026, 6, 20));
+            contexto.ProcessosArbitramentoItbi.Add(processo);
+
+            var memoriaArbitrada = CalculadoraItbi.RecalcularComArbitramento(
+                transmissao.ValorVenalReferencia, transmissao.ValorDeclarado, resultado, 2.0m, 0.5m);
+            transmissao.AplicarArbitramento(resultado, memoriaArbitrada);
+
+            await contexto.SaveChangesAsync();
+        }
+
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var transmissao = await contexto.TransmissoesImobiliarias.SingleAsync(t => t.Id == new TransmissaoImobiliariaId(transmissaoId));
+            transmissao.Origem.Should().Be(OrigemBaseCalculoItbi.ArbitradaArt148);
+            transmissao.BaseCalculo.Valor.Should().Be(320_000m, "base arbitrada após processo CTN 148");
+            transmissao.ImpostoDevido.Valor.Should().Be(6_400m);
+            transmissao.ProcessoArbitramentoId.Should().NotBeNull();
+
+            var processo = await contexto.ProcessosArbitramentoItbi.SingleAsync();
+            processo.Estado.Should().Be(EstadoArbitramentoItbi.Concluido);
+            processo.ValorArbitradoFinal!.Valor.Should().Be(320_000m);
+        }
+
+        await using (var contexto = CriarContexto(TenantB))
+        {
+            (await contexto.ProcessosArbitramentoItbi.AnyAsync()).Should().BeFalse();
+        }
+    }
+
+    [Fact]
+    public void Arbitramento_exige_contraditorio_antes_de_concluir()
+    {
+        var processo = ProcessoArbitramentoItbi.Instaurar(
+            TenantA, new TransmissaoImobiliariaId(Guid.NewGuid()), "ARB-2026-002",
+            "Declaração omissa.", ValorMonetario.De(100_000m), "Fundamentação.",
+            Guid.NewGuid(), new DateOnly(2026, 6, 1));
+
+        // Pular o contraditório e tentar concluir → recusado (contraditório obrigatório, Tema 1.113).
+        var acao = () => processo.Concluir(ValorMonetario.De(120_000m), new DateOnly(2026, 6, 5));
+        acao.Should().Throw<InvalidOperationException>();
     }
 
     /// <inheritdoc />

@@ -4,6 +4,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
 using Tensorroot.Gov.SharedKernel;
@@ -133,3 +134,52 @@ public sealed record AliquotaItbiPublicada(AliquotaItbiId AliquotaItbiId, Guid T
 /// <param name="ImovelId">Imóvel transmitido.</param>
 /// <param name="ImpostoDevido">ITBI devido (R$).</param>
 public sealed record TransmissaoImobiliariaRegistrada(TransmissaoImobiliariaId TransmissaoImobiliariaId, Guid TenantId, ImovelId ImovelId, decimal ImpostoDevido) : IDomainEvent;
+
+/// <summary>
+/// Triagem do ITBI sinalizou divergência relevante entre o valor declarado e o valor venal de
+/// referência (Tema 1.113/STJ — tese a/c). NÃO altera o tributo: a guia segue pelo valor declarado.
+/// Apenas alimenta a fila de revisão fiscal, que decide (humano) se instaura o arbitramento.
+/// </summary>
+/// <param name="TransmissaoImobiliariaId">Transmissão sob triagem.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ValorDeclarado">Valor declarado (base da guia), R$.</param>
+/// <param name="ValorVenalReferencia">Valor venal de referência (parâmetro de triagem), R$.</param>
+public sealed record AlertaDivergenciaItbi(TransmissaoImobiliariaId TransmissaoImobiliariaId, Guid TenantId, decimal ValorDeclarado, decimal ValorVenalReferencia) : IDomainEvent;
+
+/// <summary>Processo de arbitramento da base do ITBI (CTN art. 148) instaurado.</summary>
+/// <param name="ProcessoArbitramentoItbiId">Identificador do processo.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="TransmissaoImobiliariaId">Transmissão sob arbitramento.</param>
+public sealed record ProcessoArbitramentoItbiInstaurado(ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, Guid TenantId, TransmissaoImobiliariaId TransmissaoImobiliariaId) : IDomainEvent;
+
+/// <summary>Contribuinte notificado para o contraditório (art. 148, parte final).</summary>
+/// <param name="ProcessoArbitramentoItbiId">Identificador do processo.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ContraditorioArbitramentoItbiAberto(ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, Guid TenantId) : IDomainEvent;
+
+/// <summary>Defesa/avaliação contraditória registrada; processo entra em análise pelo fisco.</summary>
+/// <param name="ProcessoArbitramentoItbiId">Identificador do processo.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ContraditorioArbitramentoItbiApresentado(ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, Guid TenantId) : IDomainEvent;
+
+/// <summary>Processo de arbitramento concluído com decisão final fundamentada (base arbitrada definida).</summary>
+/// <param name="ProcessoArbitramentoItbiId">Identificador do processo.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="TransmissaoImobiliariaId">Transmissão arbitrada.</param>
+/// <param name="ValorArbitrado">Valor arbitrado (nova base de ofício), R$.</param>
+public sealed record ProcessoArbitramentoItbiConcluido(ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, Guid TenantId, TransmissaoImobiliariaId TransmissaoImobiliariaId, decimal ValorArbitrado) : IDomainEvent;
+
+/// <summary>Processo de arbitramento cancelado — a declaração do contribuinte prevaleceu.</summary>
+/// <param name="ProcessoArbitramentoItbiId">Identificador do processo.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ProcessoArbitramentoItbiCancelado(ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, Guid TenantId) : IDomainEvent;
+
+/// <summary>
+/// Arbitramento aplicado a uma transmissão: base elevada para o valor arbitrado (origem
+/// <see cref="OrigemBaseCalculoItbi.ArbitradaArt148"/>) — habilita o lançamento de ofício complementar auditado.
+/// </summary>
+/// <param name="TransmissaoImobiliariaId">Transmissão recalculada.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ProcessoArbitramentoItbiId">Processo de arbitramento de origem.</param>
+/// <param name="ImpostoDevido">ITBI devido após o arbitramento (R$).</param>
+public sealed record ArbitramentoItbiAplicado(TransmissaoImobiliariaId TransmissaoImobiliariaId, Guid TenantId, ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, decimal ImpostoDevido) : IDomainEvent;
