@@ -1,0 +1,132 @@
+using Tensorroot.Gov.Modules.Tributos.Domain.Events;
+using Tensorroot.Gov.SharedKernel;
+using Tensorroot.Gov.SharedKernel.Primitives;
+
+namespace Tensorroot.Gov.Modules.Tributos.Domain.Iss;
+
+/// <summary>Identificador forte do agregado <see cref="TabelaAliquotaIss"/>.</summary>
+/// <param name="Value">Valor GUID subjacente.</param>
+public readonly record struct TabelaAliquotaIssId(Guid Value)
+{
+    /// <summary>Gera um novo identificador.</summary>
+    /// <returns>Novo <see cref="TabelaAliquotaIssId"/>.</returns>
+    public static TabelaAliquotaIssId New() => new(Guid.NewGuid());
+
+    /// <inheritdoc />
+    public override string ToString() => Value.ToString();
+}
+
+/// <summary>
+/// Tabela de alíquotas do ISS por item da lista de serviços (LC 116/2003), versionada por vigência
+/// (LEI MUNICIPAL). Define, por item: a alíquota, se há retenção obrigatória na fonte e se há
+/// substituição tributária. O <c>ApuradorIss</c> lê a tabela vigente na competência — nenhuma
+/// alíquota é hardcoded. Ver M6-DESIGN §2.2.
+/// </summary>
+public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMustHaveTenant
+{
+    private readonly List<ItemAliquotaIss> _itens = [];
+
+    private TabelaAliquotaIss()
+    {
+    }
+
+    private TabelaAliquotaIss(TabelaAliquotaIssId id, Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal)
+        : base(id)
+    {
+        TenantId = tenantId;
+        VigenciaInicioAaaaMm = vigenciaInicioAaaaMm;
+        FundamentoLegal = fundamentoLegal;
+        Vigente = false;
+        RaiseDomainEvent(new TabelaAliquotaIssCriada(id, tenantId, vigenciaInicioAaaaMm));
+    }
+
+    /// <summary>Tenant (ente público) dono do registro.</summary>
+    public Guid TenantId { get; private set; }
+
+    /// <summary>Início de vigência no formato AAAAMM (competência a partir da qual a tabela vale).</summary>
+    public int VigenciaInicioAaaaMm { get; private set; }
+
+    /// <summary>
+    /// Fundamento legal (CTM/lei municipal). // TODO(validar-oficial): preencher com o Código
+    /// Tributário de Maximiliano de Almeida/RS.
+    /// </summary>
+    public string FundamentoLegal { get; private set; } = default!;
+
+    /// <summary>Indica se a tabela está vigente (publicada e imutável).</summary>
+    public bool Vigente { get; private set; }
+
+    /// <summary>Itens de alíquota por item da lista LC 116.</summary>
+    public IReadOnlyCollection<ItemAliquotaIss> Itens => _itens;
+
+    /// <summary>Cria uma tabela de alíquotas do ISS (ainda não vigente).</summary>
+    /// <param name="tenantId">Tenant dono do registro.</param>
+    /// <param name="vigenciaInicioAaaaMm">Início de vigência (AAAAMM).</param>
+    /// <param name="fundamentoLegal">Lei municipal de alíquotas do ISS.</param>
+    /// <returns>Nova <see cref="TabelaAliquotaIss"/>.</returns>
+    public static TabelaAliquotaIss Criar(Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal)
+    {
+        GarantirCompetenciaValida(vigenciaInicioAaaaMm);
+        ArgumentException.ThrowIfNullOrWhiteSpace(fundamentoLegal);
+        return new TabelaAliquotaIss(TabelaAliquotaIssId.New(), tenantId, vigenciaInicioAaaaMm, fundamentoLegal.Trim());
+    }
+
+    /// <summary>Acrescenta (ou rejeita duplicata de) um item de alíquota por item da lista LC 116.</summary>
+    /// <param name="itemListaServico">Item da lista LC 116 (ex.: "7.02").</param>
+    /// <param name="aliquotaPercentual">Alíquota em %.</param>
+    /// <param name="retencaoObrigatoria">Retenção na fonte obrigatória por lei municipal.</param>
+    /// <param name="substituicaoTributaria">Substituição tributária por lei municipal.</param>
+    /// <exception cref="InvalidOperationException">Se a tabela já estiver vigente ou o item já existir.</exception>
+    public void DefinirItem(string itemListaServico, decimal aliquotaPercentual, bool retencaoObrigatoria = false, bool substituicaoTributaria = false)
+    {
+        GarantirEditavel();
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemListaServico);
+        var chave = itemListaServico.Trim();
+        if (_itens.Any(i => string.Equals(i.ItemListaServico, chave, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"O item '{chave}' já está definido nesta tabela de ISS.");
+        }
+
+        _itens.Add(ItemAliquotaIss.Criar(Id, chave, aliquotaPercentual, retencaoObrigatoria, substituicaoTributaria));
+    }
+
+    /// <summary>Publica a tabela (torna vigente e imutável).</summary>
+    /// <exception cref="InvalidOperationException">Se não houver itens.</exception>
+    public void Publicar()
+    {
+        if (_itens.Count == 0)
+        {
+            throw new InvalidOperationException("A tabela de alíquotas do ISS exige ao menos um item antes de publicar.");
+        }
+
+        Vigente = true;
+        RaiseDomainEvent(new TabelaAliquotaIssPublicada(Id, TenantId, VigenciaInicioAaaaMm));
+    }
+
+    /// <summary>Obtém o item de alíquota para um item da lista LC 116, ou <c>null</c> se não definido.</summary>
+    /// <param name="itemListaServico">Item da lista LC 116.</param>
+    /// <returns>O item de alíquota, ou <c>null</c>.</returns>
+    public ItemAliquotaIss? ObterItem(string itemListaServico)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(itemListaServico);
+        var chave = itemListaServico.Trim();
+        return _itens.FirstOrDefault(i => string.Equals(i.ItemListaServico, chave, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void GarantirEditavel()
+    {
+        if (Vigente)
+        {
+            throw new InvalidOperationException("A tabela de ISS já está vigente e não pode ser alterada (crie nova versão por vigência).");
+        }
+    }
+
+    private static void GarantirCompetenciaValida(int aaaaMm)
+    {
+        var ano = aaaaMm / 100;
+        var mes = aaaaMm % 100;
+        if (ano < 1900 || mes is < 1 or > 12)
+        {
+            throw new ArgumentOutOfRangeException(nameof(aaaaMm), aaaaMm, "Vigência inválida; use o formato AAAAMM.");
+        }
+    }
+}

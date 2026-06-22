@@ -33,7 +33,15 @@ public sealed class NotaFiscalServicoConfiguration : IEntityTypeConfiguration<No
         builder.Property(nota => nota.Competencia)
             .HasConversion(competencia => (competencia.Ano * 100) + competencia.Mes, valor => Competencia.De(valor / 100, valor % 100));
 
+        builder.Property(nota => nota.ItemListaServico).HasMaxLength(10).IsRequired();
+        builder.Property(nota => nota.IssRetidoNaFonte);
+        builder.Property(nota => nota.MunicipioIncidenciaIbge).HasMaxLength(7);
+        builder.Property(nota => nota.Situacao).HasConversion<string>().HasMaxLength(20);
+
         // Deduplicação no nível do banco: uma NFS-e por chave de acesso por tenant.
         builder.HasIndex(nota => new { nota.TenantId, nota.ChaveAcesso }).IsUnique();
+
+        // Índice de apuração: NFS-e vigentes por prestador/competência.
+        builder.HasIndex(nota => new { nota.TenantId, nota.PrestadorCnpj, nota.Competencia });
     }
 }

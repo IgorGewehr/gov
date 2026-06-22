@@ -16,6 +16,9 @@ public sealed class NfseSincronizador(
     ITenantContext tenant)
     : INfseSincronizador
 {
+    /// <summary>Item da lista de serviços usado quando o ADN não informa o item no documento.</summary>
+    private const string ItemListaNaoClassificado = "00.00";
+
     /// <inheritdoc />
     public async Task<int> SincronizarAsync(IReadOnlyList<string> cnpjsPrestadores, DateOnly desde, CancellationToken cancellationToken)
     {
@@ -34,6 +37,14 @@ public sealed class NfseSincronizador(
                     continue;
                 }
 
+                // Item da lista LC 116 é obrigatório para a apuração do ISS; quando o gateway não o
+                // informa (// TODO(validar-oficial): mapear o campo no XSD nacional), usamos um item
+                // "não classificado" para não perder a nota — a apuração falhará explicitamente se a
+                // tabela municipal não cobrir esse item, em vez de presumir alíquota.
+                var itemLista = string.IsNullOrWhiteSpace(documento.ItemListaServico)
+                    ? ItemListaNaoClassificado
+                    : documento.ItemListaServico;
+
                 var nota = NotaFiscalServico.Importar(
                     tenant.TenantId,
                     documento.ChaveAcesso,
@@ -42,7 +53,10 @@ public sealed class NfseSincronizador(
                     ValorMonetario.De(documento.ValorServico),
                     ValorMonetario.De(documento.ValorIss),
                     documento.DataEmissao,
-                    Competencia.De(documento.Ano, documento.Mes));
+                    Competencia.De(documento.Ano, documento.Mes),
+                    itemLista,
+                    documento.IssRetidoNaFonte,
+                    documento.MunicipioIncidenciaIbge);
 
                 notas.Adicionar(nota);
                 importadas++;

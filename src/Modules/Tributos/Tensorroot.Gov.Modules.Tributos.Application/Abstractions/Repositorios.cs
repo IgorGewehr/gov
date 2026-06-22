@@ -2,8 +2,12 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
+using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 
@@ -128,4 +132,80 @@ public interface IDamRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>O DAM, ou <c>null</c>.</returns>
     Task<Dam?> ObterPorIdAsync(DamId id, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="TabelaAliquotaIss"/> (alíquotas ISS por item LC 116).</summary>
+public interface ITabelaAliquotaIssRepository
+{
+    /// <summary>Marca uma nova tabela de ISS para inserção.</summary>
+    /// <param name="tabela">Tabela a adicionar.</param>
+    void Adicionar(TabelaAliquotaIss tabela);
+
+    /// <summary>
+    /// Obtém a tabela de ISS vigente para uma competência (a de maior início de vigência ≤ AAAAMM da
+    /// competência), com itens. // TODO(validar-oficial): regra de seleção por vigência conforme o CTM.
+    /// </summary>
+    /// <param name="competencia">Competência a apurar.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A tabela vigente, ou <c>null</c>.</returns>
+    Task<TabelaAliquotaIss?> ObterVigentePorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="ApuracaoIss"/> (livro/escrituração mensal do ISS).</summary>
+public interface IApuracaoIssRepository
+{
+    /// <summary>Marca uma nova apuração para inserção.</summary>
+    /// <param name="apuracao">Apuração a adicionar.</param>
+    void Adicionar(ApuracaoIss apuracao);
+
+    /// <summary>Obtém a apuração de um contribuinte numa competência (com itens), ou <c>null</c>.</summary>
+    /// <param name="contribuinteId">Contribuinte (prestador).</param>
+    /// <param name="competencia">Competência.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A apuração, ou <c>null</c>.</returns>
+    Task<ApuracaoIss?> ObterPorContribuinteCompetenciaAsync(ContribuinteId contribuinteId, Competencia competencia, CancellationToken cancellationToken);
+}
+
+/// <summary>Consulta às NFS-e ingeridas (base da apuração do ISS).</summary>
+public interface INotaFiscalServicoConsulta
+{
+    /// <summary>
+    /// Lista as NFS-e VIGENTES (situação normal) de um prestador numa competência — base da apuração.
+    /// </summary>
+    /// <param name="prestadorCnpj">CNPJ do prestador.</param>
+    /// <param name="competencia">Competência.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>NFS-e vigentes do prestador na competência.</returns>
+    Task<IReadOnlyList<NotaFiscalServico>> ListarVigentesPorPrestadorCompetenciaAsync(
+        string prestadorCnpj,
+        Competencia competencia,
+        CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="AliquotaItbi"/>.</summary>
+public interface IAliquotaItbiRepository
+{
+    /// <summary>Marca uma nova configuração de alíquota do ITBI para inserção.</summary>
+    /// <param name="aliquota">Configuração a adicionar.</param>
+    void Adicionar(AliquotaItbi aliquota);
+
+    /// <summary>Obtém a alíquota do ITBI vigente de um exercício, ou <c>null</c>.</summary>
+    /// <param name="exercicio">Exercício fiscal.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A configuração vigente, ou <c>null</c>.</returns>
+    Task<AliquotaItbi?> ObterVigenteAsync(int exercicio, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="TransmissaoImobiliaria"/>.</summary>
+public interface ITransmissaoImobiliariaRepository
+{
+    /// <summary>Marca uma nova transmissão para inserção.</summary>
+    /// <param name="transmissao">Transmissão a adicionar.</param>
+    void Adicionar(TransmissaoImobiliaria transmissao);
+
+    /// <summary>Obtém uma transmissão por identificador, ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A transmissão, ou <c>null</c>.</returns>
+    Task<TransmissaoImobiliaria?> ObterPorIdAsync(TransmissaoImobiliariaId id, CancellationToken cancellationToken);
 }

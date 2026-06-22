@@ -5,6 +5,8 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
+using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
@@ -44,6 +46,18 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>Documentos de Arrecadação Municipal (guias/carnês).</summary>
     public DbSet<Dam> Dams => Set<Dam>();
+
+    /// <summary>Tabelas de alíquotas do ISS por item LC 116, versionadas por vigência.</summary>
+    public DbSet<TabelaAliquotaIss> TabelasAliquotaIss => Set<TabelaAliquotaIss>();
+
+    /// <summary>Apurações mensais do ISS (livro/escrituração eletrônica) por contribuinte/competência.</summary>
+    public DbSet<ApuracaoIss> ApuracoesIss => Set<ApuracaoIss>();
+
+    /// <summary>Alíquotas do ITBI por exercício (lei municipal).</summary>
+    public DbSet<AliquotaItbi> AliquotasItbi => Set<AliquotaItbi>();
+
+    /// <summary>Transmissões imobiliárias (fato gerador do ITBI).</summary>
+    public DbSet<TransmissaoImobiliaria> TransmissoesImobiliarias => Set<TransmissaoImobiliaria>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

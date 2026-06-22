@@ -61,6 +61,11 @@ public sealed class TributosModule : IModule
         services.AddScoped<IPlantaValoresRepository, PlantaValoresRepository>();
         services.AddScoped<ITabelaAliquotaIptuRepository, TabelaAliquotaIptuRepository>();
         services.AddScoped<IDamRepository, DamRepository>();
+        services.AddScoped<ITabelaAliquotaIssRepository, TabelaAliquotaIssRepository>();
+        services.AddScoped<IApuracaoIssRepository, ApuracaoIssRepository>();
+        services.AddScoped<INotaFiscalServicoConsulta, NotaFiscalServicoConsulta>();
+        services.AddScoped<IAliquotaItbiRepository, AliquotaItbiRepository>();
+        services.AddScoped<ITransmissaoImobiliariaRepository, TransmissaoImobiliariaRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
 
         // Gateway NFS-e/ADN: HTTP resiliente (Polly) em produção; simulado para dev/testes.
@@ -86,6 +91,7 @@ public sealed class TributosModule : IModule
     {
         TributosEndpoints.Map(endpoints);
         IptuEndpoints.Map(endpoints);
+        IssItbiEndpoints.Map(endpoints);
     }
 
     /// <inheritdoc />

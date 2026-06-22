@@ -1,0 +1,173 @@
+// Tela APURAR IPTU — coração do submódulo. Seleciona imóvel (via rota) + exercício
+// e mostra a MEMÓRIA DE CÁLCULO (valor do terreno + construção = valor venal ×
+// alíquota = imposto, com desconto de cota única em destaque). A partir daqui se
+// dispara o LANÇAMENTO (gera lançamento + DAM). Apuração é sob demanda (Apurar).
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import {
+  Alert,
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  FormField,
+  Input,
+  PageHeader,
+  QueryState,
+} from '../../components/ui';
+import type { Column } from '../../components/ui';
+import { Can } from '../../auth/Can';
+import { formatarMoeda } from '../../i18n/format';
+import { useApurarIptu } from './iptu.api';
+import type { ApuracaoIptu, MemoriaCalculoLinha } from './iptu.api';
+import { formatarPercentual } from './iptu.helpers';
+import { TributosSubNav } from './TributosSubNav';
+import { LancarIptuModal } from './LancarIptuModal';
+
+const PERM_GERENCIAR = 'tributos.gerenciar';
+const ANO_ATUAL = new Date().getFullYear();
+
+function Linha({ rotulo, children, destaque }: { rotulo: string; children: React.ReactNode; destaque?: boolean }) {
+  return (
+    <div className="col-sm-6 mb-3">
+      <dt className="text-gray-60 text-down-01">{rotulo}</dt>
+      <dd className={`mb-0 ${destaque ? 'text-up-02 text-semi-bold' : 'text-semi-bold'}`}>{children}</dd>
+    </div>
+  );
+}
+
+export function ApurarIptuPage() {
+  const { id = '' } = useParams<{ id: string }>();
+  const [exercicioCampo, setExercicioCampo] = useState(String(ANO_ATUAL));
+  const [exercicio, setExercicio] = useState(0);
+  const [lancarAberto, setLancarAberto] = useState(false);
+
+  const query = useApurarIptu(id, exercicio, exercicio > 0);
+
+  function apurar(event: FormEvent): void {
+    event.preventDefault();
+    const ano = Number(exercicioCampo);
+    if (Number.isInteger(ano) && ano > 0) setExercicio(ano);
+  }
+
+  const colunasMemoria: Column<MemoriaCalculoLinha>[] = [
+    { key: 'rotulo', header: 'Componente', render: (l) => l.rotulo },
+    { key: 'detalhe', header: 'Memória', render: (l) => l.detalhe },
+    { key: 'valor', header: 'Valor', align: 'end', render: (l) => formatarMoeda(l.valor) },
+  ];
+
+  return (
+    <>
+      <PageHeader
+        title="Apurar IPTU"
+        description="Calcule o imposto de um imóvel num exercício e veja a memória de cálculo."
+        actions={
+          <Link className="br-button secondary" to="/tributos/imoveis">
+            <i className="fas fa-arrow-left" aria-hidden="true" /> Voltar aos imóveis
+          </Link>
+        }
+      />
+
+      <TributosSubNav />
+
+      <Card className="mb-4">
+        <form className="br-form" onSubmit={apurar}>
+          <div className="row align-items-end">
+            <div className="col-sm-4">
+              <FormField label="Exercício" required help={`Imóvel ${id}`}>
+                {({ id: campoId, describedBy, invalid }) => (
+                  <Input
+                    id={campoId}
+                    type="number"
+                    min={1900}
+                    inputMode="numeric"
+                    aria-describedby={describedBy}
+                    invalid={invalid}
+                    value={exercicioCampo}
+                    onChange={(e) => setExercicioCampo(e.target.value)}
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-auto mb-3">
+              <Button variant="primary" type="submit" loading={query.isFetching && exercicio > 0}>
+                <i className="fas fa-calculator" aria-hidden="true" /> Apurar
+              </Button>
+            </div>
+          </div>
+        </form>
+      </Card>
+
+      {exercicio === 0 ? (
+        <EmptyState
+          icon="fas fa-calculator"
+          title="Informe o exercício"
+          description="Digite o ano de exercício e clique em Apurar para ver a memória de cálculo."
+        />
+      ) : (
+        <QueryState<ApuracaoIptu>
+          isLoading={query.isLoading}
+          isError={query.isError}
+          error={query.error}
+          data={query.data}
+        >
+          {(apuracao) => (
+            <>
+              <Card
+                className="mb-4"
+                header={<strong>Apuração do IPTU — exercício {apuracao.exercicio}</strong>}
+                footer={
+                  <Can permission={PERM_GERENCIAR}>
+                    <div className="d-flex justify-content-end">
+                      <Button variant="primary" onClick={() => setLancarAberto(true)}>
+                        <i className="fas fa-file-invoice-dollar" aria-hidden="true" /> Lançar e gerar DAM
+                      </Button>
+                    </div>
+                  </Can>
+                }
+              >
+                <dl className="row">
+                  <Linha rotulo="Valor do terreno">{formatarMoeda(apuracao.valorTerreno)}</Linha>
+                  <Linha rotulo="Valor da construção">{formatarMoeda(apuracao.valorConstrucao)}</Linha>
+                  <Linha rotulo="Valor venal (terreno + construção)" destaque>
+                    {formatarMoeda(apuracao.valorVenal)}
+                  </Linha>
+                  <Linha rotulo="Alíquota aplicada">{formatarPercentual(apuracao.aliquotaPercentual)}</Linha>
+                  <Linha rotulo="Imposto bruto (venal × alíquota)">
+                    {formatarMoeda(apuracao.impostoBruto)}
+                  </Linha>
+                  <Linha rotulo="Imposto devido" destaque>
+                    {formatarMoeda(apuracao.impostoDevido)}
+                  </Linha>
+                </dl>
+
+                <Alert variant="success" title="Cota única">
+                  Pagamento em cota única com desconto de{' '}
+                  <strong>{formatarPercentual(apuracao.descontoCotaUnica)}</strong>:{' '}
+                  <strong>{formatarMoeda(apuracao.valorCotaUnica)}</strong>.
+                </Alert>
+              </Card>
+
+              <h2 className="text-up-01 mb-2">Memória de cálculo</h2>
+              <DataTable
+                caption={`Memória de cálculo do IPTU ${apuracao.exercicio} do imóvel ${apuracao.imovelId}`}
+                columns={colunasMemoria}
+                rows={apuracao.memoria}
+                rowKey={(l) => l.rotulo}
+                empty={<EmptyState title="Sem detalhamento de memória para esta apuração." />}
+              />
+
+              <LancarIptuModal
+                open={lancarAberto}
+                onClose={() => setLancarAberto(false)}
+                imovelId={apuracao.imovelId}
+                exercicio={apuracao.exercicio}
+              />
+            </>
+          )}
+        </QueryState>
+      )}
+    </>
+  );
+}

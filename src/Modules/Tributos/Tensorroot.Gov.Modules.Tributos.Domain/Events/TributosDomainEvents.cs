@@ -2,6 +2,8 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
+using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
+using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
 using Tensorroot.Gov.SharedKernel;
@@ -93,3 +95,41 @@ public sealed record DamGerado(DamId DamId, Guid TenantId, LancamentoId Lancamen
 /// <param name="TenantId">Tenant dono do registro.</param>
 /// <param name="LancamentoId">Lançamento de origem.</param>
 public sealed record DamQuitado(DamId DamId, Guid TenantId, LancamentoId LancamentoId) : IDomainEvent;
+
+/// <summary>Tabela de alíquotas do ISS criada.</summary>
+/// <param name="TabelaAliquotaIssId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="VigenciaInicioAaaaMm">Início de vigência (AAAAMM).</param>
+public sealed record TabelaAliquotaIssCriada(TabelaAliquotaIssId TabelaAliquotaIssId, Guid TenantId, int VigenciaInicioAaaaMm) : IDomainEvent;
+
+/// <summary>Tabela de alíquotas do ISS publicada (vigente).</summary>
+/// <param name="TabelaAliquotaIssId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="VigenciaInicioAaaaMm">Início de vigência (AAAAMM).</param>
+public sealed record TabelaAliquotaIssPublicada(TabelaAliquotaIssId TabelaAliquotaIssId, Guid TenantId, int VigenciaInicioAaaaMm) : IDomainEvent;
+
+/// <summary>Apuração mensal do ISS encerrada (livro eletrônico fechado).</summary>
+/// <param name="ApuracaoIssId">Identificador da apuração.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ContribuinteId">Contribuinte (prestador) apurado.</param>
+/// <param name="IssProprio">ISS próprio a recolher (R$).</param>
+public sealed record ApuracaoIssEncerrada(ApuracaoIssId ApuracaoIssId, Guid TenantId, ContribuinteId ContribuinteId, decimal IssProprio) : IDomainEvent;
+
+/// <summary>Alíquota do ITBI criada.</summary>
+/// <param name="AliquotaItbiId">Identificador da configuração.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record AliquotaItbiCriada(AliquotaItbiId AliquotaItbiId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Alíquota do ITBI publicada (vigente).</summary>
+/// <param name="AliquotaItbiId">Identificador da configuração.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record AliquotaItbiPublicada(AliquotaItbiId AliquotaItbiId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Transmissão imobiliária registrada (fato gerador do ITBI).</summary>
+/// <param name="TransmissaoImobiliariaId">Identificador da transmissão.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ImovelId">Imóvel transmitido.</param>
+/// <param name="ImpostoDevido">ITBI devido (R$).</param>
+public sealed record TransmissaoImobiliariaRegistrada(TransmissaoImobiliariaId TransmissaoImobiliariaId, Guid TenantId, ImovelId ImovelId, decimal ImpostoDevido) : IDomainEvent;

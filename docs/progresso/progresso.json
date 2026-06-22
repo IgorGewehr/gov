@@ -1,8 +1,8 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-23 — trilha legislativa completa+pushada; M5 (folha) iniciado",
-  "atividadeAtual": "🏛️ TRILHA LEGISLATIVA COMPLETA E PROVADA (back+painel front) e PUSHADA (GitHub 62c1378): vereadores, painel ao vivo (placar/quórum/apuração), ata, seed + Normas Jurídicas (busca case-insensitive), Diário Oficial (LAI), tribuna/cronômetro server-side, comissões. Legislativo 142 testes; o verify pegou 3 bugs reais (IsInEnum sobre int 2×; InvalidCast na busca por ementa). Research pipeline COMPLETO (M5–M9 designados). EM EXECUÇÃO: M5 parte 1 (fundação da folha: servidores/cargos/rubricas/motor INSS-IRRF-RPSS/folha mensal) na pista de build + frontend legislativo parte 2 (npx). Pendência p/ M8: /diario/publico anônimo (LAI). DIRECIONAMENTO.md pronto p/ análise do dono.",
+  "atualizadoEm": "2026-06-23 — run autônomo: os 2 motores municipais (folha + IPTU) de pé e pushados",
+  "atividadeAtual": "🚀 RUN AUTÔNOMO (6 commits limpos no GitHub IgorGewehr/gov, cada um verde+validado por mim em runtime): baseline → fix Outbox → trilha legislativa COMPLETA (back+front: vereadores/painel ao vivo/ata/normas/diário/tribuna/comissões) → M5 fundação da FOLHA (motor INSS/IRRF/RPPS parametrizável, provado líquido 6.034,77; frontend) → M6 fundação do IPTU (cadastro imobiliário + PGV + motor valor venal/alíquota, provado venal 162.000→IPTU 1.458 com DAM 3×486). OS 2 REPROVADORES DO POC MUNICIPAL (folha + IPTU) AGORA TÊM MOTOR. Verify pegou 6+ bugs reais que agentes juraram VERDE (teto=0 zerando líquido; poison Outbox; etc). EM EXECUÇÃO: M6 parte 2 (ISS+ITBI) + M6 frontend. Research pipeline 100% (M5–M9 designados). DIRECIONAMENTO.md pronto. Pendências p/ o dono: MT/e-Validador oficial, A1 real, RPPS×RGPS, infra Azure, creds homologação (eSocial/gov.br/PNCP).",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
     { "label": "Testes backend", "valor": "694 ✓", "cor": "verde" },

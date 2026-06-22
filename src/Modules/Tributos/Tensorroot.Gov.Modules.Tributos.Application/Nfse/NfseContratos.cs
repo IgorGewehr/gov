@@ -11,6 +11,9 @@ namespace Tensorroot.Gov.Modules.Tributos.Application.Nfse;
 /// <param name="DataEmissao">Data de emissão.</param>
 /// <param name="Ano">Ano da competência.</param>
 /// <param name="Mes">Mês da competência.</param>
+/// <param name="ItemListaServico">Item da lista de serviços LC 116/2003 (chave da alíquota/retenção). // TODO(validar-oficial): campo exato no XSD da NFS-e nacional.</param>
+/// <param name="IssRetidoNaFonte">Indicador (do XML) de retenção do ISS na fonte pelo tomador.</param>
+/// <param name="MunicipioIncidenciaIbge">Código IBGE do município de incidência do ISS (opcional).</param>
 public sealed record NfseDocumento(
     string ChaveAcesso,
     string PrestadorCnpj,
@@ -19,7 +22,10 @@ public sealed record NfseDocumento(
     decimal ValorIss,
     DateOnly DataEmissao,
     int Ano,
-    int Mes);
+    int Mes,
+    string ItemListaServico = "",
+    bool IssRetidoNaFonte = false,
+    string? MunicipioIncidenciaIbge = null);
 
 /// <summary>Gateway (Anti-Corruption Layer) de acesso ao Ambiente de Dados Nacional da NFS-e.</summary>
 public interface INfseNacionalGateway

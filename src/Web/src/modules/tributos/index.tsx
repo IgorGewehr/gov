@@ -21,6 +21,15 @@ import type { ModuleDefinition } from '../types';
 const DividaAtivaListPage = lazy(() =>
   import('./DividaAtivaListPage').then((m) => ({ default: m.DividaAtivaListPage })),
 );
+const ImovelListPage = lazy(() =>
+  import('./ImovelListPage').then((m) => ({ default: m.ImovelListPage })),
+);
+const ApurarIptuPage = lazy(() =>
+  import('./ApurarIptuPage').then((m) => ({ default: m.ApurarIptuPage })),
+);
+const IptuParametrosPage = lazy(() =>
+  import('./IptuParametrosPage').then((m) => ({ default: m.IptuParametrosPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'tributos',
@@ -32,7 +41,12 @@ const MODULE: ModuleDefinition = {
   routes: [
     {
       path: 'tributos',
-      children: [{ index: true, element: <DividaAtivaListPage /> }],
+      children: [
+        { index: true, element: <DividaAtivaListPage /> },
+        { path: 'imoveis', element: <ImovelListPage /> },
+        { path: 'imoveis/:id/iptu', element: <ApurarIptuPage /> },
+        { path: 'iptu/parametros', element: <IptuParametrosPage /> },
+      ],
     },
   ],
 };

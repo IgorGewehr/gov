@@ -21,6 +21,7 @@ import { Can } from '../../auth/Can';
 import { useDividasPorContribuinte } from './api';
 import type { DividaAtivaResumo } from './api';
 import { SITUACAO_DIVIDA_LABEL, podeEmitirCda, situacaoTagVariant } from './dividaAtiva.helpers';
+import { TributosSubNav } from './TributosSubNav';
 import { ContribuinteFormModal } from './ContribuinteFormModal';
 import { LancamentoFormModal } from './LancamentoFormModal';
 import { EmitirCdaModal } from './EmitirCdaModal';
@@ -101,6 +102,8 @@ export function DividaAtivaListPage() {
           </Can>
         }
       />
+
+      <TributosSubNav />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
