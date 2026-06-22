@@ -1,0 +1,40 @@
+// Módulo Tributos — PADRÃO-OURO. Estrutura replicada pelos demais módulos:
+//   api.ts                  -> DTOs + query keys + hooks TanStack Query
+//   <Recurso>ListPage.tsx   -> consulta/lista (DataTable, estados)
+//   <Recurso>FormModal.tsx  -> formulário (useMutation + validação por campo)
+//   <Recurso>Modal.tsx      -> ações/commands específicos (EmitirCda)
+//   index.tsx               -> ModuleDefinition { routes, nav } com páginas em React.lazy
+//
+// Cobertura REAL do backend (TributosEndpoints.cs /api/tributos):
+//   - Contribuinte: cadastrar pessoa física (modal em DividaAtivaListPage)         [gerenciar]
+//   - Lancamento:   lançar crédito + inscrever em Dívida Ativa (modal)             [gerenciar]
+//   - DividaAtiva:  listar por contribuinte (GET) + emitir CDA (modal por linha)   [ver / gerenciar]
+//
+// As páginas são carregadas via React.lazy -> o módulo vira um chunk separado
+// (code-splitting). O <Suspense> do AppLayout cobre o fallback de carregamento.
+// Os FormModals/AcaoModals são embutidos na própria página (sem rota própria),
+// igual ao padrão de Protocolo. A leitura é gated por "tributos.ver" e toda ação
+// por "tributos.gerenciar" (<Can> dentro das páginas/modais).
+import { lazy } from 'react';
+import type { ModuleDefinition } from '../types';
+
+const DividaAtivaListPage = lazy(() =>
+  import('./DividaAtivaListPage').then((m) => ({ default: m.DividaAtivaListPage })),
+);
+
+const MODULE: ModuleDefinition = {
+  id: 'tributos',
+  nav: {
+    label: 'Tributos',
+    path: '/tributos',
+    icon: 'fas fa-file-invoice-dollar',
+  },
+  routes: [
+    {
+      path: 'tributos',
+      children: [{ index: true, element: <DividaAtivaListPage /> }],
+    },
+  ],
+};
+
+export default MODULE;

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1707;xUnit1004;CA1861;CA1305</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Modules/RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Domain/Tensorroot.Gov.Modules.RecursosHumanos.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Application/Tensorroot.Gov.Modules.RecursosHumanos.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

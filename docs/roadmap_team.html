@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tensorroot.Gov — Guia de Estudo da Equipe</title>
+<style>
+  :root{
+    --navy:#071d41;--blue:#1351b4;--blue2:#2670e8;--green:#168821;--yellow:#dba000;--red:#c92a2a;
+    --bg:#eef2f7;--card:#fff;--ink:#1c2733;--muted:#5a6b7b;--line:#dde3ea;--accent:#1351b4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+  a{color:var(--blue)}
+  .app{display:grid;grid-template-columns:340px 1fr;height:100vh}
+  /* sidebar */
+  aside{background:#fff;border-right:1px solid var(--line);overflow-y:auto;padding:0}
+  .brand{background:linear-gradient(135deg,var(--navy),#0a2a5e);color:#fff;padding:18px 18px 16px;position:sticky;top:0;z-index:2}
+  .brand h1{font-size:16px;margin:0;font-weight:700}
+  .brand p{margin:3px 0 0;font-size:12px;color:#bcd0ee}
+  .prog{margin-top:12px}
+  .progbar{height:8px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden}
+  .progbar > i{display:block;height:100%;background:linear-gradient(90deg,#26d07c,#7be3b0);width:0;transition:width .4s}
+  .prog small{color:#dce7f7;font-size:11.5px;display:block;margin-top:5px}
+  .tools{padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:96px;background:#fff;z-index:1}
+  #busca{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13.5px}
+  .filtros{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .chip{font-size:11px;padding:3px 9px;border-radius:14px;border:1px solid var(--line);background:#f7f9fc;cursor:pointer;user-select:none}
+  .chip.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+  nav{padding:6px 0 40px}
+  .grp{padding:12px 16px 4px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .item{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;font-size:13.5px;border-left:3px solid transparent}
+  .item:hover{background:#f4f7fb}
+  .item.sel{background:#eaf1ff;border-left-color:var(--blue);font-weight:600}
+  .item.done .tt{color:var(--muted);text-decoration:line-through}
+  .item .bul{width:8px;height:8px;border-radius:50%;border:2px solid var(--line);flex:none}
+  .item.done .bul{background:var(--green);border-color:var(--green)}
+  .item .tt{flex:1}
+  .pr{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:5px}
+  .pr.essencial{background:#fde8e8;color:var(--red)} .pr.importante{background:#fff4d6;color:#8a6d00} .pr.avancado{background:#eef1f4;color:var(--muted)}
+  /* main */
+  main{overflow-y:auto;padding:30px 40px 80px}
+  .wrap{max-width:820px;margin:0 auto}
+  .welcome h2{color:var(--navy);font-size:24px;margin:0 0 6px}
+  .welcome .lead{color:var(--muted);font-size:15px}
+  .trilha{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:18px 0}
+  .trilha ol{margin:8px 0 0;padding-left:20px} .trilha li{margin:6px 0}
+  .legenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--muted)}
+  .topo{display:none}
+  .topo.show{display:block}
+  .crumb{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .topo h2{color:var(--navy);font-size:23px;margin:6px 0 10px;line-height:1.25}
+  .tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}
+  .tag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:14px;background:#eef2f7;color:var(--muted)}
+  .tag.area{background:#e8f1ff;color:var(--blue)}
+  .sec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  .sec h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .sec.nosso{border-left:5px solid var(--green)} .sec.nosso h3{color:var(--green)}
+  .sec p{margin:0;font-size:14.5px}
+  code{background:#f1f4f8;border:1px solid #e3e8ef;border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#0a3a82;word-break:break-word}
+  ul.est{margin:6px 0 0;padding-left:18px} ul.est li{margin:4px 0;font-size:14px}
+  .check{margin-top:6px}
+  .check label{display:flex;gap:9px;align-items:flex-start;font-size:14px;padding:6px 0;cursor:pointer}
+  .check input{margin-top:3px}
+  .donebtn{margin-top:16px;display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#fff;border:0;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .donebtn.off{background:#e8eef5;color:var(--muted)}
+  .navbtns{display:flex;justify-content:space-between;margin-top:24px;gap:10px}
+  .navbtns button{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;color:var(--navy)}
+  .navbtns button:hover{border-color:var(--blue)}
+  .muted{color:var(--muted)} .small{font-size:12.5px}
+  @media(max-width:880px){.app{grid-template-columns:1fr}aside{height:auto;max-height:42vh}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <h1>Tensorroot.Gov</h1>
+      <p>Guia de Estudo da Equipe · ERP GovTech municipal</p>
+      <div class="prog"><div class="progbar"><i id="pf"></i></div><small id="ps">0% estudado</small></div>
+    </div>
+    <div class="tools">
+      <input id="busca" placeholder="🔎 buscar tópico (ex.: tenant, balancete, debug)…" />
+      <div class="filtros" id="filtros"></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <div class="wrap">
+      <div id="welcome" class="welcome">
+        <h2>Bem-vindo ao guia de estudo</h2>
+        <p class="lead">Tudo que você precisa para <b>entender, corrigir e dar sequência</b> ao Tensorroot.Gov — dos fundamentos do stack ao que é específico do nosso sistema, mais técnicas de suporte/debug na era da IA. Use a busca, marque o que dominar; seu progresso fica salvo neste navegador.</p>
+        <div class="trilha">
+          <b>🚀 Trilha de onboarding sugerida (antes da teoria):</b>
+          <ol>
+            <li><b>Rode o sistema local</b>: <code>dotnet build</code> + <code>dotnet test</code>; suba a API e o frontend; faça login e crie um registro (veja persistir e auditar).</li>
+            <li><b>Leia a constituição</b>: <code>CLAUDE.md</code> (as regras inegociáveis) e <code>docs/diagnostico/ESTADO-ATUAL.md</code>.</li>
+            <li><b>Estude os <span style="color:var(--red)">essenciais</span> da Parte II</b> (como NÓS fazemos) — é onde mora a complexidade real.</li>
+            <li><b>Faça uma mudança guiada end-to-end</b>: edite um <code>*.rules.md</code> → veja o backend → exponha no frontend → escreva o teste.</li>
+            <li>Aprofunde a Parte I (fundamentos) e a Parte III (suporte/debug com IA) conforme a necessidade.</li>
+          </ol>
+        </div>
+        <div class="legenda">
+          <span>Prioridade: <span class="pr essencial">essencial</span> <span class="pr importante">importante</span> <span class="pr avancado">avançado</span></span>
+          <span>· <b id="cnt"></b> tópicos · ✅ verde = nossa implementação real</span>
+        </div>
+      </div>
+      <article id="topo" class="topo"></article>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ===================== CONTEÚDO ===================== */
+const C = [
+ { grupo:"Parte I · Fundamentos do stack", itens:[
+  {id:"cs-tipos",t:"C# moderno: tipos, imutabilidade, NRT",pr:"essencial",a:"backend",
+   oque:"records / record structs (igualdade por valor), init/required, e Non-Nullable Reference Types ligados globalmente.",
+   porque:"Value Objects e DTOs imutáveis evitam estados inválidos; NRT mata NullReference em produção.",
+   nosso:"Usamos records p/ Commands/Queries/DTOs e VOs (CPF, CNPJ, Email, ValorMonetario). warnings=errors no <code>Directory.Build.props</code>.",
+   est:["records vs class","init-only / required","nullable reference types","value equality"],
+   dom:["Sei quando usar record struct vs class","Explico por que NRT está ligado e o que warnings=errors implica"]},
+  {id:"cs-pattern",t:"Pattern matching avançado",pr:"importante",a:"backend",
+   oque:"switch expressions, padrões de propriedade/relacionais para regras de negócio e fiscais.",
+   porque:"Regra tributária/legal fica legível e exaustiva (o compilador cobra os casos).",
+   nosso:"Aparece nas máquinas de estado de domínio (ex.: situação de Empenho, status de processo).",
+   est:["switch expression","property pattern","relational pattern","exhaustiveness"],
+   dom:["Reescrevo um if/else aninhado como switch expression"]},
+  {id:"aspnet-pipeline",t:"ASP.NET Core: pipeline & middlewares",pr:"essencial",a:"backend",
+   oque:"Ordem do pipeline; middleware global de exceção (não vazar erro de banco ao munícipe) e log estruturado.",
+   porque:"A ordem decide segurança e correção (auth antes de autorização; gating depois).",
+   nosso:"Veja <code>src/ApiHost/Program.cs</code>: Serilog → RateLimiter → Authentication → Authorization → gating de licença de módulo. ConfigureHttpJsonOptions com enum por nome.",
+   est:["middleware order","UseAuthentication vs UseAuthorization","exception handling middleware","minimal API"],
+   dom:["Desenho a ordem do nosso pipeline de cabeça","Sei onde adicionar um middleware sem quebrar auth"]},
+  {id:"aspnet-rate",t:"Resiliência de borda: Rate Limiting",pr:"importante",a:"backend",
+   oque:"Rate limiting nativo p/ conter abuso/sobrecarga das APIs.",
+   porque:"Prefeitura é alvo fácil; limitar protege disponibilidade.",
+   nosso:"<code>AddRateLimiter</code> (janela fixa, 100/min) particionado por usuário/IP em Program.cs.",
+   est:["AddRateLimiter","fixed window limiter","partitioned rate limiter"],
+   dom:["Ajusto a política de rate limit com segurança"]},
+  {id:"ddd",t:"DDD tático: Entities, Value Objects, Agregados",pr:"essencial",a:"dominio",
+   oque:"Entidades com identidade, VOs imutáveis, raízes de agregado que protegem invariantes.",
+   porque:"Domínio rico = regras no lugar certo (não no controller/serviço anêmico).",
+   nosso:"Cada módulo em <code>src/Modules/&lt;X&gt;/...Domain</code>. Ex.: <code>Empenho</code> com saldos e invariantes; factories privadas + métodos que validam.",
+   est:["aggregate root","value object","invariant","factory method","rich domain model"],
+   dom:["Adiciono um método de domínio que preserva um invariante","Distingo Entity de Value Object no nosso código"]},
+  {id:"cqrs",t:"CQRS com MediatR + pipeline behaviors",pr:"essencial",a:"backend",
+   oque:"Commands (escrita) e Queries (leitura) via MediatR; behaviors de Validation/Logging/UnitOfWork/Idempotency.",
+   porque:"Separa intenção; centraliza validação/transação fora do handler.",
+   nosso:"Handlers em <code>...Application</code>. Behaviors em <code>BuildingBlocks.Application</code>. ATENÇÃO ao UnitOfWork (ver Parte II).",
+   est:["MediatR ICommand/IQuery","pipeline behavior","FluentValidation","INotificationHandler (domain events)"],
+   dom:["Crio um Command novo com validator e handler","Explico a ordem dos behaviors"]},
+  {id:"outbox",t:"Outbox Pattern (consistência de eventos)",pr:"essencial",a:"backend",
+   oque:"Eventos de integração gravados na mesma transação do estado; um worker despacha depois.",
+   porque:"Não perder evento se o processo cair no meio — crítico p/ prestação de contas.",
+   nosso:"<code>ConvertDomainEventsToOutboxInterceptor</code> persiste; <code>OutboxBackgroundService</code> (coordenador por tenant) + <code>OutboxPublisher</code> despacham via MediatR.",
+   est:["outbox pattern","transactional messaging","IHostedService worker","at-least-once delivery"],
+   dom:["Sigo um evento de domínio até virar Integration Event publicado"]},
+  {id:"efcore",t:"EF Core 8: Fluent API + Interceptors",pr:"essencial",a:"backend",
+   oque:"Mapeamento por Fluent API (sem data annotations no domínio); interceptors de SaveChanges.",
+   porque:"Mantém o domínio limpo; interceptors automatizam tenant e auditoria.",
+   nosso:"<code>ModuleDbContext</code> (base) aplica filtros e mapeia Outbox/AuditTrail. Configs <code>IEntityTypeConfiguration</code> por entidade.",
+   est:["Fluent API","IEntityTypeConfiguration","SaveChangesInterceptor","owned types","value converters"],
+   dom:["Mapeio uma entidade nova com VO owned","Sei por que NÃO usamos annotations no domínio"]},
+  {id:"polly",t:"Tolerância a falhas: Polly",pr:"importante",a:"backend",
+   oque:"Retry + Circuit Breaker p/ integrações instáveis (gov federal/estadual).",
+   porque:"Sistemas governamentais caem; a integração tem que ser resiliente e idempotente.",
+   nosso:"Padrão p/ as integrações (TCE/SICONFI/eSocial) atrás de Anti-Corruption Layer + Outbox.",
+   est:["Microsoft.Extensions.Http.Resilience","retry policy","circuit breaker","idempotency"],
+   dom:["Configuro retry+breaker numa chamada externa nova"]},
+  {id:"cloud",t:"Cloud-native: Docker, Azure, Key Vault, Blob",pr:"importante",a:"devops",
+   oque:"Dockerfile multi-stage; App Service/Container Apps; Blob p/ arquivos; Key Vault p/ segredos.",
+   porque:"Deploy previsível e seguro; zero senha hardcoded.",
+   nosso:"Key Vault p/ segredos de produção (Jwt:Secret, conexões). Blob p/ PDFs/anexos. (Detalhe do certificado A1 → ver Parte II.)",
+   est:["multi-stage Dockerfile","Azure App Service","Azure Key Vault","Azure Blob Storage"],
+   dom:["Sei de onde vêm os segredos em produção vs dev"]},
+  {id:"obs",t:"Observabilidade: Serilog + App Insights + OTel",pr:"importante",a:"devops",
+   oque:"Logs estruturados (JSON) + tracing/metrics; árvore de dependências.",
+   porque:"Achar rápido SE a lentidão é no banco, na nossa API ou na API do governo.",
+   nosso:"Serilog + OpenTelemetry já wired no Program.cs (exporter Azure Monitor na fase de deploy). Sempre logar com TenantId + CorrelationId.",
+   est:["Serilog structured logging","OpenTelemetry tracing","Application Insights","correlation id"],
+   dom:["Adiciono um log estruturado útil","Leio uma trace ponta a ponta"]},
+  {id:"cicd",t:"CI/CD: GitHub Actions + migrações idempotentes",pr:"importante",a:"devops",
+   oque:"Pipeline que roda testes e faz deploy; scripts SQL idempotentes do EF.",
+   porque:"Mudança segura e repetível; rollback previsível.",
+   nosso:"Testes (incl. fitness functions) no CI; migrações por módulo. Veja a Parte III p/ migrações seguras.",
+   est:["GitHub Actions","dotnet test no CI","ef migrations script --idempotent"],
+   dom:["Entendo o que o CI bloqueia antes do merge"]},
+ ]},
+ { grupo:"Parte II · Como o Tensorroot.Gov faz (e por quê)", itens:[
+  {id:"adr-dbpertenant",t:"Multi-tenant: BANCO DEDICADO por tenant",pr:"essencial",a:"backend",
+   oque:"Cada prefeitura tem seu PRÓPRIO banco (não schema no mesmo banco). A conexão é resolvida por requisição.",
+   porque:"Isolamento máximo de dados públicos (decisão do dono). Schema-no-mesmo-banco foi descartado.",
+   nosso:"⚠️ DIVERGE do roadmap genérico. <code>ITenantConnectionResolver</code> resolve a connection string do tenant; fallback <code>tenant_&lt;id&gt;.db</code> (SQLite dev). <code>TenantSaveChangesInterceptor</code> carimba TenantId; Global Query Filter por tenant. Banco de CONTROLE central = <code>PlatformDbContext</code> (catálogo de tenants/licenças + índice email→tenant).",
+   est:["database-per-tenant","ITenantConnectionResolver","global query filter","TenantSaveChangesInterceptor","PlatformDbContext"],
+   dom:["Explico por que é DB-per-tenant e NÃO schema-per-módulo","Sigo como uma requisição resolve o banco do tenant"]},
+  {id:"adr-uow",t:"ScopeDbContextHolder / IUnitOfWork (sutil!)",pr:"essencial",a:"backend",
+   oque:"Como vários DbContexts de módulo coexistem num escopo e qual deles o IUnitOfWork confirma.",
+   porque:"Bug real já aconteceu: 12 módulos registravam IUnitOfWork e o SaveChanges salvava o contexto ERRADO (nada persistia). Corrigido com um holder por escopo.",
+   nosso:"<code>ScopeDbContextHolder</code> + <code>ModuleUnitOfWork</code> em BuildingBlocks: o DbContext ativo se registra no escopo; o UoW confirma esse. Entender isso evita reintroduzir o bug.",
+   est:["unit of work","scoped service","DbContext lifetime","ModuleUnitOfWork","ScopeDbContextHolder"],
+   dom:["Explico por que NÃO registramos IUnitOfWork por módulo","Sei qual contexto o SaveChanges confirma numa requisição"]},
+  {id:"adr-authz",t:"Autorização: RBAC dinâmico + ABAC organizacional",pr:"essencial",a:"backend",
+   oque:"JWT self-issued (HS256) + provedor de políticas DINÂMICO (perm:&lt;escopo&gt;) + modelo organizacional: Unidade Organizacional (árvore), atribuição de papel COM ESCOPO, e a regra I4.",
+   porque:"Prefeito ≠ Câmara (tenants distintos); secretário cria usuário só no próprio escopo; 'não delega o que não tem'. É o requisito-bandeira.",
+   nosso:"<code>PermissionPolicyProvider</code> (BuildingBlocks) gera políticas sob demanda. <code>UnidadeOrganizacional</code>, <code>AtribuicaoDePapel</code>, <code>EscopoEfetivo</code> e <code>AutorizacaoDeConcessao</code> (regra I4) em <code>Modules/Identidade</code>. Filtro de UO em <code>ApplyTenantAndUnidadeQueryFilters</code>. Doc: <code>docs/planejamento/MODELO-AUTORIZACAO-ORGANIZACIONAL.md</code>.",
+   est:["claims/policy-based auth","PermissionPolicyProvider","ABAC","UnidadeOrganizacional","regra I4 não-delega-o-que-não-tem","separação de poderes por tenant"],
+   dom:["Explico a regra I4 e onde ela é provada (domínio, não UI)","Sei a diferença entre RBAC (perm) e o escopo por UO (ABAC)"]},
+  {id:"adr-contabilidade",t:"Contabilidade PCASP → MSC → TCE/SICONFI",pr:"essencial",a:"dominio",
+   oque:"O coração fiscal: plano de contas PCASP, lançamento de partida dobrada (ΣD=ΣC) AUTOMÁTICO a partir dos eventos do ciclo da despesa, balancete, MSC, e remessa ao TCE-RS (SIAPC/PAD) + SICONFI.",
+   porque:"Prioridade nº1 do dono e a parte mais complexa/auditada. Exige domínio da Lei 4.320/MCASP, não só C#.",
+   nosso:"Módulo <code>Financas</code>: ciclo Dotação→Empenho→Liquidação→Pagamento→Restos; contabilidade subscreve os domain events e gera lançamentos. Specs: <code>docs/architecture/contabilidade-pcasp-tce.md</code> e <code>docs/architecture/specs-oficiais/</code>.",
+   est:["Lei 4.320","PCASP / MCASP","partida dobrada","Matriz de Saldos Contábeis (MSC)","SICONFI (RREO/RGF/DCA)","TCE-RS SIAPC/PAD + e-Validador"],
+   dom:["Sigo um pagamento até o lançamento contábil e o balancete","Sei de onde sai a MSC e para onde vai (SICONFI/TCE)","Identifico o que depende de leiaute oficial [validar]"]},
+  {id:"adr-nfse",t:"NFS-e é PASSIVA (não emitimos)",pr:"importante",a:"dominio",
+   oque:"NÃO emitimos nem assinamos NFS-e. Ingerimos os XMLs do Ambiente de Dados Nacional (ADN).",
+   porque:"Modelo nacional novo; emissão/ABRASF saiu do escopo. ⚠️ DIVERGE de roadmaps que ensinam assinar lote ABRASF.",
+   nosso:"Worker <code>NfseSync</code> baixa do ADN, deduplica por chave, alimenta o painel fiscal de Tributos e a Dívida Ativa. Ver <code>CLAUDE.md §8</code>.",
+   est:["NFS-e Nacional / ADN","ingestão passiva","deduplicação por chave de acesso"],
+   dom:["Explico por que NÃO assinamos NFS-e aqui"]},
+  {id:"adr-a1",t:"Certificado A1 no banco do tenant (cifrado)",pr:"importante",a:"backend",
+   oque:"O A1 (.pfx) fica cifrado no banco DEDICADO do tenant, não no Key Vault — usado p/ assinar (eSocial/TCE/documentos) por quem tem permissão.",
+   porque:"Decisão do dono (isolamento por tenant). ⚠️ DIVERGE do padrão Key Vault.",
+   nosso:"Planejado em M2 (W2.1) com cifragem em repouso + RBAC <code>admin.certificado.gerenciar</code> e <code>documentos.assinar</code>. (Os SEGREDOS de plataforma seguem no Key Vault.)",
+   est:["certificado A1 (.pfx)","assinatura digital XML","cifragem em repouso (AES-GCM)","System.Security.Cryptography.Xml"],
+   dom:["Sei onde o A1 vive e quem pode assinar"]},
+  {id:"adr-rulesascode",t:"Fábrica Rules-as-Code + Fitness Functions",pr:"essencial",a:"dominio",
+   oque:"Specs <code>*.rules.md</code> com blocos de manifesto guiam a geração; testes de arquitetura (NetArchTest) e checagem de consistência código⇄regras impõem o desenho.",
+   porque:"É como o sistema é construído E protegido: você (ou a IA) não quebra o isolamento do monolito sem o CI reprovar.",
+   nosso:"<code>src/Modules/&lt;X&gt;/rules/*.rules.md</code>; <code>tests/Tensorroot.Gov.ArchitectureTests</code> (fitness + consistency + gate de tamanho de arquivo).",
+   est:["fitness functions","NetArchTest","spec-driven development","architecture tests","manifest-driven generation"],
+   dom:["Rodo os ArchitectureTests e entendo o que cada um proíbe","Edito um rules.md e sei o que ele governa"]},
+  {id:"adr-frontend",t:"Frontend: React + Vite + gov.br DS",pr:"essencial",a:"frontend",
+   oque:"SPA em React 18 + Vite + TypeScript, gov.br Design System, TanStack Query, registry de módulos, gating <Can> e auth por JWT.",
+   porque:"Não se mantém o que não se enxerga. Acessibilidade (eMAG/WCAG) é obrigatória no setor público.",
+   nosso:"<code>src/Web</code>: <code>modules/registry.ts</code> (code-splitting por módulo), <code>auth/</code> (jwt, AuthProvider, ProtectedRoute), <code>auth/Can.tsx</code> (esconde o que o usuário não pode), <code>api/http.ts</code> (cliente), padrão por entidade (api+ListPage+FormModal+teste).",
+   est:["React + Vite + TypeScript","@govbr-ds","TanStack Query","react-router","gating por permissão no front","eMAG/WCAG 2.1 AA"],
+   dom:["Adiciono uma tela nova seguindo o padrão de um módulo existente","Escondo uma ação por permissão com <Can>"]},
+  {id:"adr-auditoria",t:"Auditoria imutável (para o TCE)",pr:"essencial",a:"backend",
+   oque:"Todo SaveChanges grava AuditTrail: entidade, ação, antes/depois (JSON), usuário, IP, timestamp.",
+   porque:"Escrutínio do Tribunal de Contas exige rastro inalterável de quem mudou o quê.",
+   nosso:"<code>AuditSaveChangesInterceptor</code> + entidade <code>AuditTrail</code> no banco do tenant. Visualizador admin em <code>/api/admin/auditoria</code> (gated). Ordem dos interceptors importa (Tenant→Audit).",
+   est:["AuditSaveChangesInterceptor","audit trail","WORM/append-only","trilha de leitura LGPD (futuro)"],
+   dom:["Mostro a trilha de uma alteração (antes/depois/quem)","Sei por que a ordem dos interceptors importa"]},
+ ]},
+ { grupo:"Parte III · Suporte, bugs e testes/debug na era da IA", itens:[
+  {id:"ia-verifique",t:"Princípio nº1: verifique, não confie (no verde nem na IA)",pr:"essencial",a:"ia",
+   oque:"Teste verde e código gerado por IA podem mentir. Prove em runtime: reproduza, rode de verdade, confira o dado no banco.",
+   porque:"Dois bugs CRÍTICOS deste projeto passaram com 'tudo verde' — o sistema não persistia (UoW) e o escopo de usuário vinha errado (reancoragem). Só apareceram testando o fluxo real.",
+   nosso:"Disciplina: após gerar/alterar, suba a API, faça login, execute o fluxo (criar→persistir→auditar) e CONFIRME no SQLite. É assim que validamos cada marco.",
+   est:["runtime verification","reproduzir antes de corrigir","desconfiar de teste que não exercita o caminho real"],
+   dom:["Antes de dar um bug por resolvido, eu o reproduzo e confirmo o efeito real"]},
+  {id:"ia-tddbug",t:"Correção de bug disciplinada (TDD de bug)",pr:"essencial",a:"ia",
+   oque:"Reproduzir → escrever um teste que FALHA expondo o bug → corrigir → o teste passa → vira regressão permanente.",
+   porque:"Garante que o bug não volta e documenta a causa.",
+   nosso:"Ex.: invariantes de saldo (ΣD=ΣC; não pagar acima do liquidado) viraram testes que travam regressão.",
+   est:["red-green-refactor","regression test","characterization test (antes de refatorar legado)"],
+   dom:["Transformo um bug reportado num teste que falha antes do fix"]},
+  {id:"ia-copiloto",t:"IA como copiloto de manutenção (com guarda-corpo)",pr:"essencial",a:"ia",
+   oque:"Use IA p/ explicar módulo, ler stack trace, gerar testes, revisar diff, gerar boilerplate via a fábrica Rules-as-Code — sempre REVISANDO a saída.",
+   porque:"Multiplica produtividade, mas alucina. O guarda-corpo são os testes + as fitness functions + a verificação em runtime.",
+   nosso:"Os workflows/agentes geram código a partir das specs; nós revisamos, rodamos testes e PROVAMOS em runtime. Nunca fazer merge só porque a IA disse que está ok.",
+   est:["prompts de debug eficazes (cole stack trace + contexto + o que já tentou)","gerar testes com IA","revisão de PR assistida por IA","cuidado com alucinação"],
+   dom:["Peço à IA um teste e valido se ele realmente exercita o caminho","Reviso criticamente o código que a IA gera"]},
+  {id:"ia-fitness",t:"Fitness functions como rede de segurança",pr:"importante",a:"ia",
+   oque:"Os ArchitectureTests impedem que você OU a IA quebrem o isolamento do monolito modular sem perceber.",
+   porque:"Refator/geração em massa pode violar dependências silenciosamente; o CI reprova.",
+   nosso:"Rode <code>dotnet test</code> nos ArchitectureTests sempre antes de commit. Mantém o desenho íntegro mesmo com muita IA escrevendo.",
+   est:["NetArchTest","dependency rules em teste","gate de tamanho de arquivo","Roslyn analyzers customizados"],
+   dom:["Sei quais regras de arquitetura o CI impõe e por quê"]},
+  {id:"ia-observabilidade",t:"Debug guiado por observabilidade",pr:"importante",a:"devops",
+   oque:"Logs estruturados (Serilog) + CorrelationId + App Insights p/ localizar a falha/lentidão na árvore de requisições.",
+   porque:"Em produção você não tem debugger; tem telemetria. Achar SE é banco, nossa API ou API do gov.",
+   nosso:"Sempre logar com TenantId + CorrelationId. EF Core query logging em dev p/ ver o SQL gerado.",
+   est:["structured logging","correlation id","Application Insights dependency map","EF Core query logging","dotnet-trace / dotnet-counters"],
+   dom:["Rastreio uma requisição lenta até a origem usando telemetria"]},
+  {id:"ia-ferramentas",t:"Ferramentas de teste/debug (.NET e front)",pr:"importante",a:"ia",
+   oque:"Caixa de ferramentas moderna p/ testar e depurar com eficiência.",
+   porque:"A ferramenta certa encurta o ciclo reproduzir→corrigir→provar.",
+   nosso:"Back: <code>dotnet test --filter</code>, debugger, Hot Reload, EF logging, BenchmarkDotNet (perf), Stryker.NET (mutation). Front: Vitest (<code>--ui</code>), Testing Library, React/TanStack Query DevTools, aba Network, Playwright (e2e).",
+   est:["dotnet test --filter","Hot Reload","BenchmarkDotNet","Stryker.NET (mutation testing)","Vitest","Playwright","React DevTools"],
+   dom:["Rodo só o teste que importa com --filter","Uso o mutation testing p/ avaliar a qualidade dos testes"]},
+  {id:"ia-migracoes",t:"Mudanças e migrações seguras",pr:"importante",a:"devops",
+   oque:"Migrações idempotentes, testadas, com plano de rollback; mudança pequena e reversível.",
+   porque:"Banco de produção não perdoa; rollback tem que ser previsível.",
+   nosso:"Migrações por módulo; script idempotente no CI; em dev o SchemaProvisioner cria/atualiza o schema. Sempre testar a migração antes do deploy.",
+   est:["ef migrations add/script --idempotent","expand-contract migration","rollback plan","feature flags"],
+   dom:["Gero e reviso uma migração antes de aplicar","Sei como reverter com segurança"]},
+  {id:"ia-suporte",t:"Processo de suporte e incidentes",pr:"importante",a:"devops",
+   oque:"Triagem por severidade, reproduzir em ambiente, hotfix vs fix definitivo, comunicação e post-mortem.",
+   porque:"Em GovTech, indisponibilidade tem impacto público; resposta estruturada reduz dano.",
+   nosso:"Severidade guia a resposta; runbook (como subir/testar/reverter); post-mortem sem culpa vira teste de regressão + item de backlog.",
+   est:["triagem por severidade","runbook","incident response","blameless post-mortem"],
+   dom:["Classifico um incidente por severidade e sei o primeiro passo de cada nível"]},
+ ]},
+];
+
+/* ===================== APP ===================== */
+const AREAS={backend:"Backend",frontend:"Frontend",dominio:"Domínio/Negócio",devops:"DevOps/Infra",ia:"IA & Qualidade"};
+const flat=C.flatMap(g=>g.itens.map(i=>({...i,grupo:g.grupo})));
+const KEY="trg_progresso_v1";
+let done=JSON.parse(localStorage.getItem(KEY)||"{}");
+let filtroArea=null, termo="", sel=null;
+
+const el=id=>document.getElementById(id);
+function salvar(){localStorage.setItem(KEY,JSON.stringify(done));}
+function progresso(){const n=flat.length,d=flat.filter(i=>done[i.id]).length;return {n,d,pct:Math.round(d/n*100)};}
+
+function renderFiltros(){
+  const fs=el("filtros");
+  const areas=["Todos",...Object.keys(AREAS)];
+  fs.innerHTML=areas.map(a=>`<span class="chip ${((!filtroArea&&a==='Todos')||filtroArea===a)?'on':''}" data-a="${a}">${a==='Todos'?'Todos':AREAS[a]}</span>`).join("");
+  fs.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{const a=c.dataset.a;filtroArea=(a==='Todos')?null:a;renderFiltros();renderNav();});
+}
+function visivel(i){
+  if(filtroArea&&i.a!==filtroArea)return false;
+  if(termo){const t=termo.toLowerCase();const blob=(i.t+i.oque+i.porque+i.nosso+(i.est||[]).join(" ")).toLowerCase();if(!blob.includes(t))return false;}
+  return true;
+}
+function renderNav(){
+  const nav=el("nav");let html="";
+  for(const g of C){
+    const its=g.itens.filter(visivel);if(!its.length)continue;
+    html+=`<div class="grp">${g.grupo}</div>`;
+    for(const i of its){
+      html+=`<div class="item ${done[i.id]?'done':''} ${sel===i.id?'sel':''}" data-id="${i.id}">
+        <span class="bul"></span><span class="tt">${i.t}</span><span class="pr ${i.pr}">${i.pr}</span></div>`;
+    }
+  }
+  nav.innerHTML=html||`<div class="grp">Nenhum tópico encontrado</div>`;
+  nav.querySelectorAll(".item").forEach(d=>d.onclick=()=>abrir(d.dataset.id));
+  const p=progresso();el("pf").style.width=p.pct+"%";el("ps").textContent=`${p.pct}% estudado · ${p.d}/${p.n} tópicos`;
+  if(el("cnt"))el("cnt").textContent=flat.length;
+}
+function abrir(id){
+  sel=id;const i=flat.find(x=>x.id===id);if(!i)return;
+  el("welcome").style.display="none";
+  const idx=flat.findIndex(x=>x.id===id);
+  const prev=flat[idx-1],next=flat[idx+1];
+  const t=el("topo");
+  t.className="topo show";
+  t.innerHTML=`
+    <div class="crumb">${i.grupo}</div>
+    <h2>${i.t}</h2>
+    <div class="tags"><span class="tag area">${AREAS[i.a]}</span><span class="tag pr ${i.pr}" style="background:#eef2f7">prioridade: ${i.pr}</span></div>
+    <div class="sec"><h3>O que é</h3><p>${i.oque}</p></div>
+    <div class="sec"><h3>Por que importa</h3><p>${i.porque}</p></div>
+    <div class="sec nosso"><h3>✅ Como o Tensorroot.Gov faz</h3><p>${i.nosso}</p></div>
+    <div class="sec"><h3>Como estudar (busque por)</h3><ul class="est">${(i.est||[]).map(e=>`<li><code>${e}</code></li>`).join("")}</ul></div>
+    <div class="sec"><h3>Você domina quando…</h3><div class="check">${(i.dom||[]).map((d,k)=>`<label><input type="checkbox" disabled checked style="opacity:.5"> ${d}</label>`).join("")}</div></div>
+    <button class="donebtn ${done[id]?'':'off'}" id="toggle">${done[id]?'✓ Estudado':'Marcar como estudado'}</button>
+    <div class="navbtns">
+      <button id="prev" ${prev?'':'disabled'}>← ${prev?prev.t:''}</button>
+      <button id="next" ${next?'':'disabled'}>${next?next.t:''} →</button>
+    </div>`;
+  el("toggle").onclick=()=>{done[id]=!done[id];salvar();renderNav();abrir(id);};
+  if(prev)el("prev").onclick=()=>abrir(prev.id);
+  if(next)el("next").onclick=()=>abrir(next.id);
+  renderNav();
+  document.querySelector("main").scrollTo({top:0,behavior:"smooth"});
+}
+el("busca").oninput=e=>{termo=e.target.value;renderNav();};
+renderFiltros();renderNav();
+</script>
+</body>
+</html>

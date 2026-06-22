@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build, Test e Auditoria
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restaurar
+        run: dotnet restore Tensorroot.Gov.sln
+
+      # NuGetAudit está ligado (warnings-as-errors): pacotes vulneráveis quebram o build.
+      - name: Build (Release)
+        run: dotnet build Tensorroot.Gov.sln --configuration Release --no-restore
+
+      - name: Auditar pacotes vulneráveis (informativo)
+        run: dotnet list Tensorroot.Gov.sln package --vulnerable --include-transitive
+
+      - name: Testes (inclui Fitness Functions / NetArchTest)
+        run: dotnet test Tensorroot.Gov.sln --configuration Release --no-build --logger "trx;LogFileName=test-results.trx" --results-directory ./test-results
+
+      - name: Publicar resultados de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./test-results

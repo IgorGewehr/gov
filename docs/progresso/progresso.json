@@ -1,0 +1,112 @@
+{
+  "produto": "Tensorroot.Gov",
+  "subtitulo": "ERP GovTech municipal — Painel de Progresso",
+  "atualizadoEm": "2026-06-23 — M0–M4 entregues; CORRIGINDO regressão do hardening (dispatch do Outbox)",
+  "atividadeAtual": "⚠️ REGRESSÃO PEGA EM RUNTIME (disciplina verify-don't-trust): o endurecimento P0 adicionou a guarda H5 (falha-alto no holder) que EXPÔS uma fragilidade latente — o Outbox publicava handlers de módulos distintos (Finanças+Administração) no MESMO escopo, e a contabilização automática parou. Funcionava em M2–M4 por sorte de ordenação. CORREÇÃO em execução (weg055chg): isolar cada mensagem do Outbox em escopo próprio (robusto, não dependente de ordem), com prova de runtime obrigatória (lançamentos voltam, balancete fecha ΣD=ΣC, dotação confirmada, H5 ainda pega colisão real). Validação minha após. Auditoria/PoC/validação-real concluídas; sprint legislativo + M5 a seguir.",
+  "metricas": [
+    { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
+    { "label": "Testes backend", "valor": "694 ✓", "cor": "verde" },
+    { "label": "Testes frontend", "valor": "181 ✓", "cor": "verde" },
+    { "label": "Módulos backend", "valor": "13", "cor": "azul" },
+    { "label": "Marcos concluídos", "valor": "5 / 11 · espinha fiscal ✓", "cor": "azul" }
+  ],
+  "marcos": [
+    { "id": "M0", "titulo": "Destravar build + bugs críticos", "status": "done", "nota": "Build 0/0, 593 testes; ciclo da despesa de Finanças provado em runtime.", "workflows": [
+      { "id": "W0.1", "t": "EmpenhoRepository / build (593 testes)", "s": "done" },
+      { "id": "W0.2", "t": "Ordem dos interceptors (Tenant→Audit) — latente", "s": "pending" },
+      { "id": "W0.3", "t": "RBAC /admin/tenants + segredos", "s": "active" },
+      { "id": "W0.4", "t": "Gate de deploy + SQL firewall", "s": "pending" }
+    ]},
+    { "id": "M1", "titulo": "Autorização organizacional (UO + escopo + I4)", "status": "done", "nota": "M1-mínimo ENTREGUE e provado em runtime (UO + escopo + I4 'não delega o que não tem' + frontend). W1.5/W1.6 → M1.x.", "workflows": [
+      { "id": "W1.1", "t": "Unidade Organizacional (árvore) + seed", "s": "done" },
+      { "id": "W1.2", "t": "AtribuicaoDePapel com escopo + migração", "s": "done" },
+      { "id": "W1.3", "t": "Filtro de leitura por UO + guards", "s": "done" },
+      { "id": "W1.4", "t": "Verbos finos SoD (Finanças)", "s": "done" },
+      { "id": "W1.fe", "t": "Frontend: Estrutura Organizacional + Atribuições", "s": "done" },
+      { "id": "W1.5", "t": "Delegação completa (D1–D6) — M1.x", "s": "pending" },
+      { "id": "W1.6", "t": "Sensibilidade do dado + trilha LGPD — M1.x", "s": "pending" }
+    ]},
+    { "id": "M2", "titulo": "Fundação contábil PCASP + Key Vault/A1", "status": "done", "flag": "OFICIAL", "nota": "Contabilidade PCASP PROVADA em runtime (despesa → lançamentos automáticos → balancete fecha ΣD=ΣC). A1/Key Vault (W2.1) → antes do M4.", "workflows": [
+      { "id": "W2.2", "t": "Expor API de Finanças (ciclo da despesa)", "s": "done" },
+      { "id": "W2.3", "t": "Plano de Contas PCASP (partida dobrada)", "s": "done" },
+      { "id": "W2.4", "t": "Lançamento contábil automático (Outbox)", "s": "done" },
+      { "id": "W2.5", "t": "Balancete (read model) — ΣD=ΣC provado", "s": "done" },
+      { "id": "W2.1", "t": "Cofre + assinatura A1 (envelope encryption) — PROVADO seguro", "s": "done" }
+    ]},
+    { "id": "M3", "titulo": "Demonstrações DCASP + MSC + Planejamento", "status": "done", "flag": "OFICIAL", "nota": "MSC + DCASP provados; ponte Finanças→Transparência (Declaração MSC) fechada em runtime. PPA/LDO/LOA → M3.x.", "workflows": [
+      { "id": "W3.3", "t": "MSC derivada dos lançamentos + publisher (provado)", "s": "done" },
+      { "id": "W3.2", "t": "Demonstrações DCASP (BO/BF/BP/DVP)", "s": "done" },
+      { "id": "W3.fe", "t": "Frontend MSC/demonstrações (vitest 181)", "s": "done" },
+      { "id": "W3.1", "t": "Planejamento PPA/LDO/LOA — M3.x", "s": "pending" }
+    ]},
+    { "id": "M4", "titulo": "Prestação de contas TCE-RS + SICONFI (meta nº1)", "status": "done", "flag": "OFICIAL", "nota": "META Nº1 PROVADA: remessa SIAPC posicional + ZIP + validação local + reconciliação SICONFI + protocolo (transmissão = ato humano, sem API). Leiaute exato = TODO(MT-2026). Tesouraria/Controladoria → M4.x.", "workflows": [
+      { "id": "W4.1", "t": "Remessa SIAPC/PAD posicional + ZIP (provado)", "s": "done" },
+      { "id": "W4.2", "t": "e-Validador local (RDI) + assinatura A1", "s": "done" },
+      { "id": "W4.3", "t": "MSC + reconciliação SICONFI (Dados Abertos)", "s": "done" },
+      { "id": "W4.fe", "t": "Frontend remessa/protocolo (transmissão externa explícita)", "s": "done" },
+      { "id": "W4.4", "t": "Tesouraria / Controle de Caixa — M4.x", "s": "pending" },
+      { "id": "W4.5", "t": "Controladoria / Controle Interno — M4.x", "s": "pending" }
+    ]},
+    { "id": "M5", "titulo": "RH completo (folha + eSocial + ponto)", "status": "pending", "flag": "OFICIAL", "workflows": [
+      { "id": "W5.1", "t": "Motor de folha (INSS/RPPS/IRRF)", "s": "pending" },
+      { "id": "W5.2", "t": "eSocial S-1.3 (eventos + SOAP)", "s": "pending" },
+      { "id": "W5.3", "t": "Ponto AFD/AEJ (Port. 671)", "s": "pending" },
+      { "id": "W5.4", "t": "Remessa de folha TCE-RS (Res. 1099)", "s": "pending" },
+      { "id": "W5.5", "t": "Minha Folha (self-service)", "s": "pending" }
+    ]},
+    { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "pending", "flag": "OFICIAL", "workflows": [
+      { "id": "W6.1", "t": "Cadastro Imobiliário (CIB/PGV)", "s": "pending" },
+      { "id": "W6.2", "t": "Motor IPTU + carnê/DAM", "s": "pending" },
+      { "id": "W6.3", "t": "ISS/eNota/Livro + ITBI", "s": "pending" },
+      { "id": "W6.4", "t": "Taxas/COSIP/Alvarás", "s": "pending" },
+      { "id": "W6.5", "t": "Procuradoria: protesto + execução", "s": "pending" },
+      { "id": "W6.6", "t": "Meio Ambiente / Plan. Urbano / Cemitério", "s": "pending" }
+    ]},
+    { "id": "M7", "titulo": "Saúde / Educação / Assistência (repasses)", "status": "pending", "flag": "OFICIAL", "workflows": [
+      { "id": "W7.1", "t": "Saúde: RNDS (FHIR) + SI-PNI", "s": "pending" },
+      { "id": "W7.2", "t": "Saúde: e-SUS APS/SISAB + CNES + SIOPS", "s": "pending" },
+      { "id": "W7.3", "t": "Saúde: Farmácia + Vigilância Sanitária", "s": "pending" },
+      { "id": "W7.4", "t": "Educação: Educacenso/INEP + SIOPE", "s": "pending" },
+      { "id": "W7.5", "t": "Educação: PNAE + PNATE", "s": "pending" },
+      { "id": "W7.6", "t": "Educação: portais Professores / Pais", "s": "pending" },
+      { "id": "W7.7", "t": "Assistência: CadÚnico/MDS (RMA, Censo)", "s": "pending" }
+    ]},
+    { "id": "M8", "titulo": "Cidadão + Portal do Gestor + BI", "status": "pending", "workflows": [
+      { "id": "W8.1", "t": "Portal/App do Cidadão (Minha Cidade)", "s": "pending" },
+      { "id": "W8.2", "t": "Portal do Gestor (painel executivo)", "s": "pending" },
+      { "id": "W8.3", "t": "BI por área", "s": "pending" },
+      { "id": "W8.4", "t": "Transparência LAI completa (tempo real)", "s": "pending" }
+    ]},
+    { "id": "M9", "titulo": "Suprimentos + compliance + robustez/QA", "status": "pending", "flag": "OFICIAL", "workflows": [
+      { "id": "W9.1", "t": "PNCP bloqueante (eficácia do contrato)", "s": "pending" },
+      { "id": "W9.2", "t": "Almoxarifado + Monitor DF-e", "s": "pending" },
+      { "id": "W9.3", "t": "Frotas + Obras/ObrasPro", "s": "pending" },
+      { "id": "W9.4", "t": "Protocolo: ACT ICP + GED/CONARQ", "s": "pending" },
+      { "id": "W9.5", "t": "Legislativo: LexML + art. 29-A", "s": "pending" },
+      { "id": "W9.6", "t": "Convênios + Terceiro Setor", "s": "pending" },
+      { "id": "W9.7", "t": "Robustez (Outbox/WORM/OTel)", "s": "pending" },
+      { "id": "W9.8", "t": "QA E2E + acessibilidade WCAG AA", "s": "pending" }
+    ]},
+    { "id": "M10", "titulo": "Prontidão para PoC + Go-live (capstone)", "status": "pending", "flag": "OFICIAL", "nota": "DEFINIÇÃO DE PRONTO (100%): não só código, mas validado no OFICIAL + deployável no município (piloto Maximiliano de Almeida/RS).", "workflows": [
+      { "id": "W10.1", "t": "Validação oficial real (e-Validador/PAD MT2026 + eSocial homologação) — certifica simulado→oficial", "s": "pending" },
+      { "id": "W10.2", "t": "Avaliações isentas finais (PoC + engenharia + current-state) + correções", "s": "pending" },
+      { "id": "W10.3", "t": "PoC demonstrável end-to-end (legislativa + municipal) + seed + roteiro", "s": "pending" },
+      { "id": "W10.4", "t": "Go-live: infra Azure, provisionamento tenant, migração inicial, backup/DR/OTel, segurança/LGPD final", "s": "pending" },
+      { "id": "W10.5", "t": "Limpeza de produção + docs finais (município + time)", "s": "pending" }
+    ]}
+  ],
+  "docs": [
+    { "t": "Plano-mestre (10 marcos · 48 workflows)", "p": "../planejamento/PLANO-MESTRE.md" },
+    { "t": "Modelo de Autorização Organizacional", "p": "../planejamento/MODELO-AUTORIZACAO-ORGANIZACIONAL.md" },
+    { "t": "Mapa de Prestação de Contas (TCE + União)", "p": "../planejamento/MAPA-PRESTACAO-CONTAS.md" },
+    { "t": "Benchmark Betha (paridade)", "p": "../planejamento/BENCHMARK-BETHA.md" },
+    { "t": "Diagnóstico — Estado Atual", "p": "../diagnostico/ESTADO-ATUAL.md" },
+    { "t": "Diagnóstico — Gaps e Roadmap", "p": "../diagnostico/GAP-E-ROADMAP.md" },
+    { "t": "Spec Contabilidade → MSC → TCE", "p": "../architecture/contabilidade-pcasp-tce.md" },
+    { "t": "Oficial · PCASP (plano de contas)", "p": "../architecture/specs-oficiais/pcasp-plano-de-contas.md" },
+    { "t": "Oficial · MCASP (eventos contábeis)", "p": "../architecture/specs-oficiais/mcasp-eventos-contabeis.md" },
+    { "t": "Oficial · DCASP (demonstrações)", "p": "../architecture/specs-oficiais/dcasp-demonstracoes.md" },
+    { "t": "Oficial · SICONFI MSC/RREO/RGF", "p": "../architecture/specs-oficiais/siconfi-msc-rreo-rgf.md" },
+    { "t": "Oficial · TCE-RS SIAPC/PAD", "p": "../architecture/specs-oficiais/tce-rs-siapc-pad.md" }
+  ]
+}

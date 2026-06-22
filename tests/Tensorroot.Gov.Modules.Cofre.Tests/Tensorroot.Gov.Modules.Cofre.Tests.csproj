@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1707;xUnit1004;CA1861;CA1305;SYSLIB0057</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Modules/Cofre/Tensorroot.Gov.Modules.Cofre.Domain/Tensorroot.Gov.Modules.Cofre.Domain.csproj" />
+    <ProjectReference Include="../../src/Modules/Cofre/Tensorroot.Gov.Modules.Cofre.Application/Tensorroot.Gov.Modules.Cofre.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Cofre/Tensorroot.Gov.Modules.Cofre.Infrastructure/Tensorroot.Gov.Modules.Cofre.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

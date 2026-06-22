@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Testes de seguranca acessam o nucleo cripto interno (round-trip, AAD/tag, vazamento de chave). -->
+    <InternalsVisibleTo Include="Tensorroot.Gov.Modules.Cofre.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Cofre.Application/Tensorroot.Gov.Modules.Cofre.Application.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="../../../Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"><PrivateAssets>all</PrivateAssets></PackageReference>
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" />
+    <PackageReference Include="Polly.Core" />
+  </ItemGroup>
+
+</Project>

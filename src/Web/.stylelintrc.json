@@ -1,0 +1,9 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "comment-empty-line-before": null,
+    "custom-property-pattern": null,
+    "declaration-no-important": true
+  },
+  "comment": "Cores/medidas devem usar design tokens do @govbr-ds (custom properties), nunca valores hard-coded."
+}

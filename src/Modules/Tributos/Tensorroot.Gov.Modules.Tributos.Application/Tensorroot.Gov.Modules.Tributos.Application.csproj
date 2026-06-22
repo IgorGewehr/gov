@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Tributos.Domain/Tensorroot.Gov.Modules.Tributos.Domain.csproj" />
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Tributos.Contracts/Tensorroot.Gov.Modules.Tributos.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,73 @@
+// Teste do modal de consulta de contracheque. Render (estado inicial pedindo seleção)
+// + 1 interação: selecionar servidor e consultar, exibindo as linhas do contracheque.
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { renderWithProviders } from '../../test/renderWithProviders';
+import { ContrachequeModal } from './ContrachequeModal';
+import type { Contracheque } from './folha.api';
+import type { ServidorResumo } from './servidor.api';
+
+const SERVIDORES: ServidorResumo[] = [
+  {
+    id: 's-1',
+    cpf: '***.456.789-**',
+    matricula: 'MAT-001',
+    nomeServidor: 'Maria da Silva',
+    cargoId: 'c-1',
+    regime: 'Rpps',
+    situacao: 'EmExercicio',
+    dataNomeacao: '2024-02-01',
+    dataExercicio: '2024-02-15',
+  },
+];
+
+const CONTRACHEQUE: Contracheque = {
+  servidorId: 's-1',
+  competencia: '2026-06',
+  linhas: [{ rubrica: 'Vencimento', tipo: 'Provento', valor: 5000 }],
+  totalProventos: 5000,
+  totalDescontos: 0,
+  liquidoAPagar: 5000,
+};
+
+function mockFetch(resolver: (url: string) => unknown): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = typeof input === 'string' ? input : (input as Request).url;
+    return Promise.resolve(
+      new Response(JSON.stringify(resolver(url)), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+  });
+}
+
+describe('ContrachequeModal', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('exibe o estado inicial pedindo a seleção de um servidor', () => {
+    mockFetch(() => SERVIDORES);
+    renderWithProviders(<ContrachequeModal open onClose={() => {}} folhaId="f-1" />);
+    expect(screen.getByText('Selecione um servidor')).toBeInTheDocument();
+  });
+
+  it('consulta e exibe as linhas do contracheque (interação)', async () => {
+    const user = userEvent.setup();
+    mockFetch((url) => (url.includes('contracheque') ? CONTRACHEQUE : SERVIDORES));
+    renderWithProviders(<ContrachequeModal open onClose={() => {}} folhaId="f-1" />);
+
+    await screen.findByRole('option', { name: /MAT-001 — Maria da Silva/i });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Servidor' }), 's-1');
+    await user.click(screen.getByRole('button', { name: /Consultar/i }));
+
+    expect(await screen.findByText('Vencimento')).toBeInTheDocument();
+    expect(screen.getByText('Líquido a pagar')).toBeInTheDocument();
+    expect(screen.getAllByText('R$ 5.000,00').length).toBeGreaterThan(0);
+  });
+});

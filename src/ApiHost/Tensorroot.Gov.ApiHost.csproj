@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CA1515</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Modules/Administracao/Tensorroot.Gov.Modules.Administracao.Infrastructure/Tensorroot.Gov.Modules.Administracao.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Identidade/Tensorroot.Gov.Modules.Identidade.Infrastructure/Tensorroot.Gov.Modules.Identidade.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Financas/Tensorroot.Gov.Modules.Financas.Infrastructure/Tensorroot.Gov.Modules.Financas.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Tributos/Tensorroot.Gov.Modules.Tributos.Infrastructure/Tensorroot.Gov.Modules.Tributos.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Patrimonio/Tensorroot.Gov.Modules.Patrimonio.Infrastructure/Tensorroot.Gov.Modules.Patrimonio.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Protocolo/Tensorroot.Gov.Modules.Protocolo.Infrastructure/Tensorroot.Gov.Modules.Protocolo.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Saude/Tensorroot.Gov.Modules.Saude.Infrastructure/Tensorroot.Gov.Modules.Saude.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Educacao/Tensorroot.Gov.Modules.Educacao.Infrastructure/Tensorroot.Gov.Modules.Educacao.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/AssistenciaSocial/Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure/Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Legislativo/Tensorroot.Gov.Modules.Legislativo.Infrastructure/Tensorroot.Gov.Modules.Legislativo.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Transparencia/Tensorroot.Gov.Modules.Transparencia.Infrastructure/Tensorroot.Gov.Modules.Transparencia.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Cofre/Tensorroot.Gov.Modules.Cofre.Infrastructure/Tensorroot.Gov.Modules.Cofre.Infrastructure.csproj" />
+    <ProjectReference Include="../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="../Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+</Project>

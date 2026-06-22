@@ -1,0 +1,44 @@
+## .NET / build
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+
+## IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+## Testes / cobertura
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.json
+coverage*.xml
+
+## SEGREDOS — NUNCA versionar. Certificados A1 ficam no Azure Key Vault.
+*.pfx
+*.p12
+*.pem
+*.key
+secrets.json
+appsettings.*.Local.json
+.env
+.env.*
+
+## Bancos locais (SQLite dev) — contêm DADOS DE TENANT, NUNCA versionar.
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## SO / logs
+.DS_Store
+*.log
+
+## Frontend
+node_modules/
+src/Web/dist/

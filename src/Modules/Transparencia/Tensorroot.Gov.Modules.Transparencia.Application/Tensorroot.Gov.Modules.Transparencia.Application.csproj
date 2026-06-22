@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Transparencia.Domain/Tensorroot.Gov.Modules.Transparencia.Domain.csproj" />
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Transparencia.Contracts/Tensorroot.Gov.Modules.Transparencia.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
+    <!-- Integração cross-module: SOMENTE via Contracts (guardado por NetArchTest). MSC publicada por Financas. -->
+    <ProjectReference Include="../../Financas/Tensorroot.Gov.Modules.Financas.Contracts/Tensorroot.Gov.Modules.Financas.Contracts.csproj" />
+  </ItemGroup>
+</Project>

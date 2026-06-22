@@ -1,0 +1,25 @@
+<Project>
+
+  <!--
+    Propriedades comuns a TODOS os projetos de Tensorroot.Gov.
+    Centraliza o alvo .NET 8 / C# 12, NRT e o rigor de compilação exigido
+    por um sistema de missão crítica (dinheiro público / Tribunal de Contas).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <Company>Tensorroot</Company>
+    <Product>Tensorroot.Gov</Product>
+    <!-- CA1848 (LoggerMessage de alta performance) é ENCORAJADO em hot paths,
+         mas não é imposto como erro em código de linha de negócio nesta fase. -->
+    <NoWarn>$(NoWarn);CA1848;CA1873</NoWarn>
+  </PropertyGroup>
+
+</Project>
