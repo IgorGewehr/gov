@@ -62,6 +62,11 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IRubricaS1010Consulta, RubricaS1010Consulta>();
         services.AddScoped<IParametrosFolhaProvider, ParametrosFolhaProvider>();
         services.AddScoped<ITabelasLegaisProvider, TabelasLegaisProvider>();
+        services.AddScoped<IMarcacaoPontoRepository, MarcacaoPontoRepository>();
+        services.AddScoped<IJornadaTrabalhoRepository, JornadaTrabalhoRepository>();
+        services.AddScoped<IApuracaoPontoRepository, ApuracaoPontoRepository>();
+        services.AddScoped<IServidorPontoConsulta, ServidorPontoConsulta>();
+        services.AddScoped<IParametrosPontoProvider, ParametrosPontoProvider>();
 
         var applicationAssembly = typeof(AdmitirServidorCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

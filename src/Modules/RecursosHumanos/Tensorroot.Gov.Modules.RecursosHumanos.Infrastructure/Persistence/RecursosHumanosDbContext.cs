@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
@@ -40,6 +41,15 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Tabelas RPPS municipais parametrizadas por competencia.</summary>
     public DbSet<TabelaRpps> TabelasRpps => Set<TabelaRpps>();
+
+    /// <summary>Marcacoes de ponto (AFD append-only — Portaria MTP 671/2021).</summary>
+    public DbSet<MarcacaoPonto> PontoMarcacoes => Set<MarcacaoPonto>();
+
+    /// <summary>Jornadas/escalas de trabalho dos servidores.</summary>
+    public DbSet<JornadaTrabalho> PontoJornadas => Set<JornadaTrabalho>();
+
+    /// <summary>Apuracoes de jornada por servidor/competencia (PTRP/banco de horas).</summary>
+    public DbSet<ApuracaoPonto> PontoApuracoes => Set<ApuracaoPonto>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

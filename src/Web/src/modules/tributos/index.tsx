@@ -30,6 +30,12 @@ const ApurarIptuPage = lazy(() =>
 const IptuParametrosPage = lazy(() =>
   import('./IptuParametrosPage').then((m) => ({ default: m.IptuParametrosPage })),
 );
+const ApurarIssPage = lazy(() =>
+  import('./ApurarIssPage').then((m) => ({ default: m.ApurarIssPage })),
+);
+const TransmitirItbiPage = lazy(() =>
+  import('./TransmitirItbiPage').then((m) => ({ default: m.TransmitirItbiPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'tributos',
@@ -46,6 +52,8 @@ const MODULE: ModuleDefinition = {
         { path: 'imoveis', element: <ImovelListPage /> },
         { path: 'imoveis/:id/iptu', element: <ApurarIptuPage /> },
         { path: 'iptu/parametros', element: <IptuParametrosPage /> },
+        { path: 'iss', element: <ApurarIssPage /> },
+        { path: 'itbi', element: <TransmitirItbiPage /> },
       ],
     },
   ],

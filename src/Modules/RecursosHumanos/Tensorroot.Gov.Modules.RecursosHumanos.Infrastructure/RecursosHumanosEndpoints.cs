@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.TabelasLegais;
@@ -25,6 +26,57 @@ internal static class RecursosHumanosEndpoints
         MapearRubricas(grupo);
         MapearTabelasLegais(grupo);
         MapearFolha(grupo);
+        MapearPonto(grupo);
+    }
+
+    private static void MapearPonto(RouteGroupBuilder grupo)
+    {
+        var ponto = grupo.MapGroup("/ponto");
+
+        // Define/substitui a jornada/escala do servidor.
+        ponto.MapPost("/jornadas", async (
+            DefinirJornadaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Registra uma marcacao (batida); devolve o NSR sequencial atribuido.
+        ponto.MapPost("/marcacoes", async (
+            RegistrarMarcacaoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { nsr = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Apura a jornada (PTRP) de um servidor numa competencia (trata sem alterar o AFD).
+        ponto.MapPost("/apuracoes", async (
+            ApurarJornadaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Fecha a apuracao (congela espelho/AEJ; gancho p/ folha via Outbox).
+        ponto.MapPost("/apuracoes/{apuracaoId:guid}/fechamento", async (
+            Guid apuracaoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new FecharApuracaoJornadaCommand(apuracaoId), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Gera o AFD (Arquivo Fonte de Dados) de um periodo, assinado em CAdES (.p7s).
+        ponto.MapGet("/afd", async (
+            DateOnly inicio, DateOnly fim, bool? assinar, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var artefato = await sender.Send(new GerarAfdQuery(inicio, fim, assinar ?? true), cancellationToken);
+            return Results.File(artefato.Conteudo, "text/plain", artefato.NomeArquivo);
+        })
+            .RequirePermission("recursoshumanos.ver");
+
+        // Gera o AEJ (Arquivo Eletronico de Jornada) de uma competencia, assinado em CAdES (.p7s).
+        ponto.MapGet("/aej", async (
+            int ano, int mes, bool? assinar, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var artefato = await sender.Send(new GerarAejQuery(ano, mes, assinar ?? true), cancellationToken);
+            return Results.File(artefato.Conteudo, "text/plain", artefato.NomeArquivo);
+        })
+            .RequirePermission("recursoshumanos.ver");
     }
 
     private static void MapearRubricas(RouteGroupBuilder grupo)

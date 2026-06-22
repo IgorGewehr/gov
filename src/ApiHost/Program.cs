@@ -15,8 +15,10 @@ using Tensorroot.Gov.ApiHost.Modularity;
 using Tensorroot.Gov.ApiHost.Outbox;
 using Tensorroot.Gov.ApiHost.Provisioning;
 using Tensorroot.Gov.ApiHost.Tenancy;
+using Tensorroot.Gov.ApiHost.Assinatura;
 using Tensorroot.Gov.BuildingBlocks.Application;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
+using Tensorroot.Gov.BuildingBlocks.Application.Assinatura;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
@@ -69,6 +71,11 @@ builder.Services.AddScoped<TenantOverride>();
 // resolveria dois ModuleDbContext no mesmo escopo e acionaria a guarda H5. Vive no ApiHost porque
 // depende de IServiceScopeFactory + TenantOverride (camada superior ao BuildingBlocks).
 builder.Services.AddScoped<IOutboxMessageDispatcher, ScopedOutboxMessageDispatcher>();
+
+// Assinatura A1 em ESCOPO DEDICADO: permite a handlers de outros modulos (ex.: AFD/AEJ do
+// RecursosHumanos) assinarem via Cofre sem co-resolver o CofreDbContext no mesmo escopo do seu
+// proprio ModuleDbContext (gatilho da guarda H5). Mesma motivacao do ScopedOutboxMessageDispatcher.
+builder.Services.AddScoped<IAssinaturaEmEscopoDedicado, AssinaturaEmEscopoDedicado>();
 
 // === Segurança: JWT Bearer (token AUTO-EMITIDO pelo módulo Identidade, HS256) ===
 // Validamos o token assinado com o segredo simétrico de "Jwt:Secret" (Key Vault em produção).

@@ -17,4 +17,11 @@ public enum DestinoAssinatura
 
     /// <summary>Documento no Protocolo (Lei 14.063/2020).</summary>
     Protocolo = 4,
+
+    /// <summary>
+    /// Ponto eletronico — AFD/AEJ (Portaria MTP 671/2021): CAdES DETACHED (.p7s) sobre o arquivo
+    /// posicional. // TODO(validar-oficial): perfil CAdES exato (algoritmo/atributos assinados/cadeia
+    /// ICP-Brasil) conforme o Anexo da 671 e a P-e-R REP gov.br; comprovante do trabalhador = PAdES.
+    /// </summary>
+    Ponto = 5,
 }

@@ -14,6 +14,8 @@ const ABAS: Aba[] = [
   { to: '/tributos', label: 'Dívida Ativa', end: true },
   { to: '/tributos/imoveis', label: 'Imóveis' },
   { to: '/tributos/iptu/parametros', label: 'Parâmetros do IPTU' },
+  { to: '/tributos/iss', label: 'ISS' },
+  { to: '/tributos/itbi', label: 'ITBI' },
 ];
 
 export function TributosSubNav() {
