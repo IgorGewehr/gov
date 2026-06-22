@@ -77,6 +77,27 @@ public static class Permissoes
     /// <summary>Semear o cenario de demonstracao do modulo Legislativo (dados de exemplo por tenant).</summary>
     public const string LegislativoDemoSemear = "legislativo.demo.semear";
 
+    /// <summary>Gerenciar a base de normas juridicas (cadastrar/revogar/alterar leis, decretos, resolucoes).</summary>
+    public const string LegislativoNormasGerenciar = "legislativo.normas.gerenciar";
+
+    /// <summary>Montar edicoes e materias do Diario Oficial Eletronico (sem efeito legal de publicacao).</summary>
+    public const string LegislativoDiarioGerenciar = "legislativo.diario.gerenciar";
+
+    /// <summary>
+    /// Publicar a edicao do Diario Oficial (ato com efeito legal de eficacia dos atos) — verbo fino de
+    /// Segregacao de Funcoes, separado de quem monta a edicao.
+    /// </summary>
+    public const string LegislativoDiarioPublicar = "legislativo.diario.publicar";
+
+    /// <summary>
+    /// Controlar o cronometro da tribuna (iniciar/pausar/retomar/encerrar a fala) — ato de mesa
+    /// diretora/presidencia, separado da gestao geral do Legislativo.
+    /// </summary>
+    public const string LegislativoTribunaControlar = "legislativo.tribuna.controlar";
+
+    /// <summary>Gerenciar o cadastro de comissoes (permanentes/temporarias) e sua composicao/presidencia.</summary>
+    public const string LegislativoComissoesGerenciar = "legislativo.comissoes.gerenciar";
+
     /// <summary>Visualizar dados do modulo Transparencia (dados abertos, remessas TCE).</summary>
     public const string TransparenciaVer = "transparencia.ver";
 
@@ -162,6 +183,11 @@ public static class Permissoes
         LegislativoGerenciar,
         LegislativoVereadoresGerenciar,
         LegislativoDemoSemear,
+        LegislativoNormasGerenciar,
+        LegislativoDiarioGerenciar,
+        LegislativoDiarioPublicar,
+        LegislativoTribunaControlar,
+        LegislativoComissoesGerenciar,
         TransparenciaVer,
         TransparenciaGerenciar,
         IdentidadeUsuariosGerenciar,

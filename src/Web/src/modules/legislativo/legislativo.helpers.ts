@@ -66,6 +66,21 @@ export function resultadoVotacaoTagVariant(resultado: string | null): TagVariant
   }
 }
 
+/** Mapeia a situacao de um vereador para a variante semantica da Tag. */
+export function situacaoVereadorTagVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Ativo':
+      return 'success';
+    case 'Licenciado':
+    case 'SuplenteEmExercicio':
+      return 'info';
+    case 'Afastado':
+      return 'warning';
+    default:
+      return 'default';
+  }
+}
+
 /** Formata um instante ISO (yyyy-MM-ddTHH:mm:ssZ) em dd/mm/aaaa HH:mm (pt-BR). */
 const dataHoraFormat = new Intl.DateTimeFormat('pt-BR', {
   day: '2-digit',

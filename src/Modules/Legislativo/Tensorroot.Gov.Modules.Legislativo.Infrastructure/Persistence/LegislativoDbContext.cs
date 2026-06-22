@@ -1,8 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes;
+using Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Sessoes;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Vereadores;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Votacoes;
 
@@ -30,11 +34,50 @@ public sealed class LegislativoDbContext(DbContextOptions<LegislativoDbContext> 
     /// <summary>Vereadores (cadastro de parlamentares da Camara).</summary>
     public DbSet<Vereador> Vereadores => Set<Vereador>();
 
+    /// <summary>Normas juridicas (base consultavel de leis/decretos/resolucoes) — G1.</summary>
+    public DbSet<Norma> Normas => Set<Norma>();
+
+    /// <summary>Edicoes do Diario Oficial Eletronico — G2.</summary>
+    public DbSet<EdicaoDiario> DiarioEdicoes => Set<EdicaoDiario>();
+
+    /// <summary>Tribunas de sessao (inscricao de oradores + cronometro) — G3.</summary>
+    public DbSet<TribunaSessao> Tribunas => Set<TribunaSessao>();
+
+    /// <summary>Comissoes (permanentes/temporarias) com composicao e presidencia — G4.</summary>
+    public DbSet<Comissao> Comissoes => Set<Comissao>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LegislativoDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
+    }
+
+    /// <inheritdoc />
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        SincronizarColunaBuscaNorma();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        SincronizarColunaBuscaNorma();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    // Mantem a coluna-sombra "EmentaBusca" (string crua, indexada) sincronizada com o VO Ementa
+    // para permitir busca textual translatavel em SQL sem passar pelo value converter do VO.
+    private void SincronizarColunaBuscaNorma()
+    {
+        foreach (var entrada in ChangeTracker.Entries<Norma>())
+        {
+            if (entrada.State is EntityState.Added or EntityState.Modified)
+            {
+                entrada.Property("EmentaBusca").CurrentValue = entrada.Entity.Ementa.Valor;
+            }
+        }
     }
 }

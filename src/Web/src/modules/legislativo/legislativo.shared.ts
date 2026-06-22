@@ -65,6 +65,23 @@ export const SENTIDOS_VOTO = [
   { value: 3, label: 'Abstenção' },
 ] as const;
 
+/** Cargo do vereador na Mesa Diretora (CargoMesa). */
+export const CARGOS_MESA = [
+  { value: 0, label: 'Nenhum' },
+  { value: 1, label: 'Presidente' },
+  { value: 2, label: 'Vice-Presidente' },
+  { value: 3, label: '1º Secretário' },
+  { value: 4, label: '2º Secretário' },
+] as const;
+
+/** Situacao do mandato do vereador (SituacaoVereador). */
+export const SITUACOES_VEREADOR = [
+  { value: 1, label: 'Ativo' },
+  { value: 2, label: 'Licenciado' },
+  { value: 3, label: 'Suplente em Exercício' },
+  { value: 4, label: 'Afastado' },
+] as const;
+
 // ---------------------------------------------------------------------------
 // Query keys (fonte unica para invalidacao)
 // ---------------------------------------------------------------------------
@@ -81,11 +98,17 @@ export const legislativoKeys = {
   sessoesAgendadas: () => [...legislativoKeys.sessoes(), 'agendadas'] as const,
   sessao: (id: string) => [...legislativoKeys.sessoes(), 'detalhe', id] as const,
   sessaoPresencas: (id: string) => [...legislativoKeys.sessoes(), 'presencas', id] as const,
+  sessaoAta: (id: string) => [...legislativoKeys.sessoes(), 'ata', id] as const,
   votacoes: () => [...legislativoKeys.all, 'votacoes'] as const,
+  votacoesPorSessao: (sessaoId: string) =>
+    [...legislativoKeys.votacoes(), 'sessao', sessaoId] as const,
   votacao: (id: string) => [...legislativoKeys.votacoes(), 'detalhe', id] as const,
   votacaoPlacar: (id: string) => [...legislativoKeys.votacoes(), 'placar', id] as const,
+  votacaoPainel: (id: string) => [...legislativoKeys.votacoes(), 'painel', id] as const,
   votacaoVotosNominais: (id: string) =>
     [...legislativoKeys.votacoes(), 'votos-nominais', id] as const,
+  vereadores: () => [...legislativoKeys.all, 'vereadores'] as const,
+  vereador: (id: string) => [...legislativoKeys.vereadores(), 'detalhe', id] as const,
 };
 
 /** Resposta dos endpoints de criacao (`Results.Ok(new { id })`). */

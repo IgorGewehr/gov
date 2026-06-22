@@ -1,6 +1,10 @@
 using FluentAssertions;
+using Tensorroot.Gov.Modules.Legislativo.Application.Comissoes;
+using Tensorroot.Gov.Modules.Legislativo.Application.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Application.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Sessoes;
+using Tensorroot.Gov.Modules.Legislativo.Application.Tribuna;
 using Tensorroot.Gov.Modules.Legislativo.Application.Votacoes;
 using Xunit;
 
@@ -91,5 +95,69 @@ public sealed class ValidadoresEnumIntTests
             .Validate(new ApresentarProposicaoCommand(Tipo: 0, Ementa: "Ementa de teste.", Autoria: "Vereador X", Regime: 1));
 
         resultado.IsValid.Should().BeFalse();
+    }
+
+    // --- Gaps: Enum.IsDefined(typeof(E), valor) sobre int do contrato HTTP (nao IsInEnum). ---
+
+    [Theory]
+    [InlineData(1, true)]   // Lei
+    [InlineData(6, true)]   // LeiOrganica
+    [InlineData(0, false)]
+    [InlineData(99, false)]
+    public void CadastrarNorma_valida_tipo(int tipo, bool esperado)
+    {
+        var resultado = new CadastrarNormaValidator()
+            .Validate(new CadastrarNormaCommand(tipo, 10, 2025, "Ementa.", new DateOnly(2025, 1, 1), null, null));
+
+        resultado.IsValid.Should().Be(esperado);
+    }
+
+    [Theory]
+    [InlineData(1, true)]   // Norma
+    [InlineData(6, true)]   // Outro
+    [InlineData(0, false)]
+    public void AdicionarMateria_valida_tipo(int tipo, bool esperado)
+    {
+        var resultado = new AdicionarMateriaValidator()
+            .Validate(new AdicionarMateriaCommand(Guid.NewGuid(), tipo, "Titulo", "conteudo", null));
+
+        resultado.IsValid.Should().Be(esperado);
+    }
+
+    [Theory]
+    [InlineData(1, true)]   // PequenoExpediente
+    [InlineData(4, true)]   // TribunaLivre
+    [InlineData(0, false)]
+    public void InscreverOrador_valida_fase(int fase, bool esperado)
+    {
+        var resultado = new InscreverOradorValidator()
+            .Validate(new InscreverOradorCommand(Guid.NewGuid(), Guid.NewGuid(), fase, null));
+
+        resultado.IsValid.Should().Be(esperado);
+    }
+
+    [Theory]
+    [InlineData(1, 0, true)]    // Efetivo / Nenhum
+    [InlineData(2, 1, true)]    // Suplente / Presidente
+    [InlineData(9, 0, false)]
+    [InlineData(1, 9, false)]
+    public void DesignarMembro_valida_papel_e_cargo(int papel, int cargo, bool esperado)
+    {
+        var resultado = new DesignarMembroValidator()
+            .Validate(new DesignarMembroCommand(Guid.NewGuid(), Guid.NewGuid(), papel, cargo));
+
+        resultado.IsValid.Should().Be(esperado);
+    }
+
+    [Theory]
+    [InlineData(1, true)]   // Permanente
+    [InlineData(2, true)]   // Temporaria
+    [InlineData(0, false)]
+    public void CriarComissao_valida_tipo(int tipo, bool esperado)
+    {
+        var resultado = new CriarComissaoValidator()
+            .Validate(new CriarComissaoCommand("Comissao X", tipo));
+
+        resultado.IsValid.Should().Be(esperado);
     }
 }

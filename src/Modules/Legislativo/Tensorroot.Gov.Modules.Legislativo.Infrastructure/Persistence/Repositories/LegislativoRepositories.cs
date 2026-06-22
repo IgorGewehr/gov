@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes;
+using Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Sessoes;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Vereadores;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Votacoes;
 
@@ -130,4 +134,187 @@ public sealed class VereadorRepository(LegislativoDbContext context) : IVereador
     /// <inheritdoc />
     public Task<int> ContarAsync(CancellationToken cancellationToken)
         => context.Vereadores.CountAsync(cancellationToken);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="Norma"/>.</summary>
+public sealed class NormaRepository(LegislativoDbContext context) : INormaRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(Norma norma)
+    {
+        ArgumentNullException.ThrowIfNull(norma);
+        context.Normas.Add(norma);
+    }
+
+    /// <inheritdoc />
+    public Task<Norma?> ObterPorIdAsync(NormaId id, CancellationToken cancellationToken)
+        => context.Normas.FirstOrDefaultAsync(norma => norma.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExisteAsync(TipoNorma tipo, int numero, int ano, CancellationToken cancellationToken)
+        => context.Normas.AnyAsync(
+            norma => norma.Tipo == tipo && norma.Numero == numero && norma.Ano == ano,
+            cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Norma> Itens, int Total)> BuscarAsync(FiltroNormas filtro, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(filtro);
+
+        var consulta = context.Normas.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filtro.Termo))
+        {
+            // Busca case-insensitive (LIKE) pela coluna-sombra string crua "EmentaBusca"
+            // (sincronizada no SaveChanges), evitando o value converter do VO Ementa que causaria
+            // InvalidCastException. Wildcards do termo sao escapados para tratar % e _ como literais.
+            var padrao = "%" + EscaparLike(filtro.Termo) + "%";
+            consulta = consulta.Where(norma =>
+                EF.Functions.Like(EF.Property<string>(norma, "EmentaBusca"), padrao, "\\"));
+        }
+
+        if (filtro.Tipo is { } tipo)
+        {
+            consulta = consulta.Where(norma => norma.Tipo == tipo);
+        }
+
+        if (filtro.Numero is { } numero)
+        {
+            consulta = consulta.Where(norma => norma.Numero == numero);
+        }
+
+        if (filtro.Ano is { } ano)
+        {
+            consulta = consulta.Where(norma => norma.Ano == ano);
+        }
+
+        if (filtro.Situacao is { } situacao)
+        {
+            consulta = consulta.Where(norma => norma.SituacaoVigencia == situacao);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderByDescending(norma => norma.Ano)
+            .ThenByDescending(norma => norma.Numero)
+            .Skip((filtro.Pagina - 1) * filtro.Tamanho)
+            .Take(filtro.Tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
+
+    // Escapa os curingas do LIKE (\, %, _) para que o termo do usuario seja tratado como literal.
+    private static string EscaparLike(string termo)
+        => termo.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="EdicaoDiario"/>.</summary>
+public sealed class EdicaoDiarioRepository(LegislativoDbContext context) : IEdicaoDiarioRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(EdicaoDiario edicao)
+    {
+        ArgumentNullException.ThrowIfNull(edicao);
+        context.DiarioEdicoes.Add(edicao);
+    }
+
+    /// <inheritdoc />
+    public Task<EdicaoDiario?> ObterPorIdAsync(EdicaoDiarioId id, CancellationToken cancellationToken)
+        => context.DiarioEdicoes.FirstOrDefaultAsync(edicao => edicao.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<int> ProximoNumeroAsync(int ano, CancellationToken cancellationToken)
+    {
+        var maximo = await context.DiarioEdicoes
+            .Where(edicao => edicao.Ano == ano)
+            .Select(edicao => (int?)edicao.Numero)
+            .MaxAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (maximo ?? 0) + 1;
+    }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<EdicaoDiario> Itens, int Total)> ListarAsync(
+        int? ano,
+        SituacaoEdicao? situacao,
+        bool apenasPublicadas,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.DiarioEdicoes.AsQueryable();
+
+        if (apenasPublicadas)
+        {
+            consulta = consulta.Where(edicao => edicao.Situacao == SituacaoEdicao.Publicada);
+        }
+        else if (situacao is { } s)
+        {
+            consulta = consulta.Where(edicao => edicao.Situacao == s);
+        }
+
+        if (ano is { } a)
+        {
+            consulta = consulta.Where(edicao => edicao.Ano == a);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderByDescending(edicao => edicao.Ano)
+            .ThenByDescending(edicao => edicao.Numero)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="TribunaSessao"/>.</summary>
+public sealed class TribunaSessaoRepository(LegislativoDbContext context) : ITribunaSessaoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(TribunaSessao tribuna)
+    {
+        ArgumentNullException.ThrowIfNull(tribuna);
+        context.Tribunas.Add(tribuna);
+    }
+
+    /// <inheritdoc />
+    public Task<TribunaSessao?> ObterPorIdAsync(TribunaSessaoId id, CancellationToken cancellationToken)
+        => context.Tribunas.FirstOrDefaultAsync(tribuna => tribuna.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<TribunaSessao?> ObterPorSessaoAsync(SessaoId sessaoId, CancellationToken cancellationToken)
+        => context.Tribunas.FirstOrDefaultAsync(tribuna => tribuna.SessaoId == sessaoId, cancellationToken);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="Comissao"/>.</summary>
+public sealed class ComissaoRepository(LegislativoDbContext context) : IComissaoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(Comissao comissao)
+    {
+        ArgumentNullException.ThrowIfNull(comissao);
+        context.Comissoes.Add(comissao);
+    }
+
+    /// <inheritdoc />
+    public Task<Comissao?> ObterPorIdAsync(ComissaoId id, CancellationToken cancellationToken)
+        => context.Comissoes.FirstOrDefaultAsync(comissao => comissao.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Comissao>> ListarAsync(CancellationToken cancellationToken)
+        => await context.Comissoes
+            .OrderBy(comissao => comissao.Nome)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }

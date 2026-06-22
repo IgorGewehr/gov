@@ -9,3 +9,5 @@ export * from './legislativo.shared';
 export * from './proposicao.api';
 export * from './sessao.api';
 export * from './votacao.api';
+export * from './vereadores.api';
+export * from './demonstracao.api';

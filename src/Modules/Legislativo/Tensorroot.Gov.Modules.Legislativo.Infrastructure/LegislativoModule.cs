@@ -55,6 +55,10 @@ public sealed class LegislativoModule : IModule
         services.AddScoped<ISessaoRepository, SessaoRepository>();
         services.AddScoped<IVotacaoRepository, VotacaoRepository>();
         services.AddScoped<IVereadorRepository, VereadorRepository>();
+        services.AddScoped<INormaRepository, NormaRepository>();
+        services.AddScoped<IEdicaoDiarioRepository, EdicaoDiarioRepository>();
+        services.AddScoped<ITribunaSessaoRepository, TribunaSessaoRepository>();
+        services.AddScoped<IComissaoRepository, ComissaoRepository>();
 
         var applicationAssembly = typeof(ApresentarProposicaoCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

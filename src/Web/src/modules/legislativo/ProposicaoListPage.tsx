@@ -3,6 +3,7 @@
 // abertura do formulario de apresentacao (mutation).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LegislativoSecoesNav } from './LegislativoSecoesNav';
 import {
   Button,
   Card,
@@ -76,6 +77,8 @@ export function ProposicaoListPage() {
           </Can>
         }
       />
+
+      <LegislativoSecoesNav />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={(e) => e.preventDefault()}>

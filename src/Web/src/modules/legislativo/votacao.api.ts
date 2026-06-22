@@ -58,6 +58,41 @@ export interface RegistrarVotoInput {
   sentido: number;
 }
 
+/** Resumo de uma votacao para listagem (por sessao). */
+export interface VotacaoResumo {
+  id: string;
+  proposicaoId: string;
+  tipo: string;
+  situacao: string;
+  resultado: string | null;
+}
+
+/** Voto nominal exibido no painel ao vivo (inclui o nome do vereador). */
+export interface VotoNominalPainel {
+  vereadorId: string;
+  nomeVereador: string;
+  sentido: string;
+}
+
+/**
+ * Painel eletronico (PLACAR ao vivo) de uma votacao: totais Sim/Nao/Abstencao,
+ * presenca, quorum e o resultado parcial, com a lista nominal dos votos.
+ */
+export interface PainelVotacao {
+  votacaoId: string;
+  sim: number;
+  nao: number;
+  abstencao: number;
+  totalVotos: number;
+  presentes: number;
+  ausentes: number;
+  quorumMinimo: number;
+  quorumAtingido: boolean;
+  resultadoParcial: string;
+  situacao: string;
+  votos: VotoNominalPainel[];
+}
+
 // ---------------------------------------------------------------------------
 // Acesso HTTP
 // ---------------------------------------------------------------------------
@@ -68,6 +103,14 @@ function obterVotacao(id: string, signal?: AbortSignal): Promise<VotacaoDetalhe>
 
 function obterPlacar(id: string, signal?: AbortSignal): Promise<PlacarVotacao> {
   return http.get<PlacarVotacao>(`/legislativo/votacoes/${id}/placar`, { signal });
+}
+
+function listarVotacoesPorSessao(sessaoId: string, signal?: AbortSignal): Promise<VotacaoResumo[]> {
+  return http.get<VotacaoResumo[]>('/legislativo/votacoes', { query: { sessaoId }, signal });
+}
+
+function obterPainel(id: string, signal?: AbortSignal): Promise<PainelVotacao> {
+  return http.get<PainelVotacao>(`/legislativo/votacoes/${id}/painel`, { signal });
 }
 
 function listarVotosNominais(id: string, signal?: AbortSignal): Promise<VotoResumo[]> {
@@ -111,6 +154,30 @@ export function usePlacarVotacao(id: string) {
     queryKey: legislativoKeys.votacaoPlacar(id),
     queryFn: ({ signal }) => obterPlacar(id, signal),
     enabled: id.trim().length > 0,
+  });
+}
+
+/** Lista as votacoes de uma sessao (abertas costumam vir primeiro do backend). */
+export function useVotacoesPorSessao(sessaoId: string) {
+  return useQuery({
+    queryKey: legislativoKeys.votacoesPorSessao(sessaoId),
+    queryFn: ({ signal }) => listarVotacoesPorSessao(sessaoId, signal),
+    enabled: sessaoId.trim().length > 0,
+  });
+}
+
+/**
+ * Painel eletronico (PLACAR ao vivo) de uma votacao. Faz auto-refresh por
+ * polling (refetchInterval) ENQUANTO a votacao estiver Aberta, dando a sensacao
+ * de tempo real; para de pollar assim que ela e Encerrada/Cancelada.
+ */
+export function usePainelVotacao(id: string, intervaloMs = 3000) {
+  return useQuery({
+    queryKey: legislativoKeys.votacaoPainel(id),
+    queryFn: ({ signal }) => obterPainel(id, signal),
+    enabled: id.trim().length > 0,
+    refetchInterval: (query) =>
+      query.state.data?.situacao === 'Aberta' ? intervaloMs : false,
   });
 }
 

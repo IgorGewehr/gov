@@ -1,8 +1,8 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-23 — M0–M4 entregues; CORRIGINDO regressão do hardening (dispatch do Outbox)",
-  "atividadeAtual": "⚠️ REGRESSÃO PEGA EM RUNTIME (disciplina verify-don't-trust): o endurecimento P0 adicionou a guarda H5 (falha-alto no holder) que EXPÔS uma fragilidade latente — o Outbox publicava handlers de módulos distintos (Finanças+Administração) no MESMO escopo, e a contabilização automática parou. Funcionava em M2–M4 por sorte de ordenação. CORREÇÃO em execução (weg055chg): isolar cada mensagem do Outbox em escopo próprio (robusto, não dependente de ordem), com prova de runtime obrigatória (lançamentos voltam, balancete fecha ΣD=ΣC, dotação confirmada, H5 ainda pega colisão real). Validação minha após. Auditoria/PoC/validação-real concluídas; sprint legislativo + M5 a seguir.",
+  "atualizadoEm": "2026-06-23 — baseline no GitHub (IgorGewehr/gov); sprint legislativo em andamento",
+  "atividadeAtual": "🚀 BASELINE NO GITHUB (github.com/IgorGewehr/gov, main 1bbf345) — repo limpo pro time (0 segredos/dbs versionados, README+RUNBOOK+roadmap_team). Regressão do Outbox (guarda H5 expôs fragilidade latente) CORRIGIDA e provada (isolamento por mensagem; contabilização de volta, balancete ΣD=ΣC). Legislativo demo-enablers PROVADOS (vereadores nomeados, painel ao vivo com apuração/quórum, ata, seed — o verify pegou bug de IsInEnum que travava a votação por HTTP). EM EXECUÇÃO: legislativo parte 2 (Normas/Diário/cronômetro/comissão) + frontend do painel; depois M5 (RH/folha/eSocial).",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
     { "label": "Testes backend", "valor": "694 ✓", "cor": "verde" },

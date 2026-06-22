@@ -4,9 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Legislativo.Application.Atas;
+using Tensorroot.Gov.Modules.Legislativo.Application.Comissoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Demonstracao;
+using Tensorroot.Gov.Modules.Legislativo.Application.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Application.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Sessoes;
+using Tensorroot.Gov.Modules.Legislativo.Application.Tribuna;
 using Tensorroot.Gov.Modules.Legislativo.Application.Vereadores;
 using Tensorroot.Gov.Modules.Legislativo.Application.Votacoes;
 
@@ -24,6 +28,184 @@ internal static class LegislativoEndpoints
         MapearVotacoes(grupo);
         MapearVereadores(grupo);
         MapearDemonstracao(grupo);
+        MapearNormas(grupo);
+        MapearDiarioOficial(grupo);
+        MapearTribuna(grupo);
+        MapearComissoes(grupo);
+    }
+
+    private static void MapearNormas(RouteGroupBuilder grupo)
+    {
+        grupo.MapGet("/normas", async (
+            string? termo, int? tipo, int? numero, int? ano, int? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(
+                new BuscarNormasQuery(termo, tipo, numero, ano, situacao, pagina ?? 1, tamanho ?? 20), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapGet("/normas/{normaId:guid}", async (
+            Guid normaId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterNormaPorIdQuery(normaId), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapPost("/normas", async (
+            CadastrarNormaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("legislativo.normas.gerenciar");
+
+        grupo.MapPost("/normas/{normaId:guid}/revogacao", async (
+            Guid normaId, RevogarNormaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RevogarNormaCommand(normaId, payload.DataRevogacao, payload.NormaRevogadoraId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.normas.gerenciar");
+
+        grupo.MapPost("/normas/{normaId:guid}/alteracao", async (
+            Guid normaId, RegistrarAlteracaoNormaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RegistrarAlteracaoNormaCommand(normaId, payload.DataReferencia, payload.NormaAlteradoraId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.normas.gerenciar");
+
+        grupo.MapPost("/normas/{normaId:guid}/proposicao-origem", async (
+            Guid normaId, ProposicaoOrigemPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new VincularProposicaoOrigemCommand(normaId, payload.ProposicaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.normas.gerenciar");
+    }
+
+    private static void MapearDiarioOficial(RouteGroupBuilder grupo)
+    {
+        grupo.MapGet("/diario/edicoes", async (
+            int? ano, int? situacao, int? pagina, int? tamanho, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarEdicoesQuery(ano, situacao, pagina ?? 1, tamanho ?? 20), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapGet("/diario/edicoes/{edicaoId:guid}", async (
+            Guid edicaoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterEdicaoPorIdQuery(edicaoId), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapGet("/diario/publico", async (
+            int? ano, int? pagina, int? tamanho, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ConsultarDiarioPublicoQuery(ano, pagina ?? 1, tamanho ?? 20), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapPost("/diario/edicoes", async (
+            AbrirEdicaoDiarioCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("legislativo.diario.gerenciar");
+
+        grupo.MapPost("/diario/edicoes/{edicaoId:guid}/materias", async (
+            Guid edicaoId, AdicionarMateriaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new AdicionarMateriaCommand(edicaoId, payload.TipoMateria, payload.Titulo, payload.Conteudo, payload.ReferenciaId), cancellationToken) }))
+            .RequirePermission("legislativo.diario.gerenciar");
+
+        grupo.MapPost("/diario/edicoes/{edicaoId:guid}/publicacao", async (
+            Guid edicaoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PublicarEdicaoDiarioCommand(edicaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.diario.publicar");
+
+        grupo.MapPost("/diario/edicoes/{edicaoId:guid}/retificacao", async (
+            Guid edicaoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new RetificarEdicaoCommand(edicaoId), cancellationToken) }))
+            .RequirePermission("legislativo.diario.gerenciar");
+    }
+
+    private static void MapearTribuna(RouteGroupBuilder grupo)
+    {
+        grupo.MapGet("/sessoes/{sessaoId:guid}/tribuna", async (
+            Guid sessaoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterTribunaDaSessaoQuery(sessaoId), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna", async (
+            Guid sessaoId, AbrirTribunaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new AbrirTribunaCommand(sessaoId, payload.TempoPadraoSegundos), cancellationToken) }))
+            .RequirePermission("legislativo.gerenciar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes", async (
+            Guid sessaoId, InscreverOradorPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new InscreverOradorCommand(payload.TribunaId, payload.VereadorId, payload.Fase, payload.TempoConcedidoSegundos), cancellationToken) }))
+            .RequirePermission("legislativo.gerenciar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes/{inscricaoId:guid}/inicio", async (
+            Guid sessaoId, Guid inscricaoId, TribunaControlePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new IniciarFalaCommand(payload.TribunaId, inscricaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.tribuna.controlar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes/{inscricaoId:guid}/pausa", async (
+            Guid sessaoId, Guid inscricaoId, TribunaControlePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PausarFalaCommand(payload.TribunaId, inscricaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.tribuna.controlar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes/{inscricaoId:guid}/retomada", async (
+            Guid sessaoId, Guid inscricaoId, TribunaControlePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RetomarFalaCommand(payload.TribunaId, inscricaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.tribuna.controlar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes/{inscricaoId:guid}/encerramento", async (
+            Guid sessaoId, Guid inscricaoId, TribunaControlePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new EncerrarFalaCommand(payload.TribunaId, inscricaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.tribuna.controlar");
+
+        grupo.MapPost("/sessoes/{sessaoId:guid}/tribuna/inscricoes/{inscricaoId:guid}/cancelamento", async (
+            Guid sessaoId, Guid inscricaoId, TribunaControlePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CancelarInscricaoCommand(payload.TribunaId, inscricaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.gerenciar");
+    }
+
+    private static void MapearComissoes(RouteGroupBuilder grupo)
+    {
+        grupo.MapGet("/comissoes", async (
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarComissoesQuery(), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapGet("/comissoes/{comissaoId:guid}", async (
+            Guid comissaoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterComissaoPorIdQuery(comissaoId), cancellationToken)))
+            .RequirePermission("legislativo.ver");
+
+        grupo.MapPost("/comissoes", async (
+            CriarComissaoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("legislativo.comissoes.gerenciar");
+
+        grupo.MapPost("/comissoes/{comissaoId:guid}/membros", async (
+            Guid comissaoId, DesignarMembroPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new DesignarMembroCommand(comissaoId, payload.VereadorId, payload.Papel, payload.Cargo), cancellationToken) }))
+            .RequirePermission("legislativo.comissoes.gerenciar");
+
+        grupo.MapDelete("/comissoes/{comissaoId:guid}/membros/{vereadorId:guid}", async (
+            Guid comissaoId, Guid vereadorId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RemoverMembroCommand(comissaoId, vereadorId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.comissoes.gerenciar");
+
+        grupo.MapPost("/comissoes/{comissaoId:guid}/extincao", async (
+            Guid comissaoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ExtinguirComissaoCommand(comissaoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("legislativo.comissoes.gerenciar");
     }
 
     private static void MapearVereadores(RouteGroupBuilder grupo)
@@ -298,4 +480,20 @@ internal static class LegislativoEndpoints
         string Partido,
         int CargoMesa,
         int Situacao);
+
+    private sealed record RevogarNormaPayload(DateOnly DataRevogacao, Guid? NormaRevogadoraId);
+
+    private sealed record RegistrarAlteracaoNormaPayload(DateOnly DataReferencia, Guid NormaAlteradoraId);
+
+    private sealed record ProposicaoOrigemPayload(Guid ProposicaoId);
+
+    private sealed record AdicionarMateriaPayload(int TipoMateria, string Titulo, string? Conteudo, Guid? ReferenciaId);
+
+    private sealed record AbrirTribunaPayload(int? TempoPadraoSegundos);
+
+    private sealed record InscreverOradorPayload(Guid TribunaId, Guid VereadorId, int Fase, int? TempoConcedidoSegundos);
+
+    private sealed record TribunaControlePayload(Guid TribunaId);
+
+    private sealed record DesignarMembroPayload(Guid VereadorId, int Papel, int Cargo);
 }

@@ -70,6 +70,136 @@ namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Migratio
                     b.ToTable("AuditTrail", "legislativo");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes.Comissao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Situacao");
+
+                    b.ToTable("Comissoes", "legislativo");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial.EdicaoDiario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Ano")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("DataPublicacao")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("EdicaoOriginalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HashConteudo")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Situacao");
+
+                    b.HasIndex("TenantId", "Ano", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("DiarioEdicoes", "legislativo");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Normas.Norma", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Ano")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("DataPromulgacao")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataRevogacao")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Ementa")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("Ementa");
+
+                    b.Property<string>("EmentaBusca")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("NormaRevogadoraId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ProposicaoOrigemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SituacaoVigencia")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TextoArticulado")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EmentaBusca");
+
+                    b.HasIndex("TenantId", "SituacaoVigencia");
+
+                    b.HasIndex("TenantId", "Tipo", "Numero", "Ano")
+                        .IsUnique();
+
+                    b.ToTable("Normas", "legislativo");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes.Proposicao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -154,6 +284,28 @@ namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Migratio
                     b.HasIndex("TenantId", "Situacao");
 
                     b.ToTable("Sessoes", "legislativo");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna.TribunaSessao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SessaoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("TempoPadraoOrador")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "SessaoId")
+                        .IsUnique();
+
+                    b.ToTable("Tribunas", "legislativo");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Vereadores.Vereador", b =>
@@ -292,6 +444,121 @@ namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Migratio
                     b.HasIndex("ProcessedOnUtc", "DeadLetteredOnUtc", "NextAttemptUtc");
 
                     b.ToTable("OutboxMessages", "legislativo");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes.Comissao", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes.MembroComissao", "Membros", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Cargo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<Guid>("ComissaoOwnerId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Papel")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<Guid>("VereadorId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ComissaoOwnerId");
+
+                            b1.ToTable("ComissoesMembros", "legislativo");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ComissaoOwnerId");
+                        });
+
+                    b.Navigation("Membros");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial.EdicaoDiario", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial.MateriaDiario", "Materias", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Conteudo")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<Guid>("EdicaoOwnerId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Ordem")
+                                .HasColumnType("int");
+
+                            b1.Property<Guid?>("ReferenciaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Titulo")
+                                .IsRequired()
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("EdicaoOwnerId");
+
+                            b1.ToTable("DiarioMaterias", "legislativo");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EdicaoOwnerId");
+                        });
+
+                    b.Navigation("Materias");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Normas.Norma", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Legislativo.Domain.Normas.EventoVigencia", "HistoricoVigencia", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Data")
+                                .HasColumnType("date");
+
+                            b1.Property<Guid>("NormaOwnerId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid?>("NormaReferenciaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Observacao")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("NormaOwnerId");
+
+                            b1.ToTable("NormasHistoricoVigencia", "legislativo");
+
+                            b1.WithOwner()
+                                .HasForeignKey("NormaOwnerId");
+                        });
+
+                    b.Navigation("HistoricoVigencia");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes.Proposicao", b =>
@@ -460,6 +727,89 @@ namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Migratio
                     b.Navigation("OrdemDoDia");
 
                     b.Navigation("Presencas");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna.TribunaSessao", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna.InscricaoOrador", "Inscricoes", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Apartes")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTimeOffset?>("EncerradoEm")
+                                .HasColumnType("datetimeoffset");
+
+                            b1.Property<string>("Fase")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<DateTimeOffset?>("IniciadoEm")
+                                .HasColumnType("datetimeoffset");
+
+                            b1.Property<int>("Ordem")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTimeOffset?>("PausaIniciadaEm")
+                                .HasColumnType("datetimeoffset");
+
+                            b1.Property<string>("Situacao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<TimeSpan>("TempoConcedido")
+                                .HasColumnType("time");
+
+                            b1.Property<Guid>("TribunaOwnerId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("VereadorId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("TribunaOwnerId");
+
+                            b1.ToTable("TribunaInscricoes", "legislativo");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TribunaOwnerId");
+
+                            b1.OwnsMany("Tensorroot.Gov.Modules.Legislativo.Domain.Tribuna.PausaFala", "Pausas", b2 =>
+                                {
+                                    b2.Property<int>("Id")
+                                        .ValueGeneratedOnAdd()
+                                        .HasColumnType("int");
+
+                                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b2.Property<int>("Id"));
+
+                                    b2.Property<DateTimeOffset>("Fim")
+                                        .HasColumnType("datetimeoffset");
+
+                                    b2.Property<DateTimeOffset>("Inicio")
+                                        .HasColumnType("datetimeoffset");
+
+                                    b2.Property<Guid>("InscricaoOwnerId")
+                                        .HasColumnType("uniqueidentifier");
+
+                                    b2.HasKey("Id");
+
+                                    b2.HasIndex("InscricaoOwnerId");
+
+                                    b2.ToTable("TribunaPausas", "legislativo");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("InscricaoOwnerId");
+                                });
+
+                            b1.Navigation("Pausas");
+                        });
+
+                    b.Navigation("Inscricoes");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Legislativo.Domain.Votacoes.Votacao", b =>

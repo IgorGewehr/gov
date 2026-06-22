@@ -53,6 +53,13 @@ export interface IncluirNaOrdemDoDiaInput {
   proposicaoId: string;
 }
 
+/** Ata textual gerada de uma sessao. */
+export interface AtaSessao {
+  sessaoId: string;
+  conteudo: string;
+  geradaEm: string;
+}
+
 // ---------------------------------------------------------------------------
 // Acesso HTTP
 // ---------------------------------------------------------------------------
@@ -67,6 +74,10 @@ function obterSessao(id: string, signal?: AbortSignal): Promise<SessaoDetalhe> {
 
 function obterPresencas(sessaoId: string, signal?: AbortSignal): Promise<PresencaResumo[]> {
   return http.get<PresencaResumo[]>(`/legislativo/sessoes/${sessaoId}/presencas`, { signal });
+}
+
+function obterAta(sessaoId: string, signal?: AbortSignal): Promise<AtaSessao> {
+  return http.get<AtaSessao>(`/legislativo/sessoes/${sessaoId}/ata`, { signal });
 }
 
 async function agendarSessao(input: AgendarSessaoInput): Promise<string> {
@@ -116,6 +127,15 @@ export function useSessoesAgendadas() {
   return useQuery({
     queryKey: legislativoKeys.sessoesAgendadas(),
     queryFn: ({ signal }) => listarSessoesAgendadas(signal),
+  });
+}
+
+/** Ata textual de uma sessao (gerada/exibida sob demanda). */
+export function useAtaSessao(id: string) {
+  return useQuery({
+    queryKey: legislativoKeys.sessaoAta(id),
+    queryFn: ({ signal }) => obterAta(id, signal),
+    enabled: id.trim().length > 0,
   });
 }
 

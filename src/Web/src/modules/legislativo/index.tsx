@@ -28,6 +28,13 @@ const VotacaoConsultaPage = lazy(() =>
 const VotacaoDetailPage = lazy(() =>
   import('./VotacaoDetailPage').then((m) => ({ default: m.VotacaoDetailPage })),
 );
+const VereadorListPage = lazy(() =>
+  import('./VereadorListPage').then((m) => ({ default: m.VereadorListPage })),
+);
+const PainelAoVivoPage = lazy(() =>
+  import('./PainelAoVivoPage').then((m) => ({ default: m.PainelAoVivoPage })),
+);
+const AtaView = lazy(() => import('./AtaView').then((m) => ({ default: m.AtaView })));
 
 const MODULE: ModuleDefinition = {
   id: 'legislativo',
@@ -42,6 +49,9 @@ const MODULE: ModuleDefinition = {
         { path: 'sessoes/:id', element: <SessaoDetailPage /> },
         { path: 'votacoes', element: <VotacaoConsultaPage /> },
         { path: 'votacoes/:id', element: <VotacaoDetailPage /> },
+        { path: 'vereadores', element: <VereadorListPage /> },
+        { path: 'painel', element: <PainelAoVivoPage /> },
+        { path: 'ata', element: <AtaView /> },
       ],
     },
   ],
