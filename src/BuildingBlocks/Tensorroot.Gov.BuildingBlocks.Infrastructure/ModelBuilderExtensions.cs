@@ -95,7 +95,15 @@ public static class ModelBuilderExtensions
             builder.HasKey(trail => trail.Id);
             builder.Property(trail => trail.EntityName).HasMaxLength(256);
             builder.Property(trail => trail.Action).HasMaxLength(20);
+            // Selos da cadeia de hash: SHA-256 em Base64 cabe em 44 chars; folga para o genesis.
+            builder.Property(trail => trail.HashAnterior).HasMaxLength(64);
+            builder.Property(trail => trail.HashAtual).HasMaxLength(64);
             builder.HasIndex(trail => new { trail.TenantId, trail.TimestampUtc });
+            // Cadeia POR TENANT em ordem de gravação: acelera o "último selo do tenant" (interceptor)
+            // e a leitura sequencial do verificador. NÃO é único — linhas LEGADAS (anteriores à
+            // cadeia) compartilham Sequencia=0; a unicidade da posição é garantida pelo próprio
+            // verificador (lacuna/duplicata = adulteração), e em produção pelo trigger WORM.
+            builder.HasIndex(trail => new { trail.TenantId, trail.Sequencia });
         });
     }
 }

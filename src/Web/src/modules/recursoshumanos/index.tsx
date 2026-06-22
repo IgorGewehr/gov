@@ -37,6 +37,12 @@ const FolhaListPage = lazy(() =>
 const FolhaDetailPage = lazy(() =>
   import('./FolhaDetailPage').then((m) => ({ default: m.FolhaDetailPage })),
 );
+const PontoListPage = lazy(() =>
+  import('./PontoListPage').then((m) => ({ default: m.PontoListPage })),
+);
+const PontoServidorPage = lazy(() =>
+  import('./PontoServidorPage').then((m) => ({ default: m.PontoServidorPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -57,6 +63,8 @@ const MODULE: ModuleDefinition = {
         { path: 'tabelas-legais', element: <TabelasLegaisPage /> },
         { path: 'folhas', element: <FolhaListPage /> },
         { path: 'folhas/:folhaId', element: <FolhaDetailPage /> },
+        { path: 'ponto', element: <PontoListPage /> },
+        { path: 'ponto/:servidorId', element: <PontoServidorPage /> },
       ],
     },
   ],

@@ -13,3 +13,4 @@ export * from './cargo.api';
 export * from './rubrica.api';
 export * from './tabelaLegal.api';
 export * from './folha.api';
+export * from './ponto.api';

@@ -108,6 +108,37 @@ export function formatarAliquota(fracao: number): string {
   });
 }
 
+/** Opções de regime da jornada de ponto (rótulo → enum numérico do backend). */
+export const REGIMES_JORNADA: SelectOption[] = [
+  { value: '1', label: 'Estatutário' },
+  { value: '2', label: 'Celetista' },
+];
+
+/** Opções de sentido da marcação de ponto (rótulo → enum numérico do backend). */
+export const SENTIDOS_MARCACAO: SelectOption[] = [
+  { value: '1', label: 'Entrada' },
+  { value: '2', label: 'Saída' },
+];
+
+/** Opções de origem (tipo de REP) da marcação (rótulo → enum numérico do backend). */
+export const ORIGENS_REP: SelectOption[] = [
+  { value: '1', label: 'REP-C (convencional)' },
+  { value: '2', label: 'REP-A (alternativo)' },
+  { value: '3', label: 'REP-P (programa)' },
+];
+
+/**
+ * Formata uma duração em minutos como "HHh MMmin" (com sinal para saldos negativos do
+ * banco de horas). Ex.: 510 → "8h 30min"; -45 → "-0h 45min".
+ */
+export function formatarMinutos(minutos: number): string {
+  const sinal = minutos < 0 ? '-' : '';
+  const abs = Math.abs(minutos);
+  const horas = Math.floor(abs / 60);
+  const min = abs % 60;
+  return `${sinal}${horas}h ${String(min).padStart(2, '0')}min`;
+}
+
 /** Opções de mês (1–12) para seletor de competência. */
 export const MESES: SelectOption[] = [
   { value: '1', label: 'Janeiro' },

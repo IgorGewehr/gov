@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Assinatura;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
@@ -45,10 +46,9 @@ public sealed class CofreModule : IModule
                 options.UseSqlite(connectionString);
             }
 
-            options.AddInterceptors(
-                serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>(),
-                serviceProvider.GetRequiredService<TenantSaveChangesInterceptor>(),
-                serviceProvider.GetRequiredService<ConvertDomainEventsToOutboxInterceptor>());
+            // Ordem CORRETA dos interceptors (Tenant -> Audit -> Outbox) centralizada em
+            // ModuleInterceptorRegistration: a trilha le o TenantId JA carimbado (W0.2).
+            options.AddModuleSaveChangesInterceptors(serviceProvider);
         });
 
         // Opcoes do cofre + provedor de KEK (envelope encryption — A1-DESIGN §1).

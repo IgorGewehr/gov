@@ -118,6 +118,13 @@ public static class Permissoes
     /// <summary>Consultar a trilha de auditoria imutavel (para o Tribunal de Contas).</summary>
     public const string AdminAuditoriaVer = "admin.auditoria.ver";
 
+    /// <summary>
+    /// Verificar a INTEGRIDADE da trilha de auditoria (recomputar a cadeia de hash e detectar
+    /// adulteracao/remocao). Verbo separado de <see cref="AdminAuditoriaVer"/> — quem le a trilha
+    /// nao necessariamente atesta sua imutabilidade ao Tribunal de Contas.
+    /// </summary>
+    public const string AdminAuditoriaVerificar = "admin.auditoria.verificar";
+
     /// <summary>Assinar documentos eletronicamente (Lei 14.063/2020) no Protocolo.</summary>
     public const string DocumentosAssinar = "documentos.assinar";
 
@@ -194,6 +201,7 @@ public static class Permissoes
         AdminModulosConfigurar,
         AdminCertificadoGerenciar,
         AdminAuditoriaVer,
+        AdminAuditoriaVerificar,
         DocumentosAssinar,
         FinancasEmpenhoAssinar,
         FinancasLiquidacaoAtestar,

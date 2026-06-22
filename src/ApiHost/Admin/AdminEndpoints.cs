@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.Platform.Tenancy;
@@ -18,6 +19,7 @@ internal static class AdminEndpoints
 {
     private const string PermissaoConfigurarModulos = "admin.modulos.configurar";
     private const string PermissaoVerAuditoria = "admin.auditoria.ver";
+    private const string PermissaoVerificarAuditoria = "admin.auditoria.verificar";
     private const int TamanhoPaginaMaximo = 200;
 
     /// <summary>Mapeia os endpoints administrativos de configuração de módulos no pipeline.</summary>
@@ -122,6 +124,29 @@ internal static class AdminEndpoints
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(new { total, pagina = paginaAtual, tamanho = tamanhoPagina, itens });
+        });
+
+        // === VERIFICADOR de imutabilidade (A2) — só-admin, permissão dedicada ===
+        // Recomputa a cadeia de hash do tenant e aponta a 1ª linha adulterada/removida. Detecção
+        // determinística que não depende do banco impor WORM (complementa o trigger em SqlServer).
+        var verificacao = endpoints
+            .MapGroup("/api/admin/auditoria/verificacao")
+            .WithTags("Admin")
+            .RequirePermission(PermissaoVerificarAuditoria);
+
+        verificacao.MapGet("/", async (
+            AuditoriaReadDbContext contexto,
+            IVerificadorTrilhaAuditoria verificador,
+            ITenantContext tenant,
+            CancellationToken cancellationToken) =>
+        {
+            var resultado = await verificador.VerificarAsync(
+                contexto.Trilha.AsNoTracking(), tenant.TenantId, cancellationToken);
+
+            // 200 quando íntegra; 409 (Conflict) quando há adulteração — facilita alertas/monitoração.
+            return resultado.Integra
+                ? Results.Ok(resultado)
+                : Results.Json(resultado, statusCode: StatusCodes.Status409Conflict);
         });
     }
 

@@ -21,6 +21,10 @@ public static class InfrastructureBuildingBlocks
         services.AddScoped<ConvertDomainEventsToOutboxInterceptor>();
         services.AddScoped<IOutboxPublisher, OutboxPublisher>();
 
+        // Verificador da cadeia de hash da trilha (A2): recomputa o encadeamento e aponta a 1ª
+        // linha adulterada/removida. Sem estado — pode ser singleton, mas Scoped basta e é coerente.
+        services.AddScoped<IVerificadorTrilhaAuditoria, VerificadorTrilhaAuditoria>();
+
         // Despachante DEFAULT (publica no escopo atual). O ApiHost SOBRESCREVE este registro por um
         // despachante que isola cada mensagem em escopo de DI próprio (com TenantOverride) — sem isso,
         // o lote publicaria todos os handlers no mesmo escopo e acionaria a guarda H5. Mantido aqui para

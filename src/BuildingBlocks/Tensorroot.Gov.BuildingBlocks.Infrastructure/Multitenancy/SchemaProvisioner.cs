@@ -25,6 +25,9 @@ public static class SchemaProvisioner
         if (ehSqlServer)
         {
             await contexto.Database.MigrateAsync(cancellationToken).ConfigureAwait(false);
+            // Imutabilidade WORM da trilha: trigger INSTEAD OF UPDATE/DELETE (A2). Idempotente —
+            // só SqlServer; no SQLite (dev) a detecção fica a cargo da cadeia de hash + verificador.
+            await GarantirTriggerImutabilidadeAuditTrailAsync(contexto, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -42,6 +45,51 @@ public static class SchemaProvisioner
         // DeadLetteredOnUtc) não seriam materializadas em bancos de tenant já criados. Aplicamos as
         // alterações de forma IDEMPOTENTE no SQLite (PRAGMA + ALTER TABLE ADD COLUMN só quando falta).
         await GarantirColunasOutboxAsync(contexto, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Cria (idempotente) os triggers <c>INSTEAD OF UPDATE/DELETE</c> na tabela <c>AuditTrail</c> do
+    /// schema do módulo, bloqueando QUALQUER alteração/remoção da trilha no nível do banco (WORM).
+    /// Em conjunto com a cadeia de hash, dá imutabilidade real exigida pelo Tribunal de Contas.
+    /// <para>
+    /// // TODO(prod): só SqlServer. Em dev (SQLite) não há trigger — a detecção de adulteração fica
+    /// a cargo da hash-chain + verificador. Em SqlServer, considerar evoluir para ledger/temporal table.
+    /// </para>
+    /// </summary>
+    private static async Task GarantirTriggerImutabilidadeAuditTrailAsync(DbContext contexto, CancellationToken cancellationToken)
+    {
+        // Schema isolado do módulo (ex.: "financas"). ModuleDbContext expõe Schema; fallback "dbo".
+        var schema = (contexto as ModuleDbContext)?.Schema ?? "dbo";
+
+        // Nomes são literais controlados (schema vem do código do módulo, não de entrada do usuário).
+        // QUOTENAME protege a montagem do trigger; o EXEC roda DDL dentro do batch dinâmico.
+        var sql = $"""
+            IF OBJECT_ID(N'[{schema}].[TR_AuditTrail_NoUpdate]', N'TR') IS NULL
+            BEGIN
+                EXEC(N'CREATE TRIGGER [{schema}].[TR_AuditTrail_NoUpdate]
+                    ON [{schema}].[AuditTrail]
+                    INSTEAD OF UPDATE
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+                        THROW 51001, ''AuditTrail e imutavel (WORM): UPDATE bloqueado.'', 1;
+                    END');
+            END;
+
+            IF OBJECT_ID(N'[{schema}].[TR_AuditTrail_NoDelete]', N'TR') IS NULL
+            BEGIN
+                EXEC(N'CREATE TRIGGER [{schema}].[TR_AuditTrail_NoDelete]
+                    ON [{schema}].[AuditTrail]
+                    INSTEAD OF DELETE
+                    AS
+                    BEGIN
+                        SET NOCOUNT ON;
+                        THROW 51002, ''AuditTrail e imutavel (WORM): DELETE bloqueado.'', 1;
+                    END');
+            END;
+            """;
+
+        await contexto.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task GarantirColunasOutboxAsync(DbContext contexto, CancellationToken cancellationToken)
