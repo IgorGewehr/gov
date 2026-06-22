@@ -122,6 +122,23 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     }
 
     /// <summary>
+    /// Remove os descontos legais (INSS/RPPS/IRRF) ja apurados de um servidor, com a folha aberta,
+    /// para permitir re-apuracao idempotente pelo motor de calculo. So afeta as rubricas informadas.
+    /// </summary>
+    /// <param name="servidorId">Servidor cujas apuracoes legais serao removidas.</param>
+    /// <param name="rubricasLegais">Codigos das rubricas de desconto legal apuradas pelo motor.</param>
+    /// <exception cref="InvalidOperationException">Se a folha nao estiver aberta (I-2).</exception>
+    public void RemoverDescontosLegais(Guid servidorId, IReadOnlyCollection<Rubrica> rubricasLegais)
+    {
+        ArgumentNullException.ThrowIfNull(rubricasLegais);
+        GarantirEditavel();
+        _eventos.RemoveAll(e =>
+            e.ServidorId == servidorId
+            && e.Tipo == TipoEvento.Desconto
+            && rubricasLegais.Contains(e.Rubrica));
+    }
+
+    /// <summary>
     /// Calcula a folha: soma proventos/descontos, aplica abate-teto por servidor (I-6) e consolida o
     /// liquido (I-5). Idempotente em estado — pode ser reexecutada enquanto a folha nao estiver fechada.
     /// </summary>
@@ -129,9 +146,14 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     /// <param name="hoje">Data de referencia do calculo.</param>
     /// <param name="codigoRubricaAbateTeto">Codigo da rubrica de abate-teto (parametrizavel por tenant).</param>
     /// <exception cref="InvalidOperationException">Se a folha ja estiver fechada/paga (B-7).</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Se o teto remuneratorio nao for positivo (fail-closed — CLAUDE.md S16).</exception>
     public void Calcular(decimal tetoRemuneratorio, DateOnly hoje, string? codigoRubricaAbateTeto = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(tetoRemuneratorio);
+        // FAIL-CLOSED (CLAUDE.md S16): o teto remuneratorio (CF art. 37, XI) e PARAMETRO LEGAL por
+        // tenant/competencia. Um teto nao-positivo (ex.: secao de config ausente -> default 0) abateria
+        // SILENCIOSAMENTE toda a remuneracao, zerando o liquido de todos os servidores — erro catastrofico
+        // e auditavel pelo TCE. Recusa o calculo ate o ente configurar o teto vigente (nunca hardcoded).
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(tetoRemuneratorio);
         if (Situacao is not (SituacaoFolha.Aberta or SituacaoFolha.Calculada))
         {
             throw new InvalidOperationException($"Folha nao calculavel na situacao atual: {Situacao}.");

@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.TabelasLegais;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
@@ -20,7 +22,39 @@ internal static class RecursosHumanosEndpoints
 
         MapearServidores(grupo);
         MapearCargos(grupo);
+        MapearRubricas(grupo);
+        MapearTabelasLegais(grupo);
         MapearFolha(grupo);
+    }
+
+    private static void MapearRubricas(RouteGroupBuilder grupo)
+    {
+        grupo.MapPost("/rubricas", async (
+            CriarRubricaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        grupo.MapGet("/rubricas/vigentes", async (
+            int ano, int mes, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarRubricasQuery(ano, mes), cancellationToken)))
+            .RequirePermission("recursoshumanos.ver");
+    }
+
+    private static void MapearTabelasLegais(RouteGroupBuilder grupo)
+    {
+        // Semeia INSS/IRRF federais oficiais (RPPS NAO: depende de lei municipal — fail-closed).
+        grupo.MapPost("/tabelas-legais/semear-federais", async (
+            ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new SemearTabelasFederaisCommand(), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        grupo.MapPost("/tabelas-legais/rpps", async (
+            CriarTabelaRppsCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
     }
 
     private static void MapearServidores(RouteGroupBuilder grupo)
@@ -148,6 +182,15 @@ internal static class RecursosHumanosEndpoints
         {
             await sender.Send(new AdicionarEventoCommand(
                 folhaId, payload.ServidorId, payload.Rubrica, payload.Tipo, payload.BaseCalculo, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Apura INSS/RPPS/IRRF por servidor (motor + tabelas parametrizadas) com a folha ainda aberta.
+        grupo.MapPost("/folhas/{folhaId:guid}/apuracao-legal", async (
+            Guid folhaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ApurarDescontosLegaisCommand(folhaId), cancellationToken);
             return Results.NoContent();
         })
             .RequirePermission("recursoshumanos.gerenciar");

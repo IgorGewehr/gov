@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Repositories;
 
@@ -94,5 +96,84 @@ public sealed class FolhaDePagamentoRepository(RecursosHumanosDbContext context)
     {
         ArgumentNullException.ThrowIfNull(competencia);
         return context.FolhasDePagamento.AnyAsync(folha => folha.Competencia == competencia, cancellationToken);
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio do catalogo de <see cref="RubricaFolha"/>.</summary>
+public sealed class RubricaFolhaRepository(RecursosHumanosDbContext context) : IRubricaFolhaRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(RubricaFolha rubrica)
+    {
+        ArgumentNullException.ThrowIfNull(rubrica);
+        context.Rubricas.Add(rubrica);
+    }
+
+    /// <inheritdoc />
+    public Task<RubricaFolha?> ObterPorIdAsync(RubricaFolhaId id, CancellationToken cancellationToken)
+        => context.Rubricas.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<RubricaFolha?> ObterVigentePorCodigoAsync(Rubrica codigo, Competencia competencia, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        ArgumentNullException.ThrowIfNull(competencia);
+        // Codigo unico por tenant: filtra por codigo (traduzivel) e valida a vigencia em memoria.
+        var alvo = (competencia.Ano * 100) + competencia.Mes;
+        var candidatas = await context.Rubricas
+            .Where(r => r.Ativa && r.Codigo == codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return candidatas
+            .Where(r => ((r.VigenciaInicio.Ano * 100) + r.VigenciaInicio.Mes) <= alvo)
+            .OrderByDescending(r => (r.VigenciaInicio.Ano * 100) + r.VigenciaInicio.Mes)
+            .FirstOrDefault();
+    }
+
+    /// <inheritdoc />
+    public Task<bool> CodigoExisteAsync(Rubrica codigo, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+        return context.Rubricas.AnyAsync(r => r.Ativa && r.Codigo == codigo, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RubricaFolha>> ListarVigentesAsync(Competencia competencia, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(competencia);
+        var alvo = (competencia.Ano * 100) + competencia.Mes;
+        var ativas = await context.Rubricas
+            .Where(r => r.Ativa)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return ativas
+            .Where(r => ((r.VigenciaInicio.Ano * 100) + r.VigenciaInicio.Mes) <= alvo)
+            .OrderBy(r => r.Codigo.Codigo, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio de escrita das tabelas legais (INSS/IRRF/RPPS).</summary>
+public sealed class TabelasLegaisRepository(RecursosHumanosDbContext context) : ITabelasLegaisRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(TabelaInss tabela)
+    {
+        ArgumentNullException.ThrowIfNull(tabela);
+        context.TabelasInss.Add(tabela);
+    }
+
+    /// <inheritdoc />
+    public void Adicionar(TabelaIrrf tabela)
+    {
+        ArgumentNullException.ThrowIfNull(tabela);
+        context.TabelasIrrf.Add(tabela);
+    }
+
+    /// <inheritdoc />
+    public void Adicionar(TabelaRpps tabela)
+    {
+        ArgumentNullException.ThrowIfNull(tabela);
+        context.TabelasRpps.Add(tabela);
     }
 }

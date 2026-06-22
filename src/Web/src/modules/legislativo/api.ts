@@ -11,3 +11,7 @@ export * from './sessao.api';
 export * from './votacao.api';
 export * from './vereadores.api';
 export * from './demonstracao.api';
+export * from './normas.api';
+export * from './diario.api';
+export * from './tribuna.api';
+export * from './comissoes.api';

@@ -17,6 +17,10 @@ const SECOES: ReadonlyArray<Secao> = [
   { path: '/legislativo/votacoes', label: 'Votações', icon: 'fas fa-square-poll-vertical' },
   { path: '/legislativo/painel', label: 'Painel ao vivo', icon: 'fas fa-tower-broadcast' },
   { path: '/legislativo/vereadores', label: 'Vereadores', icon: 'fas fa-users' },
+  { path: '/legislativo/comissoes', label: 'Comissões', icon: 'fas fa-people-group' },
+  { path: '/legislativo/normas', label: 'Normas', icon: 'fas fa-scale-balanced' },
+  { path: '/legislativo/diario', label: 'Diário Oficial', icon: 'fas fa-newspaper' },
+  { path: '/legislativo/tribuna', label: 'Tribuna', icon: 'fas fa-microphone' },
   { path: '/legislativo/ata', label: 'Ata', icon: 'fas fa-file-lines' },
 ];
 

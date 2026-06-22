@@ -465,7 +465,7 @@ Cada cenário vira teste de integração.
 | 1.0.0 | 2026-06-21 | Versão inicial — derivada do README do módulo RecursosHumanos (folha por competência: abertura, lançamento de eventos, cálculo com abate-teto, separação RPPS/RGPS, fechamento com S-1299/S-1210/totalizadores e DCTFWeb, pagamento; integrações Contabilidade/Empenho e Tesouraria). |
 
 <!-- manifest
-commands: AbrirFolha, AdicionarEvento, CalcularFolha, FecharFolha, EfetuarPagamento
+commands: AbrirFolha, AdicionarEvento, ApurarDescontosLegais, CalcularFolha, FecharFolha, EfetuarPagamento
 queries: ObterFolhaPorCompetencia, ObterContrachequeDoServidor
 domainEvents: FolhaAberta, FolhaCalculada, FolhaFechada, PagamentoEfetuado
 integrationEventsPublished: FolhaFechadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent

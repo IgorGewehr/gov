@@ -82,6 +82,55 @@ export const SITUACOES_VEREADOR = [
   { value: 4, label: 'Afastado' },
 ] as const;
 
+/** Especie da norma juridica publicada (TipoNorma). */
+export const TIPOS_NORMA = [
+  { value: 1, label: 'Lei Ordinária' },
+  { value: 2, label: 'Lei Complementar' },
+  { value: 3, label: 'Emenda à Lei Orgânica' },
+  { value: 4, label: 'Decreto Legislativo' },
+  { value: 5, label: 'Resolução' },
+] as const;
+
+/** Situacao da vigencia de uma norma (SituacaoNorma). */
+export const SITUACOES_NORMA = [
+  { value: 1, label: 'Vigente' },
+  { value: 2, label: 'Revogada' },
+  { value: 3, label: 'Alterada' },
+] as const;
+
+/** Especie da materia publicada no Diario Oficial (TipoMateria). */
+export const TIPOS_MATERIA = [
+  { value: 1, label: 'Norma' },
+  { value: 2, label: 'Ato Administrativo' },
+  { value: 3, label: 'Edital' },
+  { value: 4, label: 'Extrato de Contrato' },
+  { value: 5, label: 'Aviso' },
+] as const;
+
+/** Natureza de uma comissao parlamentar (TipoComissao). */
+export const TIPOS_COMISSAO = [
+  { value: 1, label: 'Permanente' },
+  { value: 2, label: 'Temporária' },
+  { value: 3, label: 'Especial' },
+  { value: 4, label: 'CPI' },
+] as const;
+
+/** Cargo de um membro na composicao de uma comissao (CargoComissao). */
+export const CARGOS_COMISSAO = [
+  { value: 1, label: 'Presidente' },
+  { value: 2, label: 'Vice-Presidente' },
+  { value: 3, label: 'Relator' },
+  { value: 4, label: 'Membro' },
+] as const;
+
+/** Situacao da inscricao de um orador na Tribuna (SituacaoInscricao). */
+export const SITUACOES_INSCRICAO = [
+  { value: 1, label: 'Aguardando' },
+  { value: 2, label: 'Em uso da palavra' },
+  { value: 3, label: 'Pausada' },
+  { value: 4, label: 'Encerrada' },
+] as const;
+
 // ---------------------------------------------------------------------------
 // Query keys (fonte unica para invalidacao)
 // ---------------------------------------------------------------------------
@@ -109,7 +158,24 @@ export const legislativoKeys = {
     [...legislativoKeys.votacoes(), 'votos-nominais', id] as const,
   vereadores: () => [...legislativoKeys.all, 'vereadores'] as const,
   vereador: (id: string) => [...legislativoKeys.vereadores(), 'detalhe', id] as const,
+  normas: () => [...legislativoKeys.all, 'normas'] as const,
+  normasBusca: (termo: string, tipo: string, ano: string, pagina: number) =>
+    [...legislativoKeys.normas(), 'busca', termo, tipo, ano, pagina] as const,
+  norma: (id: string) => [...legislativoKeys.normas(), 'detalhe', id] as const,
+  diarioEdicoes: () => [...legislativoKeys.all, 'diario', 'edicoes'] as const,
+  diarioEdicao: (id: string) => [...legislativoKeys.diarioEdicoes(), 'detalhe', id] as const,
+  tribuna: (sessaoId: string) => [...legislativoKeys.all, 'tribuna', sessaoId] as const,
+  comissoes: () => [...legislativoKeys.all, 'comissoes'] as const,
+  comissao: (id: string) => [...legislativoKeys.comissoes(), 'detalhe', id] as const,
 };
+
+/** Pagina de resultados de uma busca paginada (envelope padrao do backend). */
+export interface PaginaResultado<T> {
+  itens: T[];
+  pagina: number;
+  tamanhoPagina: number;
+  total: number;
+}
 
 /** Resposta dos endpoints de criacao (`Results.Ok(new { id })`). */
 export interface CriacaoResponse {

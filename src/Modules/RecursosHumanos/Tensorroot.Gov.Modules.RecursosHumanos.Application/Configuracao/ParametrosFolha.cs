@@ -17,4 +17,13 @@ public sealed class ParametrosFolha
 
     /// <summary>Dia-limite (do mes seguinte a competencia) para envio dos eventos periodicos (I-13). Padrao: 15.</summary>
     public int DiaLimiteEnvioPeriodico { get; init; } = 15;
+
+    /// <summary>Codigo da rubrica de desconto de INSS apurada pelo motor (parametrizavel por tenant). Padrao: INSS.</summary>
+    public string CodigoRubricaInss { get; init; } = "INSS";
+
+    /// <summary>Codigo da rubrica de desconto de RPPS apurada pelo motor (parametrizavel por tenant). Padrao: RPPS.</summary>
+    public string CodigoRubricaRpps { get; init; } = "RPPS";
+
+    /// <summary>Codigo da rubrica de desconto de IRRF apurada pelo motor (parametrizavel por tenant). Padrao: IRRF.</summary>
+    public string CodigoRubricaIrrf { get; init; } = "IRRF";
 }

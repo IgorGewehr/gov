@@ -1,8 +1,8 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-23 — baseline no GitHub (IgorGewehr/gov); sprint legislativo em andamento",
-  "atividadeAtual": "🚀 BASELINE NO GITHUB (github.com/IgorGewehr/gov, main 1bbf345) — repo limpo pro time (0 segredos/dbs versionados, README+RUNBOOK+roadmap_team). Regressão do Outbox (guarda H5 expôs fragilidade latente) CORRIGIDA e provada (isolamento por mensagem; contabilização de volta, balancete ΣD=ΣC). Legislativo demo-enablers PROVADOS (vereadores nomeados, painel ao vivo com apuração/quórum, ata, seed — o verify pegou bug de IsInEnum que travava a votação por HTTP). EM EXECUÇÃO: legislativo parte 2 (Normas/Diário/cronômetro/comissão) + frontend do painel; depois M5 (RH/folha/eSocial).",
+  "atualizadoEm": "2026-06-23 — trilha legislativa completa+pushada; M5 (folha) iniciado",
+  "atividadeAtual": "🏛️ TRILHA LEGISLATIVA COMPLETA E PROVADA (back+painel front) e PUSHADA (GitHub 62c1378): vereadores, painel ao vivo (placar/quórum/apuração), ata, seed + Normas Jurídicas (busca case-insensitive), Diário Oficial (LAI), tribuna/cronômetro server-side, comissões. Legislativo 142 testes; o verify pegou 3 bugs reais (IsInEnum sobre int 2×; InvalidCast na busca por ementa). Research pipeline COMPLETO (M5–M9 designados). EM EXECUÇÃO: M5 parte 1 (fundação da folha: servidores/cargos/rubricas/motor INSS-IRRF-RPSS/folha mensal) na pista de build + frontend legislativo parte 2 (npx). Pendência p/ M8: /diario/publico anônimo (LAI). DIRECIONAMENTO.md pronto p/ análise do dono.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
     { "label": "Testes backend", "valor": "694 ✓", "cor": "verde" },

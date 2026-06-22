@@ -35,6 +35,25 @@ const PainelAoVivoPage = lazy(() =>
   import('./PainelAoVivoPage').then((m) => ({ default: m.PainelAoVivoPage })),
 );
 const AtaView = lazy(() => import('./AtaView').then((m) => ({ default: m.AtaView })));
+const NormaListPage = lazy(() =>
+  import('./NormaListPage').then((m) => ({ default: m.NormaListPage })),
+);
+const NormaDetailPage = lazy(() =>
+  import('./NormaDetailPage').then((m) => ({ default: m.NormaDetailPage })),
+);
+const DiarioListPage = lazy(() =>
+  import('./DiarioListPage').then((m) => ({ default: m.DiarioListPage })),
+);
+const EdicaoDetailPage = lazy(() =>
+  import('./EdicaoDetailPage').then((m) => ({ default: m.EdicaoDetailPage })),
+);
+const TribunaPage = lazy(() => import('./TribunaPage').then((m) => ({ default: m.TribunaPage })));
+const ComissaoListPage = lazy(() =>
+  import('./ComissaoListPage').then((m) => ({ default: m.ComissaoListPage })),
+);
+const ComissaoDetailPage = lazy(() =>
+  import('./ComissaoDetailPage').then((m) => ({ default: m.ComissaoDetailPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'legislativo',
@@ -52,6 +71,13 @@ const MODULE: ModuleDefinition = {
         { path: 'vereadores', element: <VereadorListPage /> },
         { path: 'painel', element: <PainelAoVivoPage /> },
         { path: 'ata', element: <AtaView /> },
+        { path: 'normas', element: <NormaListPage /> },
+        { path: 'normas/:id', element: <NormaDetailPage /> },
+        { path: 'diario', element: <DiarioListPage /> },
+        { path: 'diario/:id', element: <EdicaoDetailPage /> },
+        { path: 'tribuna', element: <TribunaPage /> },
+        { path: 'comissoes', element: <ComissaoListPage /> },
+        { path: 'comissoes/:id', element: <ComissaoDetailPage /> },
       ],
     },
   ],
