@@ -8,6 +8,10 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/assistenciasocial/beneficios', label: 'Benefícios' },
   { to: '/assistenciasocial/beneficios/concessoes', label: 'Concessões por competência' },
   { to: '/assistenciasocial/prontuarios', label: 'Prontuário SUAS' },
+  { to: '/assistenciasocial/pbf/condicionalidades', label: 'PBF — Condicionalidades' },
+  { to: '/assistenciasocial/censo/unidades', label: 'Censo — Unidades' },
+  { to: '/assistenciasocial/censo', label: 'Censo — Consolidação', end: true },
+  { to: '/assistenciasocial/igd', label: 'IGD (estimativa)' },
 ];
 
 export function AssistenciaSocialSubNav() {

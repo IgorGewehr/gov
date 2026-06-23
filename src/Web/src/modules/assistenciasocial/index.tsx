@@ -39,6 +39,24 @@ const ProntuarioSuasDetailPage = lazy(() =>
   })),
 );
 
+// --- PBF (condicionalidades) ---
+const PbfDescumprimentosPage = lazy(() =>
+  import('./pbf/PbfDescumprimentosPage').then((m) => ({ default: m.PbfDescumprimentosPage })),
+);
+
+// --- Censo SUAS ---
+const CensoUnidadesPage = lazy(() =>
+  import('./censo/CensoUnidadesPage').then((m) => ({ default: m.CensoUnidadesPage })),
+);
+const CensoConsolidacaoPage = lazy(() =>
+  import('./censo/CensoConsolidacaoPage').then((m) => ({ default: m.CensoConsolidacaoPage })),
+);
+
+// --- IGD (estimativa local) ---
+const IgdEstimativaPage = lazy(() =>
+  import('./igd/IgdEstimativaPage').then((m) => ({ default: m.IgdEstimativaPage })),
+);
+
 const MODULE: ModuleDefinition = {
   id: 'assistenciasocial',
   nav: {
@@ -60,6 +78,13 @@ const MODULE: ModuleDefinition = {
         // Prontuario SUAS
         { path: 'prontuarios', element: <ProntuarioSuasListPage /> },
         { path: 'prontuarios/:id', element: <ProntuarioSuasDetailPage /> },
+        // PBF — condicionalidades (painel de descumprimentos / busca ativa do CRAS)
+        { path: 'pbf/condicionalidades', element: <PbfDescumprimentosPage /> },
+        // Censo SUAS — unidades + consolidacao
+        { path: 'censo/unidades', element: <CensoUnidadesPage /> },
+        { path: 'censo', element: <CensoConsolidacaoPage /> },
+        // IGD — estimativa local (gerencial, nao oficial)
+        { path: 'igd', element: <IgdEstimativaPage /> },
       ],
     },
   ],
