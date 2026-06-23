@@ -98,6 +98,24 @@ public sealed class FolhaDePagamentoRepository(RecursosHumanosDbContext context)
         ArgumentNullException.ThrowIfNull(competencia);
         return context.FolhasDePagamento.AnyAsync(folha => folha.Competencia == competencia && folha.Tipo == tipo, cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<FolhaDePagamento>> ListarPorTipoEAnoAsync(int ano, TipoFolha tipo, CancellationToken cancellationToken)
+    {
+        // Competencia e persistida como inteiro (Ano*100 + Mes) via value converter; o intervalo do
+        // ano e [ano*100+1, ano*100+12]. Filtra pelo tipo no SQL (indice (TenantId, Competencia, Tipo))
+        // e materializa o intervalo do ano em memoria — lote pequeno por tenant/tipo/ano. Inclui os
+        // Eventos (owned) para o handler do autosservico filtrar o dado-proprio.
+        var folhasDoTipo = await context.FolhasDePagamento
+            .Where(folha => folha.Tipo == tipo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return folhasDoTipo
+            .Where(folha => folha.Competencia.Ano == ano)
+            .OrderBy(folha => folha.Competencia.Mes)
+            .ToList();
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio do catalogo de <see cref="RubricaFolha"/>.</summary>
@@ -240,4 +258,36 @@ public sealed class EventoESocialRepository(RecursosHumanosDbContext context) : 
             .ConfigureAwait(false);
         return eventos.OrderBy(e => e.GeradoEm).ToList();
     }
+}
+
+/// <summary>
+/// Implementacao EF Core do repositorio do vinculo usuario&#8596;servidor (ancora do autosservico).
+/// Toda consulta respeita o Global Query Filter por tenant — o vinculo de outro tenant nao e visivel,
+/// reforcando o isolamento dado-proprio por construcao.
+/// </summary>
+public sealed class VinculoServidorUsuarioRepository(RecursosHumanosDbContext context) : IVinculoServidorUsuarioRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(VinculoServidorUsuario vinculo)
+    {
+        ArgumentNullException.ThrowIfNull(vinculo);
+        context.VinculosServidorUsuario.Add(vinculo);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServidorId?> ResolverServidorDoUsuarioAsync(Guid usuarioId, CancellationToken cancellationToken)
+    {
+        var vinculo = await context.VinculosServidorUsuario
+            .FirstOrDefaultAsync(v => v.UsuarioId == usuarioId, cancellationToken)
+            .ConfigureAwait(false);
+        return vinculo?.ServidorId;
+    }
+
+    /// <inheritdoc />
+    public Task<bool> UsuarioJaVinculadoAsync(Guid usuarioId, CancellationToken cancellationToken)
+        => context.VinculosServidorUsuario.AnyAsync(v => v.UsuarioId == usuarioId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ServidorJaVinculadoAsync(ServidorId servidorId, CancellationToken cancellationToken)
+        => context.VinculosServidorUsuario.AnyAsync(v => v.ServidorId == servidorId, cancellationToken);
 }

@@ -28,6 +28,9 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
     /// <summary>Cargos publicos da estrutura de pessoal.</summary>
     public DbSet<Cargo> Cargos => Set<Cargo>();
 
+    /// <summary>Vinculos usuario&#8596;servidor (ancora do autosservico "Minha Folha").</summary>
+    public DbSet<VinculoServidorUsuario> VinculosServidorUsuario => Set<VinculoServidorUsuario>();
+
     /// <summary>Folhas de pagamento por competencia.</summary>
     public DbSet<FolhaDePagamento> FolhasDePagamento => Set<FolhaDePagamento>();
 

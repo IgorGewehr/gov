@@ -26,9 +26,13 @@ sensíveis sob escrutínio do **Tribunal de Contas (foco TCE-RS e padrão nacion
 | **M3** | Demonstrações DCASP + MSC | ✅ |
 | **M4** | Prestação de contas TCE-RS/SICONFI (remessa SIAPC + protocolo) | ✅ |
 | — | Cofre A1 (envelope encryption) · Outbox resiliente · Legislativo demonstrável | ✅ |
-| **M5–M10** | RH/eSocial · Tributos · Saúde/Educação · Cidadão/BI · Suprimentos/QA · **Prontidão PoC/Go-live** | 🔜 |
+| — | Planejamento PPA/LDO/LOA · Encerramento de exercício (resultado + RAP) | ✅ |
+| **M5** | RH: folha mensal + 13º/férias/rescisão · ponto (software + coletor REP) · eSocial estrutural · remessa folha TCE | ✅ |
+| **M6** | Tributos: IPTU · ISS (NFS-e passiva) · ITBI (Tema 1.113) · taxas/COSIP/alvarás · dívida ativa/CDA/protesto | ✅ |
+| — | Segurança: 6 críticos + 5 altos do red-team fechados · auditoria hash-chain imutável | ✅ |
+| **M7–M10** | Saúde/Educação/Assistência · Cidadão/Gestor/BI · Suprimentos/QA · **Prontidão PoC/Go-live** | 🔜 |
 
-**Build 0 erros / 0 avisos** (warnings=errors) · **~700 testes** · fitness/arquitetura verdes. Acompanhe em [`docs/progresso/`](docs/progresso/).
+**Build 0 erros / 0 avisos** (warnings=errors) · **~1.067 testes backend + 192 frontend** · fitness/arquitetura verdes. Acompanhe em [`docs/progresso/`](docs/progresso/).
 
 > **Honestidade "simulado vs oficial":** NFS-e/ADN é integração real; TCE/SICONFI geram artefato correto com validação **local** (validação no PAD **oficial** pendente do leiaute MT 2026); demais integrações chegam nos marcos M5–M10. Detalhe verificado em [`docs/estudo/DIAGNOSTICO-VS-REAL.md`](docs/estudo/DIAGNOSTICO-VS-REAL.md).
 
@@ -98,8 +102,8 @@ dotnet test            # testes de arquitetura (Fase 6)
 
 Execução por **marcos** (ver progresso real em [`docs/progresso/`](docs/progresso/) e plano em [`docs/planejamento/PLANO-MESTRE.md`](docs/planejamento/PLANO-MESTRE.md)):
 
-- **M0–M4 ✅** — build, autorização, espinha fiscal (PCASP → DCASP/MSC → prestação TCE-RS).
-- **M5** RH (folha + eSocial + ponto) · **M6** Tributos · **M7** Saúde/Educação/Assistência · **M8** Cidadão/Gestor/BI · **M9** Suprimentos + compliance + QA.
+- **M0–M4 ✅** — build, autorização, espinha fiscal (PCASP → DCASP/MSC → prestação TCE-RS) + PPA/LDO/LOA + encerramento de exercício.
+- **M5 ✅** RH (folha mensal + ciclo anual + ponto/coletor + eSocial + remessa folha) · **M6 ✅** Tributos (IPTU/ISS/ITBI/taxas/dívida) · **M7** Saúde/Educação/Assistência · **M8** Cidadão/Gestor/BI · **M9** Suprimentos + compliance + QA.
 - **M10** — **Prontidão para PoC + Go-live** (capstone): validação no oficial, avaliações isentas, deploy/infra, segurança/LGPD final. "Pronto" = validado no oficial + deployável no município, não só código.
 
 ## Compliance

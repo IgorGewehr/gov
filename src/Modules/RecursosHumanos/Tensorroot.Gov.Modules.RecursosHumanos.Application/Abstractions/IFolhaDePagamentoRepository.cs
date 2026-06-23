@@ -28,4 +28,15 @@ public interface IFolhaDePagamentoRepository
     /// <param name="tipo">Tipo da folha (default <see cref="TipoFolha.Mensal"/>).</param>
     /// <returns><c>true</c> se ja existir folha para a competencia/tipo.</returns>
     Task<bool> ExisteParaCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken, TipoFolha tipo = TipoFolha.Mensal);
+
+    /// <summary>
+    /// Lista as folhas de um tipo cujas competencias caem num ano (tenant-scoped). Usado pelo
+    /// autosservico para reunir, ex., as folhas de FERIAS de um servidor num exercicio — o handler
+    /// filtra, em memoria, os eventos do PROPRIO servidor (dado-proprio).
+    /// </summary>
+    /// <param name="ano">Ano de referencia das competencias.</param>
+    /// <param name="tipo">Tipo (natureza) da folha.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Folhas do tipo/ano no tenant.</returns>
+    Task<IReadOnlyList<FolhaDePagamento>> ListarPorTipoEAnoAsync(int ano, TipoFolha tipo, CancellationToken cancellationToken);
 }

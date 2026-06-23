@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Application.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.CicloAnual;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.MinhaFolha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
@@ -32,6 +33,47 @@ internal static class RecursosHumanosEndpoints
         MapearCicloAnual(grupo);
         MapearPonto(grupo);
         MapearESocial(grupo);
+        MapearMinhaFolha(grupo);
+    }
+
+    private static void MapearMinhaFolha(RouteGroupBuilder grupo)
+    {
+        // AUTOSSERVICO DO SERVIDOR ("Minha Folha"). Gated por 'autosservico.proprio' (papel Servidor).
+        // SEGURANCA dado-proprio A PROVA DE BALA: NENHUM endpoint aceita um servidorId do cliente — o
+        // servidor e SEMPRE resolvido do PROPRIO usuario autenticado (vinculo usuario<->servidor) no
+        // handler. Tentar ver outro servidor e impossivel: nao ha parametro de servidor a forjar.
+        var minha = grupo.MapGroup("/minha-folha").WithTags("RecursosHumanos.MinhaFolha");
+
+        // VINCULO usuario<->servidor (GESTAO do RH; nao e autosservico — gated por gerenciar).
+        // Declara que um usuario do Identidade E um servidor; ancora os endpoints proprios.
+        minha.MapPost("/vinculos", async (
+            VincularUsuarioAoServidorCommand comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // MEU CONTRACHEQUE por competencia e tipo (mensal/13o/ferias/rescisao). So o do PROPRIO servidor.
+        minha.MapGet("/contracheque", async (
+            int ano, int mes, TipoFolha? tipo, ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ObterMeuContrachequeQuery(ano, mes, tipo ?? TipoFolha.Mensal), ct)))
+            .RequirePermission("autosservico.proprio");
+
+        // MEU ESPELHO DE PONTO (apuracao da minha jornada) numa competencia. So o do PROPRIO servidor.
+        minha.MapGet("/espelho-ponto", async (
+            int ano, int mes, ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ObterMeuEspelhoDePontoQuery(ano, mes), ct)))
+            .RequirePermission("autosservico.proprio");
+
+        // MINHAS FERIAS num ano (folhas de ferias com minhas verbas). So as do PROPRIO servidor.
+        minha.MapGet("/ferias", async (
+            int ano, ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ObterMinhasFeriasQuery(ano), ct)))
+            .RequirePermission("autosservico.proprio");
+
+        // MEU INFORME DE RENDIMENTOS anual (rendimentos/previdencia/IRRF). So o do PROPRIO servidor.
+        minha.MapGet("/informe-rendimentos", async (
+            int ano, ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ObterMeuInformeDeRendimentosQuery(ano), ct)))
+            .RequirePermission("autosservico.proprio");
     }
 
     private static void MapearCicloAnual(RouteGroupBuilder grupo)

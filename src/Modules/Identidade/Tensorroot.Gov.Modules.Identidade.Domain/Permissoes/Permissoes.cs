@@ -50,6 +50,17 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Recursos Humanos.</summary>
     public const string RecursosHumanosGerenciar = "recursoshumanos.gerenciar";
 
+    /// <summary>
+    /// AUTOSSERVICO DO SERVIDOR ("Minha Folha"): permite ao PROPRIO servidor consultar SOMENTE os
+    /// SEUS dados pessoais (contracheque, espelho de ponto, ferias, informe de rendimentos). Verbo
+    /// DELIBERADAMENTE separado de <see cref="RecursosHumanosVer"/> (que e o "ver de todos", de
+    /// gestor de RH) e, por isso, FORA de <see cref="Todas"/>: o papel "Servidor" recebe APENAS este
+    /// escopo e NUNCA enxerga dados de terceiros. O endpoint resolve o ServidorId do PROPRIO usuario
+    /// autenticado (nunca aceita um servidorId arbitrario do cliente) — ABAC dado-proprio a prova de
+    /// bala. LG: contracheque/ponto sao dados pessoais (LGPD art. 5); todo acesso gera trilha (LG-2).
+    /// </summary>
+    public const string AutosservicoProprio = "autosservico.proprio";
+
     /// <summary>Visualizar dados do modulo Patrimonio (bens, frota, almoxarifado).</summary>
     public const string PatrimonioVer = "patrimonio.ver";
 
@@ -276,9 +287,26 @@ public static class Permissoes
         ProtocoloDocumentoAssinar,
     }.ToFrozenSet(StringComparer.Ordinal);
 
-    /// <summary>Indica se a permissao informada pertence ao catalogo canonico.</summary>
+    /// <summary>
+    /// Conjunto CANONICO de TODAS as permissoes atribuiveis a um <see cref="Papeis.Papel"/> de
+    /// tenant — superset de <see cref="Todas"/>. Acrescenta os escopos que existem no catalogo, sao
+    /// atribuiveis por RBAC, mas NAO sao concedidos ao papel "Administrador" (que recebe
+    /// <see cref="Todas"/>): hoje, <see cref="AutosservicoProprio"/>, que so faz sentido no papel
+    /// "Servidor" (autosservico do dado-proprio) e nao no admin (que ja ve tudo). E esta a fonte de
+    /// verdade de <see cref="EhConhecida"/> — o gate de persistencia de permissoes do papel.
+    /// <para>
+    /// Permissoes de PLATAFORMA (<see cref="PlataformaTenantsProvisionar"/>,
+    /// <see cref="PlataformaModulosConfigurar"/>) e <see cref="AdminModulosConfigurar"/> NAO entram
+    /// aqui de proposito: nao sao atribuiveis pelo RBAC de tenant (vivem em principais de plataforma).
+    /// </para>
+    /// </summary>
+    public static readonly FrozenSet<string> Conhecidas = Todas
+        .Append(AutosservicoProprio)
+        .ToFrozenSet(StringComparer.Ordinal);
+
+    /// <summary>Indica se a permissao informada pertence ao catalogo canonico atribuivel por tenant.</summary>
     /// <param name="permissao">Escopo a verificar.</param>
     /// <returns><c>true</c> se conhecida; caso contrario, <c>false</c>.</returns>
     public static bool EhConhecida(string? permissao)
-        => !string.IsNullOrWhiteSpace(permissao) && Todas.Contains(permissao);
+        => !string.IsNullOrWhiteSpace(permissao) && Conhecidas.Contains(permissao);
 }

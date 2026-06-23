@@ -11,6 +11,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Internal;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
@@ -60,6 +61,12 @@ public sealed class RecursosHumanosModule : IModule
 
         services.AddScoped<IServidorRepository, ServidorRepository>();
         services.AddScoped<ICargoRepository, CargoRepository>();
+
+        // AUTOSSERVICO ("Minha Folha"): repositorio do vinculo usuario<->servidor + a ancora que
+        // resolve o servidor do PROPRIO usuario autenticado (ABAC dado-proprio a prova de bala).
+        services.AddScoped<IVinculoServidorUsuarioRepository, VinculoServidorUsuarioRepository>();
+        services.AddScoped<IResolvedorServidorDoUsuarioAutenticado, ResolvedorServidorDoUsuarioAutenticado>();
+
         services.AddScoped<IFolhaDePagamentoRepository, FolhaDePagamentoRepository>();
         services.AddScoped<IRubricaFolhaRepository, RubricaFolhaRepository>();
         services.AddScoped<ITabelasLegaisRepository, TabelasLegaisRepository>();
