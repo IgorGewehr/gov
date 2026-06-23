@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
+using Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal;
 using AtendimentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendimento;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence;
@@ -26,6 +28,18 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
 
     /// <summary>Solicitacoes de regulacao (SISREG) — raiz de agregado.</summary>
     public DbSet<SolicitacaoRegulacao> SolicitacoesRegulacao => Set<SolicitacaoRegulacao>();
+
+    /// <summary>Regras de classificacao ASPS versionadas (S-1, LC 141/2012 arts. 3º/4º).</summary>
+    public DbSet<RegraClassificacaoAsps> RegrasClassificacaoAsps => Set<RegraClassificacaoAsps>();
+
+    /// <summary>Fundo Municipal de Saude por bloco de financiamento (S-2, Port. 3.992/2017) — raiz de agregado.</summary>
+    public DbSet<FundoMunicipalSaude> FundosMunicipaisSaude => Set<FundoMunicipalSaude>();
+
+    /// <summary>Linhas de execucao fiscal de Saude decompostas (S-1 read model, Via A2).</summary>
+    public DbSet<LinhaExecucaoSaude> LinhasExecucaoSaude => Set<LinhaExecucaoSaude>();
+
+    /// <summary>Percentuais fiscais de Saude versionados por tenant+vigencia (S-1 — nunca hardcoded).</summary>
+    public DbSet<ParametroFiscalSaude> ParametrosFiscaisSaude => Set<ParametroFiscalSaude>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

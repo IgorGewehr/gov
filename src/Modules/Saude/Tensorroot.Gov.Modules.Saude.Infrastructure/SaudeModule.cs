@@ -10,7 +10,10 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
+using Tensorroot.Gov.Modules.Saude.Application.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
+using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
+using Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Integracoes;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Repositories;
@@ -67,6 +70,13 @@ public sealed class SaudeModule : IModule
         services.AddScoped<IAssinaturaIcpBrasilService, SimuladoAssinaturaIcpBrasilService>();
         services.AddScoped<ICotaRepository, SimuladoCotaRepository>();
 
+        // Nucleo fiscal de Saude (M7 S-1/S-2): classificacao ASPS, FMS por bloco, execucao e percentuais.
+        services.AddScoped<IRegraClassificacaoAspsRepository, RegraClassificacaoAspsRepository>();
+        services.AddScoped<IFundoMunicipalSaudeRepository, FundoMunicipalSaudeRepository>();
+        services.AddScoped<ILinhaExecucaoSaudeRepository, LinhaExecucaoSaudeRepository>();
+        services.AddScoped<IExecucaoSaudeReadModel, ExecucaoSaudeReadModel>();
+        services.AddScoped<IParametroAspsProvider, ParametroAspsProvider>();
+
         var applicationAssembly = typeof(CadastrarPacienteCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));
         services.AddValidatorsFromAssembly(applicationAssembly);
@@ -89,8 +99,50 @@ public sealed class SaudeModule : IModule
             construtor.UseSqlite(connectionString);
         }
 
-        await using var contexto = new SaudeDbContext(construtor.Options, SistemaTenantContext.Instancia);
+        await using var contexto = new SaudeDbContext(construtor.Options, new SeedTenantContext(tenantId));
         await SchemaProvisioner.AplicarAsync(contexto, ehSqlServer, cancellationToken).ConfigureAwait(false);
+        await SemearFiscalAsync(contexto, tenantId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Semeia (idempotente, por tenant) as regras default de classificacao ASPS (LC 141/2012 arts. 3º/4º)
+    /// e o percentual minimo legal de 15% versionado. NAO sobrescreve parametros ja definidos pelo tenant
+    /// (a Lei Organica pode fixar maior) — so cria quando ainda nao ha nenhum.
+    /// </summary>
+    private static async Task SemearFiscalAsync(SaudeDbContext contexto, Guid tenantId, CancellationToken cancellationToken)
+    {
+        var jaTemRegras = await contexto.RegrasClassificacaoAsps.AnyAsync(cancellationToken).ConfigureAwait(false);
+        if (!jaTemRegras)
+        {
+            foreach (var regra in SeedRegrasAsps.Gerar(tenantId))
+            {
+                await contexto.RegrasClassificacaoAsps.AddAsync(regra, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        var jaTemPercentual = await contexto.ParametrosFiscaisSaude
+            .AnyAsync(p => p.Chave == ParametroFiscalSaude.ChavePercentualMinimoAsps, cancellationToken)
+            .ConfigureAwait(false);
+        if (!jaTemPercentual)
+        {
+            // Default legal 15% (LC 141/2012, art. 7º); vigencia ancorada na edicao da lei (reprodutivel).
+            await contexto.ParametrosFiscaisSaude.AddAsync(
+                ParametroFiscalSaude.Criar(tenantId, ParametroFiscalSaude.ChavePercentualMinimoAsps, new DateOnly(2012, 1, 16), ParametroAspsProvider.PercentualMinimoLegalAsps),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!jaTemRegras || !jaTemPercentual)
+        {
+            await contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Contexto de tenant fixo usado apenas na semeadura/migracao (carimba o TenantId do banco do tenant).</summary>
+    private sealed class SeedTenantContext(Guid tenantId) : ITenantContext
+    {
+        public Guid TenantId => tenantId;
+
+        public bool HasTenant => tenantId != Guid.Empty;
     }
 
     /// <inheritdoc />

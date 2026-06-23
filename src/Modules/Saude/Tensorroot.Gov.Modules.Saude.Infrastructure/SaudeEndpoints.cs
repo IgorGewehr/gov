@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Saude.Application.Atendimento;
+using Tensorroot.Gov.Modules.Saude.Application.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Application.Regulacao;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
+using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure;
@@ -21,6 +23,47 @@ internal static class SaudeEndpoints
         MapearPacientes(grupo);
         MapearAtendimentos(grupo);
         MapearRegulacao(grupo);
+        MapearFiscal(grupo);
+    }
+
+    private static void MapearFiscal(RouteGroupBuilder grupo)
+    {
+        // S-1 (Via A2): projeta linhas de execucao fiscal de Saude (receita-base + despesas por
+        // funcao/subfuncao/fonte) no read model, idempotente por OrigemHash. Alimentador da apuracao ASPS.
+        grupo.MapPost("/fiscal/execucao", async (
+            RegistrarExecucaoSaudeCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { registradas = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
+
+        // S-1: apuracao do minimo de 15% ASPS (LC 141/2012) por exercicio.
+        grupo.MapGet("/fiscal/asps/{exercicio:int}", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ApurarAspsQuery(exercicio), cancellationToken))).RequirePermission("saude.ver");
+
+        // S-2: abrir a unidade gestora do Fundo Municipal de Saude.
+        grupo.MapPost("/fiscal/fms", async (
+            AbrirFundoMunicipalSaudeCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
+
+        // S-2: execucao segregada por bloco do FMS.
+        grupo.MapGet("/fiscal/fms/{fundoId:guid}/execucao", async (
+            Guid fundoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterExecucaoFmsQuery(fundoId), cancellationToken))).RequirePermission("saude.ver");
+
+        // S-2: receber parcela do FNS num bloco/fonte (Custeio/Investimento, Port. 3.992/2017).
+        grupo.MapPost("/fiscal/fms/{fundoId:guid}/parcelas", async (
+            Guid fundoId, ParcelaFmsPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReceberParcelaFnsCommand(fundoId, payload.Bloco, payload.FonteRecurso, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
+
+        // S-2: executar despesa num bloco/fonte (transposicao entre blocos e vedada).
+        grupo.MapPost("/fiscal/fms/{fundoId:guid}/execucoes", async (
+            Guid fundoId, ParcelaFmsPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ExecutarDespesaBlocoCommand(fundoId, payload.Bloco, payload.FonteRecurso, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
     }
 
     private static void MapearPacientes(RouteGroupBuilder grupo)
@@ -202,4 +245,6 @@ internal static class SaudeEndpoints
     private sealed record CancelarAtendimentoPayload(string Motivo);
 
     private sealed record MotivoPayload(string Motivo);
+
+    private sealed record ParcelaFmsPayload(BlocoFinanciamentoSaude Bloco, string FonteRecurso, decimal Valor);
 }
