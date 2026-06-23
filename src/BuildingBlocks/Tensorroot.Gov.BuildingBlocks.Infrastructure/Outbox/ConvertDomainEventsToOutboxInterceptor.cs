@@ -61,7 +61,9 @@ public sealed class ConvertDomainEventsToOutboxInterceptor(TimeProvider timeProv
                     Id = Guid.NewGuid(),
                     TenantId = tenantId,
                     Type = evento.GetType().AssemblyQualifiedName ?? evento.GetType().FullName!,
-                    Content = JsonSerializer.Serialize(evento, evento.GetType()),
+                    // P0-3: serialize com as opções COMPARTILHADAS (conversor de Value Object), idênticas
+                    // às usadas no deserialize do OutboxPublisher — garante o round-trip dos VOs de classe.
+                    Content = JsonSerializer.Serialize(evento, evento.GetType(), OutboxSerialization.Options),
                     OccurredOnUtc = nowUtc,
                 });
             }

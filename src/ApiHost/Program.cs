@@ -216,6 +216,23 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// === P0-2: AQUECIMENTO ASSÍNCRONO do cache de conexão do tenant (anti thread-pool starvation) ===
+// Roda APÓS a autenticação (tenant já resolvido do JWT) e ANTES de qualquer factory de DbContext de
+// módulo. Decifra a connection string protegida (Key Vault em PROD) com `await`, FORA do factory
+// síncrono do EF. Assim, quando os handlers/endpoints construírem seus DbContext, o
+// TenantConnectionResolver bate no CACHE QUENTE e NUNCA bloqueia uma thread do pool em I/O ao Key Vault.
+app.Use(async (context, next) =>
+{
+    var tenantContext = context.RequestServices.GetRequiredService<ITenantContext>();
+    if (tenantContext.HasTenant
+        && context.RequestServices.GetRequiredService<ITenantConnectionResolver>() is TenantConnectionResolver resolver)
+    {
+        await resolver.AquecerAsync(context.RequestAborted);
+    }
+
+    await next();
+});
+
 // === Gating de licenciamento: bloqueia módulos não licenciados para o tenant ===
 app.Use(async (context, next) =>
 {
@@ -276,15 +293,35 @@ app.MapGet("/", () => Results.Ok(new
 }));
 
 // Garante o banco de CONTROLE (plataforma) criado/migrado no startup.
+// P0-5: a EVOLUÇÃO de schema do banco de controle DEVE passar por migrations — `EnsureCreatedAsync`
+// cria o schema IGNORANDO migrations e NUNCA aplica migrations futuras (banco sem `__EFMigrationsHistory`),
+// travando todo upgrade ("coluna inexistente" em runtime). Política fixada: PRODUÇÃO é EXCLUSIVAMENTE
+// SqlServer (fail-fast no boot se for outro provider). `EnsureCreatedAsync` fica reservado APENAS ao
+// fallback de DESENVOLVIMENTO (SQLite), onde não há pipeline de migrations do banco de controle.
 await using (var escopoStartup = app.Services.CreateAsyncScope())
 {
     var plataforma = escopoStartup.ServiceProvider.GetRequiredService<PlatformDbContext>();
-    if (string.Equals(app.Configuration["Database:Provider"], "SqlServer", StringComparison.OrdinalIgnoreCase))
+    var provider = app.Configuration["Database:Provider"];
+    var ehSqlServer = string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase);
+
+    if (!app.Environment.IsDevelopment() && !ehSqlServer)
     {
+        // Fail-fast: em PROD, qualquer provider != SqlServer é configuração inválida (trava evolutiva
+        // de schema + trilha de auditoria fisicamente alterável fora de SqlServer — ver P1-7).
+        throw new InvalidOperationException(
+            $"Database:Provider inválido em ambiente '{app.Environment.EnvironmentName}': '{provider ?? "(ausente)"}'. " +
+            "PRODUÇÃO exige Database:Provider=SqlServer (migrations + trilha WORM). " +
+            "O fallback SQLite/EnsureCreated é exclusivo de DESENVOLVIMENTO.");
+    }
+
+    if (ehSqlServer)
+    {
+        // SEMPRE migrar o banco de controle: aplica migrations pendentes num banco existente.
         await plataforma.Database.MigrateAsync();
     }
     else
     {
+        // DEV-only (SQLite): sem pipeline de migrations do banco de controle.
         await plataforma.Database.EnsureCreatedAsync();
     }
 }

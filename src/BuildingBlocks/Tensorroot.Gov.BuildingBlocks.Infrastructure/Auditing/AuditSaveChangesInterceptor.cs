@@ -236,33 +236,15 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUser currentUser, TimePr
     private static DateTime TruncarParaMilissegundos(DateTime valor)
         => new(valor.Ticks - (valor.Ticks % TimeSpan.TicksPerMillisecond), valor.Kind);
 
+    // P0-1: leitura ATÔMICA do último selo (UPDLOCK/HOLDLOCK em SqlServer) — fonte única em
+    // UltimoSeloReader, compartilhada com o RegistroAcessoSensivel. Fecha a corrida de Sequencia.
     private static (long Sequencia, string Hash) UltimoSeloDoTenant(DbContext context, Guid tenantId)
-    {
-        var ultimo = context.Set<AuditTrail>()
-            .Where(linha => linha.TenantId == tenantId && linha.Sequencia > 0)
-            .OrderByDescending(linha => linha.Sequencia)
-            .Select(linha => new { linha.Sequencia, linha.HashAtual })
-            .FirstOrDefault();
+        => UltimoSeloReader.LerAsync(context, tenantId, async: false, CancellationToken.None)
+            .GetAwaiter().GetResult();
 
-        return ultimo is null || string.IsNullOrEmpty(ultimo.HashAtual)
-            ? (0L, AuditHashChain.HashGenesis)
-            : (ultimo.Sequencia, ultimo.HashAtual);
-    }
-
-    private static async Task<(long Sequencia, string Hash)> UltimoSeloDoTenantAsync(
+    private static Task<(long Sequencia, string Hash)> UltimoSeloDoTenantAsync(
         DbContext context,
         Guid tenantId,
         CancellationToken cancellationToken)
-    {
-        var ultimo = await context.Set<AuditTrail>()
-            .Where(linha => linha.TenantId == tenantId && linha.Sequencia > 0)
-            .OrderByDescending(linha => linha.Sequencia)
-            .Select(linha => new { linha.Sequencia, linha.HashAtual })
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return ultimo is null || string.IsNullOrEmpty(ultimo.HashAtual)
-            ? (0L, AuditHashChain.HashGenesis)
-            : (ultimo.Sequencia, ultimo.HashAtual);
-    }
+        => UltimoSeloReader.LerAsync(context, tenantId, async: true, cancellationToken);
 }

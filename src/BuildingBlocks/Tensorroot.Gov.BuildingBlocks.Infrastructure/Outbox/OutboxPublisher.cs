@@ -63,7 +63,10 @@ public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimePro
             {
                 var tipo = Type.GetType(mensagem.Type)
                     ?? throw new InvalidOperationException($"Tipo do evento não resolvido: {mensagem.Type}");
-                var evento = JsonSerializer.Deserialize(mensagem.Content, tipo)
+                // P0-3: usa as MESMAS JsonSerializerOptions do serialize (com o conversor de Value
+                // Object). Sem isto, eventos com VO de classe (Competencia/Matricula/Cnpj/Hash) lançavam
+                // na desserialização e viravam dead-letter silencioso a cada drain.
+                var evento = JsonSerializer.Deserialize(mensagem.Content, tipo, OutboxSerialization.Options)
                     ?? throw new InvalidOperationException("Conteúdo do evento desserializou para nulo.");
 
                 // Despacho ISOLADO por mensagem: o dispatcher cria um escopo de DI próprio (com o tenant

@@ -32,7 +32,9 @@ public sealed class ModuleIntegrationEventWriter(ScopeDbContextHolder holder, Ti
             Id = Guid.NewGuid(),
             TenantId = tenantId,
             Type = tipo.AssemblyQualifiedName ?? tipo.FullName!,
-            Content = JsonSerializer.Serialize(integrationEvent, tipo),
+            // P0-3: serialize com as opções COMPARTILHADAS (conversor de Value Object), idênticas às do
+            // deserialize do OutboxPublisher — integration events com VO de classe round-trip sem poison.
+            Content = JsonSerializer.Serialize(integrationEvent, tipo, OutboxSerialization.Options),
             OccurredOnUtc = integrationEvent.OccurredOnUtc == default
                 ? timeProvider.GetUtcNow().UtcDateTime
                 : integrationEvent.OccurredOnUtc,

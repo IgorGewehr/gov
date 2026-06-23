@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.SharedKernel;
 
@@ -64,7 +63,11 @@ public sealed class RegistroAcessoSensivel(
 
         var agoraUtc = TruncarParaMilissegundos(timeProvider.GetUtcNow().UtcDateTime);
 
-        var (sequenciaAnterior, hashAnterior) = await UltimoSeloDoTenantAsync(contexto, tenantId, cancellationToken)
+        // P0-1: leitura ATÔMICA do último selo (UPDLOCK/HOLDLOCK em SqlServer), mesma fonte do
+        // interceptor. Fecha a corrida que, ao selar um acesso de leitura sensível concorrente,
+        // duplicava a Sequencia e abortava a leitura legítima (P2-3).
+        var (sequenciaAnterior, hashAnterior) = await UltimoSeloReader
+            .LerAsync(contexto, tenantId, async: true, cancellationToken)
             .ConfigureAwait(false);
         var sequencia = sequenciaAnterior + 1;
 
@@ -104,21 +107,4 @@ public sealed class RegistroAcessoSensivel(
 
     private static DateTime TruncarParaMilissegundos(DateTime valor)
         => new(valor.Ticks - (valor.Ticks % TimeSpan.TicksPerMillisecond), valor.Kind);
-
-    private static async Task<(long Sequencia, string Hash)> UltimoSeloDoTenantAsync(
-        DbContext context,
-        Guid tenantId,
-        CancellationToken cancellationToken)
-    {
-        var ultimo = await context.Set<AuditTrail>()
-            .Where(linha => linha.TenantId == tenantId && linha.Sequencia > 0)
-            .OrderByDescending(linha => linha.Sequencia)
-            .Select(linha => new { linha.Sequencia, linha.HashAtual })
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return ultimo is null || string.IsNullOrEmpty(ultimo.HashAtual)
-            ? (0L, AuditHashChain.HashGenesis)
-            : (ultimo.Sequencia, ultimo.HashAtual);
-    }
 }

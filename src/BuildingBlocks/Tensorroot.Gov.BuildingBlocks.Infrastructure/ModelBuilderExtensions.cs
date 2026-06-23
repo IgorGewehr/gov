@@ -111,11 +111,21 @@ public static class ModelBuilderExtensions
             builder.Property(trail => trail.HashAnterior).HasMaxLength(64);
             builder.Property(trail => trail.HashAtual).HasMaxLength(64);
             builder.HasIndex(trail => new { trail.TenantId, trail.TimestampUtc });
-            // Cadeia POR TENANT em ordem de gravação: acelera o "último selo do tenant" (interceptor)
-            // e a leitura sequencial do verificador. NÃO é único — linhas LEGADAS (anteriores à
-            // cadeia) compartilham Sequencia=0; a unicidade da posição é garantida pelo próprio
-            // verificador (lacuna/duplicata = adulteração), e em produção pelo trigger WORM.
-            builder.HasIndex(trail => new { trail.TenantId, trail.Sequencia });
+            // P0-1 (robustez da fundação): índice ÚNICO FILTRADO em (TenantId, Sequencia) para
+            // Sequencia > 0. Cadeia POR TENANT em ordem de gravação — acelera o "último selo do
+            // tenant" (interceptor) e a leitura sequencial do verificador. Sob CONCORRÊNCIA do mesmo
+            // tenant (lote de empenhos, importação de folha, NfseSync), duas requisições podiam ler o
+            // mesmo "último selo = N" e ambas gravar Sequencia=N+1 → cadeia bifurcava e o verificador
+            // do TCE reportava FALSA "adulteração". Com a unicidade, a colisão vira uma
+            // DbUpdateException de chave duplicada (detectável + re-tentável) em vez de corrupção
+            // silenciosa. O FILTRO Sequencia > 0 preserva as linhas LEGADAS (anteriores à cadeia), que
+            // compartilham Sequencia=0 e não devem colidir entre si. Filtro honrado por SqlServer
+            // (índice filtrado) e SQLite (índice parcial); demais provedores degradam para índice
+            // único pleno — aceitável pois não há legado com Sequencia=0 fora de produção.
+            builder
+                .HasIndex(trail => new { trail.TenantId, trail.Sequencia })
+                .IsUnique()
+                .HasFilter("[Sequencia] > 0");
         });
     }
 }
