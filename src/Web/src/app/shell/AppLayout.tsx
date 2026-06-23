@@ -8,12 +8,14 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { Footer } from './Footer';
+import { useSidebarColapsada } from './useSidebarColapsada';
 import { Spinner } from '../../components/ui';
 
 export function AppLayout() {
   const mainRef = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const [menuAberto, setMenuAberto] = useState(false);
+  const { colapsada, alternar } = useSidebarColapsada();
 
   useEffect(() => {
     mainRef.current?.focus();
@@ -21,13 +23,13 @@ export function AppLayout() {
   }, [pathname]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${colapsada ? ' sidebar-colapsada' : ''}`}>
       <a className="br-skip-link" href="#conteudo" accessKey="1">
         Ir para o conteúdo
       </a>
 
       <Header onToggleMenu={() => setMenuAberto((aberto) => !aberto)} />
-      <Sidebar aberta={menuAberto} />
+      <Sidebar aberta={menuAberto} colapsada={colapsada} onAlternar={alternar} />
       {menuAberto && (
         <div className="tg-backdrop" aria-hidden="true" onClick={() => setMenuAberto(false)} />
       )}

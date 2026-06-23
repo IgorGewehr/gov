@@ -10,12 +10,12 @@ export interface PageHeaderProps {
 
 export function PageHeader({ title, description, actions }: PageHeaderProps) {
   return (
-    <div className="d-flex justify-content-between align-items-start flex-wrap mb-4">
-      <div>
-        <h1 className="mb-1">{title}</h1>
-        {description && <p className="text-gray-60 mb-0">{description}</p>}
+    <div className="tg-page-header">
+      <div className="tg-page-header-titulos">
+        <h1 className="tg-page-title mb-1">{title}</h1>
+        {description && <p className="tg-page-subtitulo mb-0">{description}</p>}
       </div>
-      {actions && <div className="d-flex" style={{ gap: 'var(--spacing-scale-1x)' }}>{actions}</div>}
+      {actions && <div className="tg-page-header-acoes">{actions}</div>}
     </div>
   );
 }

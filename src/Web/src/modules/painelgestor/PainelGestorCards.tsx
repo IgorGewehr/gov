@@ -2,8 +2,12 @@
 // Cada card é autocontido: recebe seu DTO e renderiza valores + semáforo de cor
 // gov.br. A COR comunica conformidade (mínimo atingido? pessoal dentro do limite
 // LRF? remessas TCE em dia?), não é decoração.
-import type { ReactNode } from 'react';
-import { Card, Tag } from '../../components/ui';
+//
+// Usa os componentes reutilizáveis <CardSecao> (título/subtítulo/nota-caption) e
+// <Metrica>/<MetricaGrade> (rótulo pequeno em cima, valor grande, secundário claro
+// em linha própria) — referência de layout para as demais telas.
+import { CardSecao, Metrica, MetricaGrade, Tag } from '../../components/ui';
+import type { MetricaProps } from '../../components/ui';
 import { formatarMoeda } from '../../i18n/format';
 import type {
   ArrecadacaoDto,
@@ -22,176 +26,145 @@ import {
   variantePorSituacao,
 } from './painelgestor.helpers';
 
-/** Item rotulado de um KPI (grande e legível — visão executiva). */
-function Indicador({ rotulo, children }: { rotulo: string; children: ReactNode }) {
-  return (
-    <div className="col-sm-6 col-lg-4 mb-3">
-      <dt className="text-gray-60 text-down-01">{rotulo}</dt>
-      <dd className="mb-0 text-up-01 text-semi-bold">{children}</dd>
-    </div>
-  );
-}
-
 /** (a) Execução orçamentária — empenhado/liquidado/pago vs dotação. */
 export function ExecucaoCard({ d }: { d: ExecucaoOrcamentariaDto }) {
   return (
-    <Card
+    <CardSecao
       className="mb-4"
-      header={<strong>Execução orçamentária do exercício</strong>}
+      titulo="Execução orçamentária do exercício"
+      subtitulo="Empenho → Liquidação → Pagamento (Lei 4.320/1964)."
+      nota="Percentuais calculados sobre a dotação atualizada (LOA + créditos adicionais)."
     >
-      <dl className="row">
-        <Indicador rotulo="Dotação atualizada">{formatarMoeda(d.dotacaoAtualizada)}</Indicador>
-        <Indicador rotulo="Empenhado">
-          {formatarMoeda(d.empenhado)}{' '}
-          <span className="text-gray-60 text-down-01">({formatarFracao(d.percentualEmpenhado)})</span>
-        </Indicador>
-        <Indicador rotulo="Liquidado">
-          {formatarMoeda(d.liquidado)}{' '}
-          <span className="text-gray-60 text-down-01">({formatarFracao(d.percentualLiquidado)})</span>
-        </Indicador>
-        <Indicador rotulo="Pago">
-          {formatarMoeda(d.pago)}{' '}
-          <span className="text-gray-60 text-down-01">({formatarFracao(d.percentualPago)})</span>
-        </Indicador>
-      </dl>
-      <p className="mb-0 text-gray-60 text-down-01">
-        Percentuais sobre a dotação atualizada (LOA + créditos). Empenho → Liquidação → Pagamento
-        (Lei 4.320/1964).
-      </p>
-    </Card>
+      <MetricaGrade>
+        <Metrica label="Dotação atualizada" valor={formatarMoeda(d.dotacaoAtualizada)} />
+        <Metrica
+          label="Empenhado"
+          valor={formatarMoeda(d.empenhado)}
+          secundario={`${formatarFracao(d.percentualEmpenhado)} da dotação`}
+        />
+        <Metrica
+          label="Liquidado"
+          valor={formatarMoeda(d.liquidado)}
+          secundario={`${formatarFracao(d.percentualLiquidado)} da dotação`}
+        />
+        <Metrica
+          label="Pago"
+          valor={formatarMoeda(d.pago)}
+          secundario={`${formatarFracao(d.percentualPago)} da dotação`}
+        />
+      </MetricaGrade>
+    </CardSecao>
   );
 }
 
 /** (b) Mínimos constitucionais (Saúde 15% / Educação 25%) com semáforo. */
 export function MinimosCard({ minimos }: { minimos: MinimoConstitucionalDto[] }) {
   return (
-    <Card className="mb-4" header={<strong>Mínimos constitucionais (Saúde e Educação)</strong>}>
+    <CardSecao
+      className="mb-4"
+      titulo="Mínimos constitucionais (Saúde e Educação)"
+      subtitulo="Aplicação mínima da receita exigida pela Constituição, com semáforo de conformidade."
+    >
       {minimos.length === 0 ? (
         <p className="mb-0 text-gray-60">Sem apuração de mínimos para o exercício.</p>
       ) : (
-        <div className="row">
+        <div className="stack">
           {minimos.map((m) => {
             const atingido = minimoAtingido(m.situacao);
             return (
-              <div className="col-md-6 mb-3" key={m.setor}>
-                <div className="d-flex justify-content-between align-items-center mb-2">
+              <div key={m.setor}>
+                <div className="tg-secao-cabecalho mb-2">
                   <strong>{rotuloSetor(m.setor)}</strong>
                   <Tag variant={atingido ? 'success' : 'danger'}>
                     {atingido ? 'Mínimo atingido' : 'Mínimo NÃO atingido'}
                   </Tag>
                 </div>
-                <dl className="row">
-                  <Indicador rotulo="Aplicado">
-                    <span className={atingido ? 'text-success' : 'text-danger'}>
-                      {formatarFracao(m.percentualAplicado)}
-                    </span>
-                  </Indicador>
-                  <Indicador rotulo="Mínimo vigente">{formatarFracao(m.percentualMinimo)}</Indicador>
-                  <Indicador rotulo="Aplicado (R$)">{formatarMoeda(m.aplicado)}</Indicador>
-                </dl>
-                <p className="mb-0 text-gray-60 text-down-01">{fundamentoMinimo(m.setor)}</p>
+                <MetricaGrade>
+                  <Metrica
+                    label="Aplicado"
+                    valor={formatarFracao(m.percentualAplicado)}
+                    tom={atingido ? 'sucesso' : 'perigo'}
+                  />
+                  <Metrica label="Mínimo vigente" valor={formatarFracao(m.percentualMinimo)} />
+                  <Metrica label="Aplicado (R$)" valor={formatarMoeda(m.aplicado)} />
+                </MetricaGrade>
+                <p className="tg-caption mb-0 mt-2">{fundamentoMinimo(m.setor)}</p>
               </div>
             );
           })}
         </div>
       )}
-    </Card>
+    </CardSecao>
   );
 }
 
 /** (c) Arrecadação tributária + dívida ativa. */
 export function ArrecadacaoCard({ d }: { d: ArrecadacaoDto }) {
   return (
-    <Card className="mb-4" header={<strong>Arrecadação e dívida ativa</strong>}>
-      <dl className="row">
-        <Indicador rotulo="Arrecadação tributária">{formatarMoeda(d.arrecadacaoTributaria)}</Indicador>
-        <Indicador rotulo="Dívida ativa — inscrita">
-          {formatarMoeda(d.dividaAtivaSaldoInscrito)}
-        </Indicador>
-        <Indicador rotulo="Dívida ativa — ajuizada">
-          {formatarMoeda(d.dividaAtivaSaldoAjuizado)}
-        </Indicador>
-        <Indicador rotulo="Dívida ativa — recuperada">
-          {formatarMoeda(d.dividaAtivaRecuperada)}
-        </Indicador>
-      </dl>
-      <p className="mb-0 text-gray-60 text-down-01">
-        Estoque inscrito, parcela ajuizada e recuperação no exercício (cobrança da Dívida Ativa).
-      </p>
-    </Card>
+    <CardSecao
+      className="mb-4"
+      titulo="Arrecadação e dívida ativa"
+      subtitulo="Arrecadação tributária do exercício e situação do estoque da Dívida Ativa."
+      nota="Estoque inscrito, parcela ajuizada e recuperação no exercício (cobrança da Dívida Ativa)."
+    >
+      <MetricaGrade>
+        <Metrica label="Arrecadação tributária" valor={formatarMoeda(d.arrecadacaoTributaria)} />
+        <Metrica label="Dívida ativa — inscrita" valor={formatarMoeda(d.dividaAtivaSaldoInscrito)} />
+        <Metrica label="Dívida ativa — ajuizada" valor={formatarMoeda(d.dividaAtivaSaldoAjuizado)} />
+        <Metrica label="Dívida ativa — recuperada" valor={formatarMoeda(d.dividaAtivaRecuperada)} />
+      </MetricaGrade>
+    </CardSecao>
   );
 }
 
 /** (d) Custo de pessoal + % da RCL com semáforo LRF (legal/prudencial/alerta). */
 export function PessoalLrfCard({ d }: { d: DespesaPessoalLrfDto }) {
   const variante = variantePorSituacao(d.situacao);
+  const tom: MetricaProps['tom'] =
+    variante === 'danger' ? 'perigo' : variante === 'warning' ? 'alerta' : 'sucesso';
   return (
-    <Card
+    <CardSecao
       className="mb-4"
-      header={
-        <div className="d-flex justify-content-between align-items-center">
-          <strong>Despesa de pessoal — % da RCL (LRF)</strong>
-          <Tag variant={variante}>{rotuloSituacaoLrf(d.situacao)}</Tag>
-        </div>
-      }
+      titulo="Despesa de pessoal — % da RCL (LRF)"
+      subtitulo="Comparação da despesa de pessoal com a Receita Corrente Líquida e os limites legais."
+      acao={<Tag variant={variante}>{rotuloSituacaoLrf(d.situacao)}</Tag>}
+      nota="Limites de alerta/prudencial/legal parametrizáveis por tenant (LC 101/2000 — LRF). Para Executivo municipal o teto legal é 54% da RCL."
     >
-      <dl className="row">
-        <Indicador rotulo="Pessoal / RCL">
-          <span
-            className={
-              variante === 'danger'
-                ? 'text-danger'
-                : variante === 'warning'
-                  ? 'text-warning'
-                  : 'text-success'
-            }
-          >
-            {formatarFracao(d.percentualDaRcl)}
-          </span>
-        </Indicador>
-        <Indicador rotulo="Limite de alerta">{formatarFracao(d.limiteAlerta)}</Indicador>
-        <Indicador rotulo="Limite prudencial">{formatarFracao(d.limitePrudencial)}</Indicador>
-        <Indicador rotulo="Limite legal">{formatarFracao(d.limiteLegal)}</Indicador>
-        <Indicador rotulo="Despesa de pessoal">{formatarMoeda(d.despesaPessoal)}</Indicador>
-        <Indicador rotulo="RCL (12 meses)">{formatarMoeda(d.receitaCorrenteLiquida)}</Indicador>
-      </dl>
-      <p className="mb-0 text-gray-60 text-down-01">
-        Limites de alerta/prudencial/legal são parametrizáveis por tenant (LC 101/2000 — LRF). Para
-        Executivo municipal o teto legal é 54% da RCL.
-      </p>
-    </Card>
+      <MetricaGrade>
+        <Metrica label="Pessoal / RCL" valor={formatarFracao(d.percentualDaRcl)} tom={tom} />
+        <Metrica label="Limite de alerta" valor={formatarFracao(d.limiteAlerta)} />
+        <Metrica label="Limite prudencial" valor={formatarFracao(d.limitePrudencial)} />
+        <Metrica label="Limite legal" valor={formatarFracao(d.limiteLegal)} />
+        <Metrica label="Despesa de pessoal" valor={formatarMoeda(d.despesaPessoal)} />
+        <Metrica label="RCL (12 meses)" valor={formatarMoeda(d.receitaCorrenteLiquida)} />
+      </MetricaGrade>
+    </CardSecao>
   );
 }
 
 /** (e) Prontidão da prestação de contas (remessas TCE-RS) com semáforo. */
 export function PrestacaoContasCard({ d }: { d: PrestacaoContasDto }) {
   return (
-    <Card
+    <CardSecao
       className="mb-4"
-      header={
-        <div className="d-flex justify-content-between align-items-center">
-          <strong>Prestação de contas (TCE-RS)</strong>
-          <Tag variant={variantePorSituacao(d.situacao)}>{rotuloSituacaoTce(d.situacao)}</Tag>
-        </div>
-      }
+      titulo="Prestação de contas (TCE-RS)"
+      subtitulo="Situação das remessas obrigatórias ao Tribunal de Contas no exercício."
+      acao={<Tag variant={variantePorSituacao(d.situacao)}>{rotuloSituacaoTce(d.situacao)}</Tag>}
+      nota="Remessas ao TCE-RS (SIAPC/PAD) do exercício. Prazos parametrizáveis por tenant/calendário do Tribunal."
     >
-      <dl className="row">
-        <Indicador rotulo="Remessas enviadas">{d.remessasEnviadas.toLocaleString('pt-BR')}</Indicador>
-        <Indicador rotulo="Com prazo vencido">
-          <span className={d.remessasComPrazoVencido > 0 ? 'text-danger' : 'text-success'}>
-            {d.remessasComPrazoVencido.toLocaleString('pt-BR')}
-          </span>
-        </Indicador>
-        <Indicador rotulo="Situação geral">
-          <span className={d.emDia ? 'text-success' : 'text-danger'}>
-            {d.emDia ? 'Em dia' : 'Pendências'}
-          </span>
-        </Indicador>
-      </dl>
-      <p className="mb-0 text-gray-60 text-down-01">
-        Remessas ao TCE-RS (SIAPC/PAD) do exercício. Prazos parametrizáveis por tenant/calendário do
-        Tribunal.
-      </p>
-    </Card>
+      <MetricaGrade>
+        <Metrica label="Remessas enviadas" valor={d.remessasEnviadas.toLocaleString('pt-BR')} />
+        <Metrica
+          label="Com prazo vencido"
+          valor={d.remessasComPrazoVencido.toLocaleString('pt-BR')}
+          tom={d.remessasComPrazoVencido > 0 ? 'perigo' : 'sucesso'}
+        />
+        <Metrica
+          label="Situação geral"
+          valor={d.emDia ? 'Em dia' : 'Pendências'}
+          tom={d.emDia ? 'sucesso' : 'perigo'}
+        />
+      </MetricaGrade>
+    </CardSecao>
   );
 }

@@ -37,7 +37,7 @@ const FornecedorDetailPage = lazy(() =>
 const MODULE: ModuleDefinition = {
   id: 'administracao',
   nav: {
-    label: 'Administracao',
+    label: 'Compras e Licitações',
     path: '/administracao',
     icon: 'fas fa-file-signature',
   },

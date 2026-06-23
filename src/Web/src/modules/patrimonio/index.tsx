@@ -46,7 +46,7 @@ const ItemEstoqueDetailPage = lazy(() =>
 const MODULE: ModuleDefinition = {
   id: 'patrimonio',
   nav: {
-    label: 'Patrimonio',
+    label: 'Patrimônio',
     path: '/patrimonio',
     icon: 'fas fa-boxes-stacked',
   },

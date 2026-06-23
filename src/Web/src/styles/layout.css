@@ -18,6 +18,7 @@
   --tg-muted: #5a6b7b;
   --tg-topbar-h: 60px;
   --tg-sidebar-w: 272px;
+  --tg-sidebar-w-rail: 68px;
 }
 
 body {
@@ -171,8 +172,80 @@ nav ul {
   background-color: var(--tg-surface);
   border-right: 1px solid var(--tg-border);
   overflow-y: auto;
-  padding: 12px 10px 24px;
+  overflow-x: hidden;
+  padding: 12px 10px 12px;
   z-index: 900;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.18s ease;
+}
+
+/* Rail colapsado: só ícones, texto oculto (mas acessível via aria-label/title). */
+.tg-sidebar.colapsada {
+  width: var(--tg-sidebar-w-rail);
+}
+
+.tg-nav {
+  flex: 1 1 auto;
+}
+
+.tg-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tg-sidebar.colapsada .tg-nav a,
+.tg-sidebar.colapsada .tg-sidebar-toggle {
+  justify-content: center;
+  gap: 0;
+  padding-inline: 0;
+}
+
+.tg-sidebar.colapsada .tg-nav-label {
+  /* Oculto visualmente, mas o nome continua exposto por aria-label/title. */
+  display: none;
+}
+
+/* Rodapé com o botão de recolher/expandir (fica colado embaixo). */
+.tg-sidebar-footer {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--tg-border);
+}
+
+.tg-sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--tg-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.tg-sidebar-toggle:hover {
+  background-color: var(--tg-tint);
+  color: var(--tg-primary);
+}
+
+.tg-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--tg-primary);
+  outline-offset: 2px;
+}
+
+.tg-sidebar-toggle i {
+  flex: 0 0 auto;
+  width: 20px;
+  text-align: center;
+  font-size: 15px;
 }
 
 .tg-sidebar-title {
@@ -235,6 +308,11 @@ nav ul {
   color: var(--tg-primary);
 }
 
+.tg-nav a:focus-visible {
+  outline: 2px solid var(--tg-primary);
+  outline-offset: 2px;
+}
+
 .tg-backdrop {
   display: none;
 }
@@ -246,6 +324,12 @@ nav ul {
   min-height: calc(100vh - var(--tg-topbar-h));
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.18s ease;
+}
+
+/* Conteúdo acompanha o rail colapsado (desktop). */
+.app-shell.sidebar-colapsada .tg-content {
+  margin-left: var(--tg-sidebar-w-rail);
 }
 
 .app-main {
@@ -300,13 +384,137 @@ nav ul {
   border-color: var(--tg-primary-dark);
 }
 
+/* ===== Cabeçalho de página (hierarquia título / subtítulo muted) ===== */
+.tg-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.tg-page-title {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--tg-text);
+}
+
+.tg-page-subtitulo {
+  color: var(--tg-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  /* Largura legível: medida de leitura confortável (~70ch). */
+  max-width: 70ch;
+}
+
+.tg-page-header-acoes {
+  display: flex;
+  gap: var(--spacing-scale-1x, 8px);
+  flex: 0 0 auto;
+}
+
+/* ===== Cabeçalho de seção (CardSecao) ===== */
+.tg-secao-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tg-secao-titulos {
+  min-width: 0;
+}
+
+.tg-secao-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--tg-text);
+}
+
+.tg-secao-subtitulo {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--tg-muted);
+  line-height: 1.45;
+  max-width: 64ch;
+}
+
+.tg-secao-acao {
+  flex: 0 0 auto;
+}
+
+/* Caption discreta (notas/fundamentos legais — não texto solto). */
+.tg-caption {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tg-muted);
+  max-width: 78ch;
+}
+
+/* ===== Grade de métricas (KPIs) — auto-fit, alinhada, ritmo único ===== */
+.tg-metrica-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 0;
+}
+
+.tg-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background-color: var(--tg-bg);
+  border: 1px solid var(--tg-border);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.tg-metrica-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--tg-muted);
+  text-transform: uppercase;
+}
+
+.tg-metrica-valor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+
+.tg-metrica-valor > span:first-child {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--tg-text);
+}
+
+/* Linha secundária CLARA (percentual/contexto) — não grudada/minúscula. */
+.tg-metrica-secundario {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tg-muted);
+}
+
 /* ===== Responsivo: sidebar off-canvas ===== */
 @media (width <= 992px) {
   .tg-menu-toggle {
     display: inline-flex;
   }
 
-  .tg-sidebar {
+  /* Em telas estreitas a sidebar é off-canvas: ignora o rail colapsado e sempre
+     mostra largura + rótulos completos quando aberta (overlay). */
+  .tg-sidebar,
+  .tg-sidebar.colapsada {
+    width: var(--tg-sidebar-w);
     transform: translateX(-100%);
     transition: transform 0.2s ease;
     box-shadow: 2px 0 12px rgb(0 0 0 / 18%);
@@ -316,7 +524,24 @@ nav ul {
     transform: translateX(0);
   }
 
-  .tg-content {
+  .tg-sidebar.colapsada .tg-nav a,
+  .tg-sidebar.colapsada .tg-sidebar-toggle {
+    justify-content: flex-start;
+    gap: 12px;
+    padding-inline: 14px;
+  }
+
+  .tg-sidebar.colapsada .tg-nav-label {
+    display: inline;
+  }
+
+  /* O botão de recolher (rail) não faz sentido no off-canvas — esconde. */
+  .tg-sidebar-footer {
+    display: none;
+  }
+
+  .tg-content,
+  .app-shell.sidebar-colapsada .tg-content {
     margin-left: 0;
   }
 

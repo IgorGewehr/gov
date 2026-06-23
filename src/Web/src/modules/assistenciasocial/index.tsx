@@ -42,7 +42,7 @@ const ProntuarioSuasDetailPage = lazy(() =>
 const MODULE: ModuleDefinition = {
   id: 'assistenciasocial',
   nav: {
-    label: 'AssistenciaSocial',
+    label: 'Assistência Social',
     path: '/assistenciasocial',
     icon: 'fas fa-hands-helping',
   },

@@ -36,6 +36,12 @@ export type { EmptyStateProps } from './EmptyState';
 export { PageHeader } from './PageHeader';
 export type { PageHeaderProps } from './PageHeader';
 
+export { Metrica, MetricaGrade } from './Metrica';
+export type { MetricaProps } from './Metrica';
+
+export { CardSecao } from './CardSecao';
+export type { CardSecaoProps } from './CardSecao';
+
 export { Tag } from './Tag';
 export type { TagProps, TagVariant } from './Tag';
 
