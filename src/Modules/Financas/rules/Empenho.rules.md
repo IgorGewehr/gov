@@ -276,6 +276,6 @@ Cada item vira teste.
 commands: Empenhar, AnularEmpenho, LiquidarDespesa, EstornarLiquidacao, EmitirOrdemDePagamento, EfetuarPagamento, CancelarOrdemDePagamento, CriarDotacao, ReforcarDotacao, AnularCreditoDotacao, EncerrarExercicio, PagarRestoAPagar, CancelarRestoAPagar
 queries: ObterEmpenho, ListarEmpenhosPorDotacao, ObterDotacao, ListarDotacoesPorExercicio, ObterLiquidacao, ListarLiquidacoesPorEmpenho, ObterOrdemDePagamento, ListarRestosAPagarPorExercicio
 domainEvents: DotacaoCriada, CreditoReforcado, CreditoAnulado, EmpenhoEmitido, EmpenhoAnulado, DespesaLiquidada, LiquidacaoEstornada, PagamentoEfetuado, EmpenhoInscritoEmRestosAPagar, RestoAPagarLiquidado, RestoAPagarPago, RestoAPagarInscrito
-integrationEventsPublished: DespesaEmpenhadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent
+integrationEventsPublished: DespesaEmpenhadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent, DespesaLiquidadaIntegrationEvent, DotacaoOrcamentariaPublicadaIntegrationEvent
 integrationEventsConsumed: 
 -->

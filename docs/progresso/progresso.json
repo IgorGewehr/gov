@@ -1,15 +1,15 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-24 (run noturno) — 16 commits; PPA/LDO/LOA + qualidade (31 bugs) + segurança (6 críticos + 5 altos) fechados; encerramento de exercício em execução",
-  "atividadeAtual": "🚀 RUN AUTÔNOMO — 7 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. ESPINHA FISCAL M0–M4 + TRILHA LEGISLATIVA COMPLETA (back+front) + M5 (folha motor INSS/IRRF/RPPS líquido 6.034,77 + ponto AFD/AEJ CRC-16 66A7) + M6 (IPTU 162.000→1.458, ISS próprio 50/retido 75, ITBI) — TODOS os motores [OFICIAL] PROVADOS, com frontends. ROBUSTEZ DE AUDITORIA PROVADA: trilha com HASH-CHAIN imutável (adulteração detectada em runtime, 409 aponta a linha exata) + ordem dos interceptors corrigida (W0.2). 2 avaliações isentas (PoC legislativa 78% APROVA / municipal 66%; engenharia: fundação SÓLIDA). Verify-don't-trust pegou 8+ bugs reais. EM EXECUÇÃO (hardening+PoC): red-team segurança+LGPD, reconciliação DTOs front↔back, acessibilidade WCAG AA, ITBI/Tema-1.113 (fix jurídico), PPA/LDO/LOA (implementando), RPPS + encerramento de exercício. ACHADOS p/ o dono: validação OFICIAL precisa de MT/PAD + A1 reais; ITBI×Tema 1.113 (procuradoria). Insumos seus: MT/e-Validador, A1, RPPS×RGPS, Azure, creds homologação.",
+  "atualizadoEm": "2026-06-24 (run noturno) — 29 commits; M0–M6 COMPLETOS + M7 fiscal (mínimos constitucionais nos 3 setores); segurança 6 críticos + 5 altos fechados; ~1.300 testes; iniciando M8",
+  "atividadeAtual": "🚀 RUN AUTÔNOMO — 29 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. M0–M6 COMPLETOS + M7 FISCAL. Espinha fiscal (PCASP→DCASP/MSC→prestação TCE) + PPA/LDO/LOA + encerramento de exercício (resultado+RAP). M5 RH COMPLETO: folha mensal (INSS/IRRF/RPPS) + ciclo anual (13º/férias/rescisão) + ponto (software AFD/AEJ + coletor REP) + eSocial estrutural (assinado via Cofre) + remessa folha TCE + Minha Folha (self-service, isolamento dado-próprio provado). M6 Tributos COMPLETO: IPTU/ISS/ITBI(Tema 1.113)/taxas/COSIP/alvarás/dívida-CDA-protesto-prescrição. M7 FISCAL: Saúde ASPS 15%+FMS, Educação MDE 25%+FUNDEB 70%, Assistência (benefício eventual corrigido p/ lei municipal + FMAS + RMA) — todos provados em runtime. SEGURANÇA: 6 críticos + 5 altos do red-team FECHADOS + hash-chain imutável + RFC 7807 global. Verify-don't-trust pegou 15+ bugs reais (1 travava o boot). EM CURSO: M8 (Painel do Gestor + BI). PENDENTE DE CREDS SUAS p/ validação OFICIAL: MT/e-Validador+PAD, A1 homologado, Azure, eSocial Produção Restrita, RNDS/Educacenso/Censo SUAS. M7 OPERACIONAL (gestão UBS/escolas/CRAS) = escopo grande, após M8/M9.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
-    { "label": "Testes backend", "valor": "~1.067 ✓", "cor": "verde" },
-    { "label": "Testes frontend", "valor": "192 ✓", "cor": "verde" },
+    { "label": "Testes backend", "valor": "~1.300 ✓", "cor": "verde" },
+    { "label": "Testes frontend", "valor": "195 ✓", "cor": "verde" },
     { "label": "Módulos backend", "valor": "13", "cor": "azul" },
-    { "label": "Commits no GitHub", "valor": "16 · verdes", "cor": "azul" },
-    { "label": "Marcos concluídos", "valor": "6 / 11 · M6 completo; M5 núcleo", "cor": "azul" }
+    { "label": "Commits no GitHub", "valor": "29 · verdes", "cor": "azul" },
+    { "label": "Marcos concluídos", "valor": "6 / 11 · M0–M6 ✓; M7 fiscal", "cor": "azul" }
   ],
   "marcos": [
     { "id": "M0", "titulo": "Destravar build + bugs críticos", "status": "done", "nota": "Build 0/0, 593 testes; ciclo da despesa de Finanças provado em runtime.", "workflows": [
@@ -48,13 +48,14 @@
       { "id": "W4.4", "t": "Tesouraria / Controle de Caixa — M4.x", "s": "pending" },
       { "id": "W4.5", "t": "Controladoria / Controle Interno — M4.x", "s": "pending" }
     ]},
-    { "id": "M5", "titulo": "RH completo (folha + eSocial + ponto)", "status": "active", "flag": "OFICIAL", "nota": "NÚCLEO PROVADO: folha (motor INSS/IRRF/RPPS, líquido 6.034,77) + ponto (AFD/AEJ Port.671, CRC-16, jornada) + frontends. Qualidade auditada (F-A3 fail-closed corrigido; piloto = RGPS, coberto). eSocial pende creds de homologação suas; remessa folha TCE depois.", "workflows": [
-      { "id": "W5.1", "t": "Motor de folha (INSS/RPPS/IRRF) — PROVADO", "s": "done" },
-      { "id": "W5.3", "t": "Ponto AFD/AEJ (Port. 671) — PROVADO", "s": "done" },
-      { "id": "W5.fe", "t": "Frontends: servidores/folha/contracheque/ponto", "s": "done" },
-      { "id": "W5.2", "t": "eSocial S-1.3 (eventos + SOAP) — pende creds homologação", "s": "pending" },
-      { "id": "W5.4", "t": "Remessa de folha TCE-RS (Res. 1099)", "s": "pending" },
-      { "id": "W5.5", "t": "Minha Folha (self-service do servidor)", "s": "pending" }
+    { "id": "M5", "titulo": "RH completo (folha + eSocial + ponto)", "status": "done", "flag": "OFICIAL", "nota": "COMPLETO E PROVADO: folha mensal (INSS/IRRF/RPPS) + ciclo anual (13º/férias/rescisão) + ponto (software AFD/AEJ Port.671 + coletor REP idempotente) + eSocial estrutural (S-1000..1299 assinado via Cofre) + remessa folha TCE (Res.1099) + Minha Folha (self-service, isolamento dado-próprio provado) + frontends. eSocial transmissão REAL + remessa pendem só de creds de homologação suas.", "workflows": [
+      { "id": "W5.1", "t": "Motor de folha mensal (INSS/RPPS/IRRF) — PROVADO", "s": "done" },
+      { "id": "W5.1b", "t": "Ciclo anual: 13º/férias/rescisão — PROVADO", "s": "done" },
+      { "id": "W5.3", "t": "Ponto AFD/AEJ + coletor REP (Port. 671) — PROVADO", "s": "done" },
+      { "id": "W5.2", "t": "eSocial estrutural S-1.3 (assinado) — transmissão pende creds", "s": "done" },
+      { "id": "W5.4", "t": "Remessa de folha TCE-RS (Res. 1099) — PROVADO", "s": "done" },
+      { "id": "W5.5", "t": "Minha Folha (self-service, dado-próprio) — PROVADO", "s": "done" },
+      { "id": "W5.fe", "t": "Frontends: folha/contracheque/ponto/ciclo/eSocial/Minha Folha", "s": "done" }
     ]},
     { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "done", "flag": "OFICIAL", "nota": "COMPLETO E PROVADO: IPTU (cadastro imobiliário + PGV + motor reprodutível) + ISS (NFS-e passiva) + ITBI (Tema 1.113/STJ) + taxas/COSIP/alvarás/melhoria + dívida ativa/CDA/protesto/prescrição (CTN 174) + frontends. Qualidade auditada (12 bugs). Meio Ambiente/Cemitério → M6.x. Valores do CTM = TODO(validar-oficial).", "workflows": [
       { "id": "W6.1", "t": "Cadastro Imobiliário (CIB/PGV) — PROVADO", "s": "done" },
@@ -65,14 +66,14 @@
       { "id": "W6.fe", "t": "Frontends: imóvel/IPTU/ISS/ITBI/taxas/dívida", "s": "done" },
       { "id": "W6.6", "t": "Meio Ambiente / Plan. Urbano / Cemitério — M6.x", "s": "pending" }
     ]},
-    { "id": "M7", "titulo": "Saúde / Educação / Assistência (repasses)", "status": "pending", "flag": "OFICIAL", "workflows": [
-      { "id": "W7.1", "t": "Saúde: RNDS (FHIR) + SI-PNI", "s": "pending" },
-      { "id": "W7.2", "t": "Saúde: e-SUS APS/SISAB + CNES + SIOPS", "s": "pending" },
-      { "id": "W7.3", "t": "Saúde: Farmácia + Vigilância Sanitária", "s": "pending" },
-      { "id": "W7.4", "t": "Educação: Educacenso/INEP + SIOPE", "s": "pending" },
-      { "id": "W7.5", "t": "Educação: PNAE + PNATE", "s": "pending" },
-      { "id": "W7.6", "t": "Educação: portais Professores / Pais", "s": "pending" },
-      { "id": "W7.7", "t": "Assistência: CadÚnico/MDS (RMA, Censo)", "s": "pending" }
+    { "id": "M7", "titulo": "Saúde / Educação / Assistência (repasses)", "status": "active", "flag": "OFICIAL", "nota": "FISCAL COMPLETO E PROVADO nos 3 setores: núcleo (classificação fonte/função + ApuradorMinimo) + Saúde (ASPS 15% LC141 com classificação fina + FMS blocos) + Educação (MDE 25% CF212 + FUNDEB 70% magistério, cruza com folha + distribuição) + Assistência (benefício eventual CORRIGIDO p/ lei municipal + FMAS 4 blocos SUAS + RMA) + painéis fiscais. Operacional (gestão UBS/escolas/CRAS) + integrações oficiais (RNDS/Educacenso/Censo SUAS, pendem creds) = escopo grande, programado após M8/M9.", "workflows": [
+      { "id": "W7.0", "t": "Núcleo fiscal: classificação fonte/função + ApuradorMinimo — PROVADO", "s": "done" },
+      { "id": "W7.1", "t": "Saúde fiscal: ASPS 15% (classificação fina) + FMS — PROVADO", "s": "done" },
+      { "id": "W7.2", "t": "Educação fiscal: MDE 25% + FUNDEB 70% magistério + distribuição — PROVADO", "s": "done" },
+      { "id": "W7.3", "t": "Assistência: benefício eventual (fix jurídico) + FMAS + RMA — PROVADO", "s": "done" },
+      { "id": "W7.fe", "t": "Painéis fiscais Saúde/Educação (conformidade constitucional)", "s": "done" },
+      { "id": "W7.op", "t": "Operacional dos setores (UBS/escolas/CRAS) — M7.x", "s": "pending" },
+      { "id": "W7.int", "t": "Integrações oficiais (RNDS/Educacenso/Censo SUAS) — pendem creds", "s": "pending" }
     ]},
     { "id": "M8", "titulo": "Cidadão + Portal do Gestor + BI", "status": "pending", "workflows": [
       { "id": "W8.1", "t": "Portal/App do Cidadão (Minha Cidade)", "s": "pending" },

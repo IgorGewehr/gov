@@ -37,6 +37,6 @@ roteiros parametrizáveis (eventos contábeis) e projeção do Balancete. Spec o
 commands: SemearPlanoDeContas, RegistrarLancamentoManual, GerarMsc
 queries: ConsultarBalancete, ConsultarRazao, ListarPlanoDeContas, GerarBalancoOrcamentario, GerarBalancoFinanceiro, GerarBalancoPatrimonial, GerarDvp
 domainEvents: ContaContabilCriada, LancamentoContabilRegistrado, LancamentoContabilEstornado, ReceitaArrecadadaRegistrada
-integrationEventsPublished: MSCGeradaIntegrationEvent
+integrationEventsPublished: MSCGeradaIntegrationEvent, ReceitaCorrenteLiquidaApuradaIntegrationEvent
 integrationEventsConsumed: 
 -->

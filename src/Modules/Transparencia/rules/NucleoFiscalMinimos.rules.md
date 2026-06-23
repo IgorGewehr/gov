@@ -165,6 +165,6 @@ fontes_legais:
 commands: RegistrarExecucaoFiscal, RegistrarRegraClassificacao
 queries: ApurarMinimos
 domainEvents:
-integrationEventsPublished:
+integrationEventsPublished: MinimoConstitucionalApuradoIntegrationEvent
 integrationEventsConsumed:
 -->

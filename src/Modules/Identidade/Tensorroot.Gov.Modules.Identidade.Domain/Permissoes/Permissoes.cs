@@ -157,6 +157,14 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Transparencia.</summary>
     public const string TransparenciaGerenciar = "transparencia.gerenciar";
 
+    /// <summary>
+    /// Visualizar o PAINEL DO GESTOR + BI (modulo PainelGestor): indicadores consolidados do municipio
+    /// por exercicio (execucao orcamentaria, minimos constitucionais, arrecadacao/divida, custo de
+    /// pessoal/% RCL-LRF, prontidao de prestacao de contas). Modulo READ-ONLY: nao ha verbo "gerenciar"
+    /// — o painel apenas agrega read models materializados a partir de Integration Events dos modulos-fonte.
+    /// </summary>
+    public const string PainelVer = "painel.ver";
+
     // --- Permissoes administrativas e transversais ---
 
     /// <summary>Gerenciar usuarios e papeis (RBAC) do tenant — modulo Identidade.</summary>
@@ -270,6 +278,7 @@ public static class Permissoes
         LegislativoComissoesGerenciar,
         TransparenciaVer,
         TransparenciaGerenciar,
+        PainelVer,
         IdentidadeUsuariosGerenciar,
 
         // NOTA (XT-1): AdminModulosConfigurar foi DELIBERADAMENTE removida de "Todas". Licenciar

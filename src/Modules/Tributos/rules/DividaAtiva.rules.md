@@ -390,6 +390,6 @@ Cada cenário vira teste de integração.
 commands: InscreverEmDividaAtiva, EmitirCda, QuitarDivida, GerarRemessaProtesto, ProcessarRetornoProtesto, AjuizarExecucaoFiscal
 queries: ObterDividasAtivasDoContribuinte, AvaliarPrescricaoDivida
 domainEvents: DividaAtivaInscrita, CdaEmitida, ParcelamentoFirmado, DividaQuitada, RemessaProtestoGerada, RetornoProtestoProcessado, ExecucaoFiscalAjuizada, PrescricaoInterrompida
-integrationEventsPublished: ReceitaArrecadadaIntegrationEvent
+integrationEventsPublished: ReceitaArrecadadaIntegrationEvent, PosicaoDividaAtivaIntegrationEvent
 integrationEventsConsumed: 
 -->
