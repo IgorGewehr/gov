@@ -1,16 +1,20 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
+using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.Taxas;
 
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 
@@ -62,6 +66,18 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>Processos de arbitramento da base de cálculo do ITBI (CTN art. 148, Tema 1.113/STJ).</summary>
     public DbSet<ProcessoArbitramentoItbi> ProcessosArbitramentoItbi => Set<ProcessoArbitramentoItbi>();
+
+    /// <summary>Tabelas de taxas (poder de polícia/serviço/licença TLL), por código e exercício (lei municipal).</summary>
+    public DbSet<TabelaTaxa> TabelasTaxa => Set<TabelaTaxa>();
+
+    /// <summary>Alvarás (atos administrativos de polícia) — a TLL correlata é lançada como Taxa.</summary>
+    public DbSet<Alvara> Alvaras => Set<Alvara>();
+
+    /// <summary>Tabelas de COSIP por exercício (faixas de consumo/classe — lei municipal, CF art. 149-A).</summary>
+    public DbSet<TabelaCosip> TabelasCosip => Set<TabelaCosip>();
+
+    /// <summary>Obras de Contribuição de Melhoria (edital, impugnação e rateio — CTN arts. 81–82).</summary>
+    public DbSet<ObraContribuicaoMelhoria> ObrasContribuicaoMelhoria => Set<ObraContribuicaoMelhoria>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

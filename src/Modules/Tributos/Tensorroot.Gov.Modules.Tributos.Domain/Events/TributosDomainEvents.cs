@@ -1,12 +1,16 @@
+using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
+using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.Taxas;
 using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.Tributos.Domain.Events;
@@ -183,3 +187,90 @@ public sealed record ProcessoArbitramentoItbiCancelado(ProcessoArbitramentoItbiI
 /// <param name="ProcessoArbitramentoItbiId">Processo de arbitramento de origem.</param>
 /// <param name="ImpostoDevido">ITBI devido após o arbitramento (R$).</param>
 public sealed record ArbitramentoItbiAplicado(TransmissaoImobiliariaId TransmissaoImobiliariaId, Guid TenantId, ProcessoArbitramentoItbiId ProcessoArbitramentoItbiId, decimal ImpostoDevido) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// TAXAS / TLL — poder de polícia e serviço (CTN arts. 77–80, SV 19/29). M6-DESIGN §3.2.
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Tabela de taxa criada (lei municipal).</summary>
+/// <param name="TabelaTaxaId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Codigo">Código da taxa no CTM.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaTaxaCriada(TabelaTaxaId TabelaTaxaId, Guid TenantId, string Codigo, int Exercicio) : IDomainEvent;
+
+/// <summary>Tabela de taxa publicada (vigente).</summary>
+/// <param name="TabelaTaxaId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Codigo">Código da taxa no CTM.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaTaxaPublicada(TabelaTaxaId TabelaTaxaId, Guid TenantId, string Codigo, int Exercicio) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// ALVARÁS — ato de polícia (a TLL é lançada à parte como Taxa). M6-DESIGN §3.3.
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Alvará emitido (ato administrativo de polícia).</summary>
+/// <param name="AlvaraId">Identificador do alvará.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ContribuinteId">Contribuinte titular.</param>
+/// <param name="Especie">Espécie do alvará.</param>
+public sealed record AlvaraEmitido(AlvaraId AlvaraId, Guid TenantId, ContribuinteId ContribuinteId, EspecieAlvara Especie) : IDomainEvent;
+
+/// <summary>Alvará renovado por novo período.</summary>
+/// <param name="AlvaraId">Identificador do alvará.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="NovoFimVigencia">Novo fim de vigência.</param>
+public sealed record AlvaraRenovado(AlvaraId AlvaraId, Guid TenantId, DateOnly NovoFimVigencia) : IDomainEvent;
+
+/// <summary>Alvará vencido (vigência encerrada).</summary>
+/// <param name="AlvaraId">Identificador do alvará.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record AlvaraVencido(AlvaraId AlvaraId, Guid TenantId) : IDomainEvent;
+
+/// <summary>Alvará cancelado/cassado.</summary>
+/// <param name="AlvaraId">Identificador do alvará.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record AlvaraCancelado(AlvaraId AlvaraId, Guid TenantId) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// COSIP — Contribuição para Custeio da Iluminação Pública (CF art. 149-A). M6-DESIGN §3.4.
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Tabela de COSIP criada (lei municipal).</summary>
+/// <param name="TabelaCosipId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaCosipCriada(TabelaCosipId TabelaCosipId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+/// <summary>Tabela de COSIP publicada (vigente).</summary>
+/// <param name="TabelaCosipId">Identificador da tabela.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Exercicio">Exercício fiscal.</param>
+public sealed record TabelaCosipPublicada(TabelaCosipId TabelaCosipId, Guid TenantId, int Exercicio) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// CONTRIBUIÇÃO DE MELHORIA — valorização por obra pública (CTN arts. 81–82). M6-DESIGN §3.5.
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Edital da obra de Contribuição de Melhoria publicado (CTN art. 82).</summary>
+/// <param name="ObraContribuicaoMelhoriaId">Identificador da obra.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="IdentificacaoObra">Identificação da obra.</param>
+public sealed record ObraMelhoriaEditalPublicado(ObraContribuicaoMelhoriaId ObraContribuicaoMelhoriaId, Guid TenantId, string IdentificacaoObra) : IDomainEvent;
+
+/// <summary>Prazo de impugnação ao edital encerrado (apto a ratear).</summary>
+/// <param name="ObraContribuicaoMelhoriaId">Identificador da obra.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ObraMelhoriaImpugnacaoEncerrada(ObraContribuicaoMelhoriaId ObraContribuicaoMelhoriaId, Guid TenantId) : IDomainEvent;
+
+/// <summary>Contribuição de Melhoria rateada entre os imóveis beneficiados.</summary>
+/// <param name="ObraContribuicaoMelhoriaId">Identificador da obra.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="TotalRateado">Valor total efetivamente rateado (R$).</param>
+public sealed record ObraMelhoriaRateada(ObraContribuicaoMelhoriaId ObraContribuicaoMelhoriaId, Guid TenantId, decimal TotalRateado) : IDomainEvent;
+
+/// <summary>Obra de Contribuição de Melhoria cancelada.</summary>
+/// <param name="ObraContribuicaoMelhoriaId">Identificador da obra.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+public sealed record ObraMelhoriaCancelada(ObraContribuicaoMelhoriaId ObraContribuicaoMelhoriaId, Guid TenantId) : IDomainEvent;

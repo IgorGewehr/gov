@@ -138,6 +138,38 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     }
 
     /// <summary>
+    /// Constitui (lança) o crédito tributário com vínculo OPCIONAL a um imóvel — usado por espécies que
+    /// podem decorrer de imóvel (taxas de serviço/poder de polícia vinculadas ao imóvel, contribuição de
+    /// melhoria) sem que o vínculo seja obrigatório.
+    /// </summary>
+    /// <param name="tenantId">Tenant dono do registro.</param>
+    /// <param name="contribuinteId">Contribuinte devedor.</param>
+    /// <param name="tipoTributo">Espécie tributária.</param>
+    /// <param name="competencia">Competência fiscal.</param>
+    /// <param name="valorPrincipal">Valor principal.</param>
+    /// <param name="vencimento">Data de vencimento.</param>
+    /// <param name="imovelId">Imóvel de origem (opcional).</param>
+    /// <returns>Novo <see cref="Lancamento"/> em aberto.</returns>
+    public static Lancamento LancarComImovel(
+        Guid tenantId,
+        ContribuinteId contribuinteId,
+        TipoTributo tipoTributo,
+        Competencia competencia,
+        ValorMonetario valorPrincipal,
+        DateOnly vencimento,
+        ImovelId? imovelId)
+    {
+        ArgumentNullException.ThrowIfNull(competencia);
+        ArgumentNullException.ThrowIfNull(valorPrincipal);
+        if (!Enum.IsDefined(tipoTributo))
+        {
+            throw new ArgumentOutOfRangeException(nameof(tipoTributo), tipoTributo, "Espécie tributária inválida.");
+        }
+
+        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, imovelId);
+    }
+
+    /// <summary>
     /// Lança o IPTU anual de ofício (CTN art. 142/149) de um imóvel: uma constituição por exercício,
     /// vinculada ao imóvel de origem. A competência usa o mês 1 (lançamento anual).
     /// </summary>

@@ -1,13 +1,17 @@
+using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
+using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.Taxas;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
@@ -223,4 +227,67 @@ public interface IProcessoArbitramentoItbiRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>O processo, ou <c>null</c>.</returns>
     Task<ProcessoArbitramentoItbi?> ObterPorIdAsync(ProcessoArbitramentoItbiId id, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="TabelaTaxa"/> (taxas e TLL — lei municipal).</summary>
+public interface ITabelaTaxaRepository
+{
+    /// <summary>Marca uma nova tabela de taxa para inserção.</summary>
+    /// <param name="tabela">Tabela a adicionar.</param>
+    void Adicionar(TabelaTaxa tabela);
+
+    /// <summary>Obtém uma tabela de taxa por identificador (com faixas), ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A tabela, ou <c>null</c>.</returns>
+    Task<TabelaTaxa?> ObterPorIdAsync(TabelaTaxaId id, CancellationToken cancellationToken);
+
+    /// <summary>Obtém a tabela de taxa VIGENTE por código e exercício (com faixas), ou <c>null</c>.</summary>
+    /// <param name="codigo">Código da taxa no CTM.</param>
+    /// <param name="exercicio">Exercício fiscal.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A tabela vigente, ou <c>null</c>.</returns>
+    Task<TabelaTaxa?> ObterVigentePorCodigoAsync(string codigo, int exercicio, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="Alvara"/> (ato de polícia + TLL).</summary>
+public interface IAlvaraRepository
+{
+    /// <summary>Marca um novo alvará para inserção.</summary>
+    /// <param name="alvara">Alvará a adicionar.</param>
+    void Adicionar(Alvara alvara);
+
+    /// <summary>Obtém um alvará por identificador, ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O alvará, ou <c>null</c>.</returns>
+    Task<Alvara?> ObterPorIdAsync(AlvaraId id, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="TabelaCosip"/> (COSIP — lei municipal).</summary>
+public interface ITabelaCosipRepository
+{
+    /// <summary>Marca uma nova tabela de COSIP para inserção.</summary>
+    /// <param name="tabela">Tabela a adicionar.</param>
+    void Adicionar(TabelaCosip tabela);
+
+    /// <summary>Obtém a tabela de COSIP VIGENTE de um exercício (com faixas), ou <c>null</c>.</summary>
+    /// <param name="exercicio">Exercício fiscal.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A tabela vigente, ou <c>null</c>.</returns>
+    Task<TabelaCosip?> ObterVigenteAsync(int exercicio, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="ObraContribuicaoMelhoria"/> (Contribuição de Melhoria).</summary>
+public interface IObraContribuicaoMelhoriaRepository
+{
+    /// <summary>Marca uma nova obra para inserção.</summary>
+    /// <param name="obra">Obra a adicionar.</param>
+    void Adicionar(ObraContribuicaoMelhoria obra);
+
+    /// <summary>Obtém uma obra por identificador (com imóveis beneficiados), ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A obra, ou <c>null</c>.</returns>
+    Task<ObraContribuicaoMelhoria?> ObterPorIdAsync(ObraContribuicaoMelhoriaId id, CancellationToken cancellationToken);
 }
