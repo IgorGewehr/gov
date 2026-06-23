@@ -3,10 +3,16 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Beneficios;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Censo;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Familias;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Igd;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Pbf;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Prontuarios;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Censo;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Pbf;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.ValueObjects;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 
@@ -23,6 +29,90 @@ internal static class AssistenciaSocialEndpoints
         MapearBeneficios(grupo);
         MapearProntuarios(grupo);
         MapearFiscal(grupo);
+        MapearPbf(grupo);
+        MapearCenso(grupo);
+        MapearIgd(grupo);
+    }
+
+    private static void MapearPbf(RouteGroupBuilder grupo)
+    {
+        // 3d.1: abre o acompanhamento de condicionalidades do PBF de uma familia numa competencia.
+        grupo.MapPost("/pbf/acompanhamentos", async (
+            AbrirAcompanhamentoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new AbrirAcompanhamentoCondicionalidadeCommand(payload.FamiliaId, Competencia.De(payload.Ano, payload.Mes)), cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.1: registra uma condicionalidade (educacao/saude) de um membro no acompanhamento.
+        grupo.MapPost("/pbf/acompanhamentos/{acompanhamentoId:guid}/condicionalidades", async (
+            Guid acompanhamentoId, RegistrarCondicionalidadePayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new RegistrarCondicionalidadeCommand(acompanhamentoId, payload.Tipo, payload.MembroId, payload.Status, payload.Observacao), cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.1: justifica um descumprimento (motivo do CRAS) — reduz a gradacao do efeito.
+        grupo.MapPost("/pbf/condicionalidades/{registroId:guid}/justificativa", async (
+            Guid registroId, JustificarPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new JustificarDescumprimentoCommand(payload.AcompanhamentoId, registroId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.1: lista as familias em descumprimento numa competencia (busca ativa do CRAS).
+        grupo.MapGet("/pbf/descumprimentos", async (
+            int ano, int mes, EfeitoDescumprimento? efeitoMinimo, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterDescumprimentosQuery(Competencia.De(ano, mes), efeitoMinimo), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
+    }
+
+    private static void MapearCenso(RouteGroupBuilder grupo)
+    {
+        // 3d.2: cadastra uma unidade socioassistencial (CRAS/CREAS/Centro POP).
+        grupo.MapPost("/censo/unidades", async (
+            CadastrarUnidadeSocioassistencialCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.2: configura servico ofertado + equipe de referencia da unidade.
+        grupo.MapPost("/censo/unidades/{unidadeId:guid}/configuracao", async (
+            Guid unidadeId, ConfigurarUnidadePayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ConfigurarUnidadeCommand(unidadeId, payload.Servico, payload.CapacidadeMensal, payload.QuantidadeProfissionais), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.2: lista as unidades socioassistenciais cadastradas.
+        grupo.MapGet("/censo/unidades", async (
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarUnidadesSocioassistenciaisQuery(), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
+
+        // 3d.2: (re)consolida o Censo de uma unidade num exercicio (deriva do RMA/Familia).
+        grupo.MapPost("/censo/consolidar", async (
+            ConsolidarCensoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new ConsolidarCensoCommand(payload.UnidadeId, payload.Exercicio), cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.2: fecha (sela) o Censo de uma unidade no exercicio para envio ao SAGI/MDS.
+        grupo.MapPost("/censo/fechamento", async (
+            ConsolidarCensoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new FecharCensoCommand(payload.UnidadeId, payload.Exercicio), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // 3d.2: consulta os formularios consolidados do Censo de um exercicio.
+        grupo.MapGet("/censo", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterCensoQuery(exercicio), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
+    }
+
+    private static void MapearIgd(RouteGroupBuilder grupo)
+    {
+        // 3d.3: estimativa LOCAL do IGD-PBF/IGD-SUAS (gerencial, nao oficial — IGD oficial = M10).
+        grupo.MapGet("/igd/estimativa", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new EstimarIgdQuery(exercicio), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
     }
 
     private static void MapearFiscal(RouteGroupBuilder grupo)
@@ -202,4 +292,23 @@ internal static class AssistenciaSocialEndpoints
 
     // A-2: consolidacao do RMA de uma unidade numa competencia.
     private sealed record ConsolidarRmaPayload(Guid UnidadeAtendimentoId, int Ano, int Mes);
+
+    // 3d.1: abertura do acompanhamento de condicionalidades do PBF de uma familia numa competencia.
+    private sealed record AbrirAcompanhamentoPayload(Guid FamiliaId, int Ano, int Mes);
+
+    // 3d.1: registro de uma condicionalidade (educacao/saude) de um membro.
+    private sealed record RegistrarCondicionalidadePayload(
+        TipoCondicionalidade Tipo,
+        Guid MembroId,
+        StatusCondicionalidade Status,
+        string? Observacao);
+
+    // 3d.1: justificativa de descumprimento (o registroId vem da rota; o acompanhamento e o motivo do corpo).
+    private sealed record JustificarPayload(Guid AcompanhamentoId, string Motivo);
+
+    // 3d.2: configuracao de servico ofertado + equipe da unidade socioassistencial.
+    private sealed record ConfigurarUnidadePayload(TipoServico Servico, int CapacidadeMensal, int QuantidadeProfissionais);
+
+    // 3d.2: consolidacao/fechamento do Censo de uma unidade num exercicio.
+    private sealed record ConsolidarCensoPayload(Guid UnidadeId, int Exercicio);
 }

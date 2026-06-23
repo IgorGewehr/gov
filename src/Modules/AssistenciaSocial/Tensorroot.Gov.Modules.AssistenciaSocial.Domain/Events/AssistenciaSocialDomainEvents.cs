@@ -1,6 +1,7 @@
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Beneficios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Familias;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Pbf;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
@@ -95,3 +96,20 @@ public sealed record RmaFechado(
     Guid UnidadeAtendimentoId,
     Competencia Competencia,
     int TotalAtendimentos) : IDomainEvent;
+
+/// <summary>
+/// 3d.1: o acompanhamento de condicionalidades do PBF de uma familia escalou para um efeito gradativo
+/// com impacto (bloqueio/suspensao) numa competencia — dispara a BUSCA ATIVA do CRAS. Carrega apenas o
+/// efeito e a contagem agregada — nunca o conteudo sigiloso do membro/condicionalidade (LGPD art. 11).
+/// </summary>
+/// <param name="AcompanhamentoId">Identificador do acompanhamento de condicionalidades.</param>
+/// <param name="FamiliaId">Familia beneficiaria.</param>
+/// <param name="Competencia">Competencia (ano/mes) de referencia.</param>
+/// <param name="Efeito">Efeito gradativo vigente (advertencia/bloqueio/suspensao).</param>
+/// <param name="DescumprimentosEfetivos">Quantidade de descumprimentos efetivos no periodo.</param>
+public sealed record CondicionalidadeDescumprida(
+    AcompanhamentoCondicionalidadeId AcompanhamentoId,
+    FamiliaId FamiliaId,
+    Competencia Competencia,
+    EfeitoDescumprimento Efeito,
+    int DescumprimentosEfetivos) : IDomainEvent;

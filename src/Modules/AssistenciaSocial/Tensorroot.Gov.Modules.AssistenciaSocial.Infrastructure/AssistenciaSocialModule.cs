@@ -10,12 +10,18 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Abstractions;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Censo;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Familias;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Igd;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Integracoes;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Pbf;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Beneficios;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Censo;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Igd;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Integracoes;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Pbf;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Lookups;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Parametros;
@@ -70,6 +76,17 @@ public sealed class AssistenciaSocialModule : IModule
         services.AddScoped<IFundoMunicipalAssistenciaRepository, FundoMunicipalAssistenciaRepository>();
         services.AddScoped<IRegistroMensalAtendimentoRepository, RegistroMensalAtendimentoRepository>();
         services.AddScoped<IConsolidacaoRmaReadModel, ConsolidacaoRmaReadModel>();
+
+        // 3d.1: PBF — acompanhamento de condicionalidades por familia/competencia.
+        services.AddScoped<IAcompanhamentoCondicionalidadeRepository, AcompanhamentoCondicionalidadeRepository>();
+
+        // 3d.2: Censo SUAS — unidades socioassistenciais + formulario consolidado (deriva do RMA/Familia).
+        services.AddScoped<IUnidadeSocioassistencialRepository, UnidadeSocioassistencialRepository>();
+        services.AddScoped<IFormularioCensoSuasRepository, FormularioCensoSuasRepository>();
+        services.AddScoped<IConsolidacaoCensoReadModel, ConsolidacaoCensoReadModel>();
+
+        // 3d.3: EstimativaIgd — fatores LOCAIS (estimativa gerencial, nao oficial).
+        services.AddScoped<IFatoresIgdReadModel, FatoresIgdReadModel>();
 
         // Read models de apoio (CRAS/CREAS e parametros vigentes) — tenant-scoped.
         services.AddScoped<UnidadeAtendimentoLookupRepository>();

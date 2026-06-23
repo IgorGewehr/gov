@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Beneficios;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Censo;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Familias;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Pbf;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Lookups;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Parametros;
@@ -45,6 +47,15 @@ public sealed class AssistenciaSocialDbContext(DbContextOptions<AssistenciaSocia
 
     /// <summary>A-2: Registros Mensais de Atendimentos (RMA) consolidados do Prontuario SUAS.</summary>
     public DbSet<RegistroMensalAtendimento> RegistrosMensaisAtendimento => Set<RegistroMensalAtendimento>();
+
+    /// <summary>3d.1: acompanhamentos de condicionalidades do PBF por familia/competencia.</summary>
+    public DbSet<AcompanhamentoCondicionalidade> AcompanhamentosCondicionalidade => Set<AcompanhamentoCondicionalidade>();
+
+    /// <summary>3d.2: unidades socioassistenciais (CRAS/CREAS/Centro POP) cadastradas para o Censo SUAS.</summary>
+    public DbSet<UnidadeSocioassistencial> UnidadesSocioassistenciais => Set<UnidadeSocioassistencial>();
+
+    /// <summary>3d.2: formularios consolidados do Censo SUAS por unidade/exercicio.</summary>
+    public DbSet<FormularioCensoSuas> FormulariosCensoSuas => Set<FormularioCensoSuas>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
