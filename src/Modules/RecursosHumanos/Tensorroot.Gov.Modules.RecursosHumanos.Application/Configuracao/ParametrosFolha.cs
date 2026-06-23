@@ -80,4 +80,7 @@ public sealed class ParametrosFolha
 
     /// <summary>Codigo da rubrica de multa de 40% do FGTS (so celetista). Padrao: MULTA-FGTS.</summary>
     public string CodigoRubricaMultaFgts { get; init; } = "MULTA-FGTS";
+
+    /// <summary>Codigo da rubrica de desconto da pensao alimenticia (retida do servidor). Padrao: PENSAO-ALIM.</summary>
+    public string CodigoRubricaPensaoAlimenticia { get; init; } = "PENSAO-ALIM";
 }

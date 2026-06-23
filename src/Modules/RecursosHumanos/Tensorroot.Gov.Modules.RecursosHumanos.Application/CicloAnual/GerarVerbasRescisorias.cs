@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Configuracao;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Calculo;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.CicloAnual;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 
@@ -63,6 +64,8 @@ public sealed class GerarVerbasRescisoriasValidator : AbstractValidator<GerarVer
 public sealed class GerarVerbasRescisoriasHandler(
     IFolhaDePagamentoRepository folhas,
     IServidorRegimeConsulta servidores,
+    IRubricaFolhaRepository rubricas,
+    ITabelasLegaisProvider tabelas,
     IParametrosFolhaProvider parametros,
     IUnitOfWork unitOfWork,
     ITenantContext tenant)
@@ -92,14 +95,79 @@ public sealed class GerarVerbasRescisoriasHandler(
         var diasDoMes = DateTime.DaysInMonth(request.DataDesligamento.Year, request.DataDesligamento.Month);
         var fracaoTerco = config.FracaoTercoConstitucional;
 
+        var valor13Proporcional = 0m;
         foreach (var verba in verbasDevidas)
         {
             var (codigo, valor) = CalcularVerba(verba, request, config, diasDoMes, fracaoTerco);
             LancarSeHouver(folha, request.ServidorId, codigo, valor, dados.Regime);
+            if (verba == VerbaRescisoria.DecimoTerceiroProporcional)
+            {
+                valor13Proporcional = valor;
+            }
+        }
+
+        // P0-4: o 13o proporcional da rescisao tem IRRF/INSS em BASE PROPRIA (Lei 7.713/88 art. 12-A),
+        // SEPARADA das demais verbas do mes, com o desconto simplificado VEDADO — exatamente como o 13o
+        // anual (reusa MotorDeCalculoFolha.CalcularBaseSeparada). As rubricas INSS-13/IRRF-13 sao lancadas
+        // na PROPRIA folha de rescisao; a verba 13-PROP tem incidencia mensal DESLIGADA na RubricaFolha,
+        // de modo que ApurarDescontosLegais (motor mensal) NUNCA a some com saldo/ferias (nao mistura).
+        if (valor13Proporcional > 0m)
+        {
+            await ApurarDescontos13ProporcionalAsync(folha, request.ServidorId, valor13Proporcional, dados, competencia, config, cancellationToken).ConfigureAwait(false);
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return folha.Id.Value;
+    }
+
+    private async Task ApurarDescontos13ProporcionalAsync(
+        FolhaDePagamento folha,
+        Guid servidorId,
+        decimal valor13,
+        Abstractions.DadosCalculoServidor dados,
+        Competencia competencia,
+        ParametrosFolha config,
+        CancellationToken cancellationToken)
+    {
+        var codigo13Prop = Rubrica.De(config.CodigoRubrica13Proporcional);
+        var (incideInss, incideRpps, incideIrrf) = await ResolverIncidencias13PropAsync(competencia, codigo13Prop, cancellationToken).ConfigureAwait(false);
+
+        var tabelaInss = await tabelas.ObterInssVigenteAsync(competencia, cancellationToken).ConfigureAwait(false);
+        var tabelaRpps = await tabelas.ObterRppsVigenteAsync(competencia, cancellationToken).ConfigureAwait(false);
+        var tabelaIrrf = await tabelas.ObterIrrfVigenteAsync(competencia, cancellationToken).ConfigureAwait(false)
+            ?? throw new CalculoFolhaException("Tabela IRRF nao carregada para a competencia da rescisao.");
+
+        var verba = new VerbaCalculo(codigo13Prop, EhProvento: true, valor13, incideInss, incideRpps, incideIrrf);
+        var insumos = new InsumosCalculoServidor(servidorId, dados.Regime, dados.QuantidadeDependentes, 0m, [verba]);
+
+        // Base separada do 13o: simplificado VEDADO (art. 12-A), INSS/RPPS/IRRF isolados das demais verbas.
+        var resultado = MotorDeCalculoFolha.CalcularBaseSeparada(insumos, tabelaInss, tabelaIrrf, tabelaRpps, OpcoesIrrf.DecimoTerceiro);
+
+        LancarDescontoSeHouver(folha, servidorId, Rubrica.De(config.CodigoRubricaInss13), resultado.BaseInss, resultado.DescontoInss, dados.Regime);
+        LancarDescontoSeHouver(folha, servidorId, Rubrica.De(config.CodigoRubricaRpps13), resultado.BaseRpps, resultado.DescontoRpps, dados.Regime);
+        LancarDescontoSeHouver(folha, servidorId, Rubrica.De(config.CodigoRubricaIrrf13), resultado.BaseIrrf, resultado.DescontoIrrf, dados.Regime);
+    }
+
+    private async Task<(bool Inss, bool Rpps, bool Irrf)> ResolverIncidencias13PropAsync(
+        Competencia competencia, Rubrica codigo13Prop, CancellationToken cancellationToken)
+    {
+        var catalogo = await rubricas.ListarVigentesAsync(competencia, cancellationToken).ConfigureAwait(false);
+        var rubrica = catalogo.FirstOrDefault(r => string.Equals(r.Codigo.Codigo, codigo13Prop.Codigo, StringComparison.OrdinalIgnoreCase))
+            // FAIL-CLOSED (CLAUDE.md S16): sem a rubrica 13-PROP vigente nao se presume incidencia.
+            ?? throw new CalculoFolhaException(
+                $"Rubrica '{codigo13Prop.Codigo}' do 13o proporcional nao possui vigencia valida na competencia {competencia}. " +
+                "Apuracao interrompida (fail-closed): incidencias de INSS/RPPS/IRRF nao podem ser presumidas.");
+        return (rubrica.IncideInss, rubrica.IncideRpps, rubrica.IncideIrrf);
+    }
+
+    private static void LancarDescontoSeHouver(FolhaDePagamento folha, Guid servidorId, Rubrica rubrica, decimal baseCalculo, decimal valor, Domain.Cargos.RegimePrevidenciario regime)
+    {
+        if (valor <= 0m)
+        {
+            return;
+        }
+
+        folha.AdicionarEvento(servidorId, rubrica, TipoEvento.Desconto, BaseCalculo.De(baseCalculo), valor, regime);
     }
 
     private static (Rubrica Codigo, decimal Valor) CalcularVerba(

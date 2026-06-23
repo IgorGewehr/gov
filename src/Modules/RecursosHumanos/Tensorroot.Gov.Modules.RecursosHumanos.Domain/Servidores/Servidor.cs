@@ -21,6 +21,7 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     public const int PrazoPosseDias = 30;
 
     private readonly List<Dependente> _dependentes = [];
+    private readonly List<PensaoAlimenticia> _pensoesAlimenticias = [];
 
     private Servidor()
     {
@@ -88,6 +89,9 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     /// <summary>Dependentes do servidor (IR/beneficios), expostos somente pela raiz.</summary>
     public IReadOnlyCollection<Dependente> Dependentes => _dependentes;
 
+    /// <summary>Pensoes alimenticias judiciais do servidor (desconto + repasse), expostas somente pela raiz.</summary>
+    public IReadOnlyCollection<PensaoAlimenticia> PensoesAlimenticias => _pensoesAlimenticias;
+
     /// <summary>
     /// Admite (provimento) um servidor a partir de cargo provido; nasce em situacao
     /// <see cref="SituacaoServidor.Nomeado"/> e emite <see cref="ServidorAdmitido"/> (I-9).
@@ -134,6 +138,20 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     {
         GarantirNaoDesligado();
         _dependentes.Add(Dependente.Registrar(nome, parentesco, dataNascimento));
+    }
+
+    /// <summary>
+    /// Acrescenta uma pensao alimenticia judicial ao servidor (desconto na folha + repasse ao
+    /// beneficiario; deducao do IRRF). Um servidor pode ter mais de uma pensao (beneficiarios distintos).
+    /// </summary>
+    /// <param name="pensao">Pensao a vincular (criada via <see cref="PensaoAlimenticia.PorPercentual"/> ou <see cref="PensaoAlimenticia.PorValorFixo"/>).</param>
+    /// <exception cref="ArgumentNullException">Se a pensao for nula.</exception>
+    /// <exception cref="InvalidOperationException">Se o servidor estiver desligado (I-8).</exception>
+    public void AdicionarPensaoAlimenticia(PensaoAlimenticia pensao)
+    {
+        ArgumentNullException.ThrowIfNull(pensao);
+        GarantirNaoDesligado();
+        _pensoesAlimenticias.Add(pensao);
     }
 
     /// <summary>

@@ -136,11 +136,11 @@ public static class MotorDeCalculoFolha
             opcoes.AplicarSimplificado);
 
         var totalDescontos = descontoPrevidenciario + descontoIrrf + outrosDescontos;
-        var liquido = totalProventos - totalDescontos;
-        if (liquido < 0m)
-        {
-            liquido = 0m;
-        }
+        // P0-5: o liquido do RESULTADO do motor e nao-negativo (piso do VO LiquidoAPagar), mas a deteccao
+        // de liquido INSUFICIENTE (descontos >= proventos) e responsabilidade do agregado FolhaDePagamento
+        // (flag/evento de conferencia em Calcular) — onde estao TODOS os descontos do servidor, inclusive
+        // os manuais (consignados) que nao passam pelo motor. Aqui nao se zera nada em silencio.
+        var liquido = Math.Max(0m, totalProventos - totalDescontos);
 
         return new ResultadoCalculoServidor(
             insumos.ServidorId,

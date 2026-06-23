@@ -14,6 +14,18 @@ public sealed record FolhaAberta(FolhaDePagamentoId FolhaDePagamentoId, Competen
 /// <param name="TotalLiquido">Total liquido apurado.</param>
 public sealed record FolhaCalculada(FolhaDePagamentoId FolhaDePagamentoId, Competencia Competencia, decimal TotalLiquido) : IDomainEvent;
 
+/// <summary>
+/// Sinaliza que o calculo detectou servidores com LIQUIDO INSUFICIENTE (descontos &gt;= proventos) — P0-5.
+/// Para conferencia/auditoria: jamais um zero silencioso. A folha nao deve fechar sem revisao.
+/// </summary>
+/// <param name="FolhaDePagamentoId">Identificador da folha.</param>
+/// <param name="Competencia">Competencia de referencia.</param>
+/// <param name="ServidoresAfetados">Servidores cujo liquido ficou insuficiente.</param>
+public sealed record FolhaComLiquidoInsuficiente(
+    FolhaDePagamentoId FolhaDePagamentoId,
+    Competencia Competencia,
+    IReadOnlyCollection<Guid> ServidoresAfetados) : IDomainEvent;
+
 /// <summary>Folha fechada (dispara S-1299, S-1210, totalizadores e DCTFWeb — I-8).</summary>
 /// <param name="FolhaDePagamentoId">Identificador da folha.</param>
 /// <param name="Competencia">Competencia de referencia.</param>

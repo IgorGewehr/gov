@@ -43,7 +43,26 @@ public sealed class ServidorConfiguration : IEntityTypeConfiguration<Servidor>
         builder.OwnsMany(servidor => servidor.Dependentes, MapearDependentes);
         builder.Navigation(servidor => servidor.Dependentes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.OwnsMany(servidor => servidor.PensoesAlimenticias, MapearPensoes);
+        builder.Navigation(servidor => servidor.PensoesAlimenticias).UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasIndex(servidor => new { servidor.TenantId, servidor.Matricula }).IsUnique();
+    }
+
+    private static void MapearPensoes(OwnedNavigationBuilder<Servidor, PensaoAlimenticia> pensoes)
+    {
+        pensoes.ToTable("ServidoresPensoesAlimenticias");
+        pensoes.WithOwner().HasForeignKey("ServidorId");
+        pensoes.HasKey(pensao => pensao.Id);
+        pensoes.Property(pensao => pensao.Id)
+            .HasConversion(id => id.Value, value => new PensaoAlimenticiaId(value))
+            .ValueGeneratedNever();
+        pensoes.Property(pensao => pensao.Beneficiario).HasMaxLength(200);
+        pensoes.Property(pensao => pensao.Modalidade).HasConversion<string>().HasMaxLength(30);
+        pensoes.Property(pensao => pensao.Percentual).HasPrecision(7, 6);
+        pensoes.Property(pensao => pensao.BaseIncidencia).HasConversion<string>().HasMaxLength(40);
+        pensoes.Property(pensao => pensao.ValorFixo).HasPrecision(18, 2);
+        pensoes.Property(pensao => pensao.ProcessoJudicial).HasMaxLength(80);
     }
 
     private static void MapearDependentes(OwnedNavigationBuilder<Servidor, Dependente> dependentes)

@@ -21,13 +21,20 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.CicloAnual;
 /// <param name="RemuneracaoMensal">Remuneracao mensal-base das ferias (salario + medias habituais).</param>
 /// <param name="DiasGozados">Dias de ferias gozados (0..30).</param>
 /// <param name="DiasVendidos">Dias convertidos em abono pecuniario (0..10).</param>
+/// <param name="InicioPeriodoAquisitivo">
+/// P0-6: inicio do periodo aquisitivo das ferias (entrada, sem relogio). Com <see cref="DataConcessao"/>,
+/// determina se a concessao ocorreu APOS o periodo concessivo (dobra — CLT art. 137). Nulo: sem dobra.
+/// </param>
+/// <param name="DataConcessao">Data de concessao/inicio do gozo das ferias (entrada). Nulo: sem dobra.</param>
 public sealed record GerarFeriasCommand(
     Guid ServidorId,
     int Ano,
     int Mes,
     decimal RemuneracaoMensal,
     int DiasGozados,
-    int DiasVendidos) : ICommand<Guid>;
+    int DiasVendidos,
+    DateOnly? InicioPeriodoAquisitivo = null,
+    DateOnly? DataConcessao = null) : ICommand<Guid>;
 
 /// <summary>Validacao da geracao de ferias.</summary>
 public sealed class GerarFeriasValidator : AbstractValidator<GerarFeriasCommand>
@@ -67,11 +74,16 @@ public sealed class GerarFeriasHandler(
         var dados = await servidores.ObterDadosCalculoAsync(request.ServidorId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Servidor {request.ServidorId} nao encontrado.");
 
+        // P0-6: dobra (CLT art. 137) — ferias concedidas APOS o periodo concessivo (12 meses apos o fim
+        // do aquisitivo) sao pagas em dobro. Datas sao ENTRADA (sem relogio); na ausencia, nao ha dobra.
+        var emDobra = DeterminarDobra(request);
+
         var resultado = CalculadoraFerias.Calcular(
             request.RemuneracaoMensal,
             request.DiasGozados,
             request.DiasVendidos,
-            config.FracaoTercoConstitucional);
+            config.FracaoTercoConstitucional,
+            emDobra);
 
         var folha = await folhas.ObterPorCompetenciaAsync(competencia, cancellationToken, TipoFolha.Ferias).ConfigureAwait(false);
         if (folha is null)
@@ -102,6 +114,25 @@ public sealed class GerarFeriasHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return folha.Id.Value;
+    }
+
+    private static bool DeterminarDobra(GerarFeriasCommand request)
+    {
+        if (request.InicioPeriodoAquisitivo is not { } inicio || request.DataConcessao is not { } concessao)
+        {
+            return false;
+        }
+
+        // Fim do periodo aquisitivo = inicio + 12 meses - 1 dia (regra geral); a partir dai corre o
+        // periodo concessivo de 12 meses. EmDobra confere se a concessao caiu apos esse prazo.
+        var fimAquisitivo = inicio.AddYears(1).AddDays(-1);
+        var periodo = new PeriodoAquisitivoFerias(
+            inicio,
+            fimAquisitivo,
+            PeriodoAquisitivoFerias.DiasDireitoPadrao,
+            DiasJaGozados: 0,
+            DiasVendidosAbono: 0);
+        return periodo.EmDobra(concessao);
     }
 
     private static void LancarSeHouver(FolhaDePagamento folha, Guid servidorId, Rubrica rubrica, decimal valor, Domain.Cargos.RegimePrevidenciario regime)

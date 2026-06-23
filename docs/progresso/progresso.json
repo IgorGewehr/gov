@@ -91,12 +91,13 @@
       { "id": "W9.7", "t": "Robustez (Outbox/WORM/OTel)", "s": "pending" },
       { "id": "W9.8", "t": "QA E2E + acessibilidade WCAG AA", "s": "pending" }
     ]},
-    { "id": "M10", "titulo": "Prontidão para PoC + Go-live (capstone)", "status": "pending", "flag": "OFICIAL", "nota": "DEFINIÇÃO DE PRONTO (100%): não só código, mas validado no OFICIAL + deployável no município (piloto Maximiliano de Almeida/RS).", "workflows": [
+    { "id": "M10", "titulo": "Prontidão para PoC + Go-live (capstone)", "status": "pending", "flag": "OFICIAL", "nota": "DEFINIÇÃO DE PRONTO (100%): não só código, mas validado no OFICIAL + deployável no município (piloto Maximiliano de Almeida/RS). Inclui AUDITORIA ADVERSARIAL PROFUNDA de CADA módulo (estilo-RH: cálculo/integridade + integração + UI/UX + gaps) como POLIMENTO FINAL — bug sutil em módulo core (contabilidade/administração/legislativo) seria fatal num contrato público. RH já auditado no M5-era (a pedido do dono).", "workflows": [
       { "id": "W10.1", "t": "Validação oficial real (e-Validador/PAD MT2026 + eSocial homologação) — certifica simulado→oficial", "s": "pending" },
       { "id": "W10.2", "t": "Avaliações isentas finais (PoC + engenharia + current-state) + correções", "s": "pending" },
       { "id": "W10.3", "t": "PoC demonstrável end-to-end (legislativa + municipal) + seed + roteiro", "s": "pending" },
       { "id": "W10.4", "t": "Go-live: infra Azure, provisionamento tenant, migração inicial, backup/DR/OTel, segurança/LGPD final", "s": "pending" },
-      { "id": "W10.5", "t": "Limpeza de produção + docs finais (município + time)", "s": "pending" }
+      { "id": "W10.5", "t": "Limpeza de produção + docs finais (município + time)", "s": "pending" },
+      { "id": "W10.6", "t": "AUDITORIA ADVERSARIAL PROFUNDA POR MÓDULO (estilo-RH: cálculo/integridade + integração + UI/UX + gaps) — polimento final; RH já feito no M5-era", "s": "pending" }
     ]}
   ],
   "docs": [

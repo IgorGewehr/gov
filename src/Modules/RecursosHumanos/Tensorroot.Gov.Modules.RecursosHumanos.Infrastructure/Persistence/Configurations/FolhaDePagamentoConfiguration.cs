@@ -38,6 +38,11 @@ public sealed class FolhaDePagamentoConfiguration : IEntityTypeConfiguration<Fol
             .HasConversion(liquido => liquido.Valor, valor => LiquidoAPagar.De(valor))
             .HasColumnType("decimal(18,2)");
 
+        // P0-5: flag de liquido insuficiente persistida (conferencia/fechamento). A lista de servidores
+        // afetados e diagnostico transitorio do ultimo calculo — recomputada em Calcular, nao persistida.
+        builder.Property(folha => folha.TemLiquidoInsuficiente);
+        builder.Ignore(folha => folha.ServidoresComLiquidoInsuficiente);
+
         builder.OwnsMany(folha => folha.Eventos, MapearEventos);
         builder.Navigation(folha => folha.Eventos).UsePropertyAccessMode(PropertyAccessMode.Field);
 

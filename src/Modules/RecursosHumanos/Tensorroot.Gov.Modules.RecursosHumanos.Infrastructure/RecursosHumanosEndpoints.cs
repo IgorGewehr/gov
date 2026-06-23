@@ -14,6 +14,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.TabelasLegais;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure;
@@ -290,6 +291,22 @@ internal static class RecursosHumanosEndpoints
             => Results.Ok(await sender.Send(new ListarServidoresAtivosQuery(), cancellationToken)))
             .RequirePermission("recursoshumanos.ver");
 
+        // P0-1: vincula pensao alimenticia judicial (percentual ou valor fixo) — deduz IRRF + desconto/repasse.
+        grupo.MapPost("/servidores/{servidorId:guid}/pensao-alimenticia", async (
+            Guid servidorId, PensaoAlimenticiaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AdicionarPensaoAlimenticiaCommand(
+                servidorId,
+                payload.Beneficiario,
+                payload.Modalidade,
+                payload.Percentual,
+                payload.BaseIncidencia,
+                payload.ValorFixo,
+                payload.ProcessoJudicial), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
         grupo.MapGet("/servidores/por-matricula/{matricula}", async (
             string matricula, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterServidorPorMatriculaQuery(matricula), cancellationToken)))
@@ -416,6 +433,16 @@ internal static class RecursosHumanosEndpoints
         })
             .RequirePermission("recursoshumanos.gerenciar");
 
+        // P0-2: consolida INSS/IRRF de TODAS as folhas mensais (Mensal + Ferias + ...) da competencia sobre
+        // a base SOMADA — teto INSS unico e faixa IRRF progressiva. Concentra o desconto na folha principal.
+        grupo.MapPost("/folhas/consolidacao-legal", async (
+            int ano, int mes, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ConsolidarDescontosLegaisMensaisCommand(ano, mes), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
         grupo.MapPost("/folhas/{folhaId:guid}/calculo", async (
             Guid folhaId, ISender sender, CancellationToken cancellationToken) =>
         {
@@ -424,10 +451,11 @@ internal static class RecursosHumanosEndpoints
         })
             .RequirePermission("recursoshumanos.gerenciar");
 
+        // P0-5: confirmarLiquidoInsuficiente=true e a confirmacao EXPLICITA do operador (revisao feita) p/ fechar folha com liquido insuficiente; default false (recusa).
         grupo.MapPost("/folhas/{folhaId:guid}/fechamento", async (
-            Guid folhaId, ISender sender, CancellationToken cancellationToken) =>
+            Guid folhaId, ISender sender, CancellationToken cancellationToken, bool confirmarLiquidoInsuficiente = false) =>
         {
-            await sender.Send(new FecharFolhaCommand(folhaId), cancellationToken);
+            await sender.Send(new FecharFolhaCommand(folhaId, confirmarLiquidoInsuficiente), cancellationToken);
             return Results.NoContent();
         })
             .RequirePermission("recursoshumanos.gerenciar");
@@ -461,4 +489,12 @@ internal static class RecursosHumanosEndpoints
     private sealed record EventoPayload(Guid ServidorId, string Rubrica, TipoEvento Tipo, decimal BaseCalculo, decimal Valor);
 
     private sealed record PagamentoPayload(DateOnly DataPagamento);
+
+    private sealed record PensaoAlimenticiaPayload(
+        string Beneficiario,
+        ModalidadePensao Modalidade,
+        decimal Percentual,
+        BasePensao BaseIncidencia,
+        decimal ValorFixo,
+        string ProcessoJudicial);
 }

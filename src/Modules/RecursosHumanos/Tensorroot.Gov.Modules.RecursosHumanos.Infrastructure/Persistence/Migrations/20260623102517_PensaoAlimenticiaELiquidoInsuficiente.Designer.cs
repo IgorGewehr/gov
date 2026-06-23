@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 
@@ -12,9 +13,11 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RecursosHumanosDbContext))]
-    partial class RecursosHumanosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623102517_PensaoAlimenticiaELiquidoInsuficiente")]
+    partial class PensaoAlimenticiaELiquidoInsuficiente
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -217,6 +217,16 @@ Tabela: Estado origem → comando/método → Estado destino | guarda | evento e
 - **Evento de domínio:** `PagamentoEfetuado(Id, competencia, dataPagamento)`.
 - **Evento de integração (publica):** `PagamentoEfetuadoIntegrationEvent`.
 
+### 5.6 ConsolidarDescontosLegaisMensais
+
+- **Command:** `ConsolidarDescontosLegaisMensaisCommand(int Ano, int Mes) : ICommand` (P0-2).
+- **Entrada (DTO):** `Ano`, `Mes`.
+- **Dependências do handler:** `IFolhaDePagamentoRepository`, `IRubricaFolhaRepository`, `IServidorRegimeConsulta`, `ITabelasLegaisProvider`, `IParametrosFolhaProvider`, `IUnitOfWork`.
+- **Pré-condições:** `request` não nulo; existem folhas mensais (não base separada) abertas na competência.
+- **Efeito:** soma as bases tributáveis de TODAS as folhas mensais da competência (Mensal + Férias) por servidor; apura INSS (teto único) e IRRF (faixa correta da base somada) pelo motor; concentra o desconto legal consolidado na folha PRINCIPAL (Mensal) e remove apurações isoladas das demais (não duplica). Idempotente. Pensão (P0-1) consolida na mesma base.
+- **Exceções:** `ArgumentNullException` (request); `CalculoFolhaException` (rubrica fora de vigência — fail-closed; tabela IRRF ausente).
+- **Evento de domínio:** nenhum (re-apura eventos da folha).
+
 > **Comandos de domínio existentes no agregado sem handler de Application dedicado nesta versão:** `RemoverEvento(Guid eventoId)` (método da raiz, exposto para correção de lançamentos enquanto `Aberta`).
 
 ---
@@ -465,9 +475,9 @@ Cada cenário vira teste de integração.
 | 1.0.0 | 2026-06-21 | Versão inicial — derivada do README do módulo RecursosHumanos (folha por competência: abertura, lançamento de eventos, cálculo com abate-teto, separação RPPS/RGPS, fechamento com S-1299/S-1210/totalizadores e DCTFWeb, pagamento; integrações Contabilidade/Empenho e Tesouraria). |
 
 <!-- manifest
-commands: AbrirFolha, AdicionarEvento, ApurarDescontosLegais, CalcularFolha, FecharFolha, EfetuarPagamento
+commands: AbrirFolha, AdicionarEvento, ApurarDescontosLegais, ConsolidarDescontosLegaisMensais, CalcularFolha, FecharFolha, EfetuarPagamento
 queries: ObterFolhaPorCompetencia, ObterContrachequeDoServidor
-domainEvents: FolhaAberta, FolhaCalculada, FolhaFechada, PagamentoEfetuado
+domainEvents: FolhaAberta, FolhaCalculada, FolhaComLiquidoInsuficiente, FolhaFechada, PagamentoEfetuado
 integrationEventsPublished: FolhaFechadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent, FolhaResumoRemessaTceIntegrationEvent, RemuneracaoMagisterioApuradaIntegrationEvent, DespesaPessoalApuradaIntegrationEvent
 integrationEventsConsumed: 
 -->

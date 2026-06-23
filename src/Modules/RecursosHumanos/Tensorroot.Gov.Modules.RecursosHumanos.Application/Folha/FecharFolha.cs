@@ -13,7 +13,12 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 
 /// <summary>Fecha a competencia (so a partir de Calculada — I-7), disparando S-1299/S-1210/totalizadores/DCTFWeb (I-8).</summary>
 /// <param name="FolhaDePagamentoId">Folha a fechar.</param>
-public sealed record FecharFolhaCommand(Guid FolhaDePagamentoId) : ICommand;
+/// <param name="ConfirmarLiquidoInsuficiente">
+/// P0-5: quando ha servidores com liquido insuficiente (descontos &gt;= proventos), o fechamento exige
+/// confirmacao EXPLICITA do operador (revisao da folha feita). Default <c>false</c> — sem confirmacao, o
+/// agregado recusa o fechamento (jamais um zero silencioso).
+/// </param>
+public sealed record FecharFolhaCommand(Guid FolhaDePagamentoId, bool ConfirmarLiquidoInsuficiente = false) : ICommand;
 
 /// <summary>Regras de validacao do fechamento de folha.</summary>
 public sealed class FecharFolhaValidator : AbstractValidator<FecharFolhaCommand>
@@ -54,8 +59,9 @@ public sealed class FecharFolhaHandler(
 
         var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
 
-        // I-7: o agregado garante que so fecha a partir de Calculada.
-        folha.Fechar(DateOnly.FromDateTime(agoraUtc));
+        // I-7: o agregado garante que so fecha a partir de Calculada. P0-5: se houver liquido insuficiente,
+        // exige confirmacao explicita do operador (revisao feita) — nunca fecha em silencio.
+        folha.Fechar(DateOnly.FromDateTime(agoraUtc), request.ConfirmarLiquidoInsuficiente);
 
         // Ponte RH -> Transparencia: snapshot da folha para a REMESSA TCE-RS (Res. 1099 / SIAPC Vol. V),
         // enfileirado no Outbox na MESMA transacao do fechamento (consistencia transacional — como a MSC

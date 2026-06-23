@@ -223,6 +223,16 @@ Tabela: Estado origem → comando/método → Estado destino | guarda | evento e
 - **Evento de domínio:** `ServidorDesligado(Id, dataDesligamento, motivo)`.
 - **Evento de integração (publica):** `ServidorDesligadoIntegrationEvent`.
 
+### 5.7 AdicionarPensaoAlimenticia
+
+- **Command:** `AdicionarPensaoAlimenticiaCommand(Guid ServidorId, string Beneficiario, ModalidadePensao Modalidade, decimal Percentual, BasePensao BaseIncidencia, decimal ValorFixo, string ProcessoJudicial) : ICommand` (P0-1).
+- **Entrada (DTO):** `ServidorId`, `Beneficiario`, `Modalidade` (percentual/valor fixo), `Percentual`, `BaseIncidencia`, `ValorFixo`, `ProcessoJudicial`.
+- **Dependências do handler:** `IServidorRepository`, `IUnitOfWork`.
+- **Pré-condições:** `request` não nulo; servidor existe, senão `InvalidOperationException("Servidor não encontrado.")`; modalidade/percentual/valor fixo válidos (validator).
+- **Efeito:** cria a `PensaoAlimenticia` (`PorPercentual` ou `PorValorFixo`); `servidor.AdicionarPensaoAlimenticia(pensao)`; `SaveChangesAsync`.
+- **Pós-condições:** pensão judicial ATIVA vinculada ao servidor — o motor de folha deduz a base do IRRF (Lei 7.713/88 art. 4 II) e gera o desconto/repasse ao beneficiário.
+- **Exceções:** `ArgumentNullException` (request); `InvalidOperationException` (servidor inexistente); `ArgumentException`/`ArgumentOutOfRangeException` (parâmetros da pensão).
+
 > **Comandos de domínio existentes no agregado sem handler de Application dedicado nesta versão:** `RetornarDeAfastamento()` (método da raiz, exposto para futura orquestração de caso de uso).
 
 ---
@@ -459,7 +469,7 @@ Cada cenário vira teste de integração.
 | 1.0.0 | 2026-06-21 | Versão inicial — derivada do README do módulo RecursosHumanos (ciclo de vida do Servidor: admissão, posse, exercício, estabilidade, afastamento, desligamento; integração eSocial S-2200/S-2206/S-2230/S-2299). |
 
 <!-- manifest
-commands: AdmitirServidor, RegistrarPosse, IniciarExercicio, ConcederEstabilidade, RegistrarAfastamento, DesligarServidor
+commands: AdmitirServidor, RegistrarPosse, IniciarExercicio, ConcederEstabilidade, RegistrarAfastamento, DesligarServidor, AdicionarPensaoAlimenticia
 queries: ObterServidorPorMatricula, ListarServidoresAtivos
 domainEvents: ServidorAdmitido, PosseRegistrada, ExercicioIniciado, EstabilidadeConcedida, AfastamentoRegistrado, ServidorDesligado
 integrationEventsPublished: ServidorAdmitidoIntegrationEvent, ServidorDesligadoIntegrationEvent

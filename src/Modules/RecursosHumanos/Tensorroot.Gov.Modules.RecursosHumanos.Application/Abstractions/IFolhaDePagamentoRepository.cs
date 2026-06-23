@@ -39,4 +39,14 @@ public interface IFolhaDePagamentoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Folhas do tipo/ano no tenant.</returns>
     Task<IReadOnlyList<FolhaDePagamento>> ListarPorTipoEAnoAsync(int ano, TipoFolha tipo, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista TODAS as folhas de uma competencia (qualquer tipo) no tenant atual — para a consolidacao
+    /// fiscal mensal (P0-2): INSS/IRRF apurados sobre a soma das folhas da mesma competencia (Mensal +
+    /// Ferias), respeitando o teto unico do INSS e a faixa correta do IRRF.
+    /// </summary>
+    /// <param name="competencia">Competencia de referencia.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Todas as folhas da competencia no tenant.</returns>
+    Task<IReadOnlyList<FolhaDePagamento>> ListarPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken);
 }

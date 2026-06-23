@@ -29,6 +29,7 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     public const string CodigoRubricaAbateTetoPadrao = "ABATE-TETO";
 
     private readonly List<EventoFolha> _eventos = [];
+    private readonly List<Guid> _servidoresComLiquidoInsuficiente = [];
 
     private FolhaDePagamento()
     {
@@ -82,8 +83,21 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     /// <summary>Total liquido (TotalProventos menos TotalDescontos), nunca negativo.</summary>
     public LiquidoAPagar TotalLiquido { get; private set; } = LiquidoAPagar.Zero;
 
+    /// <summary>
+    /// Indica que ao menos um servidor ficou com LIQUIDO INSUFICIENTE (descontos &gt;= proventos) no ultimo
+    /// calculo: sinal de conferencia (P0-5) — nunca um zero silencioso. Quando verdadeiro, a folha NAO deve
+    /// fechar sem revisao (irredutibilidade/margem); ver <see cref="ServidoresComLiquidoInsuficiente"/>.
+    /// </summary>
+    public bool TemLiquidoInsuficiente { get; private set; }
+
     /// <summary>Proventos/descontos por servidor (somente leitura).</summary>
     public IReadOnlyCollection<EventoFolha> Eventos => _eventos;
+
+    /// <summary>
+    /// Servidores cujo liquido ficou insuficiente no ultimo calculo (descontos &gt;= proventos), para a
+    /// lista de divergencias de conferencia (P0-5). Recalculado a cada <see cref="Calcular"/>.
+    /// </summary>
+    public IReadOnlyCollection<Guid> ServidoresComLiquidoInsuficiente => _servidoresComLiquidoInsuficiente;
 
     /// <summary>
     /// Abre uma folha de pagamento para uma competencia (situacao inicial <see cref="SituacaoFolha.Aberta"/> — I-14).
@@ -195,6 +209,12 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
         TotalProventos = _eventos.Where(e => e.Tipo == TipoEvento.Provento).Sum(e => e.Valor);
         TotalDescontos = _eventos.Where(e => e.Tipo == TipoEvento.Desconto).Sum(e => e.Valor);
 
+        // P0-5: liquido insuficiente NAO e zerado em silencio. Detecta, por servidor, quando os descontos
+        // alcancam/excedem os proventos (o servidor "receberia" zero ou menos) e sinaliza para conferencia
+        // (status + lista de divergencias + evento), preservando a irredutibilidade/margem. O total da
+        // folha permanece nao-negativo (VO), mas a folha fica MARCADA e nao deve fechar sem revisao.
+        DetectarLiquidoInsuficiente();
+
         // I-5 / B-10: liquido nao-negativo (VO valida o piso zero).
         var liquido = TotalProventos - TotalDescontos;
         TotalLiquido = LiquidoAPagar.De(liquido < 0m ? 0m : liquido);
@@ -202,6 +222,32 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
         Situacao = SituacaoFolha.Calculada;
         DataCalculo = hoje;
         RaiseDomainEvent(new FolhaCalculada(Id, Competencia, TotalLiquido.Valor));
+        if (TemLiquidoInsuficiente)
+        {
+            RaiseDomainEvent(new FolhaComLiquidoInsuficiente(Id, Competencia, ServidoresComLiquidoInsuficiente.ToList()));
+        }
+    }
+
+    private void DetectarLiquidoInsuficiente()
+    {
+        _servidoresComLiquidoInsuficiente.Clear();
+        foreach (var servidorId in _eventos.Select(e => e.ServidorId).Distinct())
+        {
+            var proventos = _eventos
+                .Where(e => e.ServidorId == servidorId && e.Tipo == TipoEvento.Provento)
+                .Sum(e => e.Valor);
+            var descontos = _eventos
+                .Where(e => e.ServidorId == servidorId && e.Tipo == TipoEvento.Desconto)
+                .Sum(e => e.Valor);
+
+            // Insuficiente quando os descontos consomem TODO o provento (liquido <= 0).
+            if (descontos >= proventos)
+            {
+                _servidoresComLiquidoInsuficiente.Add(servidorId);
+            }
+        }
+
+        TemLiquidoInsuficiente = _servidoresComLiquidoInsuficiente.Count > 0;
     }
 
     private void AplicarAbateTeto(decimal tetoRemuneratorio, Rubrica rubricaAbateTeto)
@@ -236,12 +282,30 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     /// S-1299/S-1210, totalizadores e a DCTFWeb (I-8 — via integracao/Outbox).
     /// </summary>
     /// <param name="hoje">Data de referencia do fechamento.</param>
-    /// <exception cref="InvalidOperationException">Se a folha nao estiver calculada (I-7 / B-8).</exception>
-    public void Fechar(DateOnly hoje)
+    /// <param name="confirmarLiquidoInsuficiente">
+    /// P0-5: quando ha servidores com liquido insuficiente (<see cref="TemLiquidoInsuficiente"/>), o
+    /// fechamento exige confirmacao EXPLICITA (revisao feita) — jamais um fechamento silencioso sobre
+    /// base que o servidor nao recebeu. Default <c>false</c> (recusa, forcando conferencia).
+    /// </param>
+    /// <exception cref="InvalidOperationException">Se a folha nao estiver calculada (I-7 / B-8) ou houver liquido insuficiente nao confirmado (P0-5).</exception>
+    public void Fechar(DateOnly hoje, bool confirmarLiquidoInsuficiente = false)
     {
         if (Situacao != SituacaoFolha.Calculada)
         {
             throw new InvalidOperationException($"O fechamento exige folha Calculada. Situacao atual: {Situacao}.");
+        }
+
+        // P0-5: irredutibilidade/margem — nao fechar em silencio quando descontos consomem o provento.
+        if (TemLiquidoInsuficiente && !confirmarLiquidoInsuficiente)
+        {
+            // A lista detalhada e transiente (recalculada em Calcular, nao persistida); o sinal autoritativo
+            // e a flag TemLiquidoInsuficiente. So expoe a contagem quando ela esta disponivel (mesma sessao).
+            var detalhe = _servidoresComLiquidoInsuficiente.Count > 0
+                ? $"{_servidoresComLiquidoInsuficiente.Count} servidor(es) com liquido insuficiente (descontos >= proventos)"
+                : "ha servidor(es) com liquido insuficiente (descontos >= proventos)";
+            throw new InvalidOperationException(
+                $"Fechamento bloqueado: {detalhe}. Revise a folha (margem/consignados) e confirme " +
+                "explicitamente para fechar (P0-5).");
         }
 
         Situacao = SituacaoFolha.Fechada;

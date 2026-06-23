@@ -4,6 +4,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Calculo;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.CicloAnual;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
 using Xunit;
 
@@ -115,6 +116,63 @@ public sealed class CicloAnualDominioTests
         ferias.RemuneracaoFerias.Should().Be(2000m);  // 20 dias.
         ferias.AbonoPecuniario.Should().Be(1000m);    // 10 dias.
         ferias.TercoAbono.Should().Be(333.33m);
+    }
+
+    [Fact] // P0-6: dobra (CLT art. 137) — ferias gozadas fora do prazo concessivo pagam em DOBRO (remuneracao e 1/3).
+    public void Ferias_em_dobra_paga_remuneracao_e_terco_em_dobro()
+    {
+        var normal = CalculadoraFerias.Calcular(3000m, diasGozados: 30, diasVendidos: 0, fracaoTerco: 1m / 3m, emDobra: false);
+        var dobra = CalculadoraFerias.Calcular(3000m, diasGozados: 30, diasVendidos: 0, fracaoTerco: 1m / 3m, emDobra: true);
+
+        normal.RemuneracaoFerias.Should().Be(3000m);
+        normal.TercoConstitucional.Should().Be(1000m);
+
+        dobra.RemuneracaoFerias.Should().Be(6000m); // 2x a remuneracao.
+        dobra.TercoConstitucional.Should().Be(2000m); // 1/3 sobre a remuneracao em dobro.
+    }
+
+    [Fact] // P0-6: EmDobra ligado ao periodo concessivo — verdadeiro so apos 12 meses do fim do aquisitivo.
+    public void PeriodoAquisitivo_em_dobra_apenas_apos_concessivo_expirado()
+    {
+        // Aquisitivo 2024-01-01..2024-12-31; concessivo expira em 2025-12-31.
+        var periodo = new PeriodoAquisitivoFerias(
+            new DateOnly(2024, 1, 1), new DateOnly(2024, 12, 31),
+            PeriodoAquisitivoFerias.DiasDireitoPadrao, DiasJaGozados: 0, DiasVendidosAbono: 0);
+
+        periodo.EmDobra(new DateOnly(2025, 6, 1)).Should().BeFalse(); // ainda dentro do concessivo.
+        periodo.EmDobra(new DateOnly(2026, 1, 15)).Should().BeTrue(); // concessivo expirado.
+    }
+
+    // ---------- Pensao alimenticia (P0-1) ----------
+
+    [Fact] // Valor fixo retorna o proprio valor; nao depende de proventos/descontos.
+    public void Pensao_valor_fixo_retorna_o_valor()
+    {
+        var pensao = PensaoAlimenticia.PorValorFixo("Beneficiario", 800m, "PROC-1");
+        pensao.Apurar(proventosBrutos: 5000m, descontoPrevidenciario: 501.51m).Should().Be(800m);
+    }
+
+    [Fact] // Percentual sobre liquido (proventos - previdencia, sem IRRF para nao haver circularidade).
+    public void Pensao_percentual_sobre_liquido_usa_proventos_menos_previdencia()
+    {
+        var pensao = PensaoAlimenticia.PorPercentual("Beneficiario", 0.30m, BasePensao.LiquidoAposDescontosLegais, "PROC-2");
+        // (5000 - 501,51) * 30% = 4498,49 * 0,30 = 1349,55 (round away).
+        pensao.Apurar(5000m, 501.51m).Should().Be(1349.55m);
+    }
+
+    [Fact] // Percentual sobre proventos brutos.
+    public void Pensao_percentual_sobre_proventos_brutos()
+    {
+        var pensao = PensaoAlimenticia.PorPercentual("Beneficiario", 0.20m, BasePensao.ProventosBrutos, "PROC-3");
+        pensao.Apurar(5000m, 501.51m).Should().Be(1000m);
+    }
+
+    [Fact] // Pensao encerrada nao desconta mais.
+    public void Pensao_encerrada_nao_desconta()
+    {
+        var pensao = PensaoAlimenticia.PorValorFixo("Beneficiario", 800m, "PROC-4");
+        pensao.Encerrar();
+        pensao.Apurar(5000m, 501.51m).Should().Be(0m);
     }
 
     // ---------- Rescisao (matriz por tipo x regime) ----------

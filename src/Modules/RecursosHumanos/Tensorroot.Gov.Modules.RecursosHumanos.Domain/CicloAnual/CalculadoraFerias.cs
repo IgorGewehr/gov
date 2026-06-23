@@ -25,6 +25,9 @@ public static class CalculadoraFerias
     /// <summary>Dias-base do mes para o calculo proporcional das ferias (avos diarios).</summary>
     public const int DiasBaseMes = 30;
 
+    /// <summary>Fator de pagamento das ferias gozadas FORA do periodo concessivo, em dobro (CLT art. 137).</summary>
+    public const int FatorDobra = 2;
+
     /// <summary>
     /// Calcula remuneracao de ferias, 1/3 e abono pecuniario.
     /// </summary>
@@ -32,13 +35,18 @@ public static class CalculadoraFerias
     /// <param name="diasGozados">Dias de ferias efetivamente gozados (0..30).</param>
     /// <param name="diasVendidos">Dias convertidos em abono pecuniario (0..10); design §3.1.</param>
     /// <param name="fracaoTerco">Fracao do terco constitucional (default 1/3); &gt;= 1/3, &lt;= 1.</param>
+    /// <param name="emDobra">
+    /// P0-6: quando <c>true</c>, as ferias foram concedidas APOS o periodo concessivo (CLT art. 137) e a
+    /// remuneracao dos dias gozados (e o respectivo 1/3) e paga EM DOBRO. O abono pecuniario nao dobra.
+    /// </param>
     /// <returns>Composicao das verbas de ferias.</returns>
     /// <exception cref="ArgumentOutOfRangeException">Se os dias ou a remuneracao forem invalidos.</exception>
     public static ResultadoFerias Calcular(
         decimal remuneracaoMensal,
         int diasGozados,
         int diasVendidos,
-        decimal fracaoTerco)
+        decimal fracaoTerco,
+        bool emDobra = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(remuneracaoMensal);
         ArgumentOutOfRangeException.ThrowIfNegative(diasGozados);
@@ -49,7 +57,10 @@ public static class CalculadoraFerias
 
         var valorDia = remuneracaoMensal / DiasBaseMes;
 
-        var remuneracaoFerias = decimal.Round(valorDia * diasGozados, 2, MidpointRounding.AwayFromZero);
+        // P0-6: ferias gozadas fora do prazo concessivo sao pagas em dobro (CLT art. 137). O fator e
+        // aplicado sobre a remuneracao das ferias e reflete no 1/3; o abono pecuniario nao dobra.
+        var fatorDobra = emDobra ? FatorDobra : 1;
+        var remuneracaoFerias = decimal.Round(valorDia * diasGozados * fatorDobra, 2, MidpointRounding.AwayFromZero);
         var terco = decimal.Round(remuneracaoFerias * fracaoTerco, 2, MidpointRounding.AwayFromZero);
 
         var abono = decimal.Round(valorDia * diasVendidos, 2, MidpointRounding.AwayFromZero);

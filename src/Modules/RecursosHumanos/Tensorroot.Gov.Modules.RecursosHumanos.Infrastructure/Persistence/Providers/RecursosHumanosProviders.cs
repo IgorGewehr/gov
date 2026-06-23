@@ -49,11 +49,20 @@ public sealed class ServidorRegimeConsulta(RecursosHumanosDbContext context) : I
         var servidor = await context.Servidores
             .AsNoTracking()
             .Include(s => s.Dependentes)
+            .Include(s => s.PensoesAlimenticias)
             .FirstOrDefaultAsync(item => item.Id == id, cancellationToken)
             .ConfigureAwait(false);
-        return servidor is null
-            ? null
-            : new DadosCalculoServidor(servidor.Regime, servidor.Dependentes.Count);
+        if (servidor is null)
+        {
+            return null;
+        }
+
+        var pensoes = servidor.PensoesAlimenticias
+            .Where(p => p.Ativa)
+            .Select(p => new PensaoAlimenticiaCalculo(
+                p.Beneficiario, p.Modalidade, p.Percentual, p.BaseIncidencia, p.ValorFixo))
+            .ToList();
+        return new DadosCalculoServidor(servidor.Regime, servidor.Dependentes.Count, pensoes);
     }
 }
 

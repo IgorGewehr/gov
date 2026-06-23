@@ -116,6 +116,19 @@ public sealed class FolhaDePagamentoRepository(RecursosHumanosDbContext context)
             .OrderBy(folha => folha.Competencia.Mes)
             .ToList();
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<FolhaDePagamento>> ListarPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(competencia);
+        // Competencia e persistida como inteiro (value converter) — comparavel no SQL pela igualdade do VO.
+        // Inclui os Eventos (owned) para a consolidacao fiscal mensal (P0-2) somar bases por servidor.
+        return await context.FolhasDePagamento
+            .Where(folha => folha.Competencia == competencia)
+            .OrderBy(folha => folha.Tipo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio do catalogo de <see cref="RubricaFolha"/>.</summary>
