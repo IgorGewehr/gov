@@ -97,6 +97,12 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
     /// <summary>Numero do autografo, quando gerado (nulo antes).</summary>
     public string? NumeroAutografo { get; private set; }
 
+    /// <summary>
+    /// Indica que um parecer CONTRARIO da CCJ (inconstitucionalidade) foi superado pelo Plenario
+    /// (recurso), liberando a inclusao em Ordem do Dia apesar do vicio apontado (BUG-5).
+    /// </summary>
+    public bool ParecerContrarioCcjSuperado { get; private set; }
+
     /// <summary>Emendas apresentadas a proposicao.</summary>
     public IReadOnlyList<Emenda> Emendas => _emendas;
 
@@ -244,6 +250,15 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
             throw new InvalidOperationException("Vicio de tramitacao: ausencia de parecer de Financas e Orcamento.");
         }
 
+        // BUG-5: parecer CONTRARIO da CCJ (inconstitucionalidade) e impedimento juridico — nao basta
+        // "existir" um parecer. A materia so segue a Ordem do Dia com a superacao explicita do parecer
+        // (recurso ao Plenario), via SuperarParecerContrarioCcj. Sem isso, o vicio fica silenciado.
+        if (PossuiParecerContrarioCcj() && !ParecerContrarioCcjSuperado)
+        {
+            throw new InvalidOperationException(
+                "Vicio de tramitacao: parecer da CCJ pela inconstitucionalidade nao superado pelo Plenario.");
+        }
+
         Situacao = SituacaoProposicao.EmOrdemDoDia;
         _tramitacoes.Add(Tramitacao.RegistrarFase(Id, FaseTramitacao.OrdemDoDia, data));
     }
@@ -332,6 +347,12 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
             return false;
         }
 
+        // Sancao e veto sao a decisao FINAL e UNICA do Executivo: nao se registra "Sancao, Veto, Sancao".
+        if (PossuiDecisaoDoExecutivo())
+        {
+            return false;
+        }
+
         _tramitacoes.Add(Tramitacao.RegistrarFase(Id, FaseTramitacao.Sancao, data));
         return true;
     }
@@ -346,14 +367,55 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
             return false;
         }
 
+        // Sancao e veto sao a decisao FINAL e UNICA do Executivo: veto apos sancao (ou novo veto) e recusado.
+        if (PossuiDecisaoDoExecutivo())
+        {
+            return false;
+        }
+
         _tramitacoes.Add(Tramitacao.RegistrarFase(Id, FaseTramitacao.Veto, data));
         return true;
+    }
+
+    // A decisao do Executivo (sancao OU veto) ja consta na trilha — e final e unica.
+    private bool PossuiDecisaoDoExecutivo()
+        => _tramitacoes.Any(tramitacao =>
+            tramitacao.Fase is FaseTramitacao.Sancao or FaseTramitacao.Veto);
+
+    /// <summary>
+    /// Supera (por recurso ao Plenario) o parecer contrario da CCJ pela inconstitucionalidade,
+    /// permitindo a inclusao em Ordem do Dia (BUG-5). So aplicavel quando ha parecer contrario da CCJ
+    /// e a proposicao ainda esta em tramitacao.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Se nao houver parecer contrario da CCJ a superar, ou a proposicao nao estiver em tramitacao.</exception>
+    public void SuperarParecerContrarioCcj()
+    {
+        GarantirEmTramitacao();
+        if (!PossuiParecerContrarioCcj())
+        {
+            throw new InvalidOperationException("Nao ha parecer contrario da CCJ a superar.");
+        }
+
+        ParecerContrarioCcjSuperado = true;
     }
 
     private bool PossuiParecer(string comissao)
         => _tramitacoes.Any(tramitacao =>
             tramitacao.Fase == FaseTramitacao.Parecer
             && string.Equals(tramitacao.Comissao, comissao, StringComparison.OrdinalIgnoreCase));
+
+    // BUG-5: o sentido vigente do parecer da CCJ e o do ULTIMO parecer emitido pela comissao (a CCJ
+    // pode reanalisar). Contrario => impedimento de constitucionalidade.
+    private bool PossuiParecerContrarioCcj()
+    {
+        var ultimoCcj = _tramitacoes
+            .Where(tramitacao =>
+                tramitacao.Fase == FaseTramitacao.Parecer
+                && string.Equals(tramitacao.Comissao, ComissaoCcj, StringComparison.OrdinalIgnoreCase))
+            .LastOrDefault();
+
+        return ultimoCcj is not null && ultimoCcj.ParecerFavoravel == false;
+    }
 
     private void GarantirEmTramitacao()
     {

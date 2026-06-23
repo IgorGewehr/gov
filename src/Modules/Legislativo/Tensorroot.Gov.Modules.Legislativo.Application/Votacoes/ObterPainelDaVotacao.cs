@@ -91,7 +91,7 @@ public sealed class ObterPainelDaVotacaoHandler(
                 .ToList();
         }
 
-        var quorumMinimo = (votacao.TotalMembros / 2) + 1;
+        var quorumMinimo = votacao.QuorumMinimo;
         var ausentes = Math.Max(0, votacao.TotalMembros - votacao.Votos.Count);
         var resultadoParcial = ApurarParcial(votacao);
 
@@ -117,19 +117,20 @@ public sealed class ObterPainelDaVotacaoHandler(
     }
 
     /// <summary>
-    /// Apuracao projetada (preview) com os votos atuais, espelhando a regra de <c>Votacao.Apurar</c>
-    /// (maioria simples sobre presentes / absoluta e qualificada sobre membros). NAO altera o agregado.
+    /// Apuracao projetada (preview) com os votos atuais. Delega a regra de maioria ao dominio
+    /// (<see cref="Votacao.AtingeMaioria"/>) para NAO duplicar a formula de apuracao: a tela nunca
+    /// mostra desfecho diferente do oficial. Sinaliza <see cref="ResultadoVotacao.Prejudicado"/>
+    /// quando o preview indica encerramento sem quorum minimo. NAO altera o agregado.
     /// </summary>
     private static ResultadoVotacao ApurarParcial(Votacao votacao)
     {
-        var aprovado = votacao.MaioriaExigida switch
+        if (votacao.Presentes < votacao.QuorumMinimo)
         {
-            MaioriaExigida.Simples => votacao.VotosSim > votacao.Presentes / 2,
-            MaioriaExigida.Absoluta => votacao.VotosSim >= (votacao.TotalMembros / 2) + 1,
-            MaioriaExigida.Qualificada => votacao.VotosSim >= (int)Math.Ceiling(2.0 * votacao.TotalMembros / 3.0),
-            _ => false,
-        };
+            return ResultadoVotacao.Prejudicado;
+        }
 
-        return aprovado ? ResultadoVotacao.Aprovado : ResultadoVotacao.Rejeitado;
+        return votacao.AtingeMaioria(votacao.MaioriaExigida)
+            ? ResultadoVotacao.Aprovado
+            : ResultadoVotacao.Rejeitado;
     }
 }

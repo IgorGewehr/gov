@@ -137,6 +137,10 @@ public sealed class Sessao : AggregateRoot<SessaoId>, IMustHaveTenant
     /// <returns><c>true</c> se o quorum foi atingido; caso contrario, <c>false</c>.</returns>
     public bool VerificarQuorum()
     {
+        // B-22: em sessao terminal (Encerrada/Cancelada) a verificacao de quorum nao faz sentido e
+        // nao deve emitir QuorumVerificado (evento espurio que polui a trilha/painel).
+        GarantirNaoTerminal();
+
         var atingido = _presencas.Count >= QuorumInstalacao;
         RaiseDomainEvent(new QuorumVerificado(Id, atingido));
         return atingido;

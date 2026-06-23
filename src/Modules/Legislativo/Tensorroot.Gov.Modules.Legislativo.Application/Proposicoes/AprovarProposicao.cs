@@ -42,12 +42,33 @@ public sealed class AprovarProposicaoHandler(
         var votacao = await votacoes.ObterPorIdAsync(new VotacaoId(request.VotacaoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Votacao nao encontrada.");
 
+        // BUG-1 (CRITICO): a votacao tem de ser DESTA proposicao. Sem este vinculo, clicar no card
+        // errado na ordem do dia aprova a materia X com o resultado da votacao de Y, sem erro.
+        if (votacao.ProposicaoId.Value != proposicao.Id.Value)
+        {
+            throw new InvalidOperationException(
+                "A votacao informada nao pertence a esta proposicao; aprovacao recusada (vinculo votacao->proposicao).");
+        }
+
+        // A votacao precisa estar encerrada/apurada (Resultado != null) antes de aprovar a materia:
+        // o placar de uma votacao Aberta ainda muda.
+        if (votacao.Situacao != SituacaoVotacao.Encerrada)
+        {
+            throw new InvalidOperationException(
+                $"A votacao precisa estar Encerrada para aprovar a materia. Situacao atual: {votacao.Situacao}.");
+        }
+
         if (votacao.Resultado != ResultadoVotacao.Aprovado)
         {
             throw new InvalidOperationException("Votacao nao aprovou a materia.");
         }
 
-        var resultado = ResultadoDeliberacao.Aprovada(MapearMaioria(votacao.MaioriaExigida));
+        // BUG-1 (agravante): a maioria que alimenta a proposicao e a EFETIVAMENTE ATINGIDA pelo placar,
+        // nunca a meramente exigida. Aprovado => existe maioria atingida (no minimo a exigida).
+        var maioriaAtingida = votacao.MaioriaAtingida()
+            ?? throw new InvalidOperationException("Votacao aprovada sem maioria atingida apurada (estado inconsistente).");
+
+        var resultado = ResultadoDeliberacao.Aprovada(MapearMaioria(maioriaAtingida));
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         proposicao.Aprovar(resultado, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

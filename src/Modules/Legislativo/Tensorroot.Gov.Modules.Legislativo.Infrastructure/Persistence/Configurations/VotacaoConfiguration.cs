@@ -56,5 +56,10 @@ public sealed class VotacaoConfiguration : IEntityTypeConfiguration<Votacao>
         votos.Property(voto => voto.VereadorId)
             .HasConversion(id => id.Value, value => new VereadorId(value));
         votos.Property(voto => voto.Sentido).HasConversion<string>().HasMaxLength(20);
+
+        // BUG-8(b) / spec §9: rede de seguranca contra concorrencia do painel — um vereador, um voto
+        // por votacao (I-4, agora valido em toda modalidade). A idempotencia por VotoId (I-3) ja e
+        // garantida pela PK do voto. Indice unico em (VotacaoOwnerId, VereadorId).
+        votos.HasIndex("VotacaoOwnerId", "VereadorId").IsUnique();
     }
 }

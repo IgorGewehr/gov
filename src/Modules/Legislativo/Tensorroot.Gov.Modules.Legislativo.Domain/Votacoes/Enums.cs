@@ -60,4 +60,10 @@ public enum ResultadoVotacao
 
     /// <summary>Materia rejeitada (maioria nao atingida).</summary>
     Rejeitado = 2,
+
+    /// <summary>
+    /// Deliberacao prejudicada: encerrada sem o quorum minimo de deliberacao (maioria absoluta dos
+    /// presentes/membros). Nao aprova nem rejeita o merito — a materia retorna a pauta (BUG-7(b)).
+    /// </summary>
+    Prejudicado = 3,
 }

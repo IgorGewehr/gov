@@ -168,7 +168,9 @@ public sealed class NormaRepository(LegislativoDbContext context) : INormaReposi
             // Busca case-insensitive (LIKE) pela coluna-sombra string crua "EmentaBusca"
             // (sincronizada no SaveChanges), evitando o value converter do VO Ementa que causaria
             // InvalidCastException. Wildcards do termo sao escapados para tratar % e _ como literais.
-            var padrao = "%" + EscaparLike(filtro.Termo) + "%";
+            // BUG-3: normaliza o termo (lowercase + sem diacriticos) igual a coluna-sombra EmentaBusca,
+            // para que "acacias" case "Acácias" e "sao joao" case "São João" sem depender da collation.
+            var padrao = "%" + EscaparLike(TextoBusca.Normalizar(filtro.Termo)) + "%";
             consulta = consulta.Where(norma =>
                 EF.Functions.Like(EF.Property<string>(norma, "EmentaBusca"), padrao, "\\"));
         }

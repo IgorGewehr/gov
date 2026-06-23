@@ -179,6 +179,12 @@ public sealed class Norma : AggregateRoot<NormaId>, IMustHaveTenant
             throw new ArgumentException("Data de revogacao nao pode ser anterior a promulgacao.", nameof(dataRevogacao));
         }
 
+        // Auto-referencia na trilha juridica e invalida: uma norma nao pode revogar a si mesma.
+        if (normaRevogadoraId == Id)
+        {
+            throw new ArgumentException("A norma revogadora nao pode ser a propria norma.", nameof(normaRevogadoraId));
+        }
+
         SituacaoVigencia = SituacaoVigencia.Revogada;
         DataRevogacao = dataRevogacao;
         NormaRevogadoraId = normaRevogadoraId;
@@ -199,6 +205,18 @@ public sealed class Norma : AggregateRoot<NormaId>, IMustHaveTenant
         if (Terminal)
         {
             throw new InvalidOperationException("Norma revogada nao admite registro de alteracao.");
+        }
+
+        // Espelha Revogar: a alteracao nao pode ser anterior a promulgacao (data implausivel na trilha).
+        if (dataReferencia < DataPromulgacao)
+        {
+            throw new ArgumentException("Data de alteracao nao pode ser anterior a promulgacao.", nameof(dataReferencia));
+        }
+
+        // Auto-referencia invalida: uma norma nao pode alterar a si mesma.
+        if (normaAlteradoraId == Id)
+        {
+            throw new ArgumentException("A norma alteradora nao pode ser a propria norma.", nameof(normaAlteradoraId));
         }
 
         SituacaoVigencia = SituacaoVigencia.Alterada;

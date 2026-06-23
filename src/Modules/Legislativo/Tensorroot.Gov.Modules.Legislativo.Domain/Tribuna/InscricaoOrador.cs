@@ -79,10 +79,14 @@ public sealed class InscricaoOrador : Entity<InscricaoOradorId>
     /// <summary>Soma das pausas concluidas.</summary>
     public TimeSpan TotalPausas => _pausas.Aggregate(TimeSpan.Zero, (acumulado, pausa) => acumulado + pausa.Duracao);
 
-    /// <summary>Tempo efetivamente utilizado (apos encerrar): <c>(EncerradoEm - IniciadoEm) - pausas</c>.</summary>
+    /// <summary>
+    /// Tempo efetivamente utilizado (apos encerrar): <c>(EncerradoEm - IniciadoEm) - pausas</c>,
+    /// com clamp em <see cref="TimeSpan.Zero"/> (BUG-4): mesmo sob clock skew/NTP step residual o
+    /// painel nunca exibe tempo negativo.
+    /// </summary>
     public TimeSpan? TempoUtilizado =>
         IniciadoEm is { } inicio && EncerradoEm is { } fim
-            ? (fim - inicio) - TotalPausas
+            ? Maximo((fim - inicio) - TotalPausas, TimeSpan.Zero)
             : null;
 
     /// <summary>Tempo que excedeu o concedido (>= zero), apos encerrar.</summary>
@@ -129,6 +133,12 @@ public sealed class InscricaoOrador : Entity<InscricaoOradorId>
             throw new InvalidOperationException("Fala ja esta pausada.");
         }
 
+        // BUG-4: monotonicidade — a pausa nao pode comecar antes do inicio da fala.
+        if (IniciadoEm is { } inicio && momento < inicio)
+        {
+            throw new ArgumentException("Momento da pausa nao pode ser anterior ao inicio da fala.", nameof(momento));
+        }
+
         PausaIniciadaEm = momento;
     }
 
@@ -154,6 +164,13 @@ public sealed class InscricaoOrador : Entity<InscricaoOradorId>
         if (Situacao != SituacaoInscricao.EmUso)
         {
             throw new InvalidOperationException("So e possivel encerrar o orador em uso da palavra.");
+        }
+
+        // BUG-4: monotonicidade — o encerramento nao pode ser anterior ao inicio da fala. Sem esta
+        // guarda, clock skew/NTP step produz TempoUtilizado negativo no painel ("-00:42 utilizado").
+        if (IniciadoEm is { } inicio && momento < inicio)
+        {
+            throw new ArgumentException("Momento de encerramento nao pode ser anterior ao inicio da fala.", nameof(momento));
         }
 
         if (PausaIniciadaEm is { } inicioPausa)
@@ -188,4 +205,7 @@ public sealed class InscricaoOrador : Entity<InscricaoOradorId>
 
         Apartes++;
     }
+
+    // Clamp inferior: o tempo utilizado nunca e negativo (anti clock-skew — BUG-4).
+    private static TimeSpan Maximo(TimeSpan a, TimeSpan b) => a > b ? a : b;
 }

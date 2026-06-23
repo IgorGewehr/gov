@@ -94,9 +94,14 @@ public sealed class TribunaSessao : AggregateRoot<TribunaSessaoId>, IMustHaveTen
             throw new ArgumentException("Fase de uso da palavra invalida.", nameof(fase));
         }
 
-        // T-2: idempotente por (vereador, fase) entre inscricoes ainda ativas (nao canceladas).
+        // T-2 / BUG-6: idempotente apenas sobre inscricao AINDA PENDENTE (Inscrito ou EmUso). Uma
+        // inscricao Concluido/Cancelado nao deve ser devolvida: devolver a Concluido fazia IniciarFala
+        // lancar ("exige Inscrito") e travava a segunda fala do orador na mesma fase. Re-inscrever apos
+        // concluir cria uma NOVA inscricao na mesma fase.
         var existente = _inscricoes.Find(i =>
-            i.VereadorId == vereadorId && i.Fase == fase && i.Situacao != SituacaoInscricao.Cancelado);
+            i.VereadorId == vereadorId
+            && i.Fase == fase
+            && i.Situacao is SituacaoInscricao.Inscrito or SituacaoInscricao.EmUso);
         if (existente is not null)
         {
             return existente;

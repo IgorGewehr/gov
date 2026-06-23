@@ -90,6 +90,12 @@ public sealed class Votacao : AggregateRoot<VotacaoId>, IMustHaveTenant
     public int Abstencoes => _votos.Count(voto => voto.Sentido == SentidoVoto.Abstencao);
 
     /// <summary>
+    /// Quorum minimo de deliberacao = maioria absoluta dos membros (<c>TotalMembros / 2 + 1</c>),
+    /// o mesmo quorum de instalacao da sessao. Abaixo dele a votacao e <see cref="ResultadoVotacao.Prejudicado"/>.
+    /// </summary>
+    public int QuorumMinimo => (TotalMembros / 2) + 1;
+
+    /// <summary>
     /// Abre uma nova votacao para registro de votos (situacao inicial <see cref="SituacaoVotacao.Aberta"/>).
     /// Emite <see cref="VotacaoIniciada"/> (I-1).
     /// </summary>
@@ -116,6 +122,17 @@ public sealed class Votacao : AggregateRoot<VotacaoId>, IMustHaveTenant
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalMembros);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(presentes);
+
+        // BUG-8(a): estado fisicamente impossivel — nao podem comparecer mais vereadores do que a
+        // composicao da Camara. Aceitar presentes > totalMembros contamina as bases das maiorias.
+        if (presentes > totalMembros)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(presentes),
+                presentes,
+                $"Presentes ({presentes}) nao pode exceder o total de membros ({totalMembros}).");
+        }
+
         if (!Enum.IsDefined(tipo))
         {
             throw new ArgumentException("Tipo de votacao invalido.", nameof(tipo));
@@ -172,10 +189,22 @@ public sealed class Votacao : AggregateRoot<VotacaoId>, IMustHaveTenant
             return;
         }
 
-        // I-4: em votacao nominal, cada vereador vota uma unica vez.
-        if (Tipo == TipoVotacao.Nominal && _votos.Any(voto => voto.VereadorId == vereadorId))
+        // I-4 / BUG-2: um vereador, um voto — em TODA modalidade (nominal, simbolica e secreta).
+        // O sigilo da secreta nao implica permitir repeticao: a identidade existe internamente para
+        // controle de unicidade, apenas nao e projetada no painel/lista. Permitir o mesmo VereadorId
+        // votar N vezes infla VotosSim e fabrica aprovacao.
+        if (_votos.Any(voto => voto.VereadorId == vereadorId))
         {
-            throw new InvalidOperationException("O vereador ja votou nesta votacao nominal.");
+            throw new InvalidOperationException("O vereador ja votou nesta votacao.");
+        }
+
+        // BUG-7(a): teto de votos — o numero de votos nao pode exceder os presentes (logo, tambem nao
+        // excede o total de membros, pois presentes <= totalMembros). "13 votos numa Camara de 11" e
+        // estado impossivel que fabrica quorum/maioria.
+        if (_votos.Count >= Presentes)
+        {
+            throw new InvalidOperationException(
+                $"Total de votos ({_votos.Count}) atingiu o numero de presentes ({Presentes}); nao ha mais votos a registrar.");
         }
 
         _votos.Add(Voto.Registrar(votoId, vereadorId, sentido, registradoEm));
@@ -216,27 +245,66 @@ public sealed class Votacao : AggregateRoot<VotacaoId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Aplica a maioria exigida sobre os votos <see cref="SentidoVoto.Sim"/> e retorna o resultado.
+    /// Indica se os votos <see cref="SentidoVoto.Sim"/> satisfazem a maioria informada.
     /// Abstencoes nao compoem o numerador (I-13).
+    /// </summary>
+    /// <param name="maioria">Criterio de maioria a verificar.</param>
+    /// <returns><c>true</c> se a maioria foi atingida.</returns>
+    public bool AtingeMaioria(MaioriaExigida maioria) => maioria switch
+    {
+        // I-6: maioria simples — maior que 50% dos presentes.
+        MaioriaExigida.Simples => VotosSim > Presentes / 2,
+
+        // I-7: maioria absoluta — maior que 50% dos membros.
+        MaioriaExigida.Absoluta => VotosSim >= (TotalMembros / 2) + 1,
+
+        // I-8: maioria qualificada — 2/3 dos membros (aprovacao final exige 2 turnos, externos a esta votacao).
+        MaioriaExigida.Qualificada => VotosSim >= (int)Math.Ceiling(2.0 * TotalMembros / 3.0),
+
+        _ => false,
+    };
+
+    /// <summary>
+    /// Maior maioria efetivamente atingida pelo placar de Sim (Qualificada &gt; Absoluta &gt; Simples),
+    /// ou <c>null</c> se nem a maioria simples foi alcancada. Fonte unica para o vinculo
+    /// votacao -> proposicao (BUG-1): a aprovacao da proposicao usa a maioria ATINGIDA, nao a exigida.
+    /// </summary>
+    /// <returns>Maior maioria atingida, ou <c>null</c> se nenhuma.</returns>
+    public MaioriaExigida? MaioriaAtingida()
+    {
+        if (AtingeMaioria(MaioriaExigida.Qualificada))
+        {
+            return MaioriaExigida.Qualificada;
+        }
+
+        if (AtingeMaioria(MaioriaExigida.Absoluta))
+        {
+            return MaioriaExigida.Absoluta;
+        }
+
+        if (AtingeMaioria(MaioriaExigida.Simples))
+        {
+            return MaioriaExigida.Simples;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Aplica a maioria exigida sobre os votos <see cref="SentidoVoto.Sim"/> e retorna o resultado.
+    /// Abstencoes nao compoem o numerador (I-13). Sem o quorum minimo de deliberacao, a votacao e
+    /// <see cref="ResultadoVotacao.Prejudicado"/> (BUG-7(b)).
     /// </summary>
     /// <returns>Resultado apurado.</returns>
     private ResultadoVotacao Apurar()
     {
-        var votosSim = VotosSim;
-        var aprovado = MaioriaExigida switch
+        // BUG-7(b): quorum de deliberacao = maioria absoluta dos membros. Sem ele, nao se delibera o
+        // merito — evita aprovar/rejeitar contradizendo o painel (que ja exibe QuorumAtingido=false).
+        if (Presentes < QuorumMinimo)
         {
-            // I-6: maioria simples — maior que 50% dos presentes.
-            MaioriaExigida.Simples => votosSim > Presentes / 2,
+            return ResultadoVotacao.Prejudicado;
+        }
 
-            // I-7: maioria absoluta — maior que 50% dos membros.
-            MaioriaExigida.Absoluta => votosSim >= (TotalMembros / 2) + 1,
-
-            // I-8: maioria qualificada — 2/3 dos membros (aprovacao final exige 2 turnos, externos a esta votacao).
-            MaioriaExigida.Qualificada => votosSim >= (int)Math.Ceiling(2.0 * TotalMembros / 3.0),
-
-            _ => false,
-        };
-
-        return aprovado ? ResultadoVotacao.Aprovado : ResultadoVotacao.Rejeitado;
+        return AtingeMaioria(MaioriaExigida) ? ResultadoVotacao.Aprovado : ResultadoVotacao.Rejeitado;
     }
 }

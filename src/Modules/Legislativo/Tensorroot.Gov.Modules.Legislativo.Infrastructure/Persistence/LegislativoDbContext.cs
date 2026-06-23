@@ -68,15 +68,16 @@ public sealed class LegislativoDbContext(DbContextOptions<LegislativoDbContext> 
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
-    // Mantem a coluna-sombra "EmentaBusca" (string crua, indexada) sincronizada com o VO Ementa
-    // para permitir busca textual translatavel em SQL sem passar pelo value converter do VO.
+    // Mantem a coluna-sombra "EmentaBusca" (indexada) sincronizada com a ementa, JA NORMALIZADA
+    // (lowercase + sem diacriticos — BUG-3), para busca textual independente de collation. A busca
+    // (NormaRepository) normaliza o termo do mesmo modo antes do LIKE, garantindo simetria.
     private void SincronizarColunaBuscaNorma()
     {
         foreach (var entrada in ChangeTracker.Entries<Norma>())
         {
             if (entrada.State is EntityState.Added or EntityState.Modified)
             {
-                entrada.Property("EmentaBusca").CurrentValue = entrada.Entity.Ementa.Valor;
+                entrada.Property("EmentaBusca").CurrentValue = TextoBusca.Normalizar(entrada.Entity.Ementa.Valor);
             }
         }
     }
