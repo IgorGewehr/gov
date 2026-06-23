@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Beneficios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Familias;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Fiscal;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Prontuarios;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.ValueObjects;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 
@@ -20,6 +22,58 @@ internal static class AssistenciaSocialEndpoints
         MapearFamilias(grupo);
         MapearBeneficios(grupo);
         MapearProntuarios(grupo);
+        MapearFiscal(grupo);
+    }
+
+    private static void MapearFiscal(RouteGroupBuilder grupo)
+    {
+        // A-1: abrir a unidade gestora do Fundo Municipal de Assistencia Social (FMAS).
+        grupo.MapPost("/fiscal/fmas", async (
+            AbrirFundoMunicipalAssistenciaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // A-1: execucao segregada por bloco/piso do FMAS (painel de execucao por piso).
+        grupo.MapGet("/fiscal/fmas/{fundoId:guid}/execucao", async (
+            Guid fundoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterExecucaoFmasQuery(fundoId), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
+
+        // A-1: receber parcela do FNAS num bloco/piso/fonte (Port. 1.043/2024).
+        grupo.MapPost("/fiscal/fmas/{fundoId:guid}/parcelas", async (
+            Guid fundoId, ParcelaFmasPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReceberParcelaFnasCommand(fundoId, payload.Bloco, payload.Piso, payload.FonteRecurso, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // A-1: executar despesa num bloco/piso/fonte (transposicao livre entre blocos/pisos e vedada).
+        grupo.MapPost("/fiscal/fmas/{fundoId:guid}/execucoes", async (
+            Guid fundoId, ParcelaFmasPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ExecutarDespesaSuasCommand(fundoId, payload.Bloco, payload.Piso, payload.FonteRecurso, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // A-2: (re)consolida o RMA de uma unidade na competencia a partir do Prontuario SUAS (sem dupla digitacao).
+        grupo.MapPost("/fiscal/rma/consolidar", async (
+            ConsolidarRmaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(new ConsolidarRmaCommand(payload.UnidadeAtendimentoId, Competencia.De(payload.Ano, payload.Mes)), cancellationToken) }))
+            .RequirePermission("assistenciasocial.gerenciar");
+
+        // A-2: fecha (sela) o RMA da competencia para envio ao MDS (RMA/SAGI).
+        grupo.MapPost("/fiscal/rma/{rmaId:guid}/fechamento", async (
+            Guid rmaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new FecharRmaCommand(rmaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("assistenciasocial.gerenciar");
+
+        // A-2: consulta o RMA consolidado de uma unidade numa competencia.
+        grupo.MapGet("/fiscal/rma", async (
+            Guid unidadeAtendimentoId, int ano, int mes, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterRmaQuery(unidadeAtendimentoId, Competencia.De(ano, mes)), cancellationToken)))
+            .RequirePermission("assistenciasocial.ver");
     }
 
     private static void MapearFamilias(RouteGroupBuilder grupo)
@@ -138,4 +192,14 @@ internal static class AssistenciaSocialEndpoints
 
     // LG-1: o UsuarioId NAO faz parte do payload — e derivado do principal autenticado no handler.
     private sealed record RegistrarAcessoPayload(string MotivoAcesso);
+
+    // A-1: parcela/execucao do FNAS num bloco/piso/fonte do FMAS.
+    private sealed record ParcelaFmasPayload(
+        BlocoFinanciamentoAssistencia Bloco,
+        PisoAssistencia Piso,
+        string FonteRecurso,
+        decimal Valor);
+
+    // A-2: consolidacao do RMA de uma unidade numa competencia.
+    private sealed record ConsolidarRmaPayload(Guid UnidadeAtendimentoId, int Ano, int Mes);
 }

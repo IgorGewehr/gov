@@ -139,6 +139,51 @@ public sealed class Beneficio : AggregateRoot<BeneficioId>, IMustHaveTenant
         return resultado;
     }
 
+    /// <summary>
+    /// <b>A-0:</b> avalia a elegibilidade de um BENEFICIO EVENTUAL pelo criterio de LEI MUNICIPAL
+    /// (<see cref="CriterioBeneficioEventual"/>) e despacha para concessao ou indeferimento. NAO ha teto
+    /// federal de "1/4 SM" (revogado pela Lei 12.435/2011): o corte de renda — quando existe — vem da lei
+    /// municipal, podendo ser superior a 1/4 SM. Operacao terminal: so a partir de
+    /// <see cref="SituacaoBeneficio.EmAvaliacao"/> (I-5); exige <see cref="TipoBeneficio.Eventual"/>.
+    /// </summary>
+    /// <param name="criterioMunicipal">Criterio municipal vigente (modalidade + corte de renda em SM, ou sem corte).</param>
+    /// <param name="rendaPerCapita">Renda per capita apurada da familia.</param>
+    /// <param name="salarioMinimoVigente">Salario minimo vigente na competencia (parametro versionado).</param>
+    /// <param name="valorConcedido">Valor a conceder quando elegivel (nulo em provisao em especie/cesta).</param>
+    /// <param name="dataDecisao">Data da decisao.</param>
+    /// <returns>Resultado da avaliacao aplicado ao beneficio.</returns>
+    /// <exception cref="ArgumentNullException">Se o criterio, a renda ou o salario minimo forem nulos.</exception>
+    /// <exception cref="InvalidOperationException">Se o beneficio nao for eventual ou ja estiver decidido (I-5).</exception>
+    public ResultadoElegibilidade AvaliarElegibilidadeEventual(
+        CriterioBeneficioEventual criterioMunicipal,
+        RendaPerCapita rendaPerCapita,
+        ValorMonetario salarioMinimoVigente,
+        ValorMonetario? valorConcedido,
+        DateOnly dataDecisao)
+    {
+        ArgumentNullException.ThrowIfNull(criterioMunicipal);
+        ArgumentNullException.ThrowIfNull(rendaPerCapita);
+        ArgumentNullException.ThrowIfNull(salarioMinimoVigente);
+        GarantirEmAvaliacao();
+
+        if (Tipo != TipoBeneficio.Eventual)
+        {
+            throw new InvalidOperationException($"Avaliacao por criterio municipal exige beneficio eventual. Tipo atual: {Tipo}.");
+        }
+
+        var resultado = criterioMunicipal.Avaliar(rendaPerCapita, salarioMinimoVigente);
+        if (resultado.Elegivel)
+        {
+            Conceder(valorConcedido, dataDecisao);
+        }
+        else
+        {
+            Indeferir(resultado.Motivo, dataDecisao);
+        }
+
+        return resultado;
+    }
+
     /// <summary>Concede o beneficio (Beneficio I-6). Acionado por <see cref="AvaliarElegibilidade"/>.</summary>
     /// <param name="valor">Valor concedido (nulo em cesta basica — I-9).</param>
     /// <param name="dataDecisao">Data da concessao.</param>

@@ -27,6 +27,16 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
 
     private static RendaPerCapita Renda(decimal valor) => RendaPerCapita.Calcular(valor, 1);
 
+    // A-0: criterio MUNICIPAL do beneficio eventual (sem teto federal de 1/4 SM revogado). O multiplo
+    // de SM vem da lei municipal; nos testes usamos 1/2 SM como exemplo de corte municipal (NAO federal).
+    private static CriterioBeneficioEventual CriterioEventual(decimal? multiploSm = 0.5m)
+        => CriterioBeneficioEventual.MunicipalVigente(ModalidadeBeneficioEventual.VulnerabilidadeTemporaria, multiploSm);
+
+    // Avalia eventual pela lei municipal (substitui o antigo caminho federal por 1/2 SM).
+    private static ResultadoElegibilidade AvaliarEventual(
+        Beneficio beneficio, RendaPerCapita renda, ValorMonetario? valor = null, decimal? multiploSm = 0.5m)
+        => beneficio.AvaliarElegibilidadeEventual(CriterioEventual(multiploSm), renda, SmJunho2026, valor, Hoje);
+
     private static DadosElegibilidade Dados(
         int idade = 70,
         bool pcd = false,
@@ -113,40 +123,62 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
         resultado.Elegivel.Should().BeFalse();
     }
 
-    [Fact] // I-4 + B-2: eventual elegivel quando renda exatamente = 1/2 SM (regra <= 1/2).
-    public void Invariante_4_eventual_elegivel_no_meio_salario()
+    [Fact] // A-0: eventual elegivel quando renda = ao corte MUNICIPAL (aqui 1/2 SM por lei municipal, nao federal).
+    public void Invariante_4_eventual_elegivel_no_corte_municipal()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
 
-        // 1412/2 = 706.
-        var resultado = beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(706m), null, Hoje);
+        // Corte municipal de 1/2 SM (exemplo): 1412/2 = 706. Renda 706 <= 706 => elegivel.
+        var resultado = AvaliarEventual(beneficio, Renda(706m));
 
         resultado.Elegivel.Should().BeTrue();
         beneficio.Situacao.Should().Be(SituacaoBeneficio.Concedida);
     }
 
-    [Fact] // I-4 + Cenario 5: eventual indeferido por renda > 1/2 SM.
-    public void Invariante_4_eventual_indeferido_acima_de_meio_salario()
+    [Fact] // A-0: eventual indeferido por renda acima do corte MUNICIPAL.
+    public void Invariante_4_eventual_indeferido_acima_do_corte_municipal()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
 
-        var resultado = beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(707m), null, Hoje);
+        var resultado = AvaliarEventual(beneficio, Renda(707m));
 
         resultado.Elegivel.Should().BeFalse();
         beneficio.Situacao.Should().Be(SituacaoBeneficio.Indeferida);
+    }
+
+    [Fact] // A-0 (REGRESSAO do teto revogado): eventual CONCEDIDO acima de 1/4 SM quando a lei municipal
+           // fixa corte maior (1 SM). O revogado teto de 1/4 SM (353) NAO se aplica — Lei 12.435/2011.
+    public void Invariante_4_eventual_concedido_acima_de_um_quarto_sm_conforme_lei_municipal()
+    {
+        var beneficio = Solicitar(TipoBeneficio.Eventual);
+
+        // 1/4 SM = 353; a lei municipal aqui admite ate 1 SM (1412). Renda 800 > 353 mas <= 1412 => CONCEDE.
+        var resultado = AvaliarEventual(beneficio, Renda(800m), valor: ValorMonetario.De(500m), multiploSm: 1m);
+
+        resultado.Elegivel.Should().BeTrue("o teto de 1/4 SM foi revogado pela Lei 12.435/2011 — o corte e municipal");
+        beneficio.Situacao.Should().Be(SituacaoBeneficio.Concedida);
+    }
+
+    [Fact] // A-0: lei municipal SEM corte de renda (ex.: natalidade/morte) concede independentemente da renda.
+    public void Invariante_4_eventual_sem_corte_de_renda_concede_independente_da_renda()
+    {
+        var beneficio = Solicitar(TipoBeneficio.Eventual);
+
+        // Sem multiplo: a modalidade decorre do fato gerador (LOAS art. 22) — renda alta nao barra.
+        var resultado = AvaliarEventual(beneficio, Renda(5000m), valor: ValorMonetario.De(300m), multiploSm: null);
+
+        resultado.Elegivel.Should().BeTrue();
+        beneficio.Situacao.Should().Be(SituacaoBeneficio.Concedida);
     }
 
     [Fact] // I-5 + Cenario 8: beneficio ja decidido nao admite nova decisao.
     public void Invariante_5_beneficio_decidido_nao_admite_nova_decisao()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
-        beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), null, Hoje);
+        AvaliarEventual(beneficio, Renda(100m));
         beneficio.Situacao.Should().Be(SituacaoBeneficio.Concedida);
 
-        ((Action)(() => beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), null, Hoje)))
+        ((Action)(() => AvaliarEventual(beneficio, Renda(100m))))
             .Should().Throw<InvalidOperationException>();
         ((Action)(() => beneficio.Conceder(null, Hoje))).Should().Throw<InvalidOperationException>();
         ((Action)(() => beneficio.Indeferir("motivo", Hoje))).Should().Throw<InvalidOperationException>();
@@ -185,8 +217,7 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
     public void Invariante_8_entrega_de_cesta_quantidade_zero_e_rejeitada()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
-        beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), null, Hoje);
+        AvaliarEventual(beneficio, Renda(100m));
 
         ((Action)(() => beneficio.EntregarCestaBasica(0, Hoje))).Should().Throw<ArgumentOutOfRangeException>();
     }
@@ -195,9 +226,8 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
     public void Invariante_9_concessao_de_cesta_com_valor_nulo_e_permitida()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
 
-        beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), valorConcedido: null, Hoje);
+        AvaliarEventual(beneficio, Renda(100m), valor: null);
 
         beneficio.Situacao.Should().Be(SituacaoBeneficio.Concedida);
         beneficio.Valor.Should().BeNull();
@@ -257,8 +287,7 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
     public void Transicao_entregar_cesta_mantem_concedida()
     {
         var beneficio = Solicitar(TipoBeneficio.Eventual);
-        var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
-        beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), null, Hoje);
+        AvaliarEventual(beneficio, Renda(100m));
 
         beneficio.EntregarCestaBasica(3, Hoje);
 
@@ -268,17 +297,17 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
         beneficio.DomainEvents.OfType<CestaBasicaEntregue>().Should().ContainSingle();
     }
 
-    [Fact] // Cenario 10: a regra aplicada e a vigente na competencia (SM diferentes).
-    public void Cenario_10_regra_aplicada_e_a_vigente_na_competencia()
+    [Fact] // Cenario 10 (adaptado A-0): o corte do eventual e o MUNICIPAL aplicado sobre o SM vigente.
+    public void Cenario_10_corte_municipal_aplicado_sobre_o_salario_minimo_vigente()
     {
+        var criterioMunicipal = CriterioEventual(multiploSm: 0.5m);
+
         // Mesma renda (700), SMs distintos: com SM 1412 (1/2 = 706) eventual elegivel; com SM 1100 (1/2 = 550) indeferido.
         var elegivel = Solicitar(TipoBeneficio.Eventual);
-        elegivel.AvaliarElegibilidade(
-            CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, ValorMonetario.De(1412m)), Dados(), Renda(700m), null, Hoje);
+        elegivel.AvaliarElegibilidadeEventual(criterioMunicipal, Renda(700m), ValorMonetario.De(1412m), null, Hoje);
 
         var indeferido = Solicitar(TipoBeneficio.Eventual);
-        indeferido.AvaliarElegibilidade(
-            CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, ValorMonetario.De(1100m)), Dados(), Renda(700m), null, Hoje);
+        indeferido.AvaliarElegibilidadeEventual(criterioMunicipal, Renda(700m), ValorMonetario.De(1100m), null, Hoje);
 
         elegivel.Situacao.Should().Be(SituacaoBeneficio.Concedida);
         indeferido.Situacao.Should().Be(SituacaoBeneficio.Indeferida);
@@ -293,8 +322,7 @@ public sealed class BeneficioFluxoTests : AssistenciaSocialTestBase
         await using (var contexto = CriarContexto(TenantA))
         {
             var beneficio = Solicitar(TipoBeneficio.Eventual);
-            var criterio = CriterioElegibilidade.Vigente(TipoBeneficio.Eventual, SmJunho2026);
-            beneficio.AvaliarElegibilidade(criterio, Dados(), Renda(100m), null, Hoje);
+            AvaliarEventual(beneficio, Renda(100m));
             id = beneficio.Id;
             contexto.Beneficios.Add(beneficio);
             await contexto.SaveChangesAsync();

@@ -12,6 +12,10 @@ export const educacaoKeys = {
     [...educacaoKeys.all, 'diarios', 'matricula', matriculaId] as const,
   frequenciaDoDiario: (diarioId: string) =>
     [...educacaoKeys.all, 'diarios', diarioId, 'frequencia'] as const,
+  fiscal: () => [...educacaoKeys.all, 'fiscal'] as const,
+  mde: (exercicio: number) => [...educacaoKeys.fiscal(), 'mde', exercicio] as const,
+  fundebAplicacao: (exercicio: number) =>
+    [...educacaoKeys.fiscal(), 'fundeb', exercicio, 'aplicacao'] as const,
 };
 
 /** Os endpoints de criação retornam `{ id }` (Results.Ok(new { id })). */

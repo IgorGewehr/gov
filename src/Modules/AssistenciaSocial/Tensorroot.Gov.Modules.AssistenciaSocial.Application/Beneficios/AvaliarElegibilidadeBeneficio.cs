@@ -38,12 +38,18 @@ public sealed record DadosElegibilidadeDto(
 /// <param name="Competencia">Competencia (ano/mes) de referencia.</param>
 /// <param name="Dados">Dados faticos de elegibilidade do requerente.</param>
 /// <param name="Valor">Valor a conceder quando elegivel (nulo em cesta basica/provisao em especie).</param>
+/// <param name="Modalidade">
+/// A-0: modalidade do beneficio EVENTUAL (natalidade/morte/vulnerabilidade temporaria/calamidade) —
+/// obrigatoria quando <paramref name="Tipo"/> e <see cref="TipoBeneficio.Eventual"/>; ignorada nos demais.
+/// O criterio do eventual e 100% de lei municipal (sem teto federal de 1/4 SM revogado).
+/// </param>
 public sealed record AvaliarElegibilidadeBeneficioCommand(
     Guid FamiliaId,
     TipoBeneficio Tipo,
     Competencia Competencia,
     DadosElegibilidadeDto Dados,
-    decimal? Valor) : ICommand<Guid>;
+    decimal? Valor,
+    ModalidadeBeneficioEventual? Modalidade = null) : ICommand<Guid>;
 
 /// <summary>Regras de validacao da avaliacao de elegibilidade.</summary>
 public sealed class AvaliarElegibilidadeBeneficioValidator : AbstractValidator<AvaliarElegibilidadeBeneficioCommand>
@@ -66,6 +72,12 @@ public sealed class AvaliarElegibilidadeBeneficioValidator : AbstractValidator<A
         RuleFor(comando => comando.Dados)
             .NotNull()
             .WithMessage("Dados de elegibilidade sao obrigatorios.");
+
+        // A-0: o eventual exige a modalidade (lei municipal); os demais ignoram.
+        RuleFor(comando => comando.Modalidade)
+            .NotNull()
+            .When(comando => comando.Tipo == TipoBeneficio.Eventual)
+            .WithMessage("Modalidade do beneficio eventual e obrigatoria (lei municipal).");
     }
 }
 
@@ -74,6 +86,7 @@ public sealed class AvaliarElegibilidadeBeneficioHandler(
     IFamiliaRepository familias,
     IBeneficioRepository beneficios,
     IParametroVigenteProvider parametros,
+    ICriterioBeneficioEventualProvider criteriosEventual,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
     TimeProvider timeProvider,
@@ -104,6 +117,26 @@ public sealed class AvaliarElegibilidadeBeneficioHandler(
         var salarioMinimo = await parametros.ObterSalarioMinimoVigenteAsync(request.Competencia, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Salario minimo nao parametrizado para a competencia {request.Competencia}.");
 
+        var valor = request.Valor.HasValue ? ValorMonetario.De(request.Valor.Value) : null;
+
+        if (request.Tipo == TipoBeneficio.Eventual)
+        {
+            // A-0: beneficio eventual NAO tem teto federal de 1/4 SM (revogado pela Lei 12.435/2011).
+            // O criterio (modalidade + corte de renda, ou sem corte) vem 100% da lei municipal versionada.
+            var modalidade = request.Modalidade
+                ?? throw new InvalidOperationException("Modalidade do beneficio eventual e obrigatoria (lei municipal).");
+
+            var criterioMunicipal = await criteriosEventual.ObterCriterioVigenteAsync(modalidade, request.Competencia, cancellationToken).ConfigureAwait(false)
+                ?? throw new InvalidOperationException(
+                    $"Lei municipal nao habilita/parametriza a modalidade {modalidade} de beneficio eventual para a competencia {request.Competencia}. " +
+                    "Nao se aplica default federal (sem teto de 1/4 SM revogado).");
+
+            beneficio.AvaliarElegibilidadeEventual(criterioMunicipal, familia.RendaPerCapita, salarioMinimo, valor, hoje);
+
+            await PersistirEPublicarAsync(beneficio, cancellationToken).ConfigureAwait(false);
+            return beneficio.Id.Value;
+        }
+
         var criterio = CriterioElegibilidade.Vigente(request.Tipo, salarioMinimo);
 
         var dados = new DadosElegibilidade(
@@ -115,9 +148,7 @@ public sealed class AvaliarElegibilidadeBeneficioHandler(
             familia.RendaPerCapita.Valor,
             Math.Max(familia.Membros.Count, 1));
 
-        var valor = request.Valor.HasValue ? ValorMonetario.De(request.Valor.Value) : null;
-
-        // I-2/I-3/I-4: decisao por criterio vigente, despachada para Conceder ou Indeferir.
+        // I-2/I-3: decisao por criterio FEDERAL vigente (BPC/PBF), despachada para Conceder ou Indeferir.
         beneficio.AvaliarElegibilidade(criterio, dados, familia.RendaPerCapita, valor, hoje);
 
         await PersistirEPublicarAsync(beneficio, cancellationToken).ConfigureAwait(false);

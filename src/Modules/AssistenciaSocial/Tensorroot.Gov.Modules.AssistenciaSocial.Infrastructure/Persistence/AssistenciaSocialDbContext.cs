@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Beneficios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Familias;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Lookups;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Parametros;
@@ -35,6 +36,15 @@ public sealed class AssistenciaSocialDbContext(DbContextOptions<AssistenciaSocia
 
     /// <summary>Parametros versionados por vigencia (ex.: salario minimo), parametrizaveis por tenant.</summary>
     public DbSet<ParametroVigente> ParametrosVigentes => Set<ParametroVigente>();
+
+    /// <summary>A-0: criterios MUNICIPAIS de beneficio eventual versionados (sem teto federal de 1/4 SM revogado).</summary>
+    public DbSet<CriterioBeneficioEventualMunicipal> CriteriosBeneficioEventual => Set<CriterioBeneficioEventualMunicipal>();
+
+    /// <summary>A-1: Fundo Municipal de Assistencia Social (FMAS) — execucao segregada por bloco/piso SUAS.</summary>
+    public DbSet<FundoMunicipalAssistencia> FundosMunicipaisAssistencia => Set<FundoMunicipalAssistencia>();
+
+    /// <summary>A-2: Registros Mensais de Atendimentos (RMA) consolidados do Prontuario SUAS.</summary>
+    public DbSet<RegistroMensalAtendimento> RegistrosMensaisAtendimento => Set<RegistroMensalAtendimento>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

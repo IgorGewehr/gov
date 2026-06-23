@@ -22,9 +22,16 @@ public readonly record struct ResultadoElegibilidade(bool Elegivel, string Motiv
 }
 
 /// <summary>
-/// Encapsula os limiares vigentes na competencia (renda, idade, vedacoes) e decide a elegibilidade.
-/// Nunca hardcoded: recebe o salario minimo vigente da competencia (Beneficio I-1). O salario
-/// minimo e parametrizado por vigencia e informado pelo chamador (CLAUDE.md secao 7).
+/// Encapsula os limiares vigentes na competencia (renda, idade, vedacoes) e decide a elegibilidade
+/// dos beneficios de criterio FEDERAL: BPC (LOAS art. 20 — renda &lt; 1/4 SM, criterio legal vigente)
+/// e PBF (baixa renda). Nunca hardcoded quanto ao valor: recebe o salario minimo vigente da competencia
+/// (Beneficio I-1). O salario minimo e parametrizado por vigencia e informado pelo chamador (CLAUDE.md
+/// secao 7).
+/// <para>
+/// <b>A-0 (risco juridico):</b> o BENEFICIO EVENTUAL NAO e avaliado aqui — seu criterio e 100% de LEI
+/// MUNICIPAL (<see cref="CriterioBeneficioEventual"/>), sem teto federal de "1/4 SM" (revogado pela Lei
+/// 12.435/2011). Encaminhar eventual por aqui lanca, para impedir reintroducao do teto revogado.
+/// </para>
 /// </summary>
 public sealed record CriterioElegibilidade
 {
@@ -65,8 +72,10 @@ public sealed record CriterioElegibilidade
         return Tipo switch
         {
             TipoBeneficio.Bpc => AvaliarBpc(dados, rendaPerCapita),
-            TipoBeneficio.Eventual => AvaliarEventual(rendaPerCapita),
             TipoBeneficio.Pbf => AvaliarPbf(rendaPerCapita),
+            // A-0: eventual jamais e decidido por criterio federal — usa CriterioBeneficioEventual (lei municipal).
+            TipoBeneficio.Eventual => throw new InvalidOperationException(
+                "Beneficio eventual e avaliado por CriterioBeneficioEventual (lei municipal), nunca por criterio federal (sem teto de 1/4 SM revogado)."),
             _ => ResultadoElegibilidade.Negar("Tipo de beneficio nao suportado."),
         };
     }
@@ -94,14 +103,6 @@ public sealed record CriterioElegibilidade
         }
 
         return ResultadoElegibilidade.Aprovar();
-    }
-
-    private ResultadoElegibilidade AvaliarEventual(RendaPerCapita rendaPerCapita)
-    {
-        // I-4/B-2: renda per capita <= 1/2 do salario minimo vigente.
-        return rendaPerCapita.EhAteMeioSalario(SalarioMinimoVigente.Valor)
-            ? ResultadoElegibilidade.Aprovar()
-            : ResultadoElegibilidade.Negar("Renda per capita superior a 1/2 do salario minimo vigente.");
     }
 
     private ResultadoElegibilidade AvaliarPbf(RendaPerCapita rendaPerCapita)

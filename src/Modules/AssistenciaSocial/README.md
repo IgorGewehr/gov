@@ -49,8 +49,8 @@ Bounded Context da **gestão municipal do SUAS** (Sistema Único de Assistência
 
 ## 5. Regras de Negócio Críticas
 - **Elegibilidade CadÚnico:** renda per capita **≤ ½ salário mínimo**; **atualização obrigatória a cada 24 meses** ou **imediata** em mudança de endereço/renda/composição.
-- **BPC:** exige **idade ≥ 65 anos** OU **PCD** (avaliação biopsicossocial) e renda per capita **< ¼ do salário mínimo**; **não acumula** com outro benefício da Seguridade Social.
-- **Benefícios eventuais:** renda **≤ ½ SM**, com **preferência a inscritos no CadÚnico**; provisão temporária e excepcional.
+- **BPC:** exige **idade ≥ 65 anos** OU **PCD** (avaliação biopsicossocial) e renda per capita **< ¼ do salário mínimo** (critério **federal vigente** — LOAS art. 20); **não acumula** com outro benefício da Seguridade Social.
+- **Benefícios eventuais (A-0 — correção jurídica):** **NÃO há teto federal de “¼ do salário mínimo”** — esse limite, antiga referência da LOAS, foi **revogado pela Lei 12.435/2011**. O critério de elegibilidade (modalidade habilitada — natalidade/morte/vulnerabilidade temporária/calamidade — e eventual corte de renda) é **100% de lei/decreto municipal + CMAS** (LOAS art. 22; Decreto 6.307/2007), **parametrizável por tenant+vigência, sem default federal embutido**. O corte de renda municipal é expresso como **múltiplo do salário mínimo vigente** (parâmetro), podendo ser superior a ¼ SM; quando a lei municipal não fixa corte, a modalidade decorre do fato gerador (concede independentemente da renda). Indeferir indevidamente por um teto revogado é **risco jurídico**. Provisão temporária e excepcional, com preferência a inscritos no CadÚnico.
 - **Oferta por unidade:** **PAIF só em CRAS**; **PAEFI só em CREAS** — bloquear oferta incompatível com o tipo de unidade.
 - **Parametrização por tenant:** valor do salário mínimo, prazos e critérios são **versionados por vigência** (aplica-se a regra vigente na competência), nunca *hardcoded*.
 
@@ -93,15 +93,21 @@ Bounded Context da **gestão municipal do SUAS** (Sistema Único de Assistência
 - **Quando** se tenta ofertar **PAEFI** (exclusivo de CREAS)
 - **Então** a operação é rejeitada por invariante de domínio e nenhum evento é publicado.
 
-**Cenário: Concessão de cesta básica (benefício eventual)**
-- **Dado** uma família inscrita no CadÚnico com renda **≤ ½ SM** e situação de vulnerabilidade temporária
-- **Quando** o benefício eventual é concedido e a cesta é entregue
-- **Então** `BeneficioConcedido` e `CestaBasicaEntregue` são publicados, com trilha de auditoria.
+**Cenário: Concessão de benefício eventual conforme lei municipal (A-0)**
+- **Dado** uma família em vulnerabilidade temporária com renda per capita **acima de ¼ SM** (teto federal **revogado**)
+- **E** uma lei municipal que admite a modalidade com corte de renda **superior a ¼ SM** (ou sem corte)
+- **Quando** o benefício eventual é avaliado pelo `CriterioBeneficioEventual` (lei municipal versionada)
+- **Então** o benefício é **concedido** (não se aplica o teto revogado de ¼ SM), `BeneficioConcedido` é publicado, com trilha de auditoria.
 
-**Cenário: Consolidação mensal do RMA**
-- **Dado** os atendimentos registrados por uma unidade na competência
-- **Quando** o RMA da unidade é fechado
-- **Então** o `RegistroMensal` é consolidado, `RmaConsolidada` é publicado e o consolidado fica pronto para exportação ao SAGI/MDS.
+**Cenário: Consolidação mensal do RMA a partir do Prontuário (A-2)**
+- **Dado** os atendimentos (PAIF/PAEFI/SCFV) registrados nos prontuários de uma unidade na competência
+- **Quando** o RMA da unidade é consolidado (derivado do prontuário, sem dupla digitação) e fechado
+- **Então** o `RegistroMensalAtendimento` é consolidado por serviço, `RmaFechado`/`RmaFechadoIntegrationEvent` é publicado e o consolidado fica pronto para o envio ao SAGI/MDS.
+
+**Cenário: Execução segregada do FMAS por bloco/piso (A-1)**
+- **Dado** um Fundo Municipal de Assistência Social com parcelas do FNAS recebidas em blocos distintos (PSB, PSE-MC, PSE-AC, Gestão/IGD — Port. 1.043/2024)
+- **Quando** uma despesa é executada num bloco/piso
+- **Então** o saldo é debitado **apenas** na conta do bloco/piso/fonte correspondente, e a **transposição livre entre blocos/pisos é vedada**.
 
 **⭐ Cenário: Acesso sigiloso ao prontuário**
 - **Dado** um `Prontuario` com dados sensíveis de violação de direitos de criança

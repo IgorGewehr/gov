@@ -29,6 +29,9 @@ const RegulacaoListPage = lazy(() =>
 const RegulacaoDetailPage = lazy(() =>
   import('./RegulacaoDetailPage').then((m) => ({ default: m.RegulacaoDetailPage })),
 );
+const FiscalSaudePainelPage = lazy(() =>
+  import('./FiscalSaudePainelPage').then((m) => ({ default: m.FiscalSaudePainelPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'saude',
@@ -42,6 +45,7 @@ const MODULE: ModuleDefinition = {
         { path: 'atendimentos/:atendimentoId', element: <AtendimentoDetailPage /> },
         { path: 'regulacao', element: <RegulacaoListPage /> },
         { path: 'regulacao/:solicitacaoId', element: <RegulacaoDetailPage /> },
+        { path: 'fiscal', element: <FiscalSaudePainelPage /> },
       ],
     },
   ],

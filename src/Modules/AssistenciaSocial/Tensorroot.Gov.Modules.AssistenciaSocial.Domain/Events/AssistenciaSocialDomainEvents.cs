@@ -1,5 +1,6 @@
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Beneficios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Familias;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Fiscal;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
@@ -80,3 +81,17 @@ public sealed record CestaBasicaEntregue(
     Guid FamiliaId,
     int Quantidade,
     DateOnly DataEntrega) : IDomainEvent;
+
+/// <summary>
+/// A-2: o RMA de uma unidade foi fechado numa competencia, selando-a para envio ao MDS (RMA/SAGI).
+/// Carrega apenas volumes agregados — nunca dado sigiloso identificavel (LGPD art. 11).
+/// </summary>
+/// <param name="RegistroMensalAtendimentoId">Identificador do RMA fechado.</param>
+/// <param name="UnidadeAtendimentoId">Unidade (CRAS/CREAS/Centro POP) consolidada.</param>
+/// <param name="Competencia">Competencia (ano/mes) de referencia.</param>
+/// <param name="TotalAtendimentos">Total de atendimentos consolidados na competencia.</param>
+public sealed record RmaFechado(
+    RegistroMensalAtendimentoId RegistroMensalAtendimentoId,
+    Guid UnidadeAtendimentoId,
+    Competencia Competencia,
+    int TotalAtendimentos) : IDomainEvent;

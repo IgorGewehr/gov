@@ -95,7 +95,7 @@ public sealed class LgA2BaseLegalEnforcementTests : IDisposable
         leituras.Should().BeEmpty();
     }
 
-    private async Task<TResponse> ExecutarComBehavior<TRequest, TResponse>(
+    private static async Task<TResponse> ExecutarComBehavior<TRequest, TResponse>(
         SaudeDbContext contexto,
         ScopeDbContextHolder holder,
         TRequest request,

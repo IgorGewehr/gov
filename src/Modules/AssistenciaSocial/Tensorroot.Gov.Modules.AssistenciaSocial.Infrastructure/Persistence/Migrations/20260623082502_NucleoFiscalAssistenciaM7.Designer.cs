@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AssistenciaSocialDbContext))]
-    partial class AssistenciaSocialDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623082502_NucleoFiscalAssistenciaM7")]
+    partial class NucleoFiscalAssistenciaM7
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
