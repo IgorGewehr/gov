@@ -9,6 +9,8 @@ const ITENS: ReadonlyArray<SubNavItem> = [
   { to: '/transparencia', label: 'Remessas TCE-RS', icon: 'fas fa-paper-plane', end: true, perm: 'transparencia.ver' },
   { to: '/transparencia/declaracoes-fiscais', label: 'Declarações fiscais', icon: 'fas fa-file-invoice', perm: 'transparencia.ver' },
   { to: '/transparencia/minimos', label: 'Mínimos constitucionais', icon: 'fas fa-scale-balanced', perm: 'transparencia.ver' },
+  { to: '/transparencia/esic', label: 'e-SIC (LAI)', icon: 'fas fa-comments', perm: 'transparencia.esic.ver' },
+  { to: '/transparencia/dados-abertos', label: 'Dados abertos', icon: 'fas fa-database', perm: 'transparencia.ver' },
 ];
 
 /** Abas de navegação entre as seções consultáveis do módulo Transparência. */

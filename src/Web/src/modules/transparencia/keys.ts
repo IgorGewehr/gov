@@ -1,6 +1,7 @@
 // Query keys do módulo Transparência (fonte única para invalidação consistente).
 import type { ListarRemessasParams } from './remessa.api';
 import type { ListarDeclaracoesParams } from './declaracao-fiscal.api';
+import type { ListarPedidosParams } from './esic.api';
 
 export const transparenciaKeys = {
   all: ['transparencia'] as const,
@@ -16,6 +17,10 @@ export const transparenciaKeys = {
   fiscal: () => [...transparenciaKeys.all, 'fiscal'] as const,
   minimos: (exercicio: number) => [...transparenciaKeys.fiscal(), 'minimos', exercicio] as const,
   asps: (exercicio: number) => [...transparenciaKeys.fiscal(), 'asps', exercicio] as const,
+  esicAll: () => [...transparenciaKeys.all, 'esic'] as const,
+  esicLista: (params: ListarPedidosParams) =>
+    [...transparenciaKeys.esicAll(), 'lista', params] as const,
+  esic: (pedidoId: string) => [...transparenciaKeys.esicAll(), 'detalhe', pedidoId] as const,
 };
 
 /** Resposta dos endpoints de criação (POST) — `{ id }`. */

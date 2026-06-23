@@ -25,6 +25,9 @@ const ServidorFichaPage = lazy(() =>
 const AfastamentosServidorPage = lazy(() =>
   import('./AfastamentosServidorPage').then((m) => ({ default: m.AfastamentosServidorPage })),
 );
+const ConsignacoesServidorPage = lazy(() =>
+  import('./ConsignacoesServidorPage').then((m) => ({ default: m.ConsignacoesServidorPage })),
+);
 const CargosListPage = lazy(() =>
   import('./CargosListPage').then((m) => ({ default: m.CargosListPage })),
 );
@@ -73,6 +76,7 @@ const MODULE: ModuleDefinition = {
         { index: true, element: <ServidoresListPage /> },
         { path: 'servidores/:servidorId/ficha', element: <ServidorFichaPage /> },
         { path: 'servidores/:servidorId/afastamentos', element: <AfastamentosServidorPage /> },
+        { path: 'servidores/:servidorId/consignacoes', element: <ConsignacoesServidorPage /> },
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },

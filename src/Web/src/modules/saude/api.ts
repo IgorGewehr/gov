@@ -10,3 +10,6 @@ export * from './profissional.api';
 export * from './atendimento.api';
 export * from './regulacao.api';
 export * from './fiscal.api';
+export * from './agendamento.api';
+export * from './agenda.api';
+export * from './filaEspera.api';

@@ -25,6 +25,13 @@ export const saudeKeys = {
   fiscal: () => [...saudeKeys.all, 'fiscal'] as const,
   asps: (exercicio: number) => [...saudeKeys.fiscal(), 'asps', exercicio] as const,
   execucaoFms: (fundoId: string) => [...saudeKeys.fiscal(), 'fms', fundoId, 'execucao'] as const,
+  agendas: () => [...saudeKeys.all, 'agendas'] as const,
+  agenda: (id: string) => [...saudeKeys.agendas(), 'detalhe', id] as const,
+  vagasLivres: (filtro: unknown) => [...saudeKeys.agendas(), 'vagas', filtro] as const,
+  agendamentos: () => [...saudeKeys.all, 'agendamentos-marcacao'] as const,
+  agendamentosBusca: (filtro: unknown) => [...saudeKeys.agendamentos(), 'busca', filtro] as const,
+  filaEspera: () => [...saudeKeys.all, 'fila-espera'] as const,
+  filaEsperaBusca: (filtro: unknown) => [...saudeKeys.filaEspera(), 'busca', filtro] as const,
 };
 
 /** Resposta dos endpoints de criação (POST) do módulo: `{ id }`. */

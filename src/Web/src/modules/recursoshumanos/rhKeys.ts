@@ -57,6 +57,12 @@ export const rhKeys = {
   meuInformeRendimentos: (ano: number) =>
     [...rhKeys.minhaFolha(), 'informe-rendimentos', ano] as const,
 
+  consignatarias: () => [...rhKeys.all, 'consignatarias'] as const,
+  margem: (servidorId: string, ano: number, mes: number) =>
+    [...rhKeys.all, 'margem', servidorId, ano, mes] as const,
+  consignacoesDoServidor: (servidorId: string) =>
+    [...rhKeys.all, 'consignacoes', 'servidor', servidorId] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

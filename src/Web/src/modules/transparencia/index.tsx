@@ -21,6 +21,15 @@ const DeclaracaoFiscalDetailPage = lazy(() =>
 const PainelMinimosPage = lazy(() =>
   import('./PainelMinimosPage').then((m) => ({ default: m.PainelMinimosPage })),
 );
+const EsicListPage = lazy(() =>
+  import('./EsicListPage').then((m) => ({ default: m.EsicListPage })),
+);
+const EsicDetailPage = lazy(() =>
+  import('./EsicDetailPage').then((m) => ({ default: m.EsicDetailPage })),
+);
+const DadosAbertosPage = lazy(() =>
+  import('./DadosAbertosPage').then((m) => ({ default: m.DadosAbertosPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'transparencia',
@@ -34,6 +43,9 @@ const MODULE: ModuleDefinition = {
         { path: 'declaracoes-fiscais', element: <DeclaracaoFiscalListPage /> },
         { path: 'declaracoes-fiscais/:id', element: <DeclaracaoFiscalDetailPage /> },
         { path: 'minimos', element: <PainelMinimosPage /> },
+        { path: 'esic', element: <EsicListPage /> },
+        { path: 'esic/:id', element: <EsicDetailPage /> },
+        { path: 'dados-abertos', element: <DadosAbertosPage /> },
       ],
     },
   ],

@@ -17,3 +17,4 @@ export * from './cicloAnual.api';
 export * from './ponto.api';
 export * from './esocial.api';
 export * from './minhaFolha.api';
+export * from './consignacao.api';

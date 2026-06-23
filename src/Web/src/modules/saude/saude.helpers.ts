@@ -1,6 +1,13 @@
 // Helpers de apresentação compartilhados pelas telas do módulo Saúde.
 import type { TagVariant } from '../../components/ui';
-import type { ModalidadeAtendimento, Prioridade, Sexo } from './api';
+import type {
+  ModalidadeAtendimento,
+  Prioridade,
+  Sexo,
+  OrigemCancelamento,
+  PrioridadeAgendamento,
+  TipoAtendimentoAgenda,
+} from './api';
 
 /** Mapeia a situação de um atendimento para a variante semântica da Tag. */
 export function situacaoAtendimentoVariant(situacao: string): TagVariant {
@@ -176,4 +183,141 @@ export function regulacaoEmAnalise(situacao: string): boolean {
 /** Solicitação autorizada — admite execução. */
 export function regulacaoAutorizada(situacao: string): boolean {
   return situacao === 'Autorizada';
+}
+
+// --- Agendamento / Agenda / Fila de espera ---
+
+/** Mapeia a situação do agendamento (nome do enum) para a variante da Tag. */
+export function situacaoAgendamentoVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Marcado':
+      return 'warning';
+    case 'Confirmado':
+      return 'info';
+    case 'Realizado':
+      return 'success';
+    case 'Cancelado':
+    case 'Falta':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Mapeia a situação da grade de disponibilidade para a variante da Tag. */
+export function situacaoAgendaVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Rascunho':
+      return 'default';
+    case 'Aberta':
+      return 'success';
+    case 'Bloqueada':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Mapeia a situação de uma entrada da fila de espera para a variante da Tag. */
+export function situacaoFilaVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Aguardando':
+      return 'warning';
+    case 'Convocado':
+      return 'info';
+    case 'Atendido':
+      return 'success';
+    case 'Removido':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Mapeia a prioridade do agendamento/fila (nome do enum) para a variante da Tag. */
+export function prioridadeAgendamentoVariant(prioridade: string): TagVariant {
+  switch (prioridade) {
+    case 'Eletiva':
+      return 'default';
+    case 'Prioritaria':
+      return 'info';
+    case 'Urgente':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Opções de natureza do atendimento agendado (TipoAtendimentoAgenda). */
+export const opcoesTipoAgenda: { value: string; label: string }[] = [
+  { value: '1', label: 'Consulta' },
+  { value: '2', label: 'Exame' },
+];
+
+/** Opções de prioridade do agendamento (PrioridadeAgendamento). */
+export const opcoesPrioridadeAgendamento: { value: string; label: string }[] = [
+  { value: '1', label: 'Eletiva' },
+  { value: '2', label: 'Prioritária' },
+  { value: '3', label: 'Urgente' },
+];
+
+/** Opções de situação do agendamento (nome do enum — igualdade exata no backend). */
+export const opcoesSituacaoAgendamento: { value: string; label: string }[] = [
+  { value: 'Marcado', label: 'Marcado' },
+  { value: 'Confirmado', label: 'Confirmado' },
+  { value: 'Realizado', label: 'Realizado' },
+  { value: 'Cancelado', label: 'Cancelado' },
+  { value: 'Falta', label: 'Falta' },
+];
+
+/** Opções de situação da fila de espera (nome do enum). */
+export const opcoesSituacaoFila: { value: string; label: string }[] = [
+  { value: 'Aguardando', label: 'Aguardando' },
+  { value: 'Convocado', label: 'Convocado' },
+  { value: 'Atendido', label: 'Atendido' },
+  { value: 'Removido', label: 'Removido' },
+];
+
+/** Opções de origem do cancelamento (OrigemCancelamento). */
+export const opcoesOrigemCancelamento: { value: string; label: string }[] = [
+  { value: '1', label: 'Paciente' },
+  { value: '2', label: 'Unidade/Gestão' },
+  { value: '3', label: 'Profissional' },
+];
+
+/** Converte o valor de um <select> em TipoAtendimentoAgenda (default: 1 — Consulta). */
+export function paraTipoAgenda(valor: string): TipoAtendimentoAgenda {
+  return valor === '2' ? 2 : 1;
+}
+
+/** Converte o valor de um <select> em PrioridadeAgendamento (default: 1 — Eletiva). */
+export function paraPrioridadeAgendamento(valor: string): PrioridadeAgendamento {
+  const n = Number(valor);
+  return n === 2 || n === 3 ? (n as PrioridadeAgendamento) : 1;
+}
+
+/** Converte o valor de um <select> em OrigemCancelamento (default: 2 — Unidade). */
+export function paraOrigemCancelamento(valor: string): OrigemCancelamento {
+  const n = Number(valor);
+  return n === 1 || n === 3 ? (n as OrigemCancelamento) : 2;
+}
+
+/** Agendamento ativo (Marcado/Confirmado) — admite cancelar/falta/realizar. */
+export function agendamentoAtivo(situacao: string): boolean {
+  return situacao === 'Marcado' || situacao === 'Confirmado';
+}
+
+/** Agendamento somente marcado — admite confirmação. */
+export function agendamentoMarcado(situacao: string): boolean {
+  return situacao === 'Marcado';
+}
+
+/** Entrada da fila aguardando — admite convocação. */
+export function filaAguardando(situacao: string): boolean {
+  return situacao === 'Aguardando';
+}
+
+/** Entrada da fila ainda não terminal — admite remoção. */
+export function filaRemovivel(situacao: string): boolean {
+  return situacao === 'Aguardando' || situacao === 'Convocado';
 }
