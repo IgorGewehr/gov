@@ -1,5 +1,4 @@
 using FluentAssertions;
-using MediatR;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Contracts;
@@ -27,24 +26,6 @@ public sealed class FecharFolhaRemessaTceBridgeTests : RecursosHumanosTestBase
         public List<IIntegrationEvent> Enfileirados { get; } = [];
 
         public void Enfileirar(IIntegrationEvent integrationEvent) => Enfileirados.Add(integrationEvent);
-    }
-
-    private sealed class PublisherSpy : IPublisher
-    {
-        public List<object> Publicados { get; } = [];
-
-        public Task Publish(object notification, CancellationToken cancellationToken = default)
-        {
-            Publicados.Add(notification);
-            return Task.CompletedTask;
-        }
-
-        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
-            where TNotification : INotification
-        {
-            Publicados.Add(notification!);
-            return Task.CompletedTask;
-        }
     }
 
     [Fact] // Fechar folha enfileira o resumo da remessa TCE com servidores, rubricas e lancamentos.
@@ -91,7 +72,6 @@ public sealed class FecharFolhaRemessaTceBridgeTests : RecursosHumanosTestBase
                 new RubricaFolhaRepository(ctx),
                 ctx,
                 writer,
-                new PublisherSpy(),
                 TimeProvider.System);
 
             await handler.Handle(new FecharFolhaCommand(folhaId), default);
@@ -103,6 +83,12 @@ public sealed class FecharFolhaRemessaTceBridgeTests : RecursosHumanosTestBase
             resumo.Rubricas.Should().HaveCount(2);
             resumo.Lancamentos.Should().HaveCount(2);
             resumo.Lancamentos.Should().Contain(lancamento => lancamento.Operacao == "D" && lancamento.Valor == 1_120m);
+
+            // H5: TODOS os integration events cross-module saem pelo Outbox (nunca via IPublisher in-process),
+            // para que o consumidor (Financas/Educacao/Painel) resolva o proprio DbContext em escopo isolado.
+            writer.Enfileirados.OfType<DespesaPessoalApuradaIntegrationEvent>().Should().ContainSingle();
+            writer.Enfileirados.OfType<FolhaFechadaIntegrationEvent>().Should().ContainSingle();
+            writer.Enfileirados.OfType<RemuneracaoMagisterioApuradaIntegrationEvent>().Should().ContainSingle();
         }
     }
 }

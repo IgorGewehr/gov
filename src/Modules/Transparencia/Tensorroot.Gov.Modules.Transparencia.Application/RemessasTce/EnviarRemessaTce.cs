@@ -37,7 +37,7 @@ public sealed class RegistrarProtocoloTceValidator : AbstractValidator<Registrar
 public sealed class RegistrarProtocoloTceHandler(
     IRemessaTceRepository remessas,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    IIntegrationEventWriter integrationEvents,
     TimeProvider timeProvider)
     : ICommandHandler<RegistrarProtocoloTceCommand>
 {
@@ -53,8 +53,11 @@ public sealed class RegistrarProtocoloTceHandler(
 
         // Ato humano: grava o protocolo/recibo retornado pelo portal (sem POST de envio).
         remessa.RegistrarProtocolo(request.Protocolo, request.DataRecibo);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        // Ponte Transparencia -> Painel do Gestor (M8): a remessa transmitida ao TCE-RS conta na prontidão
+        // de prestação de contas. Enfileirado no Outbox na MESMA transação — NUNCA publicado in-process: o
+        // consumidor (PainelGestor) resolve o PainelGestorDbContext em escopo PRÓPRIO ao drenar
+        // (ScopedOutboxMessageDispatcher), evitando dois ModuleDbContext no escopo da requisição (guarda H5).
         var evento = new RemessaEnviadaTceIntegrationEvent(
             Guid.NewGuid(),
             timeProvider.GetUtcNow().UtcDateTime,
@@ -62,7 +65,8 @@ public sealed class RegistrarProtocoloTceHandler(
             remessa.Id.Value,
             remessa.Periodo.ToString(),
             remessa.DataEnvio!.Value);
+        integrationEvents.Enfileirar(evento);
 
-        await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

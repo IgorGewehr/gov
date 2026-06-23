@@ -1,6 +1,7 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
+using Tensorroot.Gov.Modules.Financas.Contracts;
 using Tensorroot.Gov.Modules.Financas.Domain.Pagamentos;
 
 namespace Tensorroot.Gov.Modules.Financas.Application.Pagamentos;
@@ -22,7 +23,9 @@ public sealed class EfetuarPagamentoHandler(
     IOrdemDePagamentoRepository ordens,
     ILiquidacaoRepository liquidacoes,
     IEmpenhoRepository empenhos,
-    IUnitOfWork unitOfWork) : ICommandHandler<EfetuarPagamentoCommand>
+    IUnitOfWork unitOfWork,
+    IIntegrationEventWriter integrationEvents,
+    TimeProvider timeProvider) : ICommandHandler<EfetuarPagamentoCommand>
 {
     /// <inheritdoc />
     public async Task Handle(EfetuarPagamentoCommand request, CancellationToken cancellationToken)
@@ -47,6 +50,20 @@ public sealed class EfetuarPagamentoHandler(
         }
 
         ordem.Efetuar();
+
+        // 3º estágio da despesa (art. 64): dado aberto (LAI/TCE-RS) e fecha o trio
+        // empenhado/liquidado/pago no Painel do Gestor. Enfileirado no Outbox na MESMA transação.
+        var evento = new PagamentoEfetuadoIntegrationEvent(
+            Guid.NewGuid(),
+            timeProvider.GetUtcNow().UtcDateTime,
+            ordem.TenantId,
+            ordem.Id.Value,
+            ordem.Numero,
+            ordem.ValorTotal.Valor,
+            ordem.DataPagamento);
+
+        integrationEvents.Enfileirar(evento);
+
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

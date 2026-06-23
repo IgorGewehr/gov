@@ -34,7 +34,7 @@ roteiros parametrizáveis (eventos contábeis) e projeção do Balancete. Spec o
 | ReceitaArrecadada | D 6.2.1.1 / C 6.2.1.2 ; D Caixa / C VPA | Orçamentária + Patrimonial |
 
 <!-- manifest
-commands: SemearPlanoDeContas, RegistrarLancamentoManual, GerarMsc
+commands: SemearPlanoDeContas, RegistrarLancamentoManual, GerarMsc, RegistrarReceitaCorrenteLiquida
 queries: ConsultarBalancete, ConsultarRazao, ListarPlanoDeContas, GerarBalancoOrcamentario, GerarBalancoFinanceiro, GerarBalancoPatrimonial, GerarDvp
 domainEvents: ContaContabilCriada, LancamentoContabilRegistrado, LancamentoContabilEstornado, ReceitaArrecadadaRegistrada
 integrationEventsPublished: MSCGeradaIntegrationEvent, ReceitaCorrenteLiquidaApuradaIntegrationEvent

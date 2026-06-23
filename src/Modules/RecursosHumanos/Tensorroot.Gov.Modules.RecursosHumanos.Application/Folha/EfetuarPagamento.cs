@@ -35,7 +35,7 @@ public sealed class EfetuarPagamentoValidator : AbstractValidator<EfetuarPagamen
 public sealed class EfetuarPagamentoHandler(
     IFolhaDePagamentoRepository folhas,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    IIntegrationEventWriter integrationEvents,
     TimeProvider timeProvider)
     : ICommandHandler<EfetuarPagamentoCommand>
 {
@@ -49,8 +49,9 @@ public sealed class EfetuarPagamentoHandler(
 
         // I-9: o agregado garante que so paga a partir de Fechada.
         folha.EfetuarPagamento(request.DataPagamento);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        // Enfileirado no Outbox na MESMA transação — despacho isolado por módulo ao drenar evita resolver
+        // o contexto de um módulo consumidor (ex.: Painel do Gestor) no escopo da requisição do RH (guarda H5).
         var evento = new PagamentoEfetuadoIntegrationEvent(
             Guid.NewGuid(),
             timeProvider.GetUtcNow().UtcDateTime,
@@ -59,7 +60,8 @@ public sealed class EfetuarPagamentoHandler(
             folha.Competencia.ToString(),
             folha.TotalLiquido.Valor,
             request.DataPagamento);
+        integrationEvents.Enfileirar(evento);
 
-        await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

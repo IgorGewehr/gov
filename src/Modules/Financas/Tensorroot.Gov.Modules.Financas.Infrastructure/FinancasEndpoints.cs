@@ -10,6 +10,7 @@ using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Msc;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Queries;
 using Tensorroot.Gov.Modules.Financas.Application.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Application.Empenhos;
+using Tensorroot.Gov.Modules.Financas.Application.Fiscal;
 using Tensorroot.Gov.Modules.Financas.Application.Liquidacoes;
 using Tensorroot.Gov.Modules.Financas.Application.Pagamentos;
 using Tensorroot.Gov.Modules.Financas.Application.RestosAPagar;
@@ -33,7 +34,23 @@ internal static class FinancasEndpoints
         MapearPagamentos(grupo);
         MapearRestosAPagar(grupo);
         MapearContabilidade(grupo);
+        MapearFiscal(grupo);
         FinancasPlanejamentoEndpoints.Map(grupo);
+    }
+
+    private static void MapearFiscal(RouteGroupBuilder grupo)
+    {
+        // Registro PARAMETRIZÁVEL da RCL apurada (LRF — denominador do limite de pessoal no Painel do
+        // Gestor). Não há fonte automática de RCL no módulo hoje; o ente informa o valor apurado (RREO)
+        // e o sistema publica o ReceitaCorrenteLiquidaApuradaIntegrationEvent — sem inventar valor.
+        grupo.MapPost("/fiscal/rcl", async (
+            RegistrarRclPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(
+                new RegistrarReceitaCorrenteLiquidaCommand(payload.Exercicio, payload.MesReferencia, payload.ValorRcl),
+                cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
     }
 
     private static void MapearContabilidade(RouteGroupBuilder grupo)
@@ -285,4 +302,6 @@ internal static class FinancasEndpoints
     private sealed record GerarMscPayload(int Exercicio, int Mes, string? PoderOrgao);
 
     private sealed record GerarMscEncerramentoPayload(int Exercicio, string? PoderOrgao);
+
+    private sealed record RegistrarRclPayload(int Exercicio, int MesReferencia, decimal ValorRcl);
 }

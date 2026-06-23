@@ -101,6 +101,16 @@ internal static class TributosEndpoints
             Guid contribuinteId, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterDividasAtivasDoContribuinteQuery(contribuinteId), cancellationToken)))
             .RequirePermission("tributos.ver");
+
+        // 5) QUITAÇÃO — baixa a dívida e publica (Outbox) a receita arrecadada + a posição da dívida ativa
+        // do exercício (consumidos por Finanças e pelo Painel do Gestor). Antes inalcançável por HTTP.
+        grupo.MapPost("/dividas/{dividaAtivaId:guid}/quitar", async (
+            Guid dividaAtivaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new QuitarDividaCommand(dividaAtivaId), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("tributos.gerenciar");
     }
 
     private sealed record InscreverDividaPayload(

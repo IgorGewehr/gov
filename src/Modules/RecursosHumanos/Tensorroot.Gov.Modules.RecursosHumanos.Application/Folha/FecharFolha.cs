@@ -41,7 +41,6 @@ public sealed class FecharFolhaHandler(
     IRubricaFolhaRepository rubricas,
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
-    IPublisher publisher,
     TimeProvider timeProvider)
     : ICommandHandler<FecharFolhaCommand>
 {
@@ -64,9 +63,28 @@ public sealed class FecharFolhaHandler(
         var resumo = await MontarResumoRemessaTceAsync(folha, agoraUtc, cancellationToken).ConfigureAwait(false);
         integrationEvents.Enfileirar(resumo);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        // Ponte RH -> Painel do Gestor (M8): a Despesa com Pessoal da competência (numerador do % da RCL —
+        // LRF art. 19/20; alerta art. 169 CF). Enfileirado no MESMO Outbox/transação do fechamento. O Painel
+        // calcula o % e compara com os limites; aqui só expomos a base bruta da despesa de pessoal.
+        // TODO(validar-oficial): a composição EXATA da Despesa com Pessoal da LRF (art. 18 — encargos
+        // patronais incluídos; exclusões de indenizações/inativos por fundo próprio; cômputo LC 178/2021)
+        // depende da classificação da folha pela rubrica; até o classificador existir, o TotalProventos
+        // (bruto) é a aproximação publicada — o evento é a superfície de contrato do cruzamento.
+        var despesaPessoal = new DespesaPessoalApuradaIntegrationEvent(
+            Guid.NewGuid(),
+            agoraUtc,
+            folha.TenantId,
+            folha.Competencia.Ano,
+            folha.Competencia.Mes,
+            folha.Tipo.ToString(),
+            folha.TotalProventos);
+        integrationEvents.Enfileirar(despesaPessoal);
 
-        var evento = new FolhaFechadaIntegrationEvent(
+        // Ponte RH -> Financas (I-8): a folha fechada gera a despesa de pessoal (empenho/contabilizacao).
+        // Enfileirado no MESMO Outbox/transacao do fechamento — NUNCA publicado in-process: o consumidor
+        // (Financas) resolve o FinancasDbContext em escopo PROPRIO ao drenar (ScopedOutboxMessageDispatcher),
+        // o que evita resolver dois ModuleDbContext distintos no escopo da requisicao do RH (guarda H5).
+        var folhaFechada = new FolhaFechadaIntegrationEvent(
             Guid.NewGuid(),
             agoraUtc,
             folha.TenantId,
@@ -75,12 +93,12 @@ public sealed class FecharFolhaHandler(
             folha.TotalLiquido.Valor,
             // Roteia o empenho por tipo (despesa de pessoal: 13o/ferias/rescisao tem elemento proprio — design §2.4/§4.4).
             folha.Tipo.ToString());
-
-        await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+        integrationEvents.Enfileirar(folhaFechada);
 
         // Ponte RH -> Educacao (M7 E-2): expoe a remuneracao dos profissionais da educacao do exercicio
         // para a afericao do piso de 70% do FUNDEB (EC 108/2020). Publicado por exercicio (ano da
-        // competencia). // TODO(validar-oficial): o ROL exato de "profissionais da educacao basica"
+        // competencia). Tambem via Outbox (mesma transacao, despacho isolado por modulo — guarda H5).
+        // TODO(validar-oficial): o ROL exato de "profissionais da educacao basica"
         // custeados com FUNDEB (divergencia TCE/CNM) deve filtrar a folha por cargo/lotacao/fonte; ate
         // o classificador do magisterio existir, o municipio pode informar o total como parametro na
         // Educacao (RegistrarRemuneracaoMagisterio) — o evento e a superficie de contrato do cruzamento.
@@ -90,8 +108,9 @@ public sealed class FecharFolhaHandler(
             folha.TenantId,
             folha.Competencia.Ano,
             folha.TotalLiquido.Valor);
+        integrationEvents.Enfileirar(remuneracaoMagisterio);
 
-        await publisher.Publish(remuneracaoMagisterio, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<FolhaResumoRemessaTceIntegrationEvent> MontarResumoRemessaTceAsync(

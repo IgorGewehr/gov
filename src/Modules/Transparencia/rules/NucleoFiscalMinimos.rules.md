@@ -162,7 +162,7 @@ fontes_legais:
 | 1.0.0 | 2026-06-23 | Versão inicial — núcleo fiscal M7.0 (M7.0.0 fonte de dados + classificador; M7.0.1 calendário; M7.0.2 parecer de conselho; M7.0.3 ApuradorMinimo Saúde 15%/Educação 25%). Percentuais/funções/contas parametrizáveis e versionados; apuração reprodutível; cross-module só via Contracts de Finanças. |
 
 <!-- manifest
-commands: RegistrarExecucaoFiscal, RegistrarRegraClassificacao
+commands: RegistrarExecucaoFiscal, RegistrarRegraClassificacao, PublicarMinimosConstitucionais
 queries: ApurarMinimos
 domainEvents:
 integrationEventsPublished: MinimoConstitucionalApuradoIntegrationEvent

@@ -26,7 +26,7 @@ public sealed class VencerPrazoRemessaTceValidator : AbstractValidator<VencerPra
 public sealed class VencerPrazoRemessaTceHandler(
     IRemessaTceRepository remessas,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    IIntegrationEventWriter integrationEvents,
     TimeProvider timeProvider)
     : ICommandHandler<VencerPrazoRemessaTceCommand>
 {
@@ -40,8 +40,10 @@ public sealed class VencerPrazoRemessaTceHandler(
 
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         remessa.VencerPrazo(hoje);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        // Ponte Transparencia -> Painel do Gestor (M8): prazo vencido sem envio é risco de bloqueio de
+        // transferências (LRF art. 23 §3º). Enfileirado no Outbox na MESMA transação — despacho isolado por
+        // módulo ao drenar evita dois ModuleDbContext no escopo da requisição (guarda H5).
         var evento = new PrazoRemessaVencidoIntegrationEvent(
             Guid.NewGuid(),
             timeProvider.GetUtcNow().UtcDateTime,
@@ -49,7 +51,8 @@ public sealed class VencerPrazoRemessaTceHandler(
             remessa.Id.Value,
             remessa.Periodo.ToString(),
             remessa.DataLimite);
+        integrationEvents.Enfileirar(evento);
 
-        await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

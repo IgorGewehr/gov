@@ -188,6 +188,11 @@ builder.Services.AddDbContext<AuditoriaReadDbContext>((serviceProvider, options)
     }
 });
 
+// Registro de handlers do Outbox (evento → tipos de handler), capturado da coleção de serviços APÓS
+// todos os módulos terem registrado seus INotificationHandler. Usado pelo ScopedOutboxMessageDispatcher
+// para isolar cada consumidor em escopo próprio (guarda H5 com eventos consumidos por múltiplos módulos).
+builder.Services.AddSingleton(OutboxHandlerRegistry.Construir(builder.Services));
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();

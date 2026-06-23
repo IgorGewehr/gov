@@ -2,6 +2,7 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
+using Tensorroot.Gov.Modules.Financas.Contracts;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ldo;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ppa;
@@ -179,8 +180,19 @@ public sealed class AprovarLoaHandler(
 /// <summary>Coloca a LOA em execução (gera as dotações dos itens via domain event).</summary>
 public sealed record ColocarLoaEmExecucaoCommand(Guid LoaId) : ICommand;
 
-/// <summary>Handler da entrada em execução.</summary>
-public sealed class ColocarLoaEmExecucaoHandler(ILoaRepository loas, IUnitOfWork unitOfWork)
+/// <summary>
+/// Handler da entrada em execução. Ao colocar a LOA em execução nascem as dotações do exercício
+/// (via domain event <c>ItemLoaEntrouEmExecucao</c>, na mesma transação); em seguida publica a
+/// <see cref="DotacaoOrcamentariaPublicadaIntegrationEvent"/> com o TOTAL do exercício — denominador
+/// da execução orçamentária no Painel do Gestor. Enfileirado no Outbox na MESMA transação.
+/// </summary>
+public sealed class ColocarLoaEmExecucaoHandler(
+    ILoaRepository loas,
+    IDotacaoOrcamentariaRepository dotacoes,
+    IUnitOfWork unitOfWork,
+    ITenantContext tenant,
+    IIntegrationEventWriter integrationEvents,
+    TimeProvider timeProvider)
     : ICommandHandler<ColocarLoaEmExecucaoCommand>
 {
     /// <inheritdoc />
@@ -190,7 +202,44 @@ public sealed class ColocarLoaEmExecucaoHandler(ILoaRepository loas, IUnitOfWork
         var loa = await loas.ObterPorIdAsync(new LoaId(request.LoaId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("LOA nao encontrada.");
         loa.EntrarEmExecucao();
+
+        // Publica o total do exercício como denominador da execução (substitui no consumidor por
+        // (Tenant, Exercicio) — idempotente). Aditivo ao ciclo de planejamento.
+        await DotacaoPublisher.PublicarTotalDoExercicioAsync(
+            dotacoes, integrationEvents, tenant, timeProvider, loa.Exercicio, cancellationToken).ConfigureAwait(false);
+
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+}
+
+/// <summary>
+/// Helper de publicação do total de dotação atualizada de um exercício (denominador da execução
+/// orçamentária no Painel do Gestor). Soma as dotações vigentes do exercício e enfileira o evento no
+/// Outbox — reusável pela entrada em execução da LOA e pela abertura de crédito adicional (que altera
+/// a dotação atualizada). A leitura inclui as dotações recém-criadas no change tracker da MESMA
+/// transação (são consultadas via repositório após o domain event tê-las adicionado).
+/// </summary>
+internal static class DotacaoPublisher
+{
+    public static async Task PublicarTotalDoExercicioAsync(
+        IDotacaoOrcamentariaRepository dotacoes,
+        IIntegrationEventWriter integrationEvents,
+        ITenantContext tenant,
+        TimeProvider timeProvider,
+        int exercicio,
+        CancellationToken cancellationToken)
+    {
+        var doExercicio = await dotacoes.ListarPorExercicioAsync(exercicio, cancellationToken).ConfigureAwait(false);
+        var inicial = doExercicio.Aggregate(0m, (acc, d) => acc + d.ValorDotadoInicial.Valor);
+        var atualizada = doExercicio.Aggregate(0m, (acc, d) => acc + d.ValorAtualizado.Valor);
+
+        integrationEvents.Enfileirar(new DotacaoOrcamentariaPublicadaIntegrationEvent(
+            Guid.NewGuid(),
+            timeProvider.GetUtcNow().UtcDateTime,
+            tenant.TenantId,
+            exercicio,
+            inicial,
+            atualizada));
     }
 }
 

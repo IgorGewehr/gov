@@ -52,7 +52,18 @@ internal static class TransparenciaEndpoints
             int exercicio, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ApurarMinimosQuery(exercicio), cancellationToken)))
             .RequirePermission("transparencia.ver");
+
+        // Apura E PUBLICA os mínimos do exercício (MinimoConstitucionalApuradoIntegrationEvent via Outbox)
+        // para o Painel do Gestor exibir o semáforo Saúde/Educação. Mutação (escreve no Outbox).
+        fiscal.MapPost("/minimos/publicar", async (
+            PublicarMinimosPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PublicarMinimosConstitucionaisCommand(payload.Exercicio), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.gerenciar");
     }
+
+    private sealed record PublicarMinimosPayload(int Exercicio);
 
     private static void MapearRemessasTce(RouteGroupBuilder grupo)
     {

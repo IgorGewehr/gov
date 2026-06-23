@@ -68,4 +68,30 @@ public sealed class DividaAtivaRepository(TributosDbContext context) : IDividaAt
         var total = await context.DividasAtivas.LongCountAsync(cancellationToken).ConfigureAwait(false);
         return total + 1;
     }
+
+    /// <inheritdoc />
+    public async Task<PosicaoDividaAtivaProjecao> ObterPosicaoPorExercicioAsync(int exercicio, CancellationToken cancellationToken)
+    {
+        // Agrupa pelo ANO DE INSCRIÇÃO (exercício de constituição do título). Filtra por exercício no SQL
+        // (Global Query Filter já isola o tenant) e consolida em memória — ValorOriginario é VO com value
+        // converter (não traduzível em projeção), então somamos no cliente. Volume por exercício é modesto.
+        var dividas = await context.DividasAtivas
+            .Where(divida => divida.DataInscricao.Year == exercicio)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var inscrito = dividas
+            .Where(d => d.Situacao is not (SituacaoDividaAtiva.Quitada or SituacaoDividaAtiva.Cancelada))
+            .Sum(d => d.ValorOriginario.Valor);
+
+        var ajuizado = dividas
+            .Where(d => d.Situacao == SituacaoDividaAtiva.EmExecucaoFiscal)
+            .Sum(d => d.ValorOriginario.Valor);
+
+        var recuperado = dividas
+            .Where(d => d.Situacao == SituacaoDividaAtiva.Quitada)
+            .Sum(d => d.ValorOriginario.Valor);
+
+        return new PosicaoDividaAtivaProjecao(inscrito, ajuizado, recuperado);
+    }
 }

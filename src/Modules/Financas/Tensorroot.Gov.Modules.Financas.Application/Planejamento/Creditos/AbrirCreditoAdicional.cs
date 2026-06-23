@@ -2,6 +2,7 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
+using Tensorroot.Gov.Modules.Financas.Application.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Domain.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Creditos;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Exceptions;
@@ -72,7 +73,9 @@ public sealed class AbrirCreditoAdicionalHandler(
     ICreditoAdicionalRepository creditos,
     IDotacaoOrcamentariaRepository dotacoes,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant) : ICommandHandler<AbrirCreditoAdicionalCommand, Guid>
+    ITenantContext tenant,
+    IIntegrationEventWriter integrationEvents,
+    TimeProvider timeProvider) : ICommandHandler<AbrirCreditoAdicionalCommand, Guid>
 {
     /// <inheritdoc />
     public async Task<Guid> Handle(AbrirCreditoAdicionalCommand request, CancellationToken cancellationToken)
@@ -94,6 +97,12 @@ public sealed class AbrirCreditoAdicionalHandler(
 
         credito.Abrir();
         creditos.Adicionar(credito);
+
+        // O crédito adicional ALTERA a dotação atualizada do exercício (reforço/nova dotação) — republica
+        // o total para o denominador da execução no Painel do Gestor. Enfileirado no Outbox na MESMA
+        // transação (substitui no consumidor por (Tenant, Exercicio) — idempotente).
+        await DotacaoPublisher.PublicarTotalDoExercicioAsync(
+            dotacoes, integrationEvents, tenant, timeProvider, loa.Exercicio, cancellationToken).ConfigureAwait(false);
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return credito.Id.Value;

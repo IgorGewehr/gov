@@ -70,7 +70,26 @@ public interface IDividaAtivaRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Próximo número de inscrição (&gt;= 1).</returns>
     Task<long> ObterProximoNumeroInscricaoAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Apura a posição consolidada da Dívida Ativa de um exercício (agrupado pelo ano de inscrição):
+    /// estoque inscrito vigente, parcela ajuizada (execução fiscal) e valor recuperado (quitado) no exercício.
+    /// Insumo do <c>PosicaoDividaAtivaIntegrationEvent</c> para o Painel do Gestor.
+    /// </summary>
+    /// <param name="exercicio">Exercício (ano de inscrição) de referência.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Posição consolidada do exercício.</returns>
+    Task<PosicaoDividaAtivaProjecao> ObterPosicaoPorExercicioAsync(int exercicio, CancellationToken cancellationToken);
 }
+
+/// <summary>
+/// Projeção da posição consolidada da Dívida Ativa de um exercício (read model interno do Tributos,
+/// sem vazar o domínio para fora do módulo).
+/// </summary>
+/// <param name="SaldoInscrito">Estoque total inscrito vigente (não quitado/cancelado) ao fim do período.</param>
+/// <param name="SaldoAjuizado">Parcela do estoque em execução fiscal.</param>
+/// <param name="RecuperadoNoExercicio">Valor de dívida ativa quitado no exercício.</param>
+public readonly record struct PosicaoDividaAtivaProjecao(decimal SaldoInscrito, decimal SaldoAjuizado, decimal RecuperadoNoExercicio);
 
 /// <summary>Repositório do agregado <see cref="Imovel"/> (cadastro imobiliário).</summary>
 public interface IImovelRepository
