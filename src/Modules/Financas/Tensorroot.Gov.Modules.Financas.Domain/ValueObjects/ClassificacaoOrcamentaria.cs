@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Tensorroot.Gov.SharedKernel.Primitives;
 
 namespace Tensorroot.Gov.Modules.Financas.Domain.ValueObjects;
@@ -21,6 +22,10 @@ public enum CategoriaEconomica
 /// </summary>
 public sealed class ClassificacaoOrcamentaria : ValueObject
 {
+    // [JsonConstructor]: permite a reidratacao do VO pelo System.Text.Json no round-trip do
+    // Outbox (eventos de dominio que carregam a classificacao). Os nomes dos parametros casam
+    // com as propriedades. Mantem o VO imutavel e o construtor privado (dominio rico preservado).
+    [JsonConstructor]
     private ClassificacaoOrcamentaria(
         string orgao,
         string unidadeOrcamentaria,

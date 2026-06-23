@@ -87,6 +87,15 @@ public sealed class DotacaoOrcamentaria : AggregateRoot<DotacaoOrcamentariaId>, 
     /// <summary>Situação atual.</summary>
     public SituacaoDotacao Situacao { get; private set; }
 
+    /// <summary>LOA de origem (quando a dotação nasceu da LOA). Nulo em dotações legadas.</summary>
+    public Guid? LoaId { get; private set; }
+
+    /// <summary>Item de despesa fixada (QDD) de origem (1:1). Nulo em dotações legadas.</summary>
+    public Guid? ItemDespesaFixadaId { get; private set; }
+
+    /// <summary>Ação do PPA de origem (rastreabilidade da cadeia). Nulo em dotações legadas.</summary>
+    public Guid? AcaoPpaId { get; private set; }
+
     /// <summary>Dotação atualizada = Dotado + Reforçado − Anulado.</summary>
     public ValorMonetario ValorAtualizado => ValorDotadoInicial.Somar(ValorReforcado).Subtrair(ValorAnulado);
 
@@ -120,6 +129,35 @@ public sealed class DotacaoOrcamentaria : AggregateRoot<DotacaoOrcamentariaId>, 
         }
 
         return new DotacaoOrcamentaria(DotacaoOrcamentariaId.New(), tenantId, exercicio, classificacao, valorDotado);
+    }
+
+    /// <summary>
+    /// Cria uma dotação a partir de um item de despesa fixada da LOA (a dotação NASCE da LOA):
+    /// <c>ValorDotadoInicial</c> = despesa fixada do item, com a origem rastreável (LOA/item/ação).
+    /// Caminho de produção do vínculo planejamento→execução (DESIGN §6). Não quebra a execução legada.
+    /// </summary>
+    /// <param name="tenantId">Tenant dono do registro.</param>
+    /// <param name="exercicio">Exercício orçamentário.</param>
+    /// <param name="classificacao">Classificação orçamentária do item.</param>
+    /// <param name="valorFixado">Despesa fixada (= dotação inicial).</param>
+    /// <param name="loaId">LOA de origem.</param>
+    /// <param name="itemDespesaFixadaId">Item de despesa fixada de origem.</param>
+    /// <param name="acaoPpaId">Ação do PPA de origem.</param>
+    /// <returns>Nova <see cref="DotacaoOrcamentaria"/> com origem na LOA.</returns>
+    public static DotacaoOrcamentaria CriarDeLoa(
+        Guid tenantId,
+        int exercicio,
+        ClassificacaoOrcamentaria classificacao,
+        ValorMonetario valorFixado,
+        Guid loaId,
+        Guid itemDespesaFixadaId,
+        Guid acaoPpaId)
+    {
+        var dotacao = Criar(tenantId, exercicio, classificacao, valorFixado);
+        dotacao.LoaId = loaId;
+        dotacao.ItemDespesaFixadaId = itemDespesaFixadaId;
+        dotacao.AcaoPpaId = acaoPpaId;
+        return dotacao;
     }
 
     /// <summary>Reforça o crédito (crédito suplementar/adicional).</summary>

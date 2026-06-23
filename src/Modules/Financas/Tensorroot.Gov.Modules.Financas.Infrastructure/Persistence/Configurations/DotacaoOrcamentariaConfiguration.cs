@@ -44,6 +44,11 @@ public sealed class DotacaoOrcamentariaConfiguration : IEntityTypeConfiguration<
 
         builder.Property(dotacao => dotacao.Situacao).HasConversion<string>().HasMaxLength(20);
 
+        // Origem rastreavel quando a dotacao NASCE da LOA (aditivo/retrocompativel — nullable).
+        builder.Property(dotacao => dotacao.LoaId);
+        builder.Property(dotacao => dotacao.ItemDespesaFixadaId);
+        builder.Property(dotacao => dotacao.AcaoPpaId);
+
         // Derivados não persistidos.
         builder.Ignore(dotacao => dotacao.ValorAtualizado);
         builder.Ignore(dotacao => dotacao.SaldoDisponivel);

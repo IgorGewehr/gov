@@ -9,6 +9,10 @@ using Tensorroot.Gov.Modules.Financas.Domain.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Domain.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Domain.Liquidacoes;
 using Tensorroot.Gov.Modules.Financas.Domain.Pagamentos;
+using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Creditos;
+using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ldo;
+using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
+using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ppa;
 using Tensorroot.Gov.Modules.Financas.Domain.Receitas;
 using Tensorroot.Gov.Modules.Financas.Domain.RestosAPagar;
 
@@ -53,6 +57,18 @@ public sealed class FinancasDbContext(DbContextOptions<FinancasDbContext> option
 
     /// <summary>Registros de controle de geração da MSC (idempotência por competência).</summary>
     public DbSet<MscGeradaRegistro> MscsGeradas => Set<MscGeradaRegistro>();
+
+    /// <summary>Planos Plurianuais (PPA — planejamento de 4 anos).</summary>
+    public DbSet<PlanoPlurianual> Ppas => Set<PlanoPlurianual>();
+
+    /// <summary>Leis de Diretrizes Orçamentárias (LDO).</summary>
+    public DbSet<LeiDiretrizes> Ldos => Set<LeiDiretrizes>();
+
+    /// <summary>Leis Orçamentárias Anuais (LOA + QDD).</summary>
+    public DbSet<LeiOrcamentariaAnual> Loas => Set<LeiOrcamentariaAnual>();
+
+    /// <summary>Créditos adicionais (alteram a LOA).</summary>
+    public DbSet<CreditoAdicional> CreditosAdicionais => Set<CreditoAdicional>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

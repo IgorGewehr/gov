@@ -23,6 +23,13 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Financas.</summary>
     public const string FinancasGerenciar = "financas.gerenciar";
 
+    /// <summary>
+    /// Planejar o orcamento (PPA/LDO/LOA + creditos adicionais). Verbo SEPARADO da execucao
+    /// (<see cref="FinancasGerenciar"/>) — segregacao de funcoes exigida pelo controle interno/TCE:
+    /// quem planeja nao necessariamente executa. TODO(validar-oficial: matriz SoD/alcada do tenant).
+    /// </summary>
+    public const string FinancasPlanejar = "financas.planejar";
+
     /// <summary>Visualizar dados do modulo Tributos (IPTU, ISS, ITBI, Divida Ativa).</summary>
     public const string TributosVer = "tributos.ver";
 
@@ -196,6 +203,7 @@ public static class Permissoes
         AdministracaoGerenciar,
         FinancasVer,
         FinancasGerenciar,
+        FinancasPlanejar,
         TributosVer,
         TributosGerenciar,
         TributosItbiArbitrar,

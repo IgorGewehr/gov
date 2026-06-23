@@ -13,6 +13,9 @@ using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Demonstracoes;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Motor;
 using Tensorroot.Gov.Modules.Financas.Application.Empenhos;
+using Tensorroot.Gov.Modules.Financas.Application.Planejamento.Compatibilidade;
+using Tensorroot.Gov.Modules.Financas.Application.Planejamento.Lrf;
+using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.ReadModels;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Repositories;
@@ -56,6 +59,18 @@ public sealed class FinancasModule : IModule
 
         services.AddScoped<IDotacaoOrcamentariaRepository, DotacaoOrcamentariaRepository>();
         services.AddScoped<IEmpenhoRepository, EmpenhoRepository>();
+
+        // Planejamento orcamentario (PPA/LDO/LOA + creditos adicionais).
+        services.AddScoped<IPpaRepository, PpaRepository>();
+        services.AddScoped<ILdoRepository, LdoRepository>();
+        services.AddScoped<ILoaRepository, LoaRepository>();
+        services.AddScoped<ICreditoAdicionalRepository, CreditoAdicionalRepository>();
+        services.AddScoped<ICompatibilidadeOrcamentariaService, CompatibilidadeOrcamentariaService>();
+
+        // Opcoes LRF (obrigatoriedade de anexos AMF/ARF) parametrizaveis por tenant/config.
+        var opcoesLrf = new OpcoesPlanejamentoLrf();
+        configuration.GetSection(OpcoesPlanejamentoLrf.SecaoConfig).Bind(opcoesLrf);
+        services.AddSingleton(opcoesLrf);
         services.AddScoped<ILiquidacaoRepository, LiquidacaoRepository>();
         services.AddScoped<IOrdemDePagamentoRepository, OrdemDePagamentoRepository>();
         services.AddScoped<IRestoAPagarRepository, RestoAPagarRepository>();

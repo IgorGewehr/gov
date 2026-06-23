@@ -48,19 +48,21 @@
       { "id": "W4.4", "t": "Tesouraria / Controle de Caixa — M4.x", "s": "pending" },
       { "id": "W4.5", "t": "Controladoria / Controle Interno — M4.x", "s": "pending" }
     ]},
-    { "id": "M5", "titulo": "RH completo (folha + eSocial + ponto)", "status": "pending", "flag": "OFICIAL", "workflows": [
-      { "id": "W5.1", "t": "Motor de folha (INSS/RPPS/IRRF)", "s": "pending" },
-      { "id": "W5.2", "t": "eSocial S-1.3 (eventos + SOAP)", "s": "pending" },
-      { "id": "W5.3", "t": "Ponto AFD/AEJ (Port. 671)", "s": "pending" },
+    { "id": "M5", "titulo": "RH completo (folha + eSocial + ponto)", "status": "active", "flag": "OFICIAL", "nota": "NÚCLEO PROVADO: folha (motor INSS/IRRF/RPPS, líquido 6.034,77) + ponto (AFD/AEJ Port.671, CRC-16, jornada) + frontends. Qualidade auditada (F-A3 fail-closed corrigido; piloto = RGPS, coberto). eSocial pende creds de homologação suas; remessa folha TCE depois.", "workflows": [
+      { "id": "W5.1", "t": "Motor de folha (INSS/RPPS/IRRF) — PROVADO", "s": "done" },
+      { "id": "W5.3", "t": "Ponto AFD/AEJ (Port. 671) — PROVADO", "s": "done" },
+      { "id": "W5.fe", "t": "Frontends: servidores/folha/contracheque/ponto", "s": "done" },
+      { "id": "W5.2", "t": "eSocial S-1.3 (eventos + SOAP) — pende creds homologação", "s": "pending" },
       { "id": "W5.4", "t": "Remessa de folha TCE-RS (Res. 1099)", "s": "pending" },
-      { "id": "W5.5", "t": "Minha Folha (self-service)", "s": "pending" }
+      { "id": "W5.5", "t": "Minha Folha (self-service do servidor)", "s": "pending" }
     ]},
-    { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "pending", "flag": "OFICIAL", "workflows": [
-      { "id": "W6.1", "t": "Cadastro Imobiliário (CIB/PGV)", "s": "pending" },
-      { "id": "W6.2", "t": "Motor IPTU + carnê/DAM", "s": "pending" },
-      { "id": "W6.3", "t": "ISS/eNota/Livro + ITBI", "s": "pending" },
+    { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "active", "flag": "OFICIAL", "nota": "NÚCLEO PROVADO: IPTU (cadastro imobiliário + PGV + motor valor venal, reprodutível) + ISS (NFS-e passiva) + ITBI (base=declarado, Tema 1.113/STJ) + frontends. Qualidade auditada (IP-R4 reprodutibilidade corrigida). Taxas/dívida-protesto depois.", "workflows": [
+      { "id": "W6.1", "t": "Cadastro Imobiliário (CIB/PGV) — PROVADO", "s": "done" },
+      { "id": "W6.2", "t": "Motor IPTU + DAM (reprodutível) — PROVADO", "s": "done" },
+      { "id": "W6.3", "t": "ISS (NFS-e passiva) + ITBI (Tema 1.113) — PROVADO", "s": "done" },
+      { "id": "W6.fe", "t": "Frontends: imóvel/IPTU/ISS/ITBI", "s": "done" },
       { "id": "W6.4", "t": "Taxas/COSIP/Alvarás", "s": "pending" },
-      { "id": "W6.5", "t": "Procuradoria: protesto + execução", "s": "pending" },
+      { "id": "W6.5", "t": "Procuradoria: dívida ativa/CDA/protesto/execução", "s": "pending" },
       { "id": "W6.6", "t": "Meio Ambiente / Plan. Urbano / Cemitério", "s": "pending" }
     ]},
     { "id": "M7", "titulo": "Saúde / Educação / Assistência (repasses)", "status": "pending", "flag": "OFICIAL", "workflows": [

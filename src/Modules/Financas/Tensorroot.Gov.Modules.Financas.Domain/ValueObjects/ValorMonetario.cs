@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json.Serialization;
 using Tensorroot.Gov.SharedKernel.Primitives;
 
 namespace Tensorroot.Gov.Modules.Financas.Domain.ValueObjects;
@@ -6,6 +7,10 @@ namespace Tensorroot.Gov.Modules.Financas.Domain.ValueObjects;
 /// <summary>Valor monetário em Reais (BRL), não-negativo, arredondado a 2 casas.</summary>
 public sealed class ValorMonetario : ValueObject
 {
+    // [JsonConstructor]: permite a reidratacao do VO pelo System.Text.Json no round-trip do
+    // Outbox (eventos de dominio que carregam valores). O nome do parametro casa com a propriedade
+    // Valor. Mantem o VO imutavel e o construtor privado (dominio rico preservado).
+    [JsonConstructor]
     private ValorMonetario(decimal valor) => Valor = valor;
 
     /// <summary>Valor zero.</summary>

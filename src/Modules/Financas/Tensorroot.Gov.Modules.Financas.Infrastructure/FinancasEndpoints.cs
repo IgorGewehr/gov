@@ -32,6 +32,7 @@ internal static class FinancasEndpoints
         MapearPagamentos(grupo);
         MapearRestosAPagar(grupo);
         MapearContabilidade(grupo);
+        FinancasPlanejamentoEndpoints.Map(grupo);
     }
 
     private static void MapearContabilidade(RouteGroupBuilder grupo)
