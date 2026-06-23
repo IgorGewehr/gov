@@ -65,6 +65,66 @@ export interface PagamentoInput {
   dataPagamento: string;
 }
 
+// --- Conferência de pré-fechamento (P0-7) -----------------------------------
+// Contrato: ConferenciaFolhaDto em
+// ...Application/Folha/ObterConferenciaFolha.cs (totais + divergências a/b/c/d).
+
+/** Total líquido de uma rubrica (código) na folha, por natureza. */
+export interface TotalRubricaConferencia {
+  rubrica: string;
+  tipo: string;
+  total: number;
+  quantidadeLancamentos: number;
+}
+
+/** Divergência (a): servidor ativo sem NENHUM lançamento na folha. */
+export interface ServidorSemLancamento {
+  servidorId: string;
+  matricula: string;
+  nome: string;
+}
+
+/** Divergência (b): servidor com líquido insuficiente (descontos ≥ proventos — P0-5). */
+export interface ServidorLiquidoInsuficiente {
+  servidorId: string;
+  matricula: string;
+  nome: string;
+  totalProventos: number;
+  totalDescontos: number;
+}
+
+/** Divergência (c): variação suspeita do líquido frente à competência anterior. */
+export interface ServidorVariacaoLiquido {
+  servidorId: string;
+  matricula: string;
+  nome: string;
+  liquidoAtual: number;
+  liquidoAnterior: number;
+  variacao: number;
+  variacaoPercentual: number | null;
+}
+
+/** Conferência de pré-fechamento da folha: totais + divergências. */
+export interface ConferenciaFolha {
+  folhaDePagamentoId: string;
+  competencia: string;
+  tipo: string;
+  situacao: string;
+  totalProventos: number;
+  totalDescontos: number;
+  totalLiquido: number;
+  quantidadeServidores: number;
+  quantidadeLancamentos: number;
+  totaisPorRubrica: TotalRubricaConferencia[];
+  totaisConferem: boolean;
+  limiteVariacaoLiquido: number;
+  competenciaAnterior: string | null;
+  servidoresAtivosSemLancamento: ServidorSemLancamento[];
+  servidoresComLiquidoInsuficiente: ServidorLiquidoInsuficiente[];
+  servidoresComVariacaoSuspeita: ServidorVariacaoLiquido[];
+  temDivergencias: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Acesso HTTP
 // ---------------------------------------------------------------------------
@@ -96,8 +156,22 @@ function calcularFolha(folhaId: string): Promise<void> {
   return http.post<void>(`/recursoshumanos/folhas/${folhaId}/calculo`);
 }
 
-function fecharFolha(folhaId: string): Promise<void> {
-  return http.post<void>(`/recursoshumanos/folhas/${folhaId}/fechamento`);
+function fecharFolha(folhaId: string, confirmarLiquidoInsuficiente = false): Promise<void> {
+  // P0-5/P0-7: o fechamento só envia a confirmação EXPLÍCITA quando o conferente a marcou
+  // na tela de conferência. Sem ela e havendo líquido insuficiente, o backend recusa (422).
+  return http.post<void>(`/recursoshumanos/folhas/${folhaId}/fechamento`, undefined, {
+    query: { confirmarLiquidoInsuficiente },
+  });
+}
+
+function obterConferenciaFolha(
+  folhaId: string,
+  signal?: AbortSignal,
+): Promise<ConferenciaFolha | null> {
+  return http.get<ConferenciaFolha | null>(
+    `/recursoshumanos/folhas/${folhaId}/conferencia`,
+    { signal },
+  );
 }
 
 function efetuarPagamento(folhaId: string, input: PagamentoInput): Promise<void> {
@@ -172,14 +246,30 @@ export function useCalcularFolha() {
   });
 }
 
+/** Argumentos do fechamento: folha + confirmação explícita do líquido insuficiente (P0-5). */
+export interface FecharFolhaArgs {
+  folhaId: string;
+  confirmarLiquidoInsuficiente?: boolean;
+}
+
 /** Fecha a competência da folha e invalida-a. */
 export function useFecharFolha() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: fecharFolha,
+    mutationFn: ({ folhaId, confirmarLiquidoInsuficiente }: FecharFolhaArgs) =>
+      fecharFolha(folhaId, confirmarLiquidoInsuficiente),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rhKeys.folhas() });
     },
+  });
+}
+
+/** Conferência de pré-fechamento (totais + divergências) — somente leitura. */
+export function useConferenciaFolha(folhaId: string, enabled = true) {
+  return useQuery({
+    queryKey: rhKeys.conferencia(folhaId),
+    queryFn: ({ signal }) => obterConferenciaFolha(folhaId, signal),
+    enabled: enabled && folhaId.trim().length > 0,
   });
 }
 

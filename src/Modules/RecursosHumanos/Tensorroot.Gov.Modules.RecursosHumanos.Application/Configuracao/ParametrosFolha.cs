@@ -18,6 +18,14 @@ public sealed class ParametrosFolha
     /// <summary>Dia-limite (do mes seguinte a competencia) para envio dos eventos periodicos (I-13). Padrao: 15.</summary>
     public int DiaLimiteEnvioPeriodico { get; init; } = 15;
 
+    /// <summary>
+    /// Limiar (|Delta| em R$) da divergencia de VARIACAO do liquido por servidor na conferencia de
+    /// pre-fechamento (P0-7): quando o liquido de um servidor varia, em modulo, acima deste valor frente
+    /// a competencia anterior, a folha sinaliza para o conferente (pega erro de digitacao/rubrica).
+    /// Parametrizavel por tenant; a query aceita sobrescrita pontual. Padrao: R$ 1.000,00.
+    /// </summary>
+    public decimal LimiteVariacaoLiquidoConferencia { get; init; } = 1_000m;
+
     /// <summary>Codigo da rubrica de desconto de INSS apurada pelo motor (parametrizavel por tenant). Padrao: INSS.</summary>
     public string CodigoRubricaInss { get; init; } = "INSS";
 

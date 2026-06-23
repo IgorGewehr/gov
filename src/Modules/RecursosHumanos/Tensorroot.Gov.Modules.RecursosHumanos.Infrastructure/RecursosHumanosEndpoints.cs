@@ -20,7 +20,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure;
 
 /// <summary>Endpoints HTTP (Minimal API) do modulo RecursosHumanos.</summary>
-internal static class RecursosHumanosEndpoints
+internal static partial class RecursosHumanosEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -403,77 +403,6 @@ internal static class RecursosHumanosEndpoints
             .RequirePermission("recursoshumanos.gerenciar");
     }
 
-    private static void MapearFolha(RouteGroupBuilder grupo)
-    {
-        grupo.MapPost("/folhas", async (
-            AbrirFolhaCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        grupo.MapGet("/folhas/por-competencia", async (
-            int ano, int mes, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterFolhaPorCompetenciaQuery(ano, mes), cancellationToken)))
-            .RequirePermission("recursoshumanos.ver");
-
-        grupo.MapPost("/folhas/{folhaId:guid}/eventos", async (
-            Guid folhaId, EventoPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new AdicionarEventoCommand(
-                folhaId, payload.ServidorId, payload.Rubrica, payload.Tipo, payload.BaseCalculo, payload.Valor), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        // Apura INSS/RPPS/IRRF por servidor (motor + tabelas parametrizadas) com a folha ainda aberta.
-        grupo.MapPost("/folhas/{folhaId:guid}/apuracao-legal", async (
-            Guid folhaId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new ApurarDescontosLegaisCommand(folhaId), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        // P0-2: consolida INSS/IRRF de TODAS as folhas mensais (Mensal + Ferias + ...) da competencia sobre
-        // a base SOMADA — teto INSS unico e faixa IRRF progressiva. Concentra o desconto na folha principal.
-        grupo.MapPost("/folhas/consolidacao-legal", async (
-            int ano, int mes, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new ConsolidarDescontosLegaisMensaisCommand(ano, mes), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        grupo.MapPost("/folhas/{folhaId:guid}/calculo", async (
-            Guid folhaId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new CalcularFolhaCommand(folhaId), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        // P0-5: confirmarLiquidoInsuficiente=true e a confirmacao EXPLICITA do operador (revisao feita) p/ fechar folha com liquido insuficiente; default false (recusa).
-        grupo.MapPost("/folhas/{folhaId:guid}/fechamento", async (
-            Guid folhaId, ISender sender, CancellationToken cancellationToken, bool confirmarLiquidoInsuficiente = false) =>
-        {
-            await sender.Send(new FecharFolhaCommand(folhaId, confirmarLiquidoInsuficiente), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        grupo.MapPost("/folhas/{folhaId:guid}/pagamento", async (
-            Guid folhaId, PagamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new EfetuarPagamentoCommand(folhaId, payload.DataPagamento), cancellationToken);
-            return Results.NoContent();
-        })
-            .RequirePermission("recursoshumanos.gerenciar");
-
-        grupo.MapGet("/folhas/{folhaId:guid}/servidores/{servidorId:guid}/contracheque", async (
-            Guid folhaId, Guid servidorId, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterContrachequeDoServidorQuery(folhaId, servidorId), cancellationToken)))
-            .RequirePermission("recursoshumanos.ver");
-    }
-
     private sealed record PossePayload(DateOnly DataPosse);
 
     private sealed record ExercicioPayload(DateOnly DataExercicio);
@@ -485,10 +414,6 @@ internal static class RecursosHumanosEndpoints
     private sealed record AlterarVencimentoPayload(decimal NovoVencimento);
 
     private sealed record ExtinguirCargoPayload(string LeiExtincao);
-
-    private sealed record EventoPayload(Guid ServidorId, string Rubrica, TipoEvento Tipo, decimal BaseCalculo, decimal Valor);
-
-    private sealed record PagamentoPayload(DateOnly DataPagamento);
 
     private sealed record PensaoAlimenticiaPayload(
         string Beneficiario,

@@ -29,6 +29,7 @@ import { PERM_RH_GERENCIAR, situacaoFolhaTagVariant } from './recursosHumanos.he
 import { AdicionarEventoFormModal } from './AdicionarEventoFormModal';
 import { EfetuarPagamentoFormModal } from './EfetuarPagamentoFormModal';
 import { ContrachequeModal } from './ContrachequeModal';
+import { ConferenciaFolhaModal } from './ConferenciaFolhaModal';
 
 /** Competência propagada via router state (AAAA-MM partido em números). */
 interface FolhaLocationState {
@@ -51,6 +52,7 @@ export function FolhaDetailPage() {
   const [eventoAberto, setEventoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
   const [contrachequeAberto, setContrachequeAberto] = useState(false);
+  const [conferenciaAberta, setConferenciaAberta] = useState(false);
 
   const temCompetencia = Number.isInteger(state.ano) && Number.isInteger(state.mes);
   const query = useFolhaPorCompetencia(state.ano ?? 0, state.mes ?? 0, temCompetencia);
@@ -81,14 +83,25 @@ export function FolhaDetailPage() {
     });
   }
 
-  function executarFechamento(): void {
-    fechar.mutate(folhaId, {
-      onSuccess: () => toast.success('Folha fechada.', 'Sucesso'),
-      onError: (error) =>
-        toast.error(
-          error instanceof ApiError ? error.userMessage : 'Não foi possível fechar a folha.',
-        ),
-    });
+  // P0-7: o fechamento passa pela conferência. Confirmar dispara a mutation; havendo líquido
+  // insuficiente sem confirmação o backend recusa (422) e o erro fica visível no próprio modal,
+  // que permanece aberto para o conferente marcar a confirmação explícita.
+  function confirmarFechamento(confirmarLiquidoInsuficiente: boolean): void {
+    fechar.mutate(
+      { folhaId, confirmarLiquidoInsuficiente },
+      {
+        onSuccess: () => {
+          toast.success('Folha fechada.', 'Sucesso');
+          fechar.reset();
+          setConferenciaAberta(false);
+        },
+      },
+    );
+  }
+
+  function abrirConferencia(): void {
+    fechar.reset();
+    setConferenciaAberta(true);
   }
 
   return (
@@ -183,11 +196,10 @@ export function FolhaDetailPage() {
                       </Button>
                       <Button
                         variant="secondary"
-                        onClick={executarFechamento}
-                        loading={fechar.isPending}
+                        onClick={abrirConferencia}
                         disabled={folha.situacao !== 'Calculada'}
                       >
-                        <i className="fas fa-lock" aria-hidden="true" /> Fechar competência
+                        <i className="fas fa-clipboard-check" aria-hidden="true" /> Conferir e fechar
                       </Button>
                       <Button
                         variant="primary"
@@ -203,7 +215,9 @@ export function FolhaDetailPage() {
                   </div>
                   <p className="text-down-01 text-gray-60 mt-3 mb-0">
                     Com a folha Aberta: lance os eventos, apure os descontos legais (INSS/RPPS/IRRF)
-                    e calcule. O fechamento exige a folha Calculada; o pagamento exige a folha Fechada.
+                    e calcule. Com a folha Calculada, &ldquo;Conferir e fechar&rdquo; abre a
+                    conferência (totais e divergências) antes do fechamento; o pagamento exige a
+                    folha Fechada.
                   </p>
                 </Card>
 
@@ -221,6 +235,14 @@ export function FolhaDetailPage() {
                   open={contrachequeAberto}
                   onClose={() => setContrachequeAberto(false)}
                   folhaId={folhaId}
+                />
+                <ConferenciaFolhaModal
+                  open={conferenciaAberta}
+                  onClose={() => setConferenciaAberta(false)}
+                  folhaId={folhaId}
+                  onConfirmarFechamento={confirmarFechamento}
+                  fechando={fechar.isPending}
+                  erroFechamento={fechar.error}
                 />
               </>
           )}

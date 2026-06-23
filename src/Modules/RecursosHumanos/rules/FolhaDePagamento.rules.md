@@ -252,6 +252,19 @@ Tabela: Estado origem → comando/método → Estado destino | guarda | evento e
 - **Filtros:** por `FolhaDePagamentoId` e `ServidorId`; **sempre tenant-scoped** via Global Query Filter por `TenantId`.
 - **Pré-condições:** `request` não nulo.
 
+### 6.3 ObterConferenciaFolha (P0-7 — conferência de pré-fechamento)
+
+- **Query:** `ObterConferenciaFolhaQuery(Guid FolhaDePagamentoId, decimal? LimiteVariacaoLiquido = null) : IQuery<ConferenciaFolhaDto?>`.
+- **Entrada:** `FolhaDePagamentoId`; `LimiteVariacaoLiquido` opcional (sobrescreve o default do tenant em `ParametrosFolha`).
+- **Handler:** `ObterConferenciaFolhaHandler(IFolhaDePagamentoRepository folhas, IServidorRepository servidores, IParametrosFolhaProvider parametros)`; projeção de leitura, reprodutível (sem relógio) e tenant-scoped — **não altera o cálculo**.
+- **Projeção (DTO):** `ConferenciaFolhaDto(...)` com totais (geral + por rubrica via `TotalRubricaConferencia`) e as divergências que o conferente precisa ver ANTES de fechar:
+  - **(a)** `ServidoresAtivosSemLancamento` — ativo do tenant sem nenhum lançamento na folha (`ServidorSemLancamento`).
+  - **(b)** `ServidoresComLiquidoInsuficiente` — descontos ≥ proventos por servidor, mesma regra do P0-5 (`ServidorLiquidoInsuficiente`).
+  - **(c)** `ServidoresComVariacaoSuspeita` — |Δ| do líquido vs competência anterior (mesmo tipo de folha) acima do limiar (`ServidorVariacaoLiquido`).
+  - **(d)** `TotaisConferem` — `TotalProventos - TotalDescontos == TotalLiquido` (piso zero respeitado); `TemDivergencias` agrega (a/b/c/d).
+- **Filtros:** por `FolhaDePagamentoId`; **sempre tenant-scoped** via Global Query Filter por `TenantId`. Retorna `null` (→ 404) se a folha não existir no tenant.
+- **Pré-condições:** `request` não nulo.
+
 ---
 
 ## 7. Eventos
@@ -476,7 +489,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: AbrirFolha, AdicionarEvento, ApurarDescontosLegais, ConsolidarDescontosLegaisMensais, CalcularFolha, FecharFolha, EfetuarPagamento
-queries: ObterFolhaPorCompetencia, ObterContrachequeDoServidor
+queries: ObterFolhaPorCompetencia, ObterContrachequeDoServidor, ObterConferenciaFolha
 domainEvents: FolhaAberta, FolhaCalculada, FolhaComLiquidoInsuficiente, FolhaFechada, PagamentoEfetuado
 integrationEventsPublished: FolhaFechadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent, FolhaResumoRemessaTceIntegrationEvent, RemuneracaoMagisterioApuradaIntegrationEvent, DespesaPessoalApuradaIntegrationEvent
 integrationEventsConsumed: 
