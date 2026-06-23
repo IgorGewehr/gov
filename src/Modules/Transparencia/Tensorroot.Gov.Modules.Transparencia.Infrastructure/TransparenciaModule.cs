@@ -11,6 +11,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Transparencia.Application.Abstractions;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasTce;
+using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Fiscal;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Integracoes;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Repositories;
@@ -58,6 +59,15 @@ public sealed class TransparenciaModule : IModule
 
         // Ponte RH -> Transparencia: read model do resumo de folha (fonte da remessa de folha ao TCE-RS).
         services.AddScoped<IResumoFolhaTceRepository, ResumoFolhaTceRepository>();
+
+        // Nucleo fiscal M7.0 (Saude 15% ASPS / Educacao 25% MDE): classificador setorial por funcao/fonte,
+        // calendario federal, parecer de conselho, projecao de execucao e provedor de percentuais vigentes.
+        services.AddScoped<IFonteRecursoVinculadoRepository, FonteRecursoVinculadoRepository>();
+        services.AddScoped<ICalendarioFederalRepository, CalendarioFederalRepository>();
+        services.AddScoped<IParecerConselhoRepository, ParecerConselhoRepository>();
+        services.AddScoped<ILinhaExecucaoFiscalRepository, LinhaExecucaoFiscalRepository>();
+        services.AddScoped<IExecucaoSetorialReadModel, ExecucaoSetorialReadModel>();
+        services.AddScoped<IParametroMinimoProvider, ParametroMinimoProvider>();
 
         // Leitura dos itens consolidados (read model alimentado por Integration Events — I-13).
         services.AddScoped<IPublicacaoTransparenciaRepository, SimuladoPublicacaoTransparenciaRepository>();

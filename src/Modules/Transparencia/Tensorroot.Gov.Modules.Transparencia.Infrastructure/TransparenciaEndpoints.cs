@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Transparencia.Application.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Application.Fiscal;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasTce;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
@@ -20,6 +21,37 @@ internal static class TransparenciaEndpoints
 
         MapearRemessasTce(grupo);
         MapearDeclaracoesFiscais(grupo);
+        MapearNucleoFiscal(grupo);
+    }
+
+    /// <summary>
+    /// M7.0 — Núcleo fiscal dos mínimos constitucionais (Saúde 15% ASPS / Educação 25% MDE): registra as
+    /// regras de classificação setorial (função/fonte → setor), projeta a execução fiscal (receita-base +
+    /// despesas) e apura os indicadores. A apuração é reprodutível (sem relógio — usa o exercício como
+    /// âncora) e tenant-scoped (Global Query Filter). Toda escrita é auditada e os percentuais são
+    /// parametrizáveis por tenant+vigência (default legal LC 141/CF 212).
+    /// </summary>
+    private static void MapearNucleoFiscal(RouteGroupBuilder grupo)
+    {
+        var fiscal = grupo.MapGroup("/fiscal").WithTags("Transparencia.Fiscal");
+
+        // Registra uma regra de classificação setorial versionada (função[, fonte] → setor, computa?).
+        fiscal.MapPost("/regras-classificacao", async (
+            RegistrarRegraClassificacaoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("transparencia.gerenciar");
+
+        // Projeta linhas de execução fiscal (receita-base + despesas por função/fonte), idempotente por hash.
+        fiscal.MapPost("/execucao", async (
+            RegistrarExecucaoFiscalCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { registradas = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("transparencia.gerenciar");
+
+        // Apura os mínimos constitucionais do exercício (base/aplicado/%/limite/situação por setor).
+        fiscal.MapGet("/minimos", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ApurarMinimosQuery(exercicio), cancellationToken)))
+            .RequirePermission("transparencia.ver");
     }
 
     private static void MapearRemessasTce(RouteGroupBuilder grupo)
