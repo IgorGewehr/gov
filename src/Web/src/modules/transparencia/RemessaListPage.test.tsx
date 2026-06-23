@@ -33,17 +33,19 @@ describe('RemessaListPage', () => {
     clearAccessToken();
   });
 
-  it('mostra estado inicial e o botão de gerar para quem gerencia', () => {
+  it('mostra estado inicial e os botões de gerar (contábil e folha) para quem gerencia', () => {
     mockFetch([]);
     renderWithAuth(<RemessaListPage />, ['transparencia.ver', 'transparencia.gerenciar']);
     expect(screen.getByText('Faça uma consulta')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Gerar remessa/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Gerar remessa contábil/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Gerar remessa de folha/i })).toBeInTheDocument();
   });
 
-  it('esconde o botão de gerar para quem só visualiza', () => {
+  it('esconde os botões de gerar para quem só visualiza', () => {
     mockFetch([]);
     renderWithAuth(<RemessaListPage />, ['transparencia.ver']);
-    expect(screen.queryByRole('button', { name: /Gerar remessa/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerar remessa contábil/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerar remessa de folha/i })).not.toBeInTheDocument();
   });
 
   it('lista a remessa com situação e nome do ZIP após consultar', async () => {

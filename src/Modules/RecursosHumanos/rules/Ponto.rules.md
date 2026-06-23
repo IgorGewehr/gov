@@ -46,8 +46,27 @@
 - Formato de data/hora por registro (`ddMMyyyy`/`HHmm`) e largura do NSR (9 adotado).
 - Aplicabilidade da 671 ao **estatutário** (RJU de Maximiliano de Almeida/RS + normas TCE-RS).
 
+## Coletor de Ponto (hardware REP → AFD → domínio)
+
+O **AFD posicional 671 é a língua franca** da ingestão: todo transporte (arquivo USB/pendrive, TCP/SDK,
+REST/cloud) converge para o mesmo AFD, consumido por um único pipeline idempotente.
+
+- `RepConfigurado` cadastra o parque de REPs por tenant (marca, modos, tipo, **último NSR coletado**;
+  credencial só por **referência** ao Key Vault, nunca em claro).
+- `IColetorRep` (porta, por fabricante/modo) atrás de **ACL**; drivers na Infrastructure. Universal de
+  **arquivo** (`ColetorArquivoAfd`) + **simulado online** (`ColetorRepSimulado` gera um AFD de exemplo).
+  Reais por fabricante: `// TODO(prod: SDK proprietário)` (Control iD/Henry/Madis/Topdata/Dimep).
+- `IParserAfd` (Domain, puro) é o **inverso do `GeradorAfd`** — valida **CRC-16**, **continuidade de NSR**
+  (lacuna = suspeito, auditável) e o **contador do trailer**.
+- `IngestarMarcacoesAfd` ingere de forma **IDEMPOTENTE** pela chave natural `(TenantId, RepId,
+  NsrEquipamento)`: reimportar o mesmo AFD **não duplica**. Fail-closed na integridade (CRC/contador).
+  CPF sem servidor → **pendente de vínculo** (auditável). Sentido (E/S) vem do pareamento na apuração.
+- Marcação **tipo 3 = REP-C/A**, **tipo 7 = REP-P** (correção de domínio aplicada ao enum/gerador/parser).
+- Worker `Tensorroot.Gov.Workers.PontoColetor` (irmão do `NfseSync`): coleta agendada por tenant/REP,
+  online-first com reconciliação; o dedup por NSR torna push e varredura convergentes.
+
 <!-- manifest
-commands: RegistrarMarcacao, DefinirJornada, ApurarJornada, FecharApuracaoJornada
+commands: RegistrarMarcacao, DefinirJornada, ApurarJornada, FecharApuracaoJornada, RegistrarRep, ImportarAfd, ColetarRep, IngestarMarcacoesAfd
 queries: GerarAfd, GerarAej
 domainEvents: MarcacaoPontoRegistrada, ApuracaoPontoFechada
 integrationEventsPublished: 

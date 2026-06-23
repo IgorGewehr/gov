@@ -65,6 +65,15 @@ export const situacaoRemessaOptions: SelectOption[] = (
   ['Gerada', 'Validada', 'ProntaParaTransmissao', 'Enviada'] as const
 ).map((value) => ({ value, label: situacaoRemessaLabel[value] }));
 
+/** Meses (1..12) para o seletor de competência da remessa de FOLHA (Res. 1099, mensal). */
+export const mesOptions: SelectOption[] = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+].map((label, indice) => ({ value: String(indice + 1), label }));
+
+/** Versão padrão do leiaute de folha ao TCE-RS (Resolução 1099/2018). */
+export const leiauteFolhaVersaoPadrao = '1099';
+
 // ---------------------------------------------------------------------------
 // Declaração Fiscal
 // ---------------------------------------------------------------------------

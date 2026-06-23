@@ -18,6 +18,20 @@ public interface IMarcacaoPontoRepository
     /// <returns>Maior NSR do tenant, ou <c>null</c>.</returns>
     Task<long?> ObterUltimoNsrAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Dedup EM LOTE da ingestao de AFD: dentre os <paramref name="nsrsEquipamento"/> informados,
+    /// devolve os que JA existem para o equipamento <paramref name="repId"/> no tenant (chave natural
+    /// <c>(TenantId, RepId, NsrEquipamento)</c>). Permite reimportar um AFD sem duplicar marcacoes.
+    /// </summary>
+    /// <param name="repId">Equipamento (REP) de origem.</param>
+    /// <param name="nsrsEquipamento">NSR de equipamento candidatos do lote.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Subconjunto de NSR de equipamento ja persistidos para o REP no tenant.</returns>
+    Task<IReadOnlySet<long>> NsrsEquipamentoExistentesAsync(
+        Guid repId,
+        IReadOnlyCollection<long> nsrsEquipamento,
+        CancellationToken cancellationToken);
+
     /// <summary>Lista as marcacoes de um periodo (datas inclusivas), ordenadas por NSR.</summary>
     /// <param name="inicio">Data inicial (inclusiva).</param>
     /// <param name="fim">Data final (inclusiva).</param>

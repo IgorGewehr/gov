@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);CA1515</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Modules/RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure/Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.csproj" />
+    <ProjectReference Include="../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="../../Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

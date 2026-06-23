@@ -19,4 +19,14 @@ public interface IServidorPontoConsulta
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Dados de ponto, ou <c>null</c> se o servidor nao existir no tenant.</returns>
     Task<DadosPontoServidor?> ObterAsync(Guid servidorId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Resolve o ServidorId a partir do CPF lido no AFD (ingestao de equipamento), no tenant atual.
+    /// CPF sem servidor correspondente -&gt; <c>null</c> (o registro vira pendente de vinculo, auditavel,
+    /// nunca descartado silenciosamente).
+    /// </summary>
+    /// <param name="cpf">CPF do trabalhador (so digitos).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>ServidorId, ou <c>null</c> se nao houver servidor com esse CPF no tenant.</returns>
+    Task<Guid?> ResolverServidorPorCpfAsync(string cpf, CancellationToken cancellationToken);
 }

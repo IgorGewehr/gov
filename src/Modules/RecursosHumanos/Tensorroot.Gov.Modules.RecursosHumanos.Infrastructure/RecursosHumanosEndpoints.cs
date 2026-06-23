@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Application.CicloAnual;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.TabelasLegais;
@@ -125,6 +126,8 @@ internal static class RecursosHumanosEndpoints
     {
         var ponto = grupo.MapGroup("/ponto");
 
+        MapearColeta(ponto);
+
         // Define/substitui a jornada/escala do servidor.
         ponto.MapPost("/jornadas", async (
             DefinirJornadaCommand comando, ISender sender, CancellationToken cancellationToken)
@@ -169,6 +172,38 @@ internal static class RecursosHumanosEndpoints
             return Results.File(artefato.Conteudo, "text/plain", artefato.NomeArquivo);
         })
             .RequirePermission("recursoshumanos.ver");
+    }
+
+    private static void MapearColeta(RouteGroupBuilder ponto)
+    {
+        // COLETOR DE PONTO (hardware REP -> AFD -> nosso dominio). Cadastro do parque, importacao de
+        // arquivo (driver universal) e coleta online (driver por fabricante, atras de ACL).
+        var reps = ponto.MapGroup("/reps");
+
+        // Cadastra um REP (equipamento) no parque do ente.
+        reps.MapPost("/", async (
+            RegistrarRepCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // IMPORTACAO DE ARQUIVO AFD (upload pela UI ou pendrive da porta fiscal) — ingestao idempotente.
+        // Recebe os bytes crus do AFD (text/plain ou application/octet-stream) e o REP de origem na rota.
+        reps.MapPost("/{repId:guid}/afd/importar", async (
+            Guid repId, HttpRequest request, ISender sender, CancellationToken cancellationToken) =>
+        {
+            using var memoria = new MemoryStream();
+            await request.Body.CopyToAsync(memoria, cancellationToken);
+            var resultado = await sender.Send(
+                new ImportarAfdCommand(repId, memoria.ToArray(), AssinaturaCades: null), cancellationToken);
+            return Results.Ok(resultado);
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // COLETA ONLINE de um REP (driver por fabricante; SIMULADO por padrao) — ingestao idempotente.
+        reps.MapPost("/{repId:guid}/coletar", async (
+            Guid repId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ColetarRepCommand(repId), cancellationToken)))
+            .RequirePermission("recursoshumanos.gerenciar");
     }
 
     private static void MapearRubricas(RouteGroupBuilder grupo)

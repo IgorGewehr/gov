@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Configuracao;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
+using Tensorroot.Gov.SharedKernel.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Providers;
 
@@ -37,5 +38,20 @@ public sealed class ServidorPontoConsulta(RecursosHumanosDbContext context) : IS
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
             .ConfigureAwait(false);
         return servidor is null ? null : new DadosPontoServidor(servidor.Cpf, servidor.Regime);
+    }
+
+    /// <inheritdoc />
+    public async Task<Guid?> ResolverServidorPorCpfAsync(string cpf, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cpf);
+
+        // O CPF e VO com conversor para a string de digitos; comparamos pela coluna convertida.
+        // Respeita o Global Query Filter por tenant (so resolve servidores do tenant atual).
+        var alvo = Cpf.Create(cpf);
+        var servidor = await context.Servidores
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Cpf == alvo, cancellationToken)
+            .ConfigureAwait(false);
+        return servidor?.Id.Value;
     }
 }

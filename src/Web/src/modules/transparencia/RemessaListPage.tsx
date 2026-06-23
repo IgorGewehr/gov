@@ -29,6 +29,7 @@ import {
   tipoPeriodoOptions,
 } from './transparencia.helpers';
 import { RemessaFormModal } from './RemessaFormModal';
+import { RemessaFolhaFormModal } from './RemessaFolhaFormModal';
 
 export function RemessaListPage() {
   const [exercicio, setExercicio] = useState(String(exercicioCorrente()));
@@ -36,6 +37,7 @@ export function RemessaListPage() {
   const [situacao, setSituacao] = useState<SituacaoRemessa | ''>('');
   const [filtros, setFiltros] = useState<ListarRemessasParams | null>(null);
   const [formAberto, setFormAberto] = useState(false);
+  const [formFolhaAberto, setFormFolhaAberto] = useState(false);
 
   const query = useRemessas(filtros ?? { exercicio: 0 }, filtros !== null);
 
@@ -88,9 +90,14 @@ export function RemessaListPage() {
         description="Gere, valide e empacote as remessas do SIAPC/PAD e registre o protocolo da transmissão."
         actions={
           <Can permission="transparencia.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Gerar remessa
-            </Button>
+            <div className="d-flex flex-wrap gap-2">
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Gerar remessa contábil
+              </Button>
+              <Button variant="secondary" onClick={() => setFormFolhaAberto(true)}>
+                <i className="fas fa-users" aria-hidden="true" /> Gerar remessa de folha
+              </Button>
+            </div>
           </Can>
         }
       />
@@ -178,6 +185,12 @@ export function RemessaListPage() {
       <RemessaFormModal
         open={formAberto}
         onClose={() => setFormAberto(false)}
+        exercicioInicial={Number(exercicio) || exercicioCorrente()}
+      />
+
+      <RemessaFolhaFormModal
+        open={formFolhaAberto}
+        onClose={() => setFormFolhaAberto(false)}
         exercicioInicial={Number(exercicio) || exercicioCorrente()}
       />
     </>

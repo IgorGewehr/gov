@@ -36,7 +36,7 @@ public sealed class PontoGeradorAfdTests
 
         linhasTexto.Should().HaveCount(4); // cabecalho + 2 marcacoes + trailer
         linhasTexto[0].Should().StartWith("1"); // tipo cabecalho
-        linhasTexto[1].Should().StartWith("3"); // tipo marcacao
+        linhasTexto[1].Should().StartWith("7"); // tipo marcacao REP-P (3 = REP-C/A; 7 = REP-P)
         linhasTexto[^1].Should().StartWith("9"); // tipo trailer
         texto.Should().EndWith("\r\n");
     }
@@ -53,7 +53,7 @@ public sealed class PontoGeradorAfdTests
 
         var texto = Encoding.Latin1.GetString(GeradorAfd.Gerar(Cabecalho(), linhas));
         var marcacoes = texto.Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
-            .Where(l => l.StartsWith('3'))
+            .Where(l => l.StartsWith('7')) // marcacao de REP-P = tipo 7 (3 = REP-C/A).
             .ToList();
 
         // NSR ocupa as posicoes 2..10 (largura 9) logo apos o tipo (1 char).

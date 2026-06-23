@@ -32,9 +32,50 @@ public sealed class MarcacaoPontoConfiguration : IEntityTypeConfiguration<Marcac
         builder.Property(m => m.Sentido).HasConversion<string>().HasMaxLength(10);
         builder.Property(m => m.Origem).HasConversion<string>().HasMaxLength(10);
 
+        // Origem de equipamento (ingestao de AFD): REP coletado + NSR original do equipamento.
+        builder.Property(m => m.RepId);
+        builder.Property(m => m.NsrEquipamento);
+
         // NSR unico e sequencial por tenant (REP) — garante a sequencia sem lacunas/duplicidade.
         builder.HasIndex(m => new { m.TenantId, m.Nsr }).IsUnique();
         builder.HasIndex(m => new { m.TenantId, m.ServidorId, m.DataHora });
+
+        // IDEMPOTENCIA da ingestao de AFD: a chave natural (TenantId, RepId, NsrEquipamento) e UNICA —
+        // reimportar o mesmo AFD nao duplica marcacoes ja ingeridas. Indice FILTRADO so para marcacoes
+        // de equipamento (RepId IS NOT NULL): as marcacoes proprias do REP-P (RepId/NsrEquipamento nulos)
+        // ficam de fora — no SqlServer um indice unico nao-filtrado rejeitaria varias linhas com NULL.
+        // // TODO(prod): o filtro e sintaxe SqlServer; no SQLite (dev) o EnsureCreated ignora o filtro, e
+        // o dedup em lote no handler garante a idempotencia independentemente do indice.
+        builder.HasIndex(m => new { m.TenantId, m.RepId, m.NsrEquipamento })
+            .IsUnique()
+            .HasFilter("[RepId] IS NOT NULL");
+    }
+}
+
+/// <summary>Mapeamento EF Core do agregado <see cref="RepConfigurado"/> (parque de equipamentos REP).</summary>
+public sealed class RepConfiguradoConfiguration : IEntityTypeConfiguration<RepConfigurado>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<RepConfigurado> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("PontoReps");
+        builder.HasKey(r => r.Id);
+        builder.Property(r => r.Id)
+            .HasConversion(id => id.Value, value => new RepConfiguradoId(value))
+            .ValueGeneratedNever();
+
+        builder.Property(r => r.IdentificacaoEquipamento).IsRequired().HasMaxLength(120);
+        builder.Property(r => r.Marca).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.Modos).HasConversion<string>().HasMaxLength(40);
+        builder.Property(r => r.Tipo).HasConversion<string>().HasMaxLength(10);
+        builder.Property(r => r.EnderecoOuReferencia).HasMaxLength(200);
+        builder.Property(r => r.ReferenciaCredencialCofre).HasMaxLength(200);
+        builder.Property(r => r.UltimoNsrColetado);
+        builder.Property(r => r.Ativo);
+
+        builder.HasIndex(r => new { r.TenantId, r.Ativo });
     }
 }
 

@@ -79,6 +79,19 @@ export interface GerarRemessaInput {
   numeroPeriodo: number;
 }
 
+/**
+ * Entrada da REMESSA DE FOLHA ao TCE-RS (Resolução 1099/2018 — SIAPC Vol. V).
+ * Gera uma RemessaTce (leiaute FOLHA-TCE, periodicidade mensal) que segue o MESMO
+ * ciclo da remessa contábil: validar → empacotar → baixar → registrar protocolo.
+ */
+export interface GerarRemessaFolhaInput {
+  exercicio: number;
+  /** Mês da competência (1..12) — a folha é sempre mensal. */
+  mes: number;
+  /** Versão do leiaute de folha (ex.: "1099"). */
+  leiauteVersao: string;
+}
+
 export interface RegistrarProtocoloInput {
   id: string;
   protocolo: string;
@@ -103,6 +116,9 @@ export interface ReconciliacaoResultado {
 // ---------------------------------------------------------------------------
 
 const BASE = '/transparencia/remessas-tce';
+// Geração da remessa de FOLHA (Res. 1099): cria uma RemessaTce que cai na MESMA
+// lista/detalhe (mesmo agregado RemessaTce), por isso só o POST é dedicado.
+const BASE_FOLHA = '/transparencia/remessas-folha-tce';
 
 function listar(params: ListarRemessasParams, signal?: AbortSignal): Promise<RemessaResumo[]> {
   return http.get<RemessaResumo[]>(BASE, {
@@ -121,6 +137,10 @@ function obterCriticas(id: string, signal?: AbortSignal): Promise<RemessaCritica
 
 function gerar(input: GerarRemessaInput): Promise<CriacaoResponse> {
   return http.post<CriacaoResponse>(BASE, input);
+}
+
+function gerarFolha(input: GerarRemessaFolhaInput): Promise<CriacaoResponse> {
+  return http.post<CriacaoResponse>(BASE_FOLHA, input);
 }
 
 function validar(id: string): Promise<void> {
@@ -210,6 +230,20 @@ export function useGerarRemessa() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: gerar,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: transparenciaKeys.remessas() });
+    },
+  });
+}
+
+/**
+ * Gera a REMESSA DE FOLHA (Res. 1099) — cria uma RemessaTce que aparece na MESMA
+ * lista e abre na MESMA tela de detalhe, por isso invalida as mesmas listas.
+ */
+export function useGerarRemessaFolha() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: gerarFolha,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: transparenciaKeys.remessas() });
     },

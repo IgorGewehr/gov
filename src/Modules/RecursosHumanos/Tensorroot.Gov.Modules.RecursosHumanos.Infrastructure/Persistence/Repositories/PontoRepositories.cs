@@ -28,6 +28,32 @@ public sealed class MarcacaoPontoRepository(RecursosHumanosDbContext context) : 
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlySet<long>> NsrsEquipamentoExistentesAsync(
+        Guid repId,
+        IReadOnlyCollection<long> nsrsEquipamento,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(nsrsEquipamento);
+        if (nsrsEquipamento.Count == 0)
+        {
+            return new HashSet<long>();
+        }
+
+        // Dedup em lote por (RepId, NsrEquipamento) — o Global Query Filter ja aplica o escopo do tenant.
+        // O IN e traduzido pelo provedor; lemos so a coluna do NSR de equipamento (projecao enxuta).
+        var candidatos = nsrsEquipamento.ToHashSet();
+        var existentes = await context.PontoMarcacoes
+            .Where(m => m.RepId == repId
+                && m.NsrEquipamento != null
+                && candidatos.Contains(m.NsrEquipamento.Value))
+            .Select(m => m.NsrEquipamento!.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return existentes.ToHashSet();
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<MarcacaoPonto>> ListarPorPeriodoAsync(DateOnly inicio, DateOnly fim, CancellationToken cancellationToken)
     {
         var de = new DateTimeOffset(inicio.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
@@ -144,4 +170,27 @@ public sealed class ApuracaoPontoRepository(RecursosHumanosDbContext context) : 
             .FirstOrDefault();
         return anterior?.SaldoBancoHorasAtualMinutos ?? 0;
     }
+}
+
+/// <summary>Implementacao EF Core do repositorio do parque de equipamentos REP (<see cref="RepConfigurado"/>).</summary>
+public sealed class RepRepository(RecursosHumanosDbContext context) : IRepRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(RepConfigurado rep)
+    {
+        ArgumentNullException.ThrowIfNull(rep);
+        context.PontoReps.Add(rep);
+    }
+
+    /// <inheritdoc />
+    public Task<RepConfigurado?> ObterPorIdAsync(RepConfiguradoId id, CancellationToken cancellationToken)
+        => context.PontoReps.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<RepConfigurado>> ListarAtivosAsync(CancellationToken cancellationToken)
+        => await context.PontoReps
+            .Where(r => r.Ativo)
+            .OrderBy(r => r.IdentificacaoEquipamento)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }

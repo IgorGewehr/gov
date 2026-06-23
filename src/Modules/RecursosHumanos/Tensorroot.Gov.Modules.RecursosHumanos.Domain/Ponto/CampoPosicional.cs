@@ -48,4 +48,33 @@ internal static class CampoPosicional
     /// <returns>Hora como 4 digitos.</returns>
     public static string Hora(DateTimeOffset hora)
         => hora.ToString("HHmm", CultureInfo.InvariantCulture);
+
+    // ----- PARSE (inverso, simetrico ao GeradorAfd — alimenta o IParserAfd) -----
+
+    /// <summary>Le um numerico zero-preenchido de uma fatia (inverso de <see cref="Numero(long,int)"/>).</summary>
+    /// <param name="campo">Fatia do registro (largura fixa).</param>
+    /// <returns>Valor numerico.</returns>
+    /// <exception cref="FormatException">Se a fatia nao for numerica.</exception>
+    public static long LerNumero(ReadOnlySpan<char> campo)
+        => long.Parse(campo, NumberStyles.None, CultureInfo.InvariantCulture);
+
+    /// <summary>Le um alfanumerico, removendo o espaco de preenchimento a direita.</summary>
+    /// <param name="campo">Fatia do registro.</param>
+    /// <returns>Texto sem o padding a direita.</returns>
+    public static string LerTexto(ReadOnlySpan<char> campo)
+        => campo.ToString().TrimEnd(' ');
+
+    /// <summary>Le uma data no formato <c>ddMMyyyy</c> (inverso de <see cref="Data(DateOnly)"/>).</summary>
+    /// <param name="campo">Fatia de 8 posicoes.</param>
+    /// <returns>Data lida. // TODO(validar-oficial: ddMMyyyy vs yyyyMMdd por registro).</returns>
+    /// <exception cref="FormatException">Se a fatia nao for uma data ddMMyyyy valida.</exception>
+    public static DateOnly LerData(ReadOnlySpan<char> campo)
+        => DateOnly.ParseExact(campo, "ddMMyyyy", CultureInfo.InvariantCulture);
+
+    /// <summary>Le uma hora no formato <c>HHmm</c> (inverso de <see cref="Hora(DateTimeOffset)"/>).</summary>
+    /// <param name="campo">Fatia de 4 posicoes.</param>
+    /// <returns>Hora lida. // TODO(validar-oficial: precisao ao segundo no leiaute oficial).</returns>
+    /// <exception cref="FormatException">Se a fatia nao for uma hora HHmm valida.</exception>
+    public static TimeOnly LerHora(ReadOnlySpan<char> campo)
+        => TimeOnly.ParseExact(campo, "HHmm", CultureInfo.InvariantCulture);
 }

@@ -52,6 +52,9 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
     /// <summary>Apuracoes de jornada por servidor/competencia (PTRP/banco de horas).</summary>
     public DbSet<ApuracaoPonto> PontoApuracoes => Set<ApuracaoPonto>();
 
+    /// <summary>Parque de equipamentos REP cadastrados (coleta de AFD do hardware — Port. 671).</summary>
+    public DbSet<RepConfigurado> PontoReps => Set<RepConfigurado>();
+
     /// <summary>Eventos eSocial gerados/assinados/transmitidos (maquina de estados + Outbox).</summary>
     public DbSet<EventoESocial> EventosESocial => Set<EventoESocial>();
 

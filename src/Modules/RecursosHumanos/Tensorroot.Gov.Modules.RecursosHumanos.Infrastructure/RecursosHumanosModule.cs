@@ -11,11 +11,14 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Providers;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Repositories;
+using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Ponto.Coleta;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure;
 
@@ -69,6 +72,15 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IApuracaoPontoRepository, ApuracaoPontoRepository>();
         services.AddScoped<IServidorPontoConsulta, ServidorPontoConsulta>();
         services.AddScoped<IParametrosPontoProvider, ParametrosPontoProvider>();
+
+        // Coletor de ponto (hardware REP -> AFD -> nosso dominio). Parser do AFD (Domain, puro) e o
+        // repositorio do parque de REPs. Drivers de coleta atras de ACL (// TODO(prod: SDK proprietario)):
+        // o universal de ARQUIVO e o SIMULADO online (gera AFD de exemplo). A fabrica resolve por marca.
+        services.AddScoped<IParserAfd, ParserAfd>();
+        services.AddScoped<IRepRepository, RepRepository>();
+        services.AddSingleton<IColetorRep, ColetorArquivoAfd>();
+        services.AddSingleton<IColetorRep, ColetorRepSimulado>();
+        services.AddSingleton<IColetorRepFactory, ColetorRepFactory>();
 
         // eSocial (M5): repositorio de eventos, provider do empregador, servico de geracao e o GATEWAY
         // atras de ACL — impl. SIMULADA por padrao. // TODO(prod: trocar por ESocialGatewaySoap quando

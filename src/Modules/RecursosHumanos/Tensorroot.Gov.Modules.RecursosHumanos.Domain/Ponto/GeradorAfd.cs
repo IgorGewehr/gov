@@ -35,12 +35,32 @@ public sealed record LinhaMarcacaoAfd(Nsr Nsr, Cpf Cpf, DateTimeOffset DataHora,
 public static class GeradorAfd
 {
     // Larguras CONCEITUAIS dos campos. // TODO(validar-oficial): substituir pelas do Anexo do AFD.
-    private const int LarguraTipo = 1;
-    private const int LarguraNsr = Nsr.LarguraPadrao;
-    private const int LarguraCnpj = 14;
-    private const int LarguraCpf = 11;
-    private const int LarguraRazao = 150;
-    private const int LarguraContador = 9;
+    // internal: o ParserAfd (mesma assembly Domain) reusa estas larguras para ser FIEL ao gerador
+    // (uma unica fonte de verdade do leiaute posicional, inverso exato).
+    internal const int LarguraTipo = 1;
+    internal const int LarguraNsr = Nsr.LarguraPadrao;
+    internal const int LarguraCnpj = 14;
+    internal const int LarguraCpf = 11;
+    internal const int LarguraRazao = 150;
+    internal const int LarguraContador = 9;
+    internal const int LarguraData = 8;
+    internal const int LarguraHora = 4;
+    internal const int LarguraCrc = 4;
+
+    /// <summary>
+    /// Seleciona o tipo de registro de marcacao conforme a origem: REP-P -&gt; tipo 7; REP-C/REP-A -&gt;
+    /// tipo 3 (leiaute 671). // TODO(validar-oficial): confirmar a tabela de tipos no Anexo oficial.
+    /// </summary>
+    /// <param name="origem">Origem da marcacao (tipo de REP).</param>
+    /// <returns>Tipo de registro do AFD (3 ou 7).</returns>
+    internal static TipoRegistroAfd TipoRegistroMarcacao(TipoRep origem)
+        => origem == TipoRep.RepP ? TipoRegistroAfd.MarcacaoRepP : TipoRegistroAfd.Marcacao;
+
+    /// <summary>Indica se o codigo de tipo lido e uma linha de marcacao (3 ou 7).</summary>
+    /// <param name="tipo">Codigo de tipo (1a posicao do registro).</param>
+    /// <returns><c>true</c> para marcacao de REP-C/A (3) ou REP-P (7).</returns>
+    internal static bool EhMarcacao(int tipo)
+        => tipo == (int)TipoRegistroAfd.Marcacao || tipo == (int)TipoRegistroAfd.MarcacaoRepP;
 
     /// <summary>
     /// Gera os bytes do AFD (ISO-8859-1). As marcacoes sao ordenadas por NSR (cronologia do REP).
@@ -70,10 +90,12 @@ public static class GeradorAfd
         corpo.Append(CampoPosicional.Texto(cabecalho.RazaoSocial, LarguraRazao));
         corpo.Append(CampoPosicional.FimDeLinha);
 
-        // ----- MARCACOES (tipo 3) -----
+        // ----- MARCACOES (tipo 3 = REP-C/REP-A; tipo 7 = REP-P) -----
+        // O leiaute 671 distingue a marcacao de REP-C/A (tipo 3) da marcacao de REP-P (tipo 7); o tipo
+        // e derivado da origem. // TODO(validar-oficial): posicoes/larguras integrais (CPF 035-046, 12).
         foreach (var m in ordenadas)
         {
-            corpo.Append(CampoPosicional.Numero((int)TipoRegistroAfd.Marcacao, LarguraTipo));
+            corpo.Append(CampoPosicional.Numero((int)TipoRegistroMarcacao(m.Origem), LarguraTipo));
             corpo.Append(m.Nsr.ParaPosicional(LarguraNsr));
             corpo.Append(CampoPosicional.Data(DateOnly.FromDateTime(m.DataHora.LocalDateTime.Date)));
             corpo.Append(CampoPosicional.Hora(m.DataHora));
