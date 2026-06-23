@@ -20,12 +20,23 @@ public sealed class EscopoEfetivo
 {
     private readonly IReadOnlyDictionary<string, IReadOnlySet<UnidadeOrganizacionalId>> _unidadesPorPermissao;
 
-    private EscopoEfetivo(IReadOnlyDictionary<string, IReadOnlySet<UnidadeOrganizacionalId>> unidadesPorPermissao)
-        => _unidadesPorPermissao = unidadesPorPermissao;
+    // AA-5/D3: maior profundidade de (sub)delegacao com que o sujeito DETEM cada permissao (a partir
+    // das atribuicoes vigentes). Usado para calcular a profundidade de uma nova subdelegacao.
+    private readonly IReadOnlyDictionary<string, int> _profundidadePorPermissao;
+
+    private EscopoEfetivo(
+        IReadOnlyDictionary<string, IReadOnlySet<UnidadeOrganizacionalId>> unidadesPorPermissao,
+        IReadOnlyDictionary<string, int> profundidadePorPermissao)
+    {
+        _unidadesPorPermissao = unidadesPorPermissao;
+        _profundidadePorPermissao = profundidadePorPermissao;
+    }
 
     /// <summary>Escopo vazio (sujeito sem nenhuma permissao em nenhuma UO) — deny-by-default (I2).</summary>
     public static EscopoEfetivo Vazio { get; } =
-        new(new Dictionary<string, IReadOnlySet<UnidadeOrganizacionalId>>(StringComparer.Ordinal));
+        new(
+            new Dictionary<string, IReadOnlySet<UnidadeOrganizacionalId>>(StringComparer.Ordinal),
+            new Dictionary<string, int>(StringComparer.Ordinal));
 
     /// <summary>Permissoes efetivas (projecao PLANA, distinta e ordenada) — para as claims do token.</summary>
     public IReadOnlyList<string> Permissoes
@@ -60,6 +71,7 @@ public sealed class EscopoEfetivo
         ArgumentNullException.ThrowIfNull(arvore);
 
         var acumulado = new Dictionary<string, HashSet<UnidadeOrganizacionalId>>(StringComparer.Ordinal);
+        var profundidade = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (var atribuicao in atribuicoes)
         {
@@ -83,6 +95,13 @@ public sealed class EscopoEfetivo
                 }
 
                 uos.UnionWith(alcancadas);
+
+                // AA-5/D3: guarda a MAIOR profundidade com que o sujeito detem a permissao. Uma nova
+                // subdelegacao a partir dela tera profundidade = essa profundidade + 1.
+                var atual = atribuicao.ProfundidadeDelegacao;
+                profundidade[permissao] = profundidade.TryGetValue(permissao, out var existente)
+                    ? Math.Max(existente, atual)
+                    : atual;
             }
         }
 
@@ -91,8 +110,18 @@ public sealed class EscopoEfetivo
             par => (IReadOnlySet<UnidadeOrganizacionalId>)par.Value,
             StringComparer.Ordinal);
 
-        return new EscopoEfetivo(congelado);
+        return new EscopoEfetivo(congelado, profundidade);
     }
+
+    /// <summary>
+    /// Maior profundidade de (sub)delegacao com que o sujeito detem a permissao (AA-5/D3); 0 se a
+    /// possui apenas diretamente (ou nao a possui). Usada para calcular a profundidade resultante de
+    /// uma subdelegacao a partir deste poder.
+    /// </summary>
+    /// <param name="permissao">Permissao do catalogo canonico.</param>
+    /// <returns>Maior profundidade de delegacao para a permissao (0 se nao delegada/ausente).</returns>
+    public int ProfundidadeDeDelegacao(string permissao)
+        => _profundidadePorPermissao.TryGetValue(permissao, out var profundidade) ? profundidade : 0;
 
     /// <summary>Conjunto de UOs em que o sujeito possui a permissao informada (vazio se nao a possui).</summary>
     /// <param name="permissao">Escopo do catalogo canonico.</param>

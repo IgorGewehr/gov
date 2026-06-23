@@ -62,8 +62,21 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Protocolo.</summary>
     public const string ProtocoloGerenciar = "protocolo.gerenciar";
 
-    /// <summary>Visualizar dados do modulo Saude (UBS, PEP, farmacia).</summary>
+    /// <summary>
+    /// Visualizar dados MINIMIZADOS do modulo Saude (listagens, agregados, metadados). LG-A3: NAO
+    /// libera por si o conteudo clinico sigiloso (PEP, historico de CID-10/alergias, evolucoes SOAP)
+    /// — esse conteudo exige o verbo fino <see cref="SaudeProntuarioLer"/>. Assim, ver o agregado
+    /// nao expoe o prontuario sensivel sem o verbo de leitura clinica.
+    /// </summary>
     public const string SaudeVer = "saude.ver";
+
+    /// <summary>
+    /// Ler o CONTEUDO CLINICO sigiloso do paciente (LGPD art. 11): historico clinico (CID-10/CIAP,
+    /// alergias, condicoes cronicas), detalhe/evolucoes de atendimento e dados identificaveis por
+    /// CNS. Verbo FINO de Segregacao de Funcoes (LG-A3) separado de <see cref="SaudeVer"/>: toda
+    /// leitura assim gated tambem gera trilha de acesso LGPD (LG-2) com base legal (LG-A2).
+    /// </summary>
+    public const string SaudeProntuarioLer = "saude.prontuario.ler";
 
     /// <summary>Gerenciar (mutar) dados do modulo Saude.</summary>
     public const string SaudeGerenciar = "saude.gerenciar";
@@ -74,8 +87,22 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Educacao.</summary>
     public const string EducacaoGerenciar = "educacao.gerenciar";
 
-    /// <summary>Visualizar dados do modulo Assistencia Social (SUAS, CadUnico, beneficios).</summary>
+    /// <summary>
+    /// Visualizar dados MINIMIZADOS do modulo Assistencia Social (listagens territoriais, agregados
+    /// de beneficios). LG-A3: NAO libera por si o conteudo sigiloso do prontuario SUAS (atendimentos,
+    /// violacoes envolvendo crianca/adolescente) nem o resumo CadUnico (NIS/renda) — esse conteudo
+    /// exige o verbo fino <see cref="AssistenciaSocialProntuarioLer"/>.
+    /// </summary>
     public const string AssistenciaSocialVer = "assistenciasocial.ver";
+
+    /// <summary>
+    /// Ler o CONTEUDO SIGILOSO do prontuario SUAS e do CadUnico (LGPD art. 11; ECA quando ha
+    /// violacao contra crianca/adolescente): detalhe do prontuario, trilha de acesso e resumo
+    /// CadUnico (NIS/renda). Verbo FINO de Segregacao de Funcoes (LG-A3) separado de
+    /// <see cref="AssistenciaSocialVer"/>; leituras assim gated geram trilha de acesso LGPD (LG-1/2)
+    /// com base legal (LG-A2).
+    /// </summary>
+    public const string AssistenciaSocialProntuarioLer = "assistenciasocial.prontuario.ler";
 
     /// <summary>Gerenciar (mutar) dados do modulo Assistencia Social.</summary>
     public const string AssistenciaSocialGerenciar = "assistenciasocial.gerenciar";
@@ -214,10 +241,12 @@ public static class Permissoes
         ProtocoloVer,
         ProtocoloGerenciar,
         SaudeVer,
+        SaudeProntuarioLer,
         SaudeGerenciar,
         EducacaoVer,
         EducacaoGerenciar,
         AssistenciaSocialVer,
+        AssistenciaSocialProntuarioLer,
         AssistenciaSocialGerenciar,
         LegislativoVer,
         LegislativoGerenciar,

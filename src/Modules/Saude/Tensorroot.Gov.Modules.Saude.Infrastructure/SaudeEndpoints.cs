@@ -29,13 +29,14 @@ internal static class SaudeEndpoints
             CadastrarPacienteCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
 
+        // LG-A3: leitura de conteudo clinico identificavel exige o verbo FINO (separado de "saude.ver").
         grupo.MapGet("/pacientes/por-cns/{cns}", async (
             string cns, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterPacientePorCnsQuery(cns), cancellationToken))).RequirePermission("saude.ver");
+            => Results.Ok(await sender.Send(new ObterPacientePorCnsQuery(cns), cancellationToken))).RequirePermission("saude.prontuario.ler");
 
         grupo.MapGet("/pacientes/{pacienteId:guid}/historico-clinico", async (
             Guid pacienteId, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterHistoricoClinicoDoPacienteQuery(pacienteId), cancellationToken))).RequirePermission("saude.ver");
+            => Results.Ok(await sender.Send(new ObterHistoricoClinicoDoPacienteQuery(pacienteId), cancellationToken))).RequirePermission("saude.prontuario.ler");
 
         grupo.MapPut("/pacientes/{pacienteId:guid}", async (
             Guid pacienteId, AtualizarCadastroPacientePayload payload, ISender sender, CancellationToken cancellationToken) =>
@@ -79,13 +80,14 @@ internal static class SaudeEndpoints
             RegistrarAtendimentoCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
 
+        // LG-A3: o detalhe e o historico de atendimentos contem conteudo clinico (SOAP/CID) — verbo fino.
         grupo.MapGet("/atendimentos/{atendimentoId:guid}", async (
             Guid atendimentoId, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterAtendimentoPorIdQuery(atendimentoId), cancellationToken))).RequirePermission("saude.ver");
+            => Results.Ok(await sender.Send(new ObterAtendimentoPorIdQuery(atendimentoId), cancellationToken))).RequirePermission("saude.prontuario.ler");
 
         grupo.MapGet("/pacientes/{pacienteId:guid}/atendimentos", async (
             Guid pacienteId, DateOnly? de, DateOnly? ate, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ListarAtendimentosDoPacienteQuery(pacienteId, de, ate), cancellationToken))).RequirePermission("saude.ver");
+            => Results.Ok(await sender.Send(new ListarAtendimentosDoPacienteQuery(pacienteId, de, ate), cancellationToken))).RequirePermission("saude.prontuario.ler");
 
         grupo.MapPost("/atendimentos/{atendimentoId:guid}/evolucoes", async (
             Guid atendimentoId, AdicionarEvolucaoPayload payload, ISender sender, CancellationToken cancellationToken) =>

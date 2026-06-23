@@ -56,6 +56,9 @@ public sealed record ObterProntuarioDaFamiliaQuery(
 
     /// <inheritdoc />
     public BaseLegalLgpd BaseLegal => BaseLegalLgpd.PoliticaPublica;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisAssistencia.Aplicaveis;
 }
 
 /// <summary>Regras de validacao da leitura sigilosa do prontuario da familia.</summary>

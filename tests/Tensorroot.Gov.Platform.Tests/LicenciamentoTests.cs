@@ -22,7 +22,8 @@ public sealed class LicenciamentoTests
         await using var contexto = new PlatformDbContext(options);
         await contexto.Database.EnsureCreatedAsync();
 
-        var provisionamento = new TenantProvisioningService(contexto, new TenantConnectionCache(TimeProvider.System));
+        var provisionamento = new TenantProvisioningService(
+            contexto, new TenantConnectionCache(TimeProvider.System), ProvedorKekFake.Protetor());
         var provider = new TenantModuleProvider(contexto);
 
         // Prefeitura licencia SÓ Tributos + Saúde.

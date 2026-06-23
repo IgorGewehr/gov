@@ -26,12 +26,31 @@ public sealed class RegistroAcessoSensivel(
     /// <summary>Acao gravada na trilha para diferenciar a LEITURA sensivel das mutacoes.</summary>
     public const string AcaoLeitura = "Read";
 
+    /// <summary>Acao gravada na trilha para uma TENTATIVA NEGADA de acesso sensivel (LG-A2).</summary>
+    public const string AcaoLeituraNegada = "ReadDenied";
+
     /// <inheritdoc />
-    public async Task RegistrarAsync(
+    public Task RegistrarAsync(
         string entidade,
         string? entidadeId,
         BaseLegalLgpd baseLegal,
         CancellationToken cancellationToken = default)
+        => SelarAsync(entidade, entidadeId, baseLegal, AcaoLeitura, cancellationToken);
+
+    /// <inheritdoc />
+    public Task RegistrarNegacaoAsync(
+        string entidade,
+        string? entidadeId,
+        BaseLegalLgpd baseLegalRejeitada,
+        CancellationToken cancellationToken = default)
+        => SelarAsync(entidade, entidadeId, baseLegalRejeitada, AcaoLeituraNegada, cancellationToken);
+
+    private async Task SelarAsync(
+        string entidade,
+        string? entidadeId,
+        BaseLegalLgpd baseLegal,
+        string acao,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(entidade);
 
@@ -57,7 +76,7 @@ public sealed class RegistroAcessoSensivel(
         });
 
         var conteudo = AuditHashChain.ConteudoCanonico(
-            id, tenantId, sequencia, entidade, entidadeId, AcaoLeitura,
+            id, tenantId, sequencia, entidade, entidadeId, acao,
             oldValues: null, newValues: newValues, affectedColumns: null,
             currentUser.UserId, currentUser.IpAddress, agoraUtc);
         var hashAtual = AuditHashChain.Selar(hashAnterior, conteudo);
@@ -68,7 +87,7 @@ public sealed class RegistroAcessoSensivel(
             TenantId = tenantId,
             EntityName = entidade,
             EntityId = entidadeId,
-            Action = AcaoLeitura,
+            Action = acao,
             OldValues = null,
             NewValues = newValues,
             AffectedColumns = null,

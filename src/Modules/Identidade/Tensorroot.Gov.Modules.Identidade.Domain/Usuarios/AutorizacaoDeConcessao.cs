@@ -24,16 +24,36 @@ public enum MotivoConcessaoNegada
 
     /// <summary>O concedente nao possui, ele proprio, todas as permissoes do papel no escopo alvo (D4/§3.1.c).</summary>
     PermissaoNaoPossuida = 4,
+
+    /// <summary>
+    /// A cadeia de (sub)delegacao ultrapassaria o limite de profundidade configurado para o tenant
+    /// (AA-5/D3) — barra subdelegacao infinita. A profundidade resultante seria maior que o teto.
+    /// </summary>
+    LimiteDeProfundidadeExcedido = 5,
 }
 
 /// <summary>Resultado da verificacao de uma concessao pela regra I4.</summary>
 /// <param name="Permitida">Se a concessao e permitida.</param>
 /// <param name="Motivo">Motivo da negacao (<see cref="MotivoConcessaoNegada.Nenhum"/> se permitida).</param>
 /// <param name="PermissaoFaltante">Permissao especifica que faltou ao concedente, quando aplicavel.</param>
-public sealed record ResultadoConcessao(bool Permitida, MotivoConcessaoNegada Motivo, string? PermissaoFaltante = null)
+/// <param name="ProfundidadeResultante">
+/// Profundidade de (sub)delegacao que a nova atribuicao deve ter quando permitida (AA-5/D3); 0 para
+/// concessao direta. Indefinido quando negada.
+/// </param>
+public sealed record ResultadoConcessao(
+    bool Permitida,
+    MotivoConcessaoNegada Motivo,
+    string? PermissaoFaltante = null,
+    int ProfundidadeResultante = 0)
 {
-    /// <summary>Resultado de concessao permitida.</summary>
+    /// <summary>Resultado de concessao permitida (sem profundidade — uso legado).</summary>
     public static ResultadoConcessao Ok { get; } = new(true, MotivoConcessaoNegada.Nenhum);
+
+    /// <summary>Resultado de concessao permitida com a profundidade de (sub)delegacao resultante.</summary>
+    /// <param name="profundidadeResultante">Profundidade da nova atribuicao (0 = direta).</param>
+    /// <returns>Resultado permitido.</returns>
+    public static ResultadoConcessao Permitir(int profundidadeResultante)
+        => new(true, MotivoConcessaoNegada.Nenhum, PermissaoFaltante: null, profundidadeResultante);
 
     /// <summary>Cria um resultado de negacao com o motivo informado.</summary>
     /// <param name="motivo">Motivo da negacao.</param>
@@ -70,18 +90,31 @@ public static class AutorizacaoDeConcessao
     /// <param name="unidadeAlvo">UO em que o papel sera atribuido.</param>
     /// <param name="incluiSubunidades">Se a atribuicao alcanca os descendentes da UO alvo.</param>
     /// <param name="arvore">Arvore de UOs do tenant.</param>
-    /// <returns>Resultado da verificacao (permitida ou motivo da negacao).</returns>
-    /// <exception cref="ArgumentNullException">Se algum argumento for nulo.</exception>
+    /// <param name="ehDelegacao">
+    /// Se esta concessao e uma DELEGACAO (concedente != alvo). Quando <c>false</c> (auto-atribuicao
+    /// do admin), a atribuicao e DIRETA (profundidade 0) e o limite D3 nao se aplica (AA-5).
+    /// </param>
+    /// <param name="profundidadeDoConcedente">
+    /// Maior profundidade de (sub)delegacao do PODER do concedente (AA-5/D3). Numa delegacao, a nova
+    /// atribuicao tera profundidade <c>profundidadeDoConcedente + 1</c>.
+    /// </param>
+    /// <param name="politica">Politica de (sub)delegacao do tenant (teto de profundidade). Nulo = padrao.</param>
+    /// <returns>Resultado da verificacao (permitida + profundidade resultante, ou motivo da negacao).</returns>
+    /// <exception cref="ArgumentNullException">Se algum argumento obrigatorio for nulo.</exception>
     public static ResultadoConcessao Verificar(
         EscopoEfetivo escopoConcedente,
         IReadOnlySet<string> permissoesDoPapel,
         UnidadeOrganizacionalId unidadeAlvo,
         bool incluiSubunidades,
-        ArvoreUnidades arvore)
+        ArvoreUnidades arvore,
+        bool ehDelegacao = false,
+        int profundidadeDoConcedente = 0,
+        PoliticaDelegacao? politica = null)
     {
         ArgumentNullException.ThrowIfNull(escopoConcedente);
         ArgumentNullException.ThrowIfNull(permissoesDoPapel);
         ArgumentNullException.ThrowIfNull(arvore);
+        ArgumentOutOfRangeException.ThrowIfNegative(profundidadeDoConcedente);
 
         // (a) Poder administrativo de usuarios (§3.1.a) — pre-requisito de qualquer concessao.
         if (!escopoConcedente.Possui(DomainPermissoes.IdentidadeUsuariosGerenciar))
@@ -115,6 +148,17 @@ public static class AutorizacaoDeConcessao
             }
         }
 
-        return ResultadoConcessao.Ok;
+        // (d) LIMITE DE PROFUNDIDADE DE SUBDELEGACAO (AA-5/D3): uma atribuicao DIRETA (auto-administracao
+        // do admin) e raiz da cadeia (profundidade 0) e nao se sujeita ao teto. Uma DELEGACAO herda a
+        // profundidade do poder do concedente + 1; se o resultado ultrapassa o teto do tenant, NEGA —
+        // barrando cadeias infinitas de subdelegacao (amplificador de AA-1/AA-2).
+        var politicaEfetiva = politica ?? PoliticaDelegacao.Padrao;
+        var profundidadeResultante = ehDelegacao ? profundidadeDoConcedente + 1 : 0;
+        if (ehDelegacao && !politicaEfetiva.Permite(profundidadeResultante))
+        {
+            return ResultadoConcessao.Negar(MotivoConcessaoNegada.LimiteDeProfundidadeExcedido);
+        }
+
+        return ResultadoConcessao.Permitir(profundidadeResultante);
     }
 }

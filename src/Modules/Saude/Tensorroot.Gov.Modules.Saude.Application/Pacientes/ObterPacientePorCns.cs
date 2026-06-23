@@ -42,6 +42,9 @@ public sealed record ObterPacientePorCnsQuery(string Cns)
 
     /// <inheritdoc />
     public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisSaude.Aplicaveis;
 }
 
 /// <summary>Handler da consulta de paciente por CNS.</summary>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.BuildingBlocks.Infrastructure;
@@ -43,6 +44,22 @@ public abstract class ModuleDbContext : DbContext
 
     /// <summary>TenantId atual usado pelo Global Query Filter (reavaliado por consulta).</summary>
     public Guid CurrentTenantId => _tenantContext.HasTenant ? _tenantContext.TenantId : Guid.Empty;
+
+    /// <summary>
+    /// Indica que o contexto é o de SISTEMA/bootstrap (<see cref="SistemaTenantContext"/>): DDL,
+    /// migração e seed, onde NÃO há principal a isolar. Nesse caso o filtro de tenant é PASSE-LIVRE
+    /// (não nega nem filtra por <see cref="Guid.Empty"/>) — somente caminhos de plataforma explícitos.
+    /// </summary>
+    public bool ContextoDeSistema => _tenantContext is SistemaTenantContext;
+
+    /// <summary>
+    /// Indica se as consultas tenant-scoped devem ser NEGADAS (XT-2 / CLAUDE.md §5: deny-by-default).
+    /// Verdadeiro quando NÃO há tenant resolvido E o contexto não é o de SISTEMA/bootstrap. Nesse caso
+    /// o Global Query Filter degenera para <c>1=0</c> em vez de filtrar por <see cref="Guid.Empty"/> —
+    /// "sem tenant" NUNCA vira "tenant zero", o que silenciosamente devolveria linhas órfãs e quebraria
+    /// o isolamento.
+    /// </summary>
+    public bool NegarPorFaltaDeTenant => !_tenantContext.HasTenant && _tenantContext is not SistemaTenantContext;
 
     /// <summary>
     /// Indica se o filtro de UO deve ser aplicado nesta consulta (MODELO §5). Falso quando não há

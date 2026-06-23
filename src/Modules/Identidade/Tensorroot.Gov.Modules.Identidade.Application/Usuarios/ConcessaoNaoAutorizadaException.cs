@@ -38,6 +38,8 @@ public sealed class ConcessaoNaoAutorizadaException : Exception
                 "Concessao negada (I4): voce nao administra a unidade organizacional alvo (ou parte de sua subarvore).",
             MotivoConcessaoNegada.PermissaoNaoPossuida =>
                 $"Concessao negada (I4 - nao delega o que nao tem): voce nao possui a permissao '{resultado.PermissaoFaltante}' no escopo alvo.",
+            MotivoConcessaoNegada.LimiteDeProfundidadeExcedido =>
+                "Concessao negada (D3): a cadeia de subdelegacao excederia o limite de profundidade configurado para o tenant.",
             _ => "Concessao negada.",
         };
     }

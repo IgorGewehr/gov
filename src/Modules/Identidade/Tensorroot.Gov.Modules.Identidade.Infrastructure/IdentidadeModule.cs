@@ -83,6 +83,9 @@ public sealed class IdentidadeModule : IModule
         services.AddScoped<IResolvedorEscopoUnidade, ResolvedorEscopoUnidade>();
         services.AddScoped<ITenantUnidadeContext, TenantUnidadeContext>();
 
+        // AA-5/D3: politica de (sub)delegacao por tenant (teto de profundidade) — parametrizavel.
+        services.AddScoped<IPoliticaDelegacaoProvider, PoliticaDelegacaoProvider>();
+
         // Seguranca: hash BCrypt e emissao de JWT HS256.
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SecaoConfiguracao));
         var workFactor = configuration.GetValue<int?>("Seguranca:BCryptWorkFactor") ?? SenhaHasher.WorkFactorPadrao;

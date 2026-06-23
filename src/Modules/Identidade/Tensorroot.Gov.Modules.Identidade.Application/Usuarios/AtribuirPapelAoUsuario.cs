@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Identidade.Application.Internal;
 using Tensorroot.Gov.Modules.Identidade.Domain.Papeis;
 using Tensorroot.Gov.Modules.Identidade.Domain.Unidades;
 using Tensorroot.Gov.Modules.Identidade.Domain.Usuarios;
+using DomainPermissoes = Tensorroot.Gov.Modules.Identidade.Domain.Permissoes.Permissoes;
 
 namespace Tensorroot.Gov.Modules.Identidade.Application.Usuarios;
 
@@ -45,12 +46,13 @@ public sealed class AtribuirPapelAoUsuarioValidator : AbstractValidator<Atribuir
     }
 }
 
-/// <summary>Handler da atribuicao de papel com escopo (prova I4).</summary>
+/// <summary>Handler da atribuicao de papel com escopo (prova I4 + limite de profundidade D3).</summary>
 public sealed class AtribuirPapelAoUsuarioHandler(
     IUsuarioRepository usuarios,
     IPapelRepository papeis,
     IUnidadeRepository unidades,
     ICurrentUser currentUser,
+    IPoliticaDelegacaoProvider politicaDelegacao,
     IUnitOfWork unitOfWork,
     TimeProvider clock)
     : ICommandHandler<AtribuirPapelAoUsuarioCommand>
@@ -86,12 +88,23 @@ public sealed class AtribuirPapelAoUsuarioHandler(
         var todasUnidades = await unidades.ListarAsync(cancellationToken).ConfigureAwait(false);
         var arvore = ArvoreUnidades.Construir(todasUnidades);
 
+        // AA-5/D3: e DELEGACAO quando o concedente atribui a um TERCEIRO (concedente != alvo). A
+        // profundidade da nova atribuicao herda a profundidade do PODER ADMINISTRATIVO do concedente
+        // + 1; o teto (parametrizavel por tenant) barra cadeias infinitas de subdelegacao.
+        var ehDelegacao = concedente.Id != usuario.Id;
+        var profundidadeDoConcedente = escopoConcedente.ProfundidadeDeDelegacao(
+            DomainPermissoes.IdentidadeUsuariosGerenciar);
+        var politica = await politicaDelegacao.ObterAsync(cancellationToken).ConfigureAwait(false);
+
         var resultado = AutorizacaoDeConcessao.Verificar(
             escopoConcedente,
             papel.Permissoes,
             unidadeId,
             request.IncluiSubunidades,
-            arvore);
+            arvore,
+            ehDelegacao,
+            profundidadeDoConcedente,
+            politica);
 
         if (!resultado.Permitida)
         {
@@ -102,7 +115,8 @@ public sealed class AtribuirPapelAoUsuarioHandler(
         var vigencia = Vigencia.Criar(inicio, request.VigenciaFim);
         var origem = ProcedenciaDoConcedente(concedente.Id, usuario.Id);
 
-        usuario.AtribuirPapel(papelId, unidadeId, request.IncluiSubunidades, vigencia, origem);
+        usuario.AtribuirPapel(
+            papelId, unidadeId, request.IncluiSubunidades, vigencia, origem, resultado.ProfundidadeResultante);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 

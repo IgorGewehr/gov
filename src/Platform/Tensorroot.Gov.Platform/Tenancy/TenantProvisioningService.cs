@@ -38,14 +38,23 @@ public interface ITenantProvisioningService
 /// <summary>Implementação EF Core do <see cref="ITenantProvisioningService"/>.</summary>
 public sealed class TenantProvisioningService(
     PlatformDbContext context,
-    ITenantConnectionCacheInvalidator cacheInvalidator) : ITenantProvisioningService
+    ITenantConnectionCacheInvalidator cacheInvalidator,
+    ProtetorConexaoTenant protetor) : ITenantProvisioningService
 {
     /// <inheritdoc />
     public async Task<Guid> ProvisionarAsync(string cnpj, string nome, PoderTenant poder, string? connectionString, IEnumerable<string> modulos, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(modulos);
 
-        var tenant = Tenant.Criar(cnpj, nome, poder, connectionString);
+        // Cria sem conexão; o ID nasce aqui e compõe a AAD do envelope (SEC-1). Só então cifra-se a
+        // connection string em repouso. Nada de credencial de banco em CLARO persistida no catálogo.
+        var tenant = Tenant.Criar(cnpj, nome, poder, connectionString: null);
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            var protegida = await protetor.ProtegerAsync(tenant.Id, connectionString, cancellationToken).ConfigureAwait(false);
+            tenant.DefinirConexao(protegida);
+        }
+
         context.Tenants.Add(tenant);
         foreach (var modulo in modulos.Distinct(StringComparer.Ordinal))
         {
@@ -91,7 +100,9 @@ public sealed class TenantProvisioningService(
             .ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Tenant {tenantId} não encontrado para rotação de conexão.");
 
-        tenant.DefinirConexao(connectionString);
+        // SEC-1: cifra a nova connection string em repouso antes de persistir (envelope + KEK).
+        var protegida = await protetor.ProtegerAsync(tenantId, connectionString, cancellationToken).ConfigureAwait(false);
+        tenant.DefinirConexao(protegida);
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Fecha a janela de divergência: a próxima resolução re-busca a conexão nova no catálogo.

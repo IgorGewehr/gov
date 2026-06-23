@@ -46,6 +46,9 @@ public sealed record ObterHistoricoClinicoDoPacienteQuery(Guid PacienteId)
 
     /// <inheritdoc />
     public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisSaude.Aplicaveis;
 }
 
 /// <summary>Handler da consulta de historico clinico do paciente.</summary>

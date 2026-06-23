@@ -81,7 +81,8 @@ public sealed class TenantConnectionCacheTests
         await contexto.Database.EnsureCreatedAsync();
 
         var cache = new TenantConnectionCache(TimeProvider.System);
-        var provisionamento = new TenantProvisioningService(contexto, cache);
+        var protetor = ProvedorKekFake.Protetor();
+        var provisionamento = new TenantProvisioningService(contexto, cache, protetor);
 
         var tenantId = await provisionamento.ProvisionarAsync(
             "11.222.333/0001-81", "Prefeitura de Exemplo", PoderTenant.Executivo,
@@ -89,12 +90,12 @@ public sealed class TenantConnectionCacheTests
             new[] { "Tributos" }, CancellationToken.None);
 
         var tenantContext = new TenantContextFake(tenantId);
-        var resolver = new TenantConnectionResolver(tenantContext, contexto, cache);
+        var resolver = new TenantConnectionResolver(tenantContext, contexto, cache, protetor);
 
-        // Resolve e cacheia a conexão antiga.
+        // Resolve e cacheia a conexão antiga (DECIFRADA do envelope em repouso — SEC-1).
         resolver.ResolveConnectionString().Should().Be("Data Source=antigo.db");
 
-        // Rotaciona: persiste a nova e INVALIDA o cache.
+        // Rotaciona: persiste a nova (CIFRADA) e INVALIDA o cache.
         await provisionamento.RotacionarConexaoAsync(tenantId, "Data Source=novo.db", CancellationToken.None);
 
         // A próxima resolução serve a NOVA conexão (não a obsoleta).

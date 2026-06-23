@@ -1,7 +1,9 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Abstractions;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Integracoes;
+using Tensorroot.Gov.Modules.AssistenciaSocial.Application.Prontuarios;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Domain.Familias;
+using Tensorroot.Gov.SharedKernel;
 
 namespace Tensorroot.Gov.Modules.AssistenciaSocial.Application.Familias;
 
@@ -21,9 +23,27 @@ public sealed record ResumoCadUnico(
     DateOnly DataUltimaAtualizacao,
     bool DentroDaVigencia);
 
-/// <summary>Projeta o resumo do CadUnico de uma familia (tenant-scoped).</summary>
+/// <summary>
+/// Projeta o resumo do CadUnico de uma familia (tenant-scoped). Dado pessoal SENSIVEL (LGPD art. 11:
+/// NIS/renda do CadUnico). Por implementar <see cref="ISensivelLgpd"/>, GERA TRILHA DE ACESSO (LG-2)
+/// e exige base legal aplicavel (LG-A2); a borda exige o verbo fino <c>assistenciasocial.prontuario.ler</c>
+/// (LG-A3). Base legal: execucao de politica publica de assistencia social (art. 11, II, "b").
+/// </summary>
 /// <param name="FamiliaId">Familia a consultar.</param>
-public sealed record ObterResumoCadUnicoQuery(Guid FamiliaId) : IQuery<ResumoCadUnico>;
+public sealed record ObterResumoCadUnicoQuery(Guid FamiliaId) : IQuery<ResumoCadUnico>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => "CadUnico";
+
+    /// <inheritdoc />
+    public string? EntidadeId => FamiliaId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.PoliticaPublica;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisAssistencia.Aplicaveis;
+}
 
 /// <summary>Handler da projecao do resumo do CadUnico.</summary>
 public sealed class ObterResumoCadUnicoHandler(

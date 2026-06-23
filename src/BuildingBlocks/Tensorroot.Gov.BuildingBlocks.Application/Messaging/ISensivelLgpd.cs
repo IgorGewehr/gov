@@ -23,6 +23,19 @@ public interface ISensivelLgpd
     /// </summary>
     string? EntidadeId { get; }
 
-    /// <summary>Hipotese legal (LGPD) que autoriza o acesso, gravada estruturada na trilha (LG-A2).</summary>
+    /// <summary>
+    /// Hipotese legal (LGPD) APLICADA a este acesso, gravada estruturada na trilha (LG-A2). LG-A2
+    /// EXIGE que ela pertenca a <see cref="BasesLegaisAplicaveis"/> — caso contrario o acesso e
+    /// NEGADO e a tentativa auditada (deny-by-default da accountability).
+    /// </summary>
     BaseLegalLgpd BaseLegal { get; }
+
+    /// <summary>
+    /// Conjunto FECHADO de hipoteses legais que, para ESTE recurso sensivel, podem legitimar o
+    /// acesso (LG-A2). Modela a base legal da operacao em vez de aceitar texto livre: um dado de
+    /// SAUDE (art. 11) nao pode ser acessado sob hipotese de dado comum (art. 7) e vice-versa. O
+    /// behavior transversal verifica <see cref="BaseLegal"/> contra este conjunto ANTES de liberar a
+    /// projecao; vazio ou nao-aplicavel ⇒ acesso negado e auditado.
+    /// </summary>
+    IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis { get; }
 }

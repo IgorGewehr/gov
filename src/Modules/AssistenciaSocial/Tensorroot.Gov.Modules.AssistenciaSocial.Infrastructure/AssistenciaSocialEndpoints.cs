@@ -48,10 +48,11 @@ internal static class AssistenciaSocialEndpoints
             => Results.Ok(await sender.Send(new ObterFamiliasDoTerritorioQuery(territorio), cancellationToken)))
             .RequirePermission("assistenciasocial.ver");
 
+        // LG-A3: o resumo CadUnico expoe NIS/renda (dado sensivel) — verbo FINO, separado de "ver".
         grupo.MapGet("/familias/{familiaId:guid}/cadunico", async (
             Guid familiaId, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterResumoCadUnicoQuery(familiaId), cancellationToken)))
-            .RequirePermission("assistenciasocial.ver");
+            .RequirePermission("assistenciasocial.prontuario.ler");
     }
 
     private static void MapearBeneficios(RouteGroupBuilder grupo)
@@ -110,15 +111,17 @@ internal static class AssistenciaSocialEndpoints
             return Results.NoContent();
         }).RequirePermission("assistenciasocial.gerenciar");
 
+        // LG-A3: conteudo sigiloso do prontuario SUAS (atendimentos, violacoes contra menor) — verbo fino.
         grupo.MapGet("/familias/{familiaId:guid}/prontuario", async (
             Guid familiaId, string motivoAcesso, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterProntuarioDaFamiliaQuery(familiaId, motivoAcesso), cancellationToken)))
-            .RequirePermission("assistenciasocial.ver");
+            .RequirePermission("assistenciasocial.prontuario.ler");
 
+        // LG-A3: a trilha de acesso do prontuario revela quem leu dado sigiloso — verbo fino.
         grupo.MapGet("/prontuarios/{prontuarioId:guid}/trilha-acesso", async (
             Guid prontuarioId, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterTrilhaAcessoProntuarioQuery(prontuarioId), cancellationToken)))
-            .RequirePermission("assistenciasocial.ver");
+            .RequirePermission("assistenciasocial.prontuario.ler");
     }
 
     private sealed record AtualizarRendaPayload(IReadOnlyList<MembroFamiliarDto> Membros);

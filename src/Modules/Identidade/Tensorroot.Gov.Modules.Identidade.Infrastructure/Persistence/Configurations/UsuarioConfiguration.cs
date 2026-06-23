@@ -103,6 +103,13 @@ public sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
 
         atribuicoes.Property(atribuicao => atribuicao.IncluiSubunidades).IsRequired();
 
+        // AA-5/D3: profundidade da cadeia de (sub)delegacao (0 = direta). Default 0 cobre as linhas
+        // legadas (criadas antes do controle de profundidade).
+        atribuicoes.Property(atribuicao => atribuicao.ProfundidadeDelegacao)
+            .HasColumnName("ProfundidadeDelegacao")
+            .HasDefaultValue(0)
+            .IsRequired();
+
         // Vigencia (VO) achatada em colunas. O fim e opcional (vigencia aberta).
         atribuicoes.OwnsOne(atribuicao => atribuicao.Vigencia, vigencia =>
         {

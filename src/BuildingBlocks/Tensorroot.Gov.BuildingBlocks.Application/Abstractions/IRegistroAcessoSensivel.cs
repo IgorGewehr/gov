@@ -21,4 +21,20 @@ public interface IRegistroAcessoSensivel
         string? entidadeId,
         BaseLegalLgpd baseLegal,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sela na trilha imutavel uma TENTATIVA NEGADA de acesso sensivel por falta de base legal
+    /// aplicavel (LG-A2): mesmo nao havendo leitura, a accountability exige rastro de quem tentou,
+    /// de qual recurso, sob qual hipotese rejeitada (deny-by-default da trilha).
+    /// </summary>
+    /// <param name="entidade">Nome da entidade/recurso cujo acesso foi negado.</param>
+    /// <param name="entidadeId">Identificador do recurso, quando conhecido.</param>
+    /// <param name="baseLegalRejeitada">Hipotese legal que a operacao tentou aplicar e foi rejeitada.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Tarefa da operacao.</returns>
+    Task RegistrarNegacaoAsync(
+        string entidade,
+        string? entidadeId,
+        BaseLegalLgpd baseLegalRejeitada,
+        CancellationToken cancellationToken = default);
 }

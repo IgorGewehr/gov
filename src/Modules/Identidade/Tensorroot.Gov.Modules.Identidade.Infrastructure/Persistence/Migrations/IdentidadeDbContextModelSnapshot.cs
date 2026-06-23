@@ -232,6 +232,12 @@ namespace Tensorroot.Gov.Modules.Identidade.Infrastructure.Persistence.Migration
                                 .HasColumnType("uniqueidentifier")
                                 .HasColumnName("PapelId");
 
+                            b1.Property<int>("ProfundidadeDelegacao")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int")
+                                .HasDefaultValue(0)
+                                .HasColumnName("ProfundidadeDelegacao");
+
                             b1.Property<Guid>("UnidadeId")
                                 .HasColumnType("uniqueidentifier")
                                 .HasColumnName("UnidadeId");

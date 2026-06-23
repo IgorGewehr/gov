@@ -32,7 +32,9 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             builder.Property(tenant => tenant.Cnpj).HasMaxLength(14);
             builder.Property(tenant => tenant.Nome).HasMaxLength(200);
             builder.Property(tenant => tenant.Poder).HasConversion<string>().HasMaxLength(20);
-            builder.Property(tenant => tenant.ConnectionString).HasMaxLength(500);
+            // SEC-1: a connection string é persistida CIFRADA (envelope AES-256-GCM + KEK embrulhada
+            // + AAD do tenant), em Base64 — bem maior que o texto puro; folga generosa.
+            builder.Property(tenant => tenant.ConnectionString).HasMaxLength(2000);
             builder.HasIndex(tenant => tenant.Cnpj).IsUnique();
         });
 

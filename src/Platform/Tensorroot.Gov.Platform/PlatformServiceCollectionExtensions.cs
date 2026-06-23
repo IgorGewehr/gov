@@ -38,6 +38,9 @@ public static class PlatformServiceCollectionExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<TenantConnectionCache>();
         services.AddSingleton<ITenantConnectionCacheInvalidator>(sp => sp.GetRequiredService<TenantConnectionCache>());
+        // SEC-1: protetor de connection string em repouso (envelope AES-256-GCM + KEK via IProvedorKek,
+        // registrado pelo módulo Cofre). Singleton, sem estado — depende só do provedor de KEK.
+        services.AddSingleton<ProtetorConexaoTenant>();
         services.AddScoped<ITenantConnectionResolver, TenantConnectionResolver>();
         return services;
     }

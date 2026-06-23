@@ -44,9 +44,21 @@ public static class ModelBuilderExtensions
 
             if (ehTenant)
             {
+                // XT-2 / deny-by-default (CLAUDE.md §5). Três casos, reavaliados por consulta:
+                //   context.ContextoDeSistema      ? true                                  (DDL/migração/seed: passe-livre)
+                //   : context.NegarPorFaltaDeTenant ? false                                 (sem tenant: 1=0 — NUNCA Guid.Empty)
+                //   :                                 (e.TenantId == context.CurrentTenantId) (isolamento normal por tenant)
+                // "Sem tenant" NUNCA vira "tenant zero" (que devolveria linhas órfãs); o contexto de
+                // sistema é o ÚNICO caminho de plataforma/bootstrap que escapa do filtro.
                 var tenantProperty = Expression.Property(parameter, nameof(IMustHaveTenant.TenantId));
                 var currentTenant = Expression.Property(contextoConstante, nameof(ModuleDbContext.CurrentTenantId));
-                body = Expression.Equal(tenantProperty, currentTenant);
+                var igualdade = Expression.Equal(tenantProperty, currentTenant);
+
+                var negar = Expression.Property(contextoConstante, nameof(ModuleDbContext.NegarPorFaltaDeTenant));
+                var sistema = Expression.Property(contextoConstante, nameof(ModuleDbContext.ContextoDeSistema));
+
+                var negarOuFiltrar = Expression.Condition(negar, Expression.Constant(false), igualdade);
+                body = Expression.Condition(sistema, Expression.Constant(true), negarOuFiltrar);
             }
 
             if (ehUnidade)

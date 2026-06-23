@@ -195,13 +195,15 @@ public sealed class Usuario : AggregateRoot<UsuarioId>, IMustHaveTenant
     /// <param name="incluiSubunidades">Se a atribuicao alcanca os descendentes da UO (I5).</param>
     /// <param name="vigencia">Janela de vigencia.</param>
     /// <param name="origem">Procedencia (direta/delegada + concedente).</param>
+    /// <param name="profundidadeDelegacao">Profundidade na cadeia de subdelegacao (0 = direta — AA-5/D3).</param>
     /// <exception cref="ArgumentNullException">Se <paramref name="vigencia"/> ou <paramref name="origem"/> forem nulos.</exception>
     public void AtribuirPapel(
         PapelId papelId,
         UnidadeOrganizacionalId unidadeId,
         bool incluiSubunidades,
         Vigencia vigencia,
-        OrigemAtribuicao origem)
+        OrigemAtribuicao origem,
+        int profundidadeDelegacao = 0)
     {
         ArgumentNullException.ThrowIfNull(vigencia);
         ArgumentNullException.ThrowIfNull(origem);
@@ -211,7 +213,7 @@ public sealed class Usuario : AggregateRoot<UsuarioId>, IMustHaveTenant
             return;
         }
 
-        _atribuicoes.Add(AtribuicaoDePapel.Criar(papelId, unidadeId, incluiSubunidades, vigencia, origem));
+        _atribuicoes.Add(AtribuicaoDePapel.Criar(papelId, unidadeId, incluiSubunidades, vigencia, origem, profundidadeDelegacao));
         _papeis.Add(papelId);
         RaiseDomainEvent(new PapelAtribuido(Id, papelId, unidadeId, incluiSubunidades));
     }

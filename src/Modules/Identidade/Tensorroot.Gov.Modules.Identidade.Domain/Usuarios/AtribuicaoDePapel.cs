@@ -39,7 +39,8 @@ public sealed class AtribuicaoDePapel : Entity<AtribuicaoDePapelId>
         UnidadeOrganizacionalId unidadeId,
         bool incluiSubunidades,
         Vigencia vigencia,
-        OrigemAtribuicao origem)
+        OrigemAtribuicao origem,
+        int profundidadeDelegacao)
         : base(id)
     {
         PapelId = papelId;
@@ -47,6 +48,7 @@ public sealed class AtribuicaoDePapel : Entity<AtribuicaoDePapelId>
         IncluiSubunidades = incluiSubunidades;
         Vigencia = vigencia;
         Origem = origem;
+        ProfundidadeDelegacao = profundidadeDelegacao;
     }
 
     /// <summary>Papel (perfil RBAC) atribuido.</summary>
@@ -64,24 +66,36 @@ public sealed class AtribuicaoDePapel : Entity<AtribuicaoDePapelId>
     /// <summary>Procedencia (direta/delegada + concedente).</summary>
     public OrigemAtribuicao Origem { get; private set; } = default!;
 
+    /// <summary>
+    /// Profundidade da cadeia de (sub)delegacao desta atribuicao (AA-5/D3). Uma atribuicao DIRETA
+    /// (admin do tenant concedendo a si proprio ou a terceiro a partir de poder NAO delegado) tem
+    /// profundidade 0. Cada subdelegacao subsequente herda a profundidade do poder do concedente + 1.
+    /// Serve para BARRAR cadeias infinitas de subdelegacao alem do limite configurado por tenant.
+    /// </summary>
+    public int ProfundidadeDelegacao { get; private set; }
+
     /// <summary>Cria uma atribuicao de papel com escopo organizacional.</summary>
     /// <param name="papelId">Papel atribuido.</param>
     /// <param name="unidadeId">UO raiz do escopo.</param>
     /// <param name="incluiSubunidades">Se inclui os descendentes da UO.</param>
     /// <param name="vigencia">Janela de vigencia.</param>
     /// <param name="origem">Procedencia da atribuicao.</param>
+    /// <param name="profundidadeDelegacao">Profundidade na cadeia de subdelegacao (0 = direta — AA-5/D3).</param>
     /// <returns>Nova <see cref="AtribuicaoDePapel"/>.</returns>
     /// <exception cref="ArgumentNullException">Se <paramref name="vigencia"/> ou <paramref name="origem"/> forem nulos.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="profundidadeDelegacao"/> for negativa.</exception>
     public static AtribuicaoDePapel Criar(
         PapelId papelId,
         UnidadeOrganizacionalId unidadeId,
         bool incluiSubunidades,
         Vigencia vigencia,
-        OrigemAtribuicao origem)
+        OrigemAtribuicao origem,
+        int profundidadeDelegacao = 0)
     {
         ArgumentNullException.ThrowIfNull(vigencia);
         ArgumentNullException.ThrowIfNull(origem);
-        return new AtribuicaoDePapel(AtribuicaoDePapelId.New(), papelId, unidadeId, incluiSubunidades, vigencia, origem);
+        ArgumentOutOfRangeException.ThrowIfNegative(profundidadeDelegacao);
+        return new AtribuicaoDePapel(AtribuicaoDePapelId.New(), papelId, unidadeId, incluiSubunidades, vigencia, origem, profundidadeDelegacao);
     }
 
     /// <summary>

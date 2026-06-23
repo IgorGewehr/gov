@@ -33,24 +33,47 @@ public sealed class TrilhaAcessoSensivelBehavior<TRequest, TResponse>(
     {
         ArgumentNullException.ThrowIfNull(next);
 
-        var response = await next().ConfigureAwait(false);
-
-        if (request is ISensivelLgpd sensivel)
+        if (request is not ISensivelLgpd sensivel)
         {
-            // A trilha de acesso e PARTE da operacao de leitura sensivel: se nao for possivel
-            // selar o acesso, a leitura nao pode ser considerada concluida (deny-by-default da
-            // accountability). Por isso NAO engolimos a excecao — ela aborta a resposta.
-            logger.LogInformation(
-                "Trilha de acesso LGPD: leitura sensivel de {Entidade} (base legal {BaseLegal}).",
-                sensivel.EntidadeSensivel,
-                sensivel.BaseLegal);
+            // Requests que NAO sao leitura sensivel passam direto (custo zero).
+            return await next().ConfigureAwait(false);
+        }
 
-            await registro.RegistrarAsync(
+        // LG-A2 (deny-by-default da base legal): a hipotese legal aplicada DEVE pertencer ao
+        // conjunto fechado de bases legais aplicaveis ao recurso. Verifica-se ANTES de projetar
+        // qualquer dado — sem base legal aplicavel, o dado sensivel nunca chega a ser lido. A
+        // tentativa e selada na trilha (negativa) para accountability perante ANPD/TCE.
+        if (!sensivel.BasesLegaisAplicaveis.Contains(sensivel.BaseLegal))
+        {
+            logger.LogWarning(
+                "Acesso sensivel NEGADO (LG-A2): base legal {BaseLegal} nao aplicavel ao recurso {Entidade}.",
+                sensivel.BaseLegal,
+                sensivel.EntidadeSensivel);
+
+            await registro.RegistrarNegacaoAsync(
                 sensivel.EntidadeSensivel,
                 sensivel.EntidadeId,
                 sensivel.BaseLegal,
                 cancellationToken).ConfigureAwait(false);
+
+            throw new BaseLegalLgpdNaoAplicavelException(sensivel.EntidadeSensivel, sensivel.BaseLegal);
         }
+
+        var response = await next().ConfigureAwait(false);
+
+        // A trilha de acesso e PARTE da operacao de leitura sensivel: se nao for possivel
+        // selar o acesso, a leitura nao pode ser considerada concluida (deny-by-default da
+        // accountability). Por isso NAO engolimos a excecao — ela aborta a resposta.
+        logger.LogInformation(
+            "Trilha de acesso LGPD: leitura sensivel de {Entidade} (base legal {BaseLegal}).",
+            sensivel.EntidadeSensivel,
+            sensivel.BaseLegal);
+
+        await registro.RegistrarAsync(
+            sensivel.EntidadeSensivel,
+            sensivel.EntidadeId,
+            sensivel.BaseLegal,
+            cancellationToken).ConfigureAwait(false);
 
         return response;
     }

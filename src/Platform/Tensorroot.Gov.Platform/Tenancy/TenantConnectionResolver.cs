@@ -63,13 +63,16 @@ public sealed class TenantConnectionCache(TimeProvider timeProvider) : ITenantCo
 
 /// <summary>
 /// Resolve a conexão dedicada do tenant atual a partir do catálogo da plataforma,
-/// com cache em memória (TTL curto + invalidação). Fallback de desenvolvimento: um arquivo
-/// SQLite por tenant.
+/// com cache em memória (TTL curto + invalidação). A connection string é guardada CIFRADA em
+/// repouso (SEC-1, envelope AES-256-GCM + KEK) e DECIFRADA só em memória aqui; o cache guarda
+/// apenas o valor em claro já resolvido (curto TTL, processo único). Fallback de desenvolvimento:
+/// um arquivo SQLite por tenant.
 /// </summary>
 public sealed class TenantConnectionResolver(
     ITenantContext tenantContext,
     PlatformDbContext platform,
-    TenantConnectionCache cache) : ITenantConnectionResolver
+    TenantConnectionCache cache,
+    ProtetorConexaoTenant protetor) : ITenantConnectionResolver
 {
     /// <inheritdoc />
     public string ResolveConnectionString()
@@ -87,8 +90,15 @@ public sealed class TenantConnectionResolver(
                 .Select(tenant => tenant.ConnectionString)
                 .FirstOrDefault();
 
-            return string.IsNullOrWhiteSpace(conexao)
-                ? ConexaoPadrao(id)
+            if (string.IsNullOrWhiteSpace(conexao))
+            {
+                return ConexaoPadrao(id);
+            }
+
+            // SEC-1: decifra SÓ EM MEMÓRIA o envelope protegido. Valores legados (em claro, sem o
+            // prefixo de envelope) continuam usáveis na transição — serão cifrados na próxima escrita.
+            return ProtetorConexaoTenant.EstaProtegida(conexao)
+                ? protetor.RevelarAsync(id, conexao, CancellationToken.None).GetAwaiter().GetResult()
                 : conexao;
         });
     }
