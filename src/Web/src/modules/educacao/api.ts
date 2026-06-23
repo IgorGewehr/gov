@@ -12,4 +12,5 @@ export * from './turma.api';
 export * from './escola.api';
 export * from './matricula.api';
 export * from './diario.api';
+export * from './diarioTurma.api';
 export * from './fiscal.api';

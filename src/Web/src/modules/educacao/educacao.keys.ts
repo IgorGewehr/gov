@@ -19,6 +19,12 @@ export const educacaoKeys = {
     [...educacaoKeys.all, 'diarios', 'matricula', matriculaId] as const,
   frequenciaDoDiario: (diarioId: string) =>
     [...educacaoKeys.all, 'diarios', diarioId, 'frequencia'] as const,
+  diarioDaTurma: (turmaId: string, data: string) =>
+    [...educacaoKeys.turmas(), 'id', turmaId, 'diario', data] as const,
+  boletimDaMatricula: (matriculaId: string) =>
+    [...educacaoKeys.matriculas(), 'id', matriculaId, 'boletim'] as const,
+  historicoEscolar: (alunoId: string) =>
+    [...educacaoKeys.alunos(), 'id', alunoId, 'historico'] as const,
   fiscal: () => [...educacaoKeys.all, 'fiscal'] as const,
   mde: (exercicio: number) => [...educacaoKeys.fiscal(), 'mde', exercicio] as const,
   fundebAplicacao: (exercicio: number) =>

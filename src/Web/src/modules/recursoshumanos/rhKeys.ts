@@ -63,6 +63,15 @@ export const rhKeys = {
   consignacoesDoServidor: (servidorId: string) =>
     [...rhKeys.all, 'consignacoes', 'servidor', servidorId] as const,
 
+  relatorios: () => [...rhKeys.all, 'relatorios'] as const,
+  relFolhaPorSecretaria: (ano: number, mes: number) =>
+    [...rhKeys.relatorios(), 'folha-por-secretaria', ano, mes] as const,
+  relEvolucaoDespesa: (anoDe: number, mesDe: number, anoAte: number, mesAte: number) =>
+    [...rhKeys.relatorios(), 'evolucao-despesa', anoDe, mesDe, anoAte, mesAte] as const,
+  relMapaCargos: () => [...rhKeys.relatorios(), 'mapa-cargos'] as const,
+  relDemonstrativoTce: (ano: number, mes: number) =>
+    [...rhKeys.relatorios(), 'demonstrativo-tce', ano, mes] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

@@ -32,6 +32,9 @@ const VeiculoListPage = lazy(() =>
 const VeiculoDetailPage = lazy(() =>
   import('./veiculo/VeiculoDetailPage').then((m) => ({ default: m.VeiculoDetailPage })),
 );
+const FrotaPainelPage = lazy(() =>
+  import('./frota/FrotaPainelPage').then((m) => ({ default: m.FrotaPainelPage })),
+);
 
 // Almoxarifado (itens de estoque)
 const ItemEstoqueListPage = lazy(() =>
@@ -65,8 +68,9 @@ const MODULE: ModuleDefinition = {
         // Bens patrimoniais — lista é o índice do módulo
         { index: true, element: <BemPatrimonialListPage /> },
         { path: 'bens/:id', element: <BemPatrimonialDetailPage /> },
-        // Frota — veículos
+        // Frota — veículos + painel de gestão (Onda 3a)
         { path: 'frota', element: <VeiculoListPage /> },
+        { path: 'frota/painel', element: <FrotaPainelPage /> },
         { path: 'frota/veiculos/:id', element: <VeiculoDetailPage /> },
         // Almoxarifado — itens de estoque
         { path: 'estoque', element: <ItemEstoqueListPage /> },

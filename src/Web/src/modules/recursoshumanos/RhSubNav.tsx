@@ -14,6 +14,7 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/recursoshumanos/ciclo-anual', label: 'Ciclo Anual' },
   { to: '/recursoshumanos/ponto', label: 'Ponto' },
   { to: '/recursoshumanos/esocial', label: 'eSocial' },
+  { to: '/recursoshumanos/relatorios', label: 'Relatórios' },
   { to: '/recursoshumanos/minha-folha', label: 'Minha Folha', perm: PERM_RH_AUTOSSERVICO },
 ];
 

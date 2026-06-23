@@ -8,6 +8,8 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/educacao/alunos', label: 'Alunos' },
   { to: '/educacao/turmas', label: 'Turmas' },
   { to: '/educacao/matriculas', label: 'Matrículas' },
+  { to: '/educacao/diario-classe', label: 'Diário de Classe' },
+  { to: '/educacao/boletim', label: 'Boletim/Histórico' },
   { to: '/educacao/fiscal', label: 'Painel Fiscal' },
 ];
 

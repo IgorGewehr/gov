@@ -39,6 +39,12 @@ const TurmaMatriculaListPage = lazy(() =>
 const DiarioClasseDetailPage = lazy(() =>
   import('./DiarioClasseDetailPage').then((m) => ({ default: m.DiarioClasseDetailPage })),
 );
+const DiarioTurmaPage = lazy(() =>
+  import('./DiarioTurmaPage').then((m) => ({ default: m.DiarioTurmaPage })),
+);
+const BoletimHistoricoPage = lazy(() =>
+  import('./BoletimHistoricoPage').then((m) => ({ default: m.BoletimHistoricoPage })),
+);
 const FiscalEducacaoPainelPage = lazy(() =>
   import('./FiscalEducacaoPainelPage').then((m) => ({ default: m.FiscalEducacaoPainelPage })),
 );
@@ -61,6 +67,8 @@ const MODULE: ModuleDefinition = {
         { path: 'matriculas', element: <MatriculaListPage /> },
         { path: 'turmas/matricula-inicial', element: <TurmaMatriculaListPage /> },
         { path: 'matriculas/:matriculaId/diario', element: <DiarioClasseDetailPage /> },
+        { path: 'diario-classe', element: <DiarioTurmaPage /> },
+        { path: 'boletim', element: <BoletimHistoricoPage /> },
         { path: 'fiscal', element: <FiscalEducacaoPainelPage /> },
       ],
     },
