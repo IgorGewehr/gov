@@ -94,6 +94,13 @@ builder.Services.AddScoped<IOutboxMessageDispatcher, ScopedOutboxMessageDispatch
 // proprio ModuleDbContext (gatilho da guarda H5). Mesma motivacao do ScopedOutboxMessageDispatcher.
 builder.Services.AddScoped<IAssinaturaEmEscopoDedicado, AssinaturaEmEscopoDedicado>();
 
+// Portal do Cidadao: consulta de leitura cidada (Tributos/Protocolo via Contracts) em ESCOPO DEDICADO.
+// O handler do portal ja resolveu o CidadaoDbContext no escopo da requisicao (ancora dado-proprio +
+// trilha LGPD); a consulta do modulo-fonte resolveria um SEGUNDO ModuleDbContext lado-a-lado (gatilho
+// da guarda H5). Isola a consulta num escopo proprio. Mesma motivacao do AssinaturaEmEscopoDedicado.
+builder.Services.AddScoped<Tensorroot.Gov.Modules.Cidadao.Application.Abstractions.IConsultaCidadaoEmEscopoDedicado,
+    Tensorroot.Gov.ApiHost.Cidadao.ConsultaCidadaoEmEscopoDedicado>();
+
 // === Segurança: JWT Bearer (token AUTO-EMITIDO pelo módulo Identidade, HS256) ===
 // Validamos o token assinado com o segredo simétrico de "Jwt:Secret" (Key Vault em produção).
 // Sem Authority externa: o emissor é o próprio sistema.

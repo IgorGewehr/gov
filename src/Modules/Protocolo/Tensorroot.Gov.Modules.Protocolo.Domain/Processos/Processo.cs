@@ -89,6 +89,16 @@ public sealed class Processo : AggregateRoot<ProcessoId>, IMustHaveTenant
     /// <summary>Requerimento que originou o processo (quando aplicavel).</summary>
     public Guid? RequerimentoId { get; private set; }
 
+    /// <summary>
+    /// Documento (CPF/CNPJ, somente digitos) do INTERESSADO/parte do processo, quando ha um cidadao
+    /// titular. E a ANCORA do "meus processos" do Portal do Cidadao: liga o processo a uma pessoa civil
+    /// sem acoplar o Protocolo ao modulo Cidadao (o documento e dado civil, nao chave interna de outro
+    /// modulo — CLAUDE.md §2). Nulo em processos internos sem interessado externo. O Portal NUNCA filtra
+    /// por este campo a partir de um valor do cliente — o documento e SEMPRE resolvido server-side do
+    /// principal autenticado (anti-IDOR).
+    /// </summary>
+    public string? InteressadoDocumento { get; private set; }
+
     /// <summary>Data da autuacao do processo.</summary>
     public DateOnly DataAutuacao { get; private set; }
 
@@ -147,6 +157,20 @@ public sealed class Processo : AggregateRoot<ProcessoId>, IMustHaveTenant
             string.IsNullOrWhiteSpace(origemModulo) ? null : origemModulo,
             origemId,
             dataAutuacao);
+    }
+
+    /// <summary>
+    /// Vincula (ou atualiza) o INTERESSADO/parte do processo pelo seu documento civil (CPF/CNPJ, somente
+    /// digitos). Usado pela autuacao de processos com titular cidadao (ex.: requerimento via portal) — a
+    /// partir dai, o "meus processos" do Portal do Cidadao resolve o titular por este campo. O documento
+    /// e validado/normalizado pelo caso de uso (VO Cpf/Cnpj do SharedKernel) antes de chegar aqui.
+    /// </summary>
+    /// <param name="documento">Documento do interessado (somente digitos, ja validado).</param>
+    /// <exception cref="ArgumentException">Se o documento for vazio.</exception>
+    public void RegistrarInteressado(string documento)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(documento);
+        InteressadoDocumento = documento.Trim();
     }
 
     /// <summary>

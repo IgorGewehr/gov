@@ -16,7 +16,7 @@ public sealed class FitnessFunctions
     [
         "Administracao", "Financas", "Tributos", "RecursosHumanos", "Patrimonio",
         "Protocolo", "Saude", "Educacao", "AssistenciaSocial", "Legislativo", "Transparencia",
-        "PainelGestor",
+        "PainelGestor", "Cidadao",
     ];
 
     [Fact]

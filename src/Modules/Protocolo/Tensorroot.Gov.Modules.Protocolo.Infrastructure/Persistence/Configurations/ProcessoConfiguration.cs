@@ -31,6 +31,9 @@ public sealed class ProcessoConfiguration : IEntityTypeConfiguration<Processo>
         builder.Property(processo => processo.Situacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(processo => processo.OrigemModulo).HasMaxLength(60);
 
+        // Interessado/parte (CPF/CNPJ, somente digitos): ancora do "meus processos" do Portal do Cidadao.
+        builder.Property(processo => processo.InteressadoDocumento).HasMaxLength(14);
+
         builder.ComplexProperty(processo => processo.Prazo, MapearPrazo);
 
         builder.OwnsMany(processo => processo.Despachos, MapearDespachos);
@@ -42,6 +45,9 @@ public sealed class ProcessoConfiguration : IEntityTypeConfiguration<Processo>
         // Unicidade do NUP por tenant (Decreto 8.539/2015).
         builder.HasIndex(processo => new { processo.TenantId, processo.Nup }).IsUnique();
         builder.HasIndex(processo => new { processo.TenantId, processo.SetorAtualId });
+
+        // Indice do "meus processos" (Portal do Cidadao): busca por (tenant, documento do interessado).
+        builder.HasIndex(processo => new { processo.TenantId, processo.InteressadoDocumento });
     }
 
     private static void MapearPrazo(ComplexPropertyBuilder<Prazo> prazo)

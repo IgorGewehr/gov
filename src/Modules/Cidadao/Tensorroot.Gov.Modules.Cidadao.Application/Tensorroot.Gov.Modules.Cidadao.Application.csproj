@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Cidadao.Domain/Tensorroot.Gov.Modules.Cidadao.Domain.csproj" />
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Cidadao.Contracts/Tensorroot.Gov.Modules.Cidadao.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
+    <!-- Cross-module SOMENTE via *.Contracts (CLAUDE.md §2): leitura cidada de Tributos e Protocolo. -->
+    <ProjectReference Include="../../Tributos/Tensorroot.Gov.Modules.Tributos.Contracts/Tensorroot.Gov.Modules.Tributos.Contracts.csproj" />
+    <ProjectReference Include="../../Protocolo/Tensorroot.Gov.Modules.Protocolo.Contracts/Tensorroot.Gov.Modules.Protocolo.Contracts.csproj" />
+  </ItemGroup>
+</Project>

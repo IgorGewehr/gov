@@ -75,6 +75,11 @@ public sealed class TributosModule : IModule
         services.AddScoped<IObraContribuicaoMelhoriaRepository, ObraContribuicaoMelhoriaRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
 
+        // PORTAL DO CIDADAO (M8): porta de LEITURA cidada (Contracts). Read-only por DOCUMENTO resolvido
+        // server-side pelo modulo Cidadao — meus lancamentos em aberto, minha divida ativa e 2a via de DAM
+        // (com revalidacao de titularidade anti-IDOR). Nao expoe entidade interna de Tributos.
+        services.AddScoped<Tensorroot.Gov.Modules.Tributos.Contracts.IConsultaTributariaCidadao, PortalCidadao.ConsultaTributariaCidadao>();
+
         // Protesto extrajudicial (Lei 9.492/97) — ACL versionada por CRA. Simulado em dev/testes; o adapter
         // de produção (leiaute oficial CRA-RS, HttpClient + Polly) entra por configuração quando obtido o
         // convênio. // TODO(validar-oficial): leiaute/endpoint do CRA-RS.

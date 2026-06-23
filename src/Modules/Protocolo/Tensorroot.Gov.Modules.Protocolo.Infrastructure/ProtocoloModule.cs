@@ -60,6 +60,10 @@ public sealed class ProtocoloModule : IModule
         services.AddScoped<INupGenerator, NupSequencialGenerator>();
         services.AddScoped<ICarimboDeTempoService, CarimboDeTempoLocalService>();
 
+        // PORTAL DO CIDADAO (M8): porta de LEITURA cidada (Contracts). "Meus processos" por DOCUMENTO do
+        // interessado resolvido server-side pelo modulo Cidadao, respeitando o NivelDeAcesso (so publicos).
+        services.AddScoped<Tensorroot.Gov.Modules.Protocolo.Contracts.IConsultaProcessoCidadao, PortalCidadao.ConsultaProcessoCidadao>();
+
         var applicationAssembly = typeof(AutuarProcessoCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));
         services.AddValidatorsFromAssembly(applicationAssembly);
