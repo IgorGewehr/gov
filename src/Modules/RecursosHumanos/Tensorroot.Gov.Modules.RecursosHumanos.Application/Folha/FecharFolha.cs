@@ -77,6 +77,21 @@ public sealed class FecharFolhaHandler(
             folha.Tipo.ToString());
 
         await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+
+        // Ponte RH -> Educacao (M7 E-2): expoe a remuneracao dos profissionais da educacao do exercicio
+        // para a afericao do piso de 70% do FUNDEB (EC 108/2020). Publicado por exercicio (ano da
+        // competencia). // TODO(validar-oficial): o ROL exato de "profissionais da educacao basica"
+        // custeados com FUNDEB (divergencia TCE/CNM) deve filtrar a folha por cargo/lotacao/fonte; ate
+        // o classificador do magisterio existir, o municipio pode informar o total como parametro na
+        // Educacao (RegistrarRemuneracaoMagisterio) — o evento e a superficie de contrato do cruzamento.
+        var remuneracaoMagisterio = new RemuneracaoMagisterioApuradaIntegrationEvent(
+            Guid.NewGuid(),
+            agoraUtc,
+            folha.TenantId,
+            folha.Competencia.Ano,
+            folha.TotalLiquido.Valor);
+
+        await publisher.Publish(remuneracaoMagisterio, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<FolhaResumoRemessaTceIntegrationEvent> MontarResumoRemessaTceAsync(

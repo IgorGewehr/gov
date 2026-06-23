@@ -11,6 +11,9 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Educacao.Application.Escolas;
+using Tensorroot.Gov.Modules.Educacao.Application.Fiscal;
+using Tensorroot.Gov.Modules.Educacao.Domain.Fiscal;
+using Tensorroot.Gov.Modules.Educacao.Infrastructure.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Repositories;
 
@@ -56,6 +59,15 @@ public sealed class EducacaoModule : IModule
         services.AddScoped<IDiarioClasseRepository, DiarioClasseRepository>();
         services.AddScoped<ITurmaRepository, TurmaRepository>();
 
+        // Nucleo fiscal de Educacao (M7 E-1/E-2/E-3): classificacao MDE, FUNDEB por origem, 70% folha.
+        services.AddScoped<IRegraClassificacaoMdeRepository, RegraClassificacaoMdeRepository>();
+        services.AddScoped<IDistribuicaoFundebRepository, DistribuicaoFundebRepository>();
+        services.AddScoped<ILinhaExecucaoEducacaoRepository, LinhaExecucaoEducacaoRepository>();
+        services.AddScoped<IExecucaoEducacaoReadModel, ExecucaoEducacaoReadModel>();
+        services.AddScoped<IRemuneracaoMagisterioReadModel, RemuneracaoMagisterioReadModel>();
+        services.AddScoped<IParametroMdeProvider, ParametroMdeProvider>();
+        services.AddScoped<IParametroFundebProvider, ParametroFundebProvider>();
+
         var applicationAssembly = typeof(CredenciarEscolaCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));
         services.AddValidatorsFromAssembly(applicationAssembly);
@@ -78,8 +90,68 @@ public sealed class EducacaoModule : IModule
             construtor.UseSqlite(connectionString);
         }
 
-        await using var contexto = new EducacaoDbContext(construtor.Options, SistemaTenantContext.Instancia);
+        await using var contexto = new EducacaoDbContext(construtor.Options, new SeedTenantContext(tenantId));
         await SchemaProvisioner.AplicarAsync(contexto, ehSqlServer, cancellationToken).ConfigureAwait(false);
+        await SemearFiscalAsync(contexto, tenantId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Semeia (idempotente, por tenant) as regras default de classificacao MDE (CF art. 212 / LDB arts.
+    /// 70/71), o percentual minimo legal de 25% (MDE) e o piso de 70% do FUNDEB (EC 108/2020), versionados.
+    /// NAO sobrescreve parametros ja definidos pelo tenant (a Lei Organica pode fixar maior) — so cria
+    /// quando ainda nao ha nenhum. Espelha o SemearFiscalAsync da Saude.
+    /// </summary>
+    private static async Task SemearFiscalAsync(EducacaoDbContext contexto, Guid tenantId, CancellationToken cancellationToken)
+    {
+        var mudou = false;
+
+        var jaTemRegras = await contexto.RegrasClassificacaoMde.AnyAsync(cancellationToken).ConfigureAwait(false);
+        if (!jaTemRegras)
+        {
+            foreach (var regra in SeedRegrasMde.Gerar(tenantId))
+            {
+                await contexto.RegrasClassificacaoMde.AddAsync(regra, cancellationToken).ConfigureAwait(false);
+            }
+
+            mudou = true;
+        }
+
+        var jaTemMde = await contexto.ParametrosFiscaisEducacao
+            .AnyAsync(p => p.Chave == ParametroFiscalEducacao.ChavePercentualMinimoMde, cancellationToken)
+            .ConfigureAwait(false);
+        if (!jaTemMde)
+        {
+            // Default legal 25% (CF art. 212); vigencia ancorada na edicao da LDB (reprodutivel).
+            await contexto.ParametrosFiscaisEducacao.AddAsync(
+                ParametroFiscalEducacao.Criar(tenantId, ParametroFiscalEducacao.ChavePercentualMinimoMde, new DateOnly(1996, 12, 20), ParametroMdeProvider.PercentualMinimoLegalMde),
+                cancellationToken).ConfigureAwait(false);
+            mudou = true;
+        }
+
+        var jaTemFundeb = await contexto.ParametrosFiscaisEducacao
+            .AnyAsync(p => p.Chave == ParametroFiscalEducacao.ChavePisoRemuneracaoFundeb, cancellationToken)
+            .ConfigureAwait(false);
+        if (!jaTemFundeb)
+        {
+            // Default legal 70% (EC 108/2020, que elevou o piso de 60%); vigencia ancorada na promulgacao.
+            await contexto.ParametrosFiscaisEducacao.AddAsync(
+                ParametroFiscalEducacao.Criar(tenantId, ParametroFiscalEducacao.ChavePisoRemuneracaoFundeb, new DateOnly(2020, 8, 26), ParametroFundebProvider.PisoRemuneracaoLegalFundeb),
+                cancellationToken).ConfigureAwait(false);
+            mudou = true;
+        }
+
+        if (mudou)
+        {
+            await contexto.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Contexto de tenant fixo usado apenas na semeadura/migracao (carimba o TenantId do banco do tenant).</summary>
+    private sealed class SeedTenantContext(Guid tenantId) : ITenantContext
+    {
+        public Guid TenantId => tenantId;
+
+        public bool HasTenant => tenantId != Guid.Empty;
     }
 
     /// <inheritdoc />

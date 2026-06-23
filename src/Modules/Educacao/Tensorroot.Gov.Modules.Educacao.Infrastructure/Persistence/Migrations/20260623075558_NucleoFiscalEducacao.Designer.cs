@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence;
 
@@ -12,9 +13,11 @@ using Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(EducacaoDbContext))]
-    partial class EducacaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623075558_NucleoFiscalEducacao")]
+    partial class NucleoFiscalEducacao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -5,7 +5,9 @@ using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Educacao.Application.DiarioClasse;
 using Tensorroot.Gov.Modules.Educacao.Application.Escolas;
+using Tensorroot.Gov.Modules.Educacao.Application.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure;
@@ -20,6 +22,54 @@ internal static class EducacaoEndpoints
         MapearEscolas(grupo);
         MapearMatriculas(grupo);
         MapearDiarios(grupo);
+        MapearFiscal(grupo);
+    }
+
+    private static void MapearFiscal(RouteGroupBuilder grupo)
+    {
+        // E-1: alimenta a execucao fiscal (Via A2) e apura o minimo de 25% MDE (CF art. 212).
+        grupo.MapPost("/fiscal/execucao", async (
+            RegistrarExecucaoEducacaoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { registradas = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("educacao.gerenciar");
+
+        grupo.MapGet("/fiscal/mde/{exercicio:int}", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ApurarMdeQuery(exercicio), cancellationToken)))
+            .RequirePermission("educacao.ver");
+
+        // E-3: distribuicao do FUNDEB (parcelas/conciliacao por origem VAAF/VAAT/VAAR).
+        grupo.MapPost("/fiscal/fundeb", async (
+            AbrirDistribuicaoFundebCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("educacao.gerenciar");
+
+        grupo.MapPost("/fiscal/fundeb/{distribuicaoId:guid}/esperado", async (
+            Guid distribuicaoId, DefinirEsperadoFundebPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new DefinirEsperadoFundebCommand(distribuicaoId, payload.Origem, payload.ValorEsperado), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        grupo.MapPost("/fiscal/fundeb/{distribuicaoId:guid}/parcelas", async (
+            Guid distribuicaoId, ReceberParcelaFundebPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReceberParcelaFundebCommand(distribuicaoId, payload.Origem, payload.Valor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        // E-2: cruzamento com a folha (remuneracao dos profissionais) e apuracao do piso de 70%.
+        grupo.MapPost("/fiscal/fundeb/remuneracao", async (
+            RegistrarRemuneracaoMagisterioCommand comando, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(comando, cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        grupo.MapGet("/fiscal/fundeb/{exercicio:int}/aplicacao", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ApurarFundeb70Query(exercicio), cancellationToken)))
+            .RequirePermission("educacao.ver");
     }
 
     private static void MapearEscolas(RouteGroupBuilder grupo)
@@ -157,4 +207,8 @@ internal static class EducacaoEndpoints
     private sealed record LancarNotaPayload(Guid ComponenteCurricularId, string Periodo, decimal Valor);
 
     private sealed record RegistrarAulaPayload(DateOnly Data, string Conteudo, bool DiaLetivo);
+
+    private sealed record DefinirEsperadoFundebPayload(OrigemRecursoFundeb Origem, decimal ValorEsperado);
+
+    private sealed record ReceberParcelaFundebPayload(OrigemRecursoFundeb Origem, decimal Valor);
 }
