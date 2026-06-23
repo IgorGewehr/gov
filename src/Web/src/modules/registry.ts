@@ -9,6 +9,7 @@
 //   1. crie src/modules/<id>/index.tsx com `export default` de ModuleDefinition;
 //   2. adicione a definição ao array `modules` abaixo.
 import type { ModuleDefinition, ModuleNav } from './types';
+import painelgestor from './painelgestor';
 import administracao from './administracao';
 import tributos from './tributos';
 import financas from './financas';
@@ -24,6 +25,9 @@ import admin from './admin';
 
 /** Ordem reflete a navegação na Sidebar. */
 export const modules: ModuleDefinition[] = [
+  // Painel do Gestor (dashboard executivo) fica no topo: é a landing do prefeito/
+  // gestor, gated por "painel.ver". Não é um Bounded Context de domínio.
+  painelgestor,
   administracao,
   tributos,
   financas,
