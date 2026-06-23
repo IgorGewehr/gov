@@ -21,7 +21,7 @@ using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure;
 
 /// <summary>Endpoints HTTP (Minimal API) do modulo Saude.</summary>
-internal static class SaudeEndpoints
+internal static partial class SaudeEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -34,6 +34,8 @@ internal static class SaudeEndpoints
         MapearRegulacao(grupo);
         MapearAgendamento(grupo);
         MapearFiscal(grupo);
+        MapearFarmacia(grupo);
+        MapearImunizacao(grupo);
     }
 
     private static void MapearAgendamento(RouteGroupBuilder grupo)

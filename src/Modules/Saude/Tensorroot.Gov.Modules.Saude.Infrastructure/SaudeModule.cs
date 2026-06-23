@@ -69,6 +69,15 @@ public sealed class SaudeModule : IModule
         services.AddScoped<IAgendamentoRepository, AgendamentoRepository>();
         services.AddScoped<IFilaEsperaRepository, FilaEsperaRepository>();
 
+        // Farmacia/Dispensacao (Onda 3c-1): catalogo + estoque por lote/FEFO + dispensacao ao paciente (LGPD).
+        services.AddScoped<IMedicamentoRepository, MedicamentoRepository>();
+        services.AddScoped<IEstoqueMedicamentoRepository, EstoqueMedicamentoRepository>();
+        services.AddScoped<IDispensacaoRepository, DispensacaoRepository>();
+
+        // Imunizacao (Onda 3c-1): catalogo de imunobiologicos + carteira/aprazamento (reusa estoque de Farmacia).
+        services.AddScoped<IImunobiologicoRepository, ImunobiologicoRepository>();
+        services.AddScoped<ICarteiraVacinacaoRepository, CarteiraVacinacaoRepository>();
+
         // Gateways/ACLs governamentais: implementacao simulada para dev/testes. Em producao,
         // HTTP resiliente (Polly) atras de Anti-Corruption Layer, com certificados no Azure Key Vault.
         services.AddScoped<ICadsusGateway, SimuladoCadsusGateway>();

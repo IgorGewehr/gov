@@ -110,6 +110,24 @@ public static class Permissoes
     /// <summary>Marcar/confirmar/cancelar/registrar falta/realizar agendamentos e fila de espera.</summary>
     public const string SaudeAgendaMarcar = "saude.agenda.marcar";
 
+    /// <summary>Consultar catalogo de medicamentos e posicao de estoque da Farmacia (Onda 3c).</summary>
+    public const string SaudeFarmaciaVer = "saude.farmacia.ver";
+
+    /// <summary>Gerenciar Farmacia: catalogo de medicamentos e entradas de estoque (lote/validade).</summary>
+    public const string SaudeFarmaciaGerenciar = "saude.farmacia.gerenciar";
+
+    /// <summary>Dispensar/estornar medicamentos ao paciente (baixa de estoque — Onda 3c).</summary>
+    public const string SaudeFarmaciaDispensar = "saude.farmacia.dispensar";
+
+    /// <summary>Consultar catalogo de imunobiologicos do PNI (Onda 3c).</summary>
+    public const string SaudeImunizacaoVer = "saude.imunizacao.ver";
+
+    /// <summary>Gerenciar o catalogo de imunobiologicos do PNI (Onda 3c).</summary>
+    public const string SaudeImunizacaoGerenciar = "saude.imunizacao.gerenciar";
+
+    /// <summary>Registrar a aplicacao de dose de vacina e o aprazamento da proxima (Onda 3c).</summary>
+    public const string SaudeImunizacaoAplicar = "saude.imunizacao.aplicar";
+
     /// <summary>Visualizar dados do modulo Educacao (escolas, matriculas, merenda).</summary>
     public const string EducacaoVer = "educacao.ver";
 
@@ -292,6 +310,12 @@ public static class Permissoes
         SaudeAgendaVer,
         SaudeAgendaGerenciar,
         SaudeAgendaMarcar,
+        SaudeFarmaciaVer,
+        SaudeFarmaciaGerenciar,
+        SaudeFarmaciaDispensar,
+        SaudeImunizacaoVer,
+        SaudeImunizacaoGerenciar,
+        SaudeImunizacaoAplicar,
         EducacaoVer,
         EducacaoGerenciar,
         AssistenciaSocialVer,

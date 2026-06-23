@@ -3,7 +3,9 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Saude.Domain.Agendamento;
 using Tensorroot.Gov.Modules.Saude.Domain.Estabelecimentos;
+using Tensorroot.Gov.Modules.Saude.Domain.Farmacia;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
+using Tensorroot.Gov.Modules.Saude.Domain.Imunizacao;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
@@ -59,6 +61,21 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
 
     /// <summary>Percentuais fiscais de Saude versionados por tenant+vigencia (S-1 — nunca hardcoded).</summary>
     public DbSet<ParametroFiscalSaude> ParametrosFiscaisSaude => Set<ParametroFiscalSaude>();
+
+    /// <summary>Catalogo de medicamentos da rede (REMUME) — raiz de agregado (Onda 3c Farmacia).</summary>
+    public DbSet<Medicamento> Medicamentos => Set<Medicamento>();
+
+    /// <summary>Estoque de medicamentos por estabelecimento+medicamento (saldo/lotes/FEFO) — raiz de agregado.</summary>
+    public DbSet<EstoqueMedicamento> EstoquesMedicamento => Set<EstoqueMedicamento>();
+
+    /// <summary>Dispensacoes de medicamento ao paciente (LGPD) — raiz de agregado.</summary>
+    public DbSet<Dispensacao> Dispensacoes => Set<Dispensacao>();
+
+    /// <summary>Catalogo de imunobiologicos (PNI) — raiz de agregado (Onda 3c Imunizacao).</summary>
+    public DbSet<Imunobiologico> Imunobiologicos => Set<Imunobiologico>();
+
+    /// <summary>Carteiras de vacinacao do paciente (doses/aprazamento, LGPD) — raiz de agregado.</summary>
+    public DbSet<CarteiraVacinacao> CarteirasVacinacao => Set<CarteiraVacinacao>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
