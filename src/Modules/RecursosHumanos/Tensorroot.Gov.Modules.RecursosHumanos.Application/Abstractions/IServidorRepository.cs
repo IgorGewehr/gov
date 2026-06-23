@@ -1,3 +1,4 @@
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
@@ -31,4 +32,25 @@ public interface IServidorRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Servidores ativos do tenant.</returns>
     Task<IReadOnlyList<Servidor>> ListarAtivosAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Busca paginada de servidores por nome/matricula (navegabilidade — Onda 0), com filtros opcionais
+    /// por situacao, regime e cargo. Tenant-scoped via Global Query Filter. Ordena por nome.
+    /// </summary>
+    /// <param name="termo">Termo livre (nome ou matricula; case-insensivel); nulo lista tudo.</param>
+    /// <param name="situacao">Filtro opcional por situacao no ciclo de vida do vinculo.</param>
+    /// <param name="regime">Filtro opcional por regime previdenciario (RPPS/RGPS).</param>
+    /// <param name="cargoId">Filtro opcional por cargo provido.</param>
+    /// <param name="pagina">Pagina (base 1).</param>
+    /// <param name="tamanho">Tamanho da pagina.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Pagina de servidores e o total que atende ao filtro.</returns>
+    Task<(IReadOnlyList<Servidor> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoServidor? situacao,
+        RegimePrevidenciario? regime,
+        CargoId? cargoId,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken);
 }

@@ -433,7 +433,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: CadastrarPaciente, ConfirmarCadastroNoCadsus, AtualizarCadastroPaciente, RegistrarCondicaoDeSaude, RegistrarAlergia, InativarPaciente
-queries: ObterPacientePorCns, ObterHistoricoClinicoDoPaciente
+queries: ObterPacientePorCns, ObterHistoricoClinicoDoPaciente, BuscarPacientes
 domainEvents: PacienteCadastrado, CadastroConfirmadoNoCadsus, CadastroAtualizado, CondicaoDeSaudeRegistrada, AlergiaRegistrada, PacienteInativado
 integrationEventsPublished: 
 integrationEventsConsumed: 

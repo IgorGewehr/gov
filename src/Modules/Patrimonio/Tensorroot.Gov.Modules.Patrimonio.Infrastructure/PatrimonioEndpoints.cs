@@ -6,6 +6,8 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Frota;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure;
 
@@ -27,6 +29,13 @@ internal static class PatrimonioEndpoints
             IncorporarBemCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
             .RequirePermission("patrimonio.gerenciar");
+
+        // NAVEGABILIDADE (Onda 0): lista/busca paginada de bens por descricao/tombamento, filtros tipo/situacao.
+        grupo.MapGet("/bens", async (
+            string? termo, TipoBem? tipo, SituacaoBemPatrimonial? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarBensQuery(termo, tipo, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
 
         grupo.MapGet("/bens/{bemId:guid}", async (
             Guid bemId, ISender sender, CancellationToken cancellationToken)
@@ -107,6 +116,13 @@ internal static class PatrimonioEndpoints
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
             .RequirePermission("patrimonio.gerenciar");
 
+        // NAVEGABILIDADE (Onda 0): lista/busca paginada de veiculos por descricao/placa/RENAVAM, filtro situacao.
+        grupo.MapGet("/veiculos", async (
+            string? termo, SituacaoBemPatrimonial? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarVeiculosQuery(termo, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
         grupo.MapGet("/veiculos/{veiculoId:guid}", async (
             Guid veiculoId, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterVeiculoQuery(veiculoId), cancellationToken)))
@@ -175,6 +191,13 @@ internal static class PatrimonioEndpoints
             CadastrarItemEstoqueCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
             .RequirePermission("patrimonio.gerenciar");
+
+        // NAVEGABILIDADE (Onda 0): lista/busca paginada de itens por codigo/descricao, filtros situacao/classe ABC.
+        grupo.MapGet("/estoque/itens", async (
+            string? termo, SituacaoItemEstoque? situacao, CurvaABC? classificacaoAbc, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarItensEstoqueQuery(termo, situacao, classificacaoAbc, pagina, tamanho), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
 
         grupo.MapGet("/estoque/itens/{itemId:guid}", async (
             Guid itemId, ISender sender, CancellationToken cancellationToken)

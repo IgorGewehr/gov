@@ -1,8 +1,9 @@
 // Teste (Vitest + Testing Library) da tela de Frota (Veiculo), no PADRÃO-OURO de
-// src/modules/tributos. A página é abas: a aba inicial "Veículo" oferece a consulta
-// por identificador (ObterVeiculo, via DetailPage) e a ação de incorporação; ao
-// trocar para "Multas pendentes" dispara ListarMultasPendentes. O fetch global é
-// mockado para isolar a UI da rede.
+// src/modules/tributos. A página é abas: a aba inicial "Veículos" é a LISTA NAVEGÁVEL
+// (Onda 0) — busca por descrição/placa/RENAVAM + filtro de situação, paginada
+// (GET /patrimonio/veiculos), que dispara na montagem; ao trocar para "Multas
+// pendentes" dispara ListarMultasPendentes. O fetch global é mockado por URL para
+// isolar a UI da rede e tolerar a consulta de lista que roda no mount.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,7 +11,8 @@ import { renderWithProviders } from '../../../test/renderWithProviders';
 import { setAccessToken, clearAccessToken } from '../../../api/authToken';
 import { AuthProvider } from '../../../auth/AuthProvider';
 import { VeiculoListPage } from './VeiculoListPage';
-import type { MultaResumo } from './veiculo.api';
+import type { MultaResumo, VeiculoItemLista } from './veiculo.api';
+import type { ResultadoPaginado } from '../shared/paginacaoTipos';
 
 function toBase64Url(obj: unknown): string {
   const bytes = new TextEncoder().encode(JSON.stringify(obj));
@@ -36,6 +38,24 @@ function renderComPermissao(perm: string[]) {
   );
 }
 
+const VEICULOS: ResultadoPaginado<VeiculoItemLista> = {
+  itens: [
+    {
+      id: '33333333-3333-3333-3333-333333333333',
+      placa: 'XYZ9A88',
+      renavam: '00999888777',
+      descricao: 'Caminhão basculante',
+      numeroTombamento: 'TOMBO-2026-0009',
+      odometro: 45000,
+      valorContabil: 180000,
+      situacao: 'Tombado',
+    },
+  ],
+  total: 1,
+  pagina: 1,
+  tamanho: 20,
+};
+
 const MULTAS: MultaResumo[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
@@ -47,13 +67,31 @@ const MULTAS: MultaResumo[] = [
   },
 ];
 
-function mockFetchOnce(body: unknown, status = 200): void {
-  vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { 'content-type': 'application/json' },
-    }),
-  );
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' },
+  });
+}
+
+/**
+ * Mock de fetch roteado por URL (resiliente à ordem das chamadas): a lista navegável
+ * de veículos dispara no mount; as outras consultas disparam ao trocar de aba.
+ */
+function mockFetchPorUrl(opcoes: {
+  veiculos?: unknown;
+  multas?: unknown;
+  licenciamentos?: unknown;
+}): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    const url = typeof input === 'string' ? input : (input as Request).url ?? String(input);
+    if (url.includes('/veiculos/multas-pendentes')) return Promise.resolve(jsonResponse(opcoes.multas ?? []));
+    if (url.includes('/veiculos/licenciamentos-pendentes'))
+      return Promise.resolve(jsonResponse(opcoes.licenciamentos ?? []));
+    if (url.includes('/patrimonio/veiculos'))
+      return Promise.resolve(jsonResponse(opcoes.veiculos ?? { itens: [], total: 0, pagina: 1, tamanho: 20 }));
+    return Promise.resolve(jsonResponse([]));
+  });
 }
 
 describe('VeiculoListPage', () => {
@@ -65,20 +103,32 @@ describe('VeiculoListPage', () => {
     clearAccessToken();
   });
 
-  it('exibe a aba inicial de consulta de veículo e a ação de incorporação', () => {
+  it('exibe a aba inicial com a lista navegável de veículos e a ação de incorporação', async () => {
+    mockFetchPorUrl({ veiculos: VEICULOS });
     renderComPermissao(['patrimonio.ver', 'patrimonio.gerenciar']);
-    expect(screen.getByText('Consulte um veículo da frota')).toBeInTheDocument();
+
+    expect(await screen.findByText('XYZ9A88')).toBeInTheDocument();
+    expect(screen.getByText('Caminhão basculante')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Incorporar veículo/i })).toBeInTheDocument();
   });
 
-  it('oculta a ação de incorporação sem a permissão patrimonio.gerenciar', () => {
+  it('mostra o estado vazio quando a busca de veículos não retorna resultados', async () => {
+    mockFetchPorUrl({ veiculos: { itens: [], total: 0, pagina: 1, tamanho: 20 } });
     renderComPermissao(['patrimonio.ver']);
+
+    expect(await screen.findByText('Nenhum veículo encontrado')).toBeInTheDocument();
+  });
+
+  it('oculta a ação de incorporação sem a permissão patrimonio.gerenciar', async () => {
+    mockFetchPorUrl({ veiculos: { itens: [], total: 0, pagina: 1, tamanho: 20 } });
+    renderComPermissao(['patrimonio.ver']);
+    await screen.findByText('Nenhum veículo encontrado');
     expect(screen.queryByRole('button', { name: /Incorporar veículo/i })).not.toBeInTheDocument();
   });
 
   it('lista as multas pendentes ao trocar para a aba Multas', async () => {
     const user = userEvent.setup();
-    mockFetchOnce(MULTAS);
+    mockFetchPorUrl({ veiculos: VEICULOS, multas: MULTAS });
     renderComPermissao(['patrimonio.ver']);
 
     await user.click(screen.getByRole('tab', { name: /Multas pendentes/i }));
@@ -89,7 +139,7 @@ describe('VeiculoListPage', () => {
 
   it('mostra o estado vazio quando não há multas pendentes', async () => {
     const user = userEvent.setup();
-    mockFetchOnce([]);
+    mockFetchPorUrl({ veiculos: VEICULOS, multas: [] });
     renderComPermissao(['patrimonio.ver']);
 
     await user.click(screen.getByRole('tab', { name: /Multas pendentes/i }));

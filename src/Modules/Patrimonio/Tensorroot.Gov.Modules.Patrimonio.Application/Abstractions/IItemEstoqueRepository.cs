@@ -30,4 +30,23 @@ public interface IItemEstoqueRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Itens ativos do tenant.</returns>
     Task<IReadOnlyList<ItemEstoque>> ListarAtivosAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Busca paginada de itens de almoxarifado por código/descrição (navegabilidade — Onda 0), com
+    /// filtros opcionais por situação e classe ABC. Tenant-scoped via Global Query Filter. Ordena por código.
+    /// </summary>
+    /// <param name="termo">Termo livre (código ou descrição; case/acento-insensível); nulo lista tudo.</param>
+    /// <param name="situacao">Filtro opcional por situação (ativo/inativo).</param>
+    /// <param name="classificacaoAbc">Filtro opcional por classe na Curva ABC.</param>
+    /// <param name="pagina">Página (base 1).</param>
+    /// <param name="tamanho">Tamanho da página.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Página de itens e o total que atende ao filtro.</returns>
+    Task<(IReadOnlyList<ItemEstoque> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoItemEstoque? situacao,
+        CurvaABC? classificacaoAbc,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken);
 }

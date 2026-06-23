@@ -49,4 +49,14 @@ public interface IFolhaDePagamentoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Todas as folhas da competencia no tenant.</returns>
     Task<IReadOnlyList<FolhaDePagamento>> ListarPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista, para a FICHA FUNCIONAL (navegabilidade — Onda 0), as folhas em que o servidor aparece
+    /// (ao menos um evento com o seu <c>servidorId</c>), tenant-scoped. Ordenadas da mais recente para
+    /// a mais antiga. Usada apenas para montar o historico de folhas do servidor.
+    /// </summary>
+    /// <param name="servidorId">Servidor cujo historico de folhas se quer.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Folhas em que o servidor possui eventos.</returns>
+    Task<IReadOnlyList<FolhaDePagamento>> ListarPorServidorAsync(Guid servidorId, CancellationToken cancellationToken);
 }

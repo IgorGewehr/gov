@@ -29,6 +29,49 @@ public sealed class BemPatrimonialRepository(PatrimonioDbContext context) : IBem
             .OrderBy(bem => bem.DataIncorporacao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<BemPatrimonial> Itens, int Total)> BuscarAsync(
+        string? termo,
+        TipoBem? tipo,
+        SituacaoBemPatrimonial? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Bens.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            // Busca em Descricao e NumeroTombamento (colunas string reais), case-insensitive via LOWER().
+            var padrao = BuscaTexto.MontarPadraoContains(termo);
+            consulta = consulta.Where(bem =>
+                EF.Functions.Like(bem.Descricao, padrao, "\\")
+                || (EF.Property<string?>(bem, "TombamentoBusca") != null
+                    && EF.Functions.Like(EF.Property<string>(bem, "TombamentoBusca"), padrao, "\\")));
+        }
+
+        if (tipo is { } filtroTipo)
+        {
+            consulta = consulta.Where(bem => bem.Tipo == filtroTipo);
+        }
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(bem => bem.Situacao == filtroSituacao);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(bem => bem.Descricao)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
 }
 
 /// <summary>Implementação EF Core do repositório do agregado <see cref="Veiculo"/>.</summary>
@@ -128,6 +171,43 @@ public sealed class VeiculoRepository(PatrimonioDbContext context) : IVeiculoRep
             .OrderBy(veiculo => veiculo.DataIncorporacao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Veiculo> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoBemPatrimonial? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Veiculos.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            // Busca em Descricao, Placa e Renavam (colunas string reais), case-insensitive via LOWER().
+            var padrao = BuscaTexto.MontarPadraoContains(termo);
+            consulta = consulta.Where(veiculo =>
+                EF.Functions.Like(veiculo.Descricao, padrao, "\\")
+                || EF.Functions.Like(EF.Property<string>(veiculo, "PlacaBusca"), padrao, "\\")
+                || EF.Functions.Like(EF.Property<string>(veiculo, "RenavamBusca"), padrao, "\\"));
+        }
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(veiculo => veiculo.Situacao == filtroSituacao);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(veiculo => EF.Property<string>(veiculo, "PlacaBusca"))
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
 }
 
 /// <summary>Implementação EF Core do repositório do agregado <see cref="ItemEstoque"/>.</summary>
@@ -169,4 +249,46 @@ public sealed class ItemEstoqueRepository(PatrimonioDbContext context) : IItemEs
             .OrderBy(item => item.Codigo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<ItemEstoque> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoItemEstoque? situacao,
+        CurvaABC? classificacaoAbc,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.ItensEstoque.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            // Busca em Codigo e Descricao (colunas string reais), case-insensitive via LOWER().
+            var padrao = BuscaTexto.MontarPadraoContains(termo);
+            consulta = consulta.Where(item =>
+                EF.Functions.Like(item.Codigo, padrao, "\\")
+                || EF.Functions.Like(item.Descricao, padrao, "\\"));
+        }
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(item => item.Situacao == filtroSituacao);
+        }
+
+        if (classificacaoAbc is { } filtroAbc)
+        {
+            consulta = consulta.Where(item => item.ClassificacaoAbc == filtroAbc);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(item => item.Codigo)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
 }

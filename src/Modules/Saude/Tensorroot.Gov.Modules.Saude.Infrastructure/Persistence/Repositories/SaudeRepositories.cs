@@ -30,6 +30,51 @@ public sealed class PacienteRepository(SaudeDbContext context) : IPacienteReposi
     /// <inheritdoc />
     public Task<bool> ExistePorCnsAsync(Cns cns, CancellationToken cancellationToken)
         => context.Pacientes.AnyAsync(paciente => paciente.Cns == cns, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Paciente> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoPaciente? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Pacientes.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            // Nome casa por trecho na coluna-sombra normalizada (lowercase + sem diacriticos).
+            var padraoNome = BuscaTexto.MontarPadraoContains(BuscaTexto.Normalizar(termo));
+            // Digitos casam por CPF (coluna-sombra CpfBusca, ate 11 digitos). O CNS, quando o termo for um
+            // CNS valido completo (15 digitos + DV), casa por igualdade exata (chave de negocio do paciente).
+            var digitos = BuscaTexto.SomenteDigitos(termo);
+            var temDigitos = digitos.Length > 0;
+            var padraoDigitos = temDigitos ? "%" + digitos + "%" : null;
+            var cnsExato = Cns.EhValido(digitos) ? new Cns(digitos) : (Cns?)null;
+
+            consulta = consulta.Where(paciente =>
+                EF.Functions.Like(EF.Property<string>(paciente, "NomeBusca"), padraoNome, "\\")
+                || (cnsExato != null && paciente.Cns == cnsExato.Value)
+                || (temDigitos && EF.Property<string?>(paciente, "CpfBusca") != null
+                    && EF.Functions.Like(EF.Property<string>(paciente, "CpfBusca"), padraoDigitos!, "\\")));
+        }
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(paciente => paciente.Situacao == filtroSituacao);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(paciente => EF.Property<string>(paciente, "NomeBusca"))
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio de atendimentos.</summary>

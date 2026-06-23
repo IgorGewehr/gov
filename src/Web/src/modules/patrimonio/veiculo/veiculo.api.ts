@@ -19,6 +19,7 @@
 //   POST   /veiculos/{veiculoId}/motoristas                     -> 204         DesignarMotorista
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../../api/http';
+import type { ResultadoPaginado } from '../shared/paginacaoTipos';
 
 // ---------------------------------------------------------------------------
 // DTOs — leitura (Queries)
@@ -38,6 +39,30 @@ export interface VeiculoDetalhe {
   valorContabil: number;
   situacao: SituacaoVeiculo;
   motoristaAtualId: string | null;
+}
+
+/**
+ * Item da LISTA NAVEGÁVEL de veículos (Onda 0 — Navegabilidade).
+ * Projeção de GET /patrimonio/veiculos?termo&situacao&pagina&tamanho -> VeiculoItemLista.
+ * Busca casa por trecho em descrição, placa e RENAVAM.
+ */
+export interface VeiculoItemLista {
+  id: string;
+  placa: string;
+  renavam: string;
+  descricao: string;
+  numeroTombamento: string | null;
+  odometro: number;
+  valorContabil: number;
+  situacao: SituacaoVeiculo;
+}
+
+/** Filtros da lista navegável de veículos. */
+export interface VeiculoFiltro {
+  termo?: string;
+  situacao?: SituacaoVeiculo;
+  pagina: number;
+  tamanho: number;
 }
 
 /** Projeção de ListarAbastecimentosDoVeiculoQuery -> AbastecimentoResumo. */
@@ -146,6 +171,15 @@ interface CriacaoResposta {
 export const veiculoKeys = {
   all: ['patrimonio', 'veiculos'] as const,
   detalhe: (veiculoId: string) => [...veiculoKeys.all, 'detalhe', veiculoId] as const,
+  lista: (filtro: VeiculoFiltro) =>
+    [
+      ...veiculoKeys.all,
+      'lista',
+      filtro.termo ?? '',
+      filtro.situacao ?? '',
+      filtro.pagina,
+      filtro.tamanho,
+    ] as const,
   abastecimentos: (veiculoId: string, de: string, ate: string) =>
     [...veiculoKeys.all, 'abastecimentos', veiculoId, de, ate] as const,
   multasPendentes: () => [...veiculoKeys.all, 'multas-pendentes'] as const,
@@ -159,6 +193,21 @@ export const veiculoKeys = {
 
 function obterVeiculo(veiculoId: string, signal?: AbortSignal): Promise<VeiculoDetalhe> {
   return http.get<VeiculoDetalhe>(`/patrimonio/veiculos/${veiculoId}`, { signal });
+}
+
+function listarVeiculos(
+  filtro: VeiculoFiltro,
+  signal?: AbortSignal,
+): Promise<ResultadoPaginado<VeiculoItemLista>> {
+  return http.get<ResultadoPaginado<VeiculoItemLista>>('/patrimonio/veiculos', {
+    query: {
+      termo: filtro.termo,
+      situacao: filtro.situacao,
+      pagina: filtro.pagina,
+      tamanho: filtro.tamanho,
+    },
+    signal,
+  });
 }
 
 function listarAbastecimentos(
@@ -222,6 +271,18 @@ function designarMotorista(veiculoId: string, input: DesignarMotoristaInput): Pr
 // ---------------------------------------------------------------------------
 // Hooks — Queries
 // ---------------------------------------------------------------------------
+
+/**
+ * LISTA NAVEGÁVEL de veículos (Onda 0) — busca por descrição/placa/RENAVAM + filtro
+ * de situação, paginada. Mantém os dados anteriores ao paginar/filtrar.
+ */
+export function useVeiculosLista(filtro: VeiculoFiltro) {
+  return useQuery({
+    queryKey: veiculoKeys.lista(filtro),
+    queryFn: ({ signal }) => listarVeiculos(filtro, signal),
+    placeholderData: (anterior) => anterior,
+  });
+}
 
 /** Detalhe de um veículo (ObterVeiculo). */
 export function useVeiculo(veiculoId: string) {

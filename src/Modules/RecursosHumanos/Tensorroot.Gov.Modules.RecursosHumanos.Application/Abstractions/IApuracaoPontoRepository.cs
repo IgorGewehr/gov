@@ -39,4 +39,13 @@ public interface IApuracaoPontoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Saldo acumulado anterior (0 quando nao houver apuracao prévia).</returns>
     Task<int> ObterSaldoBancoHorasAnteriorAsync(Guid servidorId, Competencia competencia, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista, para a FICHA FUNCIONAL (navegabilidade — Onda 0), todas as apuracoes de ponto de um
+    /// servidor (tenant-scoped), da competencia mais recente para a mais antiga.
+    /// </summary>
+    /// <param name="servidorId">Servidor cujo historico de ponto se quer.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Apuracoes de ponto do servidor.</returns>
+    Task<IReadOnlyList<ApuracaoPonto>> ListarPorServidorAsync(Guid servidorId, CancellationToken cancellationToken);
 }

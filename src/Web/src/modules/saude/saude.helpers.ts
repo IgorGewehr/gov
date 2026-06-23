@@ -52,6 +52,20 @@ export function prioridadeVariant(prioridade: string): TagVariant {
   }
 }
 
+/** Mapeia a situação cadastral do paciente para a variante semântica da Tag. */
+export function situacaoPacienteVariant(situacao: string): TagVariant {
+  return situacao === 'Ativo' ? 'success' : 'danger';
+}
+
+/**
+ * Opções de Situação cadastral do paciente para o filtro de busca. O `value` é o
+ * nome do enum serializado (igualdade exata esperada pelo backend).
+ */
+export const opcoesSituacaoPaciente: { value: string; label: string }[] = [
+  { value: 'Ativo', label: 'Ativo' },
+  { value: 'Inativo', label: 'Inativo' },
+];
+
 /** Opções de Sexo (CADSUS) para selects, no formato { value, label }. */
 export const opcoesSexo: { value: string; label: string }[] = [
   { value: '1', label: 'Feminino' },

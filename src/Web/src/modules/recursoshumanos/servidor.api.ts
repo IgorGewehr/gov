@@ -35,6 +35,106 @@ export interface ServidorResumo {
   dataExercicio: string | null;
 }
 
+/**
+ * Página de resultados da busca paginada (envelope padrão do backend
+ * `ResultadoPaginado<T>`: `Itens`/`Total`/`Pagina`/`Tamanho`).
+ */
+export interface PaginaResultado<T> {
+  itens: T[];
+  total: number;
+  pagina: number;
+  tamanho: number;
+}
+
+/**
+ * Filtros da busca paginada de servidores. `situacao`/`regime` enviam o NOME do enum
+ * do backend (ex.: "EmExercicio", "Rpps") — string vazia = sem filtro. Termo casa nome
+ * (trecho, case-insensitive) ou matrícula (igualdade exata do valor completo).
+ */
+export interface BuscaServidoresFiltro {
+  termo: string;
+  situacao: string;
+  regime: string;
+  cargoId: string;
+  pagina: number;
+}
+
+// --- Ficha funcional (Onda 0 — navegabilidade) ---------------------------------
+
+/** Dados pessoais da ficha funcional (CPF mascarado — LGPD). */
+export interface FichaDadosPessoais {
+  cpf: string;
+  nome: string;
+  /** Data de nascimento ("yyyy-MM-dd"). */
+  dataNascimento: string;
+}
+
+/** Vínculo e cargo da ficha funcional. */
+export interface FichaVinculo {
+  matricula: string;
+  regime: string;
+  situacao: string;
+  cargoId: string;
+  /** Denominação do cargo (nula se o cargo não for resolvido). */
+  cargo: string | null;
+  /** Tipo (natureza) do cargo (texto; nulo se não resolvido). */
+  tipoCargo: string | null;
+  /** Vencimento-base do cargo (nulo se não resolvido). */
+  vencimento: number | null;
+  /** Unidade de lotação do cargo (nula se não resolvida). */
+  lotacao: string | null;
+}
+
+/** Marco do ciclo de vida do vínculo (timeline da ficha). */
+export interface FichaEventoTimeline {
+  /** Nome do marco (Nomeacao/Posse/Exercicio/Estabilidade/Desligamento). */
+  evento: string;
+  /** Data do marco ("yyyy-MM-dd"). */
+  data: string;
+}
+
+/** Dependente listado na ficha funcional. */
+export interface FichaDependente {
+  nome: string;
+  parentesco: string;
+  /** Data de nascimento ("yyyy-MM-dd"). */
+  dataNascimento: string;
+}
+
+/** Linha de histórico de folha do servidor na ficha. */
+export interface FichaFolha {
+  folhaId: string;
+  ano: number;
+  mes: number;
+  tipo: string;
+  situacao: string;
+  totalProventos: number;
+  totalDescontos: number;
+  liquido: number;
+}
+
+/** Linha de histórico de ponto do servidor na ficha. */
+export interface FichaPonto {
+  apuracaoId: string;
+  ano: number;
+  mes: number;
+  situacao: string;
+  minutosExtras: number;
+  minutosFalta: number;
+  saldoBancoHorasMinutos: number;
+}
+
+/** Ficha funcional completa do servidor (dados + vínculo + histórico). CPF mascarado (LGPD). */
+export interface FichaFuncional {
+  id: string;
+  dadosPessoais: FichaDadosPessoais;
+  vinculo: FichaVinculo;
+  timeline: FichaEventoTimeline[];
+  dependentes: FichaDependente[];
+  folhas: FichaFolha[];
+  ponto: FichaPonto[];
+}
+
 /** Dados cadastrais sensíveis do servidor (entrada — LGPD). */
 export interface DadosPessoaisInput {
   nome: string;
@@ -93,6 +193,32 @@ function obterServidorPorMatricula(
   );
 }
 
+function buscarServidores(
+  filtro: BuscaServidoresFiltro,
+  signal?: AbortSignal,
+): Promise<PaginaResultado<ServidorResumo>> {
+  return http.get<PaginaResultado<ServidorResumo>>('/recursoshumanos/servidores', {
+    query: {
+      termo: filtro.termo || null,
+      situacao: filtro.situacao || null,
+      regime: filtro.regime || null,
+      cargoId: filtro.cargoId || null,
+      pagina: filtro.pagina,
+    },
+    signal,
+  });
+}
+
+function obterFichaFuncional(
+  servidorId: string,
+  signal?: AbortSignal,
+): Promise<FichaFuncional | null> {
+  return http.get<FichaFuncional | null>(
+    `/recursoshumanos/servidores/${encodeURIComponent(servidorId)}/ficha-funcional`,
+    { signal },
+  );
+}
+
 function admitirServidor(input: AdmitirServidorInput): Promise<CriacaoResponse> {
   return http.post<CriacaoResponse>('/recursoshumanos/servidores', input);
 }
@@ -135,6 +261,30 @@ export function useServidorPorMatricula(matricula: string, enabled = true) {
     queryKey: rhKeys.servidorPorMatricula(matricula),
     queryFn: ({ signal }) => obterServidorPorMatricula(matricula, signal),
     enabled: enabled && matricula.trim().length > 0,
+  });
+}
+
+/** Busca paginada de servidores por nome/matrícula, com filtros situação/regime/cargo. */
+export function useBuscaServidores(filtro: BuscaServidoresFiltro) {
+  return useQuery({
+    queryKey: rhKeys.servidoresBusca(
+      filtro.termo,
+      filtro.situacao,
+      filtro.regime,
+      filtro.cargoId,
+      filtro.pagina,
+    ),
+    queryFn: ({ signal }) => buscarServidores(filtro, signal),
+    placeholderData: (anterior) => anterior,
+  });
+}
+
+/** Obtém a ficha funcional completa de um servidor (por id). Retorna null em 404. */
+export function useFichaFuncional(servidorId: string) {
+  return useQuery({
+    queryKey: rhKeys.fichaFuncional(servidorId),
+    queryFn: ({ signal }) => obterFichaFuncional(servidorId, signal),
+    enabled: servidorId.trim().length > 0,
   });
 }
 

@@ -1,5 +1,7 @@
-// Tela de LISTA/CONSULTA de bens patrimoniais. Cobre as queries de "entrada" do agregado:
-//   - ListarBensDepreciaveis (lista por competência, com colunas + ordenação via DataTable);
+// Tela de LISTA/CONSULTA de bens patrimoniais. Cobre, em ordem de relevância:
+//   - LISTA NAVEGÁVEL (Onda 0): busca por descrição/tombamento + filtros de tipo e
+//     situação, paginada (GET /patrimonio/bens) -> link para o detalhe;
+//   - ListarBensDepreciaveis (lista fiscal por competência, com ordenação via DataTable);
 //   - ObterBemPatrimonial (consulta direta por identificador -> navega ao detalhe).
 // Inclui a ação de criação (IncorporarBem) via FormModal.
 import { useState } from 'react';
@@ -14,17 +16,191 @@ import {
   FormRow,
   Input,
   PageHeader,
+  Select,
+  Tag,
   Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
 import { Can } from '../../../auth/Can';
-import { formatarMoeda } from '../../../i18n/format';
-import { useBensDepreciaveis } from './bempatrimonial.api';
-import type { BemDepreciavelResumo } from './bempatrimonial.api';
-import { competenciaAtual, guidInvalido } from './bemPatrimonial.helpers';
+import { formatarData, formatarMoeda } from '../../../i18n/format';
+import { useBensDepreciaveis, useBensLista } from './bempatrimonial.api';
+import type {
+  BemDepreciavelResumo,
+  BemPatrimonialItemLista,
+  SituacaoBemPatrimonial,
+  TipoBemNumero,
+} from './bempatrimonial.api';
+import {
+  SITUACAO_BEM_OPCOES,
+  TIPO_BEM_OPCOES,
+  competenciaAtual,
+  guidInvalido,
+  situacaoLabel,
+  situacaoTagVariant,
+} from './bemPatrimonial.helpers';
 import { BemPatrimonialFormModal } from './BemPatrimonialFormModal';
 import { PatrimonioSubNav } from '../PatrimonioSubNav';
+import { Paginacao } from '../shared/Paginacao';
+import { TAMANHO_PAGINA_PADRAO } from '../shared/paginacaoTipos';
+
+function BuscaBens() {
+  const [termoInput, setTermoInput] = useState('');
+  const [termo, setTermo] = useState('');
+  const [tipo, setTipo] = useState('');
+  const [situacao, setSituacao] = useState('');
+  const [pagina, setPagina] = useState(1);
+
+  const query = useBensLista({
+    termo: termo || undefined,
+    tipo: tipo === '' ? undefined : (Number(tipo) as TipoBemNumero),
+    situacao: situacao === '' ? undefined : (situacao as SituacaoBemPatrimonial),
+    pagina,
+    tamanho: TAMANHO_PAGINA_PADRAO,
+  });
+
+  function buscar(event: FormEvent): void {
+    event.preventDefault();
+    setTermo(termoInput.trim());
+    setPagina(1);
+  }
+
+  const columns: Column<BemPatrimonialItemLista>[] = [
+    {
+      key: 'tombamento',
+      header: 'Tombo',
+      sortAccessor: (b) => b.numeroTombamento ?? '',
+      render: (b) => b.numeroTombamento ?? '—',
+    },
+    {
+      key: 'descricao',
+      header: 'Descrição',
+      sortAccessor: (b) => b.descricao,
+      render: (b) => b.descricao,
+    },
+    { key: 'tipo', header: 'Tipo', sortAccessor: (b) => b.tipo, render: (b) => b.tipo },
+    {
+      key: 'valorContabil',
+      header: 'Valor contábil',
+      align: 'end',
+      sortAccessor: (b) => b.valorContabil,
+      render: (b) => formatarMoeda(b.valorContabil),
+    },
+    {
+      key: 'dataIncorporacao',
+      header: 'Incorporação',
+      sortAccessor: (b) => b.dataIncorporacao,
+      render: (b) => formatarData(b.dataIncorporacao),
+    },
+    {
+      key: 'situacao',
+      header: 'Situação',
+      render: (b) => <Tag variant={situacaoTagVariant(b.situacao)}>{situacaoLabel(b.situacao)}</Tag>,
+    },
+    {
+      key: 'acoes',
+      header: 'Ações',
+      sticky: true,
+      render: (b) => (
+        <Link className="br-button secondary small" to={`/patrimonio/bens/${b.id}`}>
+          Detalhes
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <Card className="mb-4" header={<strong>Buscar bens</strong>}>
+      <form className="br-form mb-3" onSubmit={buscar}>
+        <FormRow
+          acao={
+            <Button variant="primary" type="submit" loading={query.isFetching}>
+              <i className="fas fa-magnifying-glass" aria-hidden="true" /> Buscar
+            </Button>
+          }
+        >
+          <div className="row">
+            <div className="col-sm-6">
+              <FormField label="Descrição ou nº de tombamento">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    value={termoInput}
+                    onChange={(e) => setTermoInput(e.target.value)}
+                    placeholder="Trecho da descrição ou do tombamento"
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-3">
+              <FormField label="Tipo">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    options={TIPO_BEM_OPCOES}
+                    placeholder="Todos"
+                    value={tipo}
+                    onChange={(e) => {
+                      setTipo(e.target.value);
+                      setPagina(1);
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-3">
+              <FormField label="Situação">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    options={SITUACAO_BEM_OPCOES}
+                    placeholder="Todas"
+                    value={situacao}
+                    onChange={(e) => {
+                      setSituacao(e.target.value);
+                      setPagina(1);
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+          </div>
+        </FormRow>
+      </form>
+
+      <DataTable
+        caption="Bens patrimoniais do acervo"
+        columns={columns}
+        rows={query.data?.itens}
+        rowKey={(b) => b.id}
+        loading={query.isLoading}
+        error={query.isError ? errorMessage(query.error) : null}
+        empty={
+          <EmptyState
+            icon="fas fa-box-open"
+            title="Nenhum bem encontrado"
+            description="Ajuste o termo de busca ou os filtros para localizar bens do acervo."
+          />
+        }
+      />
+
+      {query.data && query.data.total > 0 && (
+        <div className="mt-3">
+          <Paginacao
+            pagina={query.data.pagina}
+            tamanho={query.data.tamanho}
+            total={query.data.total}
+            onPaginaChange={setPagina}
+            carregando={query.isFetching}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export function BemPatrimonialListPage() {
   const navigate = useNavigate();
@@ -112,7 +288,7 @@ export function BemPatrimonialListPage() {
       <PageHeader
         eyebrow="Patrimônio"
         title="Bens patrimoniais"
-        description="Consulte bens do acervo, acompanhe os depreciáveis por competência e incorpore novos bens."
+        description="Busque bens do acervo, acompanhe os depreciáveis por competência e incorpore novos bens."
         actions={
           <Can permission="patrimonio.gerenciar">
             <Toolbar>
@@ -123,6 +299,8 @@ export function BemPatrimonialListPage() {
           </Can>
         }
       />
+
+      <BuscaBens />
 
       <Card className="mb-4" header={<strong>Consultar bem por identificador</strong>}>
         <form className="br-form" onSubmit={abrirDetalhe}>

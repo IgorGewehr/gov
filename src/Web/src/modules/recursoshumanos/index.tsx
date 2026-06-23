@@ -19,6 +19,9 @@ const ServidoresListPage = lazy(() =>
 const ServidorDetailPage = lazy(() =>
   import('./ServidorDetailPage').then((m) => ({ default: m.ServidorDetailPage })),
 );
+const ServidorFichaPage = lazy(() =>
+  import('./ServidorFichaPage').then((m) => ({ default: m.ServidorFichaPage })),
+);
 const CargosListPage = lazy(() =>
   import('./CargosListPage').then((m) => ({ default: m.CargosListPage })),
 );
@@ -65,6 +68,7 @@ const MODULE: ModuleDefinition = {
       path: 'recursoshumanos',
       children: [
         { index: true, element: <ServidoresListPage /> },
+        { path: 'servidores/:servidorId/ficha', element: <ServidorFichaPage /> },
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },

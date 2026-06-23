@@ -1,6 +1,7 @@
 // Tela principal da FROTA. Reúne as consultas de Veiculo que não dependem de um id
 // específico, em abas:
-//   - Veículo: busca por identificador -> link para a DetailPage (ObterVeiculo);
+//   - Veículos: LISTA NAVEGÁVEL (Onda 0) com busca por descrição/placa/RENAVAM +
+//     filtro de situação, paginada (GET /patrimonio/veiculos) -> link para o detalhe;
 //   - Multas pendentes: ListarMultasPendentes (todos os veículos do tenant);
 //   - Licenciamentos pendentes: ListarLicenciamentosPendentes por exercício.
 // Botão "Incorporar veículo" abre o VeiculoFormModal (IncorporarVeiculo).
@@ -17,58 +18,166 @@ import {
   FormRow,
   Input,
   PageHeader,
+  Select,
   Tag,
   Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { Can } from '../../../auth/Can';
 import { formatarData, formatarMoeda } from '../../../i18n/format';
-import { useLicenciamentosPendentes, useMultasPendentes } from './veiculo.api';
-import type { LicenciamentoResumo, MultaResumo } from './veiculo.api';
+import { useLicenciamentosPendentes, useMultasPendentes, useVeiculosLista } from './veiculo.api';
+import type {
+  LicenciamentoResumo,
+  MultaResumo,
+  SituacaoVeiculo,
+  VeiculoItemLista,
+} from './veiculo.api';
+import { SITUACAO_VEICULO_OPCOES, situacaoVeiculoLabel, situacaoVeiculoTagVariant } from './veiculo.helpers';
 import { VeiculoFormModal } from './VeiculoFormModal';
 import { PatrimonioSubNav } from '../PatrimonioSubNav';
+import { Paginacao } from '../shared/Paginacao';
+import { TAMANHO_PAGINA_PADRAO } from '../shared/paginacaoTipos';
 
 type Aba = 'veiculo' | 'multas' | 'licenciamentos';
 
 function AbaVeiculo() {
-  const navigate = useNavigate();
-  const [veiculoId, setVeiculoId] = useState('');
+  const [termoInput, setTermoInput] = useState('');
+  const [termo, setTermo] = useState('');
+  const [situacao, setSituacao] = useState('');
+  const [pagina, setPagina] = useState(1);
 
-  function abrir(event: FormEvent): void {
+  const query = useVeiculosLista({
+    termo: termo || undefined,
+    situacao: situacao === '' ? undefined : (situacao as SituacaoVeiculo),
+    pagina,
+    tamanho: TAMANHO_PAGINA_PADRAO,
+  });
+
+  function buscar(event: FormEvent): void {
     event.preventDefault();
-    const id = veiculoId.trim();
-    if (id !== '') navigate(`/patrimonio/frota/veiculos/${id}`);
+    setTermo(termoInput.trim());
+    setPagina(1);
   }
+
+  const columns: Column<VeiculoItemLista>[] = [
+    {
+      key: 'placa',
+      header: 'Placa',
+      sortAccessor: (v) => v.placa,
+      render: (v) => <Link to={`/patrimonio/frota/veiculos/${v.id}`}>{v.placa}</Link>,
+    },
+    { key: 'renavam', header: 'RENAVAM', sortAccessor: (v) => v.renavam, render: (v) => v.renavam },
+    {
+      key: 'descricao',
+      header: 'Descrição',
+      sortAccessor: (v) => v.descricao,
+      render: (v) => v.descricao,
+    },
+    {
+      key: 'odometro',
+      header: 'Odômetro',
+      align: 'end',
+      sortAccessor: (v) => v.odometro,
+      render: (v) => v.odometro,
+    },
+    {
+      key: 'valorContabil',
+      header: 'Valor contábil',
+      align: 'end',
+      sortAccessor: (v) => v.valorContabil,
+      render: (v) => formatarMoeda(v.valorContabil),
+    },
+    {
+      key: 'situacao',
+      header: 'Situação',
+      render: (v) => (
+        <Tag variant={situacaoVeiculoTagVariant(v.situacao)}>{situacaoVeiculoLabel(v.situacao)}</Tag>
+      ),
+    },
+    {
+      key: 'acoes',
+      header: 'Ações',
+      sticky: true,
+      render: (v) => (
+        <Link className="br-button secondary small" to={`/patrimonio/frota/veiculos/${v.id}`}>
+          Detalhes
+        </Link>
+      ),
+    },
+  ];
 
   return (
     <Card>
-      <form className="br-form" onSubmit={abrir}>
+      <form className="br-form mb-3" onSubmit={buscar}>
         <FormRow
           acao={
-            <Button variant="primary" type="submit" disabled={veiculoId.trim() === ''}>
-              Abrir veículo
+            <Button variant="primary" type="submit" loading={query.isFetching}>
+              <i className="fas fa-magnifying-glass" aria-hidden="true" /> Buscar
             </Button>
           }
         >
-          <FormField label="Identificador do veículo" required>
-            {({ id, describedBy, invalid }) => (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={veiculoId}
-                onChange={(e) => setVeiculoId(e.target.value)}
-                placeholder="00000000-0000-0000-0000-000000000000"
-              />
-            )}
-          </FormField>
+          <div className="row">
+            <div className="col-sm-8">
+              <FormField label="Descrição, placa ou RENAVAM">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    value={termoInput}
+                    onChange={(e) => setTermoInput(e.target.value)}
+                    placeholder="Trecho da descrição, placa ou RENAVAM"
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-4">
+              <FormField label="Situação">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    options={SITUACAO_VEICULO_OPCOES}
+                    placeholder="Todas"
+                    value={situacao}
+                    onChange={(e) => {
+                      setSituacao(e.target.value);
+                      setPagina(1);
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+          </div>
         </FormRow>
       </form>
-      <EmptyState
-        icon="fas fa-truck"
-        title="Consulte um veículo da frota"
-        description="Informe o identificador do veículo e clique em Abrir veículo, ou incorpore um novo veículo."
+
+      <DataTable
+        caption="Veículos da frota"
+        columns={columns}
+        rows={query.data?.itens}
+        rowKey={(v) => v.id}
+        loading={query.isLoading}
+        error={query.isError ? errorMessage(query.error) : null}
+        empty={
+          <EmptyState
+            icon="fas fa-truck"
+            title="Nenhum veículo encontrado"
+            description="Ajuste o termo de busca ou o filtro de situação para localizar veículos da frota."
+          />
+        }
       />
+
+      {query.data && query.data.total > 0 && (
+        <div className="mt-3">
+          <Paginacao
+            pagina={query.data.pagina}
+            tamanho={query.data.tamanho}
+            total={query.data.total}
+            onPaginaChange={setPagina}
+            carregando={query.isFetching}
+          />
+        </div>
+      )}
     </Card>
   );
 }
@@ -223,7 +332,7 @@ export function VeiculoListPage() {
               aria-selected={aba === 'veiculo'}
               onClick={() => setAba('veiculo')}
             >
-              <span className="name">Veículo</span>
+              <span className="name">Veículos</span>
             </button>
           </li>
           <li className={`tab-item${aba === 'multas' ? ' is-active' : ''}`} role="presentation">

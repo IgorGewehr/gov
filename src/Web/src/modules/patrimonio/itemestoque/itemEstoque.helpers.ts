@@ -56,6 +56,12 @@ export function classificacaoAbcTagVariant(classe: ClassificacaoAbcNome): TagVar
   }
 }
 
+/** Opções de filtro por situação do item (value = nome do enum no contrato). */
+export const OPCOES_SITUACAO_ITEM: SelectOption[] = [
+  { value: 'Ativo', label: 'Ativo' },
+  { value: 'Inativo', label: 'Inativo' },
+];
+
 /** Opções de Select do método de custeio (value = valor numérico do enum). */
 export const OPCOES_METODO_CUSTEIO: SelectOption[] = [
   { value: String(METODO_CUSTEIO.Peps), label: 'PEPS (FIFO)' },

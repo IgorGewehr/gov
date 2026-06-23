@@ -1,56 +1,133 @@
-// Tela de CONSULTA de Paciente por CNS. Padrão-ouro: busca sob demanda (enabled),
-// estados loading/vazio/erro, link para o prontuário e abertura do formulário de
-// cadastro (mutation). Dado sensível — LGPD: consulta minimizada e auditada.
-import { useState } from 'react';
+// Tela de LISTA + BUSCA de pacientes/munícipes (Onda 0 — Navegabilidade).
+// Antes só era possível "achar" um paciente digitando o CNS de 15 dígitos; agora a
+// entrada do módulo Saúde permite LISTAR, BUSCAR (por nome, CPF ou CNS) e navegar ao
+// prontuário. Espelha o endpoint REAL GET /saude/pacientes?termo&situacao&pagina&tamanho
+// (ResultadoPaginado<PacienteItemLista>), gated em "saude.prontuario.ler".
+//
+// LGPD: a consulta é SENSÍVEL — o backend grava trilha de acesso (quem leu o quê,
+// quando) e MINIMIZA os dados (a lista NÃO traz CPF). Padrão-ouro: form de busca em
+// Card, DataTable com estados loading/vazio/erro, paginação 1-based (keepPreviousData).
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Alert,
   Button,
   Card,
+  DataTable,
   EmptyState,
   FormField,
   FormRow,
   Input,
   PageHeader,
-  Spinner,
+  Select,
   Tag,
   Toolbar,
 } from '../../components/ui';
+import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarData } from '../../i18n/format';
-import { usePacientePorCns } from './api';
+import { useBuscarPacientes } from './api';
+import type { PacienteBuscaFiltro, PacienteItemLista } from './api';
+import { opcoesSituacaoPaciente, situacaoPacienteVariant } from './saude.helpers';
 import { PacienteFormModal } from './PacienteFormModal';
+import { SaudeSubNav } from './SaudeSubNav';
 
-function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
-  return (
-    <div className="col-sm-6 col-lg-4 mb-3">
-      <dt className="text-gray-60 text-down-01">{rotulo}</dt>
-      <dd className="mb-0 text-semi-bold">{children}</dd>
-    </div>
-  );
-}
+const TAMANHO_PAGINA = 20;
 
 export function PacienteListPage() {
-  const [cns, setCns] = useState('');
-  const [consultaAtiva, setConsultaAtiva] = useState('');
+  // Campos do formulário (edição) × filtros aplicados (disparam a query).
+  const [termoCampo, setTermoCampo] = useState('');
+  const [situacaoCampo, setSituacaoCampo] = useState('');
+  const [termo, setTermo] = useState('');
+  const [situacao, setSituacao] = useState('');
+  const [pagina, setPagina] = useState(1);
+
   const [formAberto, setFormAberto] = useState(false);
 
-  const query = usePacientePorCns(consultaAtiva, consultaAtiva.length > 0);
-  const paciente = query.data ?? null;
+  const filtro = useMemo<PacienteBuscaFiltro>(
+    () => ({
+      termo: termo || undefined,
+      situacao: situacao || undefined,
+      pagina,
+      tamanho: TAMANHO_PAGINA,
+    }),
+    [termo, situacao, pagina],
+  );
 
-  function consultar(event: FormEvent): void {
+  const query = useBuscarPacientes(filtro);
+
+  function aplicarBusca(event: FormEvent): void {
     event.preventDefault();
-    setConsultaAtiva(cns.trim());
+    setPagina(1);
+    setTermo(termoCampo.trim());
+    setSituacao(situacaoCampo);
   }
+
+  const total = query.data?.total ?? 0;
+  const totalPaginas = total > 0 ? Math.ceil(total / TAMANHO_PAGINA) : 0;
+
+  const columns: Column<PacienteItemLista>[] = [
+    {
+      key: 'nome',
+      header: 'Nome',
+      sortAccessor: (p) => (p.nomeSocial || p.nome).toLowerCase(),
+      render: (p) => (
+        <span>
+          {p.nomeSocial || p.nome}
+          {p.nomeSocial && (
+            <span className="d-block text-down-01 text-secondary">Nome civil: {p.nome}</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: 'cns',
+      header: 'CNS',
+      sortAccessor: (p) => p.cns,
+      render: (p) => p.cns,
+    },
+    {
+      key: 'nascimento',
+      header: 'Nascimento',
+      sortAccessor: (p) => p.dataNascimento,
+      render: (p) => formatarData(p.dataNascimento),
+    },
+    { key: 'sexo', header: 'Sexo', sortAccessor: (p) => p.sexo, render: (p) => p.sexo },
+    {
+      key: 'cadsus',
+      header: 'CADSUS',
+      render: (p) => (
+        <Tag variant={p.cnsConfirmado ? 'success' : 'warning'}>
+          {p.cnsConfirmado ? 'Confirmado' : 'Não confirmado'}
+        </Tag>
+      ),
+    },
+    {
+      key: 'situacao',
+      header: 'Situação',
+      sortAccessor: (p) => p.situacao,
+      render: (p) => <Tag variant={situacaoPacienteVariant(p.situacao)}>{p.situacao}</Tag>,
+    },
+    {
+      key: 'acoes',
+      header: 'Ações',
+      sticky: true,
+      render: (p) => (
+        <Link className="br-button secondary small" to={`/saude/pacientes/${p.id}`}>
+          <i className="fas fa-folder-open" aria-hidden="true" /> Prontuário
+        </Link>
+      ),
+    },
+  ];
 
   return (
     <>
+      <SaudeSubNav />
       <PageHeader
         eyebrow="Saúde"
         title="Pacientes"
-        description="Localize um paciente pelo Cartão Nacional de Saúde (CNS) para acessar o prontuário."
+        description="Localize munícipes por nome, CPF ou CNS para acessar o prontuário. Acesso registrado em trilha de auditoria (LGPD)."
         actions={
           <Can permission="saude.gerenciar">
             <Toolbar>
@@ -63,84 +140,92 @@ export function PacienteListPage() {
       />
 
       <Card className="mb-4">
-        <form className="br-form" onSubmit={consultar}>
+        <form className="br-form" onSubmit={aplicarBusca}>
           <FormRow
             acao={
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={cns.trim() === ''}
-                loading={query.isFetching}
-              >
-                Consultar
+              <Button variant="primary" type="submit" loading={query.isFetching}>
+                Buscar
               </Button>
             }
           >
-            <FormField label="Cartão Nacional de Saúde (CNS)" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  inputMode="numeric"
-                  maxLength={15}
-                  value={cns}
-                  onChange={(e) => setCns(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000000000000000"
-                />
-              )}
-            </FormField>
+            <div className="row">
+              <div className="col-12 col-md-8">
+                <FormField
+                  label="Buscar paciente"
+                  help="Nome (trecho), CPF (dígitos) ou CNS completo (15 dígitos)."
+                >
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      value={termoCampo}
+                      onChange={(e) => setTermoCampo(e.target.value)}
+                      placeholder="Ex.: Maria da Silva, 000.000.000-00 ou CNS"
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-md-4">
+                <FormField label="Situação">
+                  {({ id }) => (
+                    <Select
+                      id={id}
+                      options={opcoesSituacaoPaciente}
+                      placeholder="Todas"
+                      value={situacaoCampo}
+                      onChange={(e) => setSituacaoCampo(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
+            </div>
           </FormRow>
         </form>
       </Card>
 
-      {consultaAtiva === '' ? (
-        <EmptyState
-          icon="fas fa-magnifying-glass"
-          title="Faça uma consulta"
-          description="Informe o CNS do paciente e clique em Consultar."
-        />
-      ) : query.isLoading ? (
-        <div className="app-center">
-          <Spinner label="Consultando paciente…" />
-        </div>
-      ) : query.isError ? (
-        <Alert variant="danger">{errorMessage(query.error)}</Alert>
-      ) : paciente === null ? (
-        <EmptyState
-          icon="fas fa-user-slash"
-          title="Paciente não encontrado"
-          description="Nenhum paciente cadastrado para este CNS. Verifique o número ou cadastre um novo paciente."
-        />
-      ) : (
-        <Card
-          header={
-            <div className="d-flex justify-content-between align-items-center">
-              <strong>{paciente.nomeSocial || paciente.nome}</strong>
-              <Link className="br-button secondary small" to={`/saude/pacientes/${paciente.id}`}>
-                <i className="fas fa-folder-open" aria-hidden="true" /> Abrir prontuário
-              </Link>
-            </div>
-          }
+      <DataTable
+        caption="Pacientes/munícipes"
+        columns={columns}
+        rows={query.data?.itens}
+        rowKey={(p) => p.id}
+        loading={query.isLoading}
+        error={query.isError ? errorMessage(query.error) : null}
+        empty={
+          <EmptyState
+            icon="fas fa-user-slash"
+            title="Nenhum paciente encontrado"
+            description="Ajuste os termos da busca ou cadastre um novo paciente."
+          />
+        }
+      />
+
+      {totalPaginas > 1 && (
+        <nav
+          className="d-flex align-items-center justify-content-between mt-3"
+          aria-label="Paginação de pacientes"
         >
-          <dl className="row">
-            <Campo rotulo="Nome civil">{paciente.nome}</Campo>
-            <Campo rotulo="Nome social">{paciente.nomeSocial ?? '—'}</Campo>
-            <Campo rotulo="CNS">{paciente.cns}</Campo>
-            <Campo rotulo="Data de nascimento">{formatarData(paciente.dataNascimento)}</Campo>
-            <Campo rotulo="Sexo">{paciente.sexo}</Campo>
-            <Campo rotulo="Situação">
-              <Tag variant={paciente.situacao === 'Ativo' ? 'success' : 'danger'}>
-                {paciente.situacao}
-              </Tag>
-            </Campo>
-            <Campo rotulo="CADSUS">
-              <Tag variant={paciente.cnsConfirmado ? 'success' : 'warning'}>
-                {paciente.cnsConfirmado ? 'CNS confirmado' : 'Não confirmado'}
-              </Tag>
-            </Campo>
-          </dl>
-        </Card>
+          <span className="text-down-01 text-secondary">
+            Página {pagina} de {totalPaginas} · {total} paciente(s)
+          </span>
+          <div className="d-flex">
+            <Button
+              variant="secondary"
+              className="small"
+              disabled={pagina <= 1 || query.isFetching}
+              onClick={() => setPagina((p) => Math.max(1, p - 1))}
+            >
+              <i className="fas fa-chevron-left" aria-hidden="true" /> Anterior
+            </Button>
+            <Button
+              variant="secondary"
+              className="small ml-2"
+              disabled={pagina >= totalPaginas || query.isFetching}
+              onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+            >
+              Próxima <i className="fas fa-chevron-right" aria-hidden="true" />
+            </Button>
+          </div>
+        </nav>
       )}
 
       <PacienteFormModal open={formAberto} onClose={() => setFormAberto(false)} />

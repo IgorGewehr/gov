@@ -33,4 +33,41 @@ public sealed class PatrimonioDbContext(DbContextOptions<PatrimonioDbContext> op
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(PatrimonioDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
+
+    /// <inheritdoc />
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        SincronizarColunasBusca();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        SincronizarColunasBusca();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    // Mantem as colunas-sombra de busca (navegabilidade — Onda 0) sincronizadas com os VOs que tem value
+    // converter (e por isso nao sao LIKE-aveis diretamente): TombamentoBusca (bem), PlacaBusca/RenavamBusca
+    // (veiculo). A busca usa essas colunas; Descricao/Codigo sao strings reais e nao precisam de sombra.
+    private void SincronizarColunasBusca()
+    {
+        foreach (var entrada in ChangeTracker.Entries<BemPatrimonial>())
+        {
+            if (entrada.State is EntityState.Added or EntityState.Modified)
+            {
+                entrada.Property("TombamentoBusca").CurrentValue = entrada.Entity.NumeroTombamento?.Valor;
+            }
+        }
+
+        foreach (var entrada in ChangeTracker.Entries<Veiculo>())
+        {
+            if (entrada.State is EntityState.Added or EntityState.Modified)
+            {
+                entrada.Property("PlacaBusca").CurrentValue = entrada.Entity.Placa.Valor;
+                entrada.Property("RenavamBusca").CurrentValue = entrada.Entity.Renavam.Digitos;
+            }
+        }
+    }
 }

@@ -13,8 +13,17 @@ export const rhKeys = {
 
   servidores: () => [...rhKeys.all, 'servidores'] as const,
   servidoresAtivos: () => [...rhKeys.servidores(), 'ativos'] as const,
+  servidoresBusca: (
+    termo: string,
+    situacao: string,
+    regime: string,
+    cargoId: string,
+    pagina: number,
+  ) => [...rhKeys.servidores(), 'busca', termo, situacao, regime, cargoId, pagina] as const,
   servidorPorMatricula: (matricula: string) =>
     [...rhKeys.servidores(), 'por-matricula', matricula] as const,
+  fichaFuncional: (servidorId: string) =>
+    [...rhKeys.servidores(), 'ficha-funcional', servidorId] as const,
 
   cargos: () => [...rhKeys.all, 'cargos'] as const,
   cargosComVagas: (tipo: TipoCargo | null) =>

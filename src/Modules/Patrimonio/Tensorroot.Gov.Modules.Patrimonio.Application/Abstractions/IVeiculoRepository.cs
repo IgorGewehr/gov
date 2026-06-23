@@ -50,6 +50,23 @@ public interface IVeiculoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Veículos aptos a depreciação.</returns>
     Task<IReadOnlyList<Veiculo>> ListarDepreciaveisAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Busca paginada de veículos por descrição/placa/RENAVAM (navegabilidade — Onda 0), com filtro
+    /// opcional por situação. Tenant-scoped via Global Query Filter. Ordena por placa.
+    /// </summary>
+    /// <param name="termo">Termo livre (descrição, placa ou RENAVAM; case/acento-insensível); nulo lista tudo.</param>
+    /// <param name="situacao">Filtro opcional por situação no ciclo patrimonial.</param>
+    /// <param name="pagina">Página (base 1).</param>
+    /// <param name="tamanho">Tamanho da página.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Página de veículos e o total que atende ao filtro.</returns>
+    Task<(IReadOnlyList<Veiculo> Itens, int Total)> BuscarAsync(
+        string? termo,
+        Domain.Bens.SituacaoBemPatrimonial? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Projeção de leitura de uma multa acompanhada da placa do veículo.</summary>

@@ -49,3 +49,11 @@ export type {
   ConsolidarDeclaracaoFiscalInput,
   ListarDeclaracoesParams,
 } from './declaracao-fiscal.api';
+
+export { useMinimosConstitucionais, useAspsComplemento } from './fiscal.api';
+export type {
+  SetorMinimo,
+  SituacaoMinimo,
+  ApuracaoMinimoResultado,
+  ApuracaoAspsResultado,
+} from './fiscal.api';

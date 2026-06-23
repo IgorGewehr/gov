@@ -1,4 +1,6 @@
-// Tela de LISTA/CONSULTA do Almoxarifado (ItemEstoque). Reúne as consultas de listagem:
+// Tela de LISTA/CONSULTA do Almoxarifado (ItemEstoque). Reúne, em ordem de relevância:
+//   - LISTA NAVEGÁVEL (Onda 0): busca por código/descrição + filtros de situação e
+//     classe ABC, paginada (GET /patrimonio/estoque/itens) -> link para o detalhe;
 //   - [Query ListarItensAbaixoDoPontoPedido §6.2] itens a repor (DataTable, ordenação);
 //   - [Query ObterPosicaoCurvaAbc §6.4] posição agregada por classe A/B/C (DataTable);
 //   - acesso ao detalhe por identificador ([Query ObterItemEstoque §6.1] na DetailPage);
@@ -16,6 +18,7 @@ import {
   FormRow,
   Input,
   PageHeader,
+  Select,
   Tag,
   Toolbar,
   errorMessage,
@@ -24,13 +27,188 @@ import type { Column } from '../../../components/ui';
 import { Can } from '../../../auth/Can';
 import { formatarMoeda } from '../../../i18n/format';
 import {
+  useItensLista,
   useItensReposicao,
   usePosicaoCurvaAbc,
 } from './itemestoque.api';
-import type { ItemReposicaoResumo, PosicaoAbcResumo } from './itemestoque.api';
-import { classificacaoAbcLabel, classificacaoAbcTagVariant } from './itemEstoque.helpers';
+import type {
+  ClassificacaoAbcValor,
+  ItemEstoqueItemLista,
+  ItemReposicaoResumo,
+  PosicaoAbcResumo,
+  SituacaoItemEstoque,
+} from './itemestoque.api';
+import {
+  OPCOES_CLASSIFICACAO_ABC,
+  OPCOES_SITUACAO_ITEM,
+  classificacaoAbcLabel,
+  classificacaoAbcTagVariant,
+  situacaoTagVariant,
+} from './itemEstoque.helpers';
 import { ItemEstoqueFormModal } from './ItemEstoqueFormModal';
 import { PatrimonioSubNav } from '../PatrimonioSubNav';
+import { Paginacao } from '../shared/Paginacao';
+import { TAMANHO_PAGINA_PADRAO } from '../shared/paginacaoTipos';
+
+function BuscaItens() {
+  const [termoInput, setTermoInput] = useState('');
+  const [termo, setTermo] = useState('');
+  const [situacao, setSituacao] = useState('');
+  const [classe, setClasse] = useState('');
+  const [pagina, setPagina] = useState(1);
+
+  const query = useItensLista({
+    termo: termo || undefined,
+    situacao: situacao === '' ? undefined : (situacao as SituacaoItemEstoque),
+    classificacaoAbc: classe === '' ? undefined : (Number(classe) as ClassificacaoAbcValor),
+    pagina,
+    tamanho: TAMANHO_PAGINA_PADRAO,
+  });
+
+  function buscar(event: FormEvent): void {
+    event.preventDefault();
+    setTermo(termoInput.trim());
+    setPagina(1);
+  }
+
+  const columns: Column<ItemEstoqueItemLista>[] = [
+    { key: 'codigo', header: 'Código', sortAccessor: (i) => i.codigo, render: (i) => i.codigo },
+    {
+      key: 'descricao',
+      header: 'Descrição',
+      sortAccessor: (i) => i.descricao,
+      render: (i) => i.descricao,
+    },
+    {
+      key: 'unidade',
+      header: 'Unidade',
+      sortAccessor: (i) => i.unidadeMedida,
+      render: (i) => i.unidadeMedida,
+    },
+    { key: 'saldo', header: 'Saldo', align: 'end', sortAccessor: (i) => i.saldo, render: (i) => i.saldo },
+    {
+      key: 'custoMedio',
+      header: 'Custo médio',
+      align: 'end',
+      sortAccessor: (i) => i.custoMedio,
+      render: (i) => formatarMoeda(i.custoMedio),
+    },
+    {
+      key: 'classe',
+      header: 'Classe ABC',
+      render: (i) => (
+        <Tag variant={classificacaoAbcTagVariant(i.classificacaoAbc)}>{i.classificacaoAbc}</Tag>
+      ),
+    },
+    {
+      key: 'situacao',
+      header: 'Situação',
+      render: (i) => <Tag variant={situacaoTagVariant(i.situacao)}>{i.situacao}</Tag>,
+    },
+    {
+      key: 'acoes',
+      header: 'Ações',
+      sticky: true,
+      render: (i) => (
+        <Link className="br-button secondary small" to={`/patrimonio/estoque/itens/${i.id}`}>
+          Detalhes
+        </Link>
+      ),
+    },
+  ];
+
+  return (
+    <Card className="mb-4" header={<strong>Buscar itens</strong>}>
+      <form className="br-form mb-3" onSubmit={buscar}>
+        <FormRow
+          acao={
+            <Button variant="primary" type="submit" loading={query.isFetching}>
+              <i className="fas fa-magnifying-glass" aria-hidden="true" /> Buscar
+            </Button>
+          }
+        >
+          <div className="row">
+            <div className="col-sm-6">
+              <FormField label="Código ou descrição">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    aria-describedby={describedBy}
+                    value={termoInput}
+                    onChange={(e) => setTermoInput(e.target.value)}
+                    placeholder="Trecho do código ou da descrição"
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-3">
+              <FormField label="Situação">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    options={OPCOES_SITUACAO_ITEM}
+                    placeholder="Todas"
+                    value={situacao}
+                    onChange={(e) => {
+                      setSituacao(e.target.value);
+                      setPagina(1);
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-3">
+              <FormField label="Classe ABC">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    options={OPCOES_CLASSIFICACAO_ABC}
+                    placeholder="Todas"
+                    value={classe}
+                    onChange={(e) => {
+                      setClasse(e.target.value);
+                      setPagina(1);
+                    }}
+                  />
+                )}
+              </FormField>
+            </div>
+          </div>
+        </FormRow>
+      </form>
+
+      <DataTable
+        caption="Itens do almoxarifado"
+        columns={columns}
+        rows={query.data?.itens}
+        rowKey={(i) => i.id}
+        loading={query.isLoading}
+        error={query.isError ? errorMessage(query.error) : null}
+        empty={
+          <EmptyState
+            icon="fas fa-boxes-stacked"
+            title="Nenhum item encontrado"
+            description="Ajuste o termo de busca ou os filtros para localizar itens do almoxarifado."
+          />
+        }
+      />
+
+      {query.data && query.data.total > 0 && (
+        <div className="mt-3">
+          <Paginacao
+            pagina={query.data.pagina}
+            tamanho={query.data.tamanho}
+            total={query.data.total}
+            onPaginaChange={setPagina}
+            carregando={query.isFetching}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export function ItemEstoqueListPage() {
   const navigate = useNavigate();
@@ -117,6 +295,8 @@ export function ItemEstoqueListPage() {
           </Can>
         }
       />
+
+      <BuscaItens />
 
       <Card className="mb-4" header={<strong>Consultar item por identificador</strong>}>
         <form className="br-form" onSubmit={consultarItem}>

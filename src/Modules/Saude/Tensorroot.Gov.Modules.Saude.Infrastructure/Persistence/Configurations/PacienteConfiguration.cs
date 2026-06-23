@@ -33,6 +33,15 @@ public sealed class PacienteConfiguration : IEntityTypeConfiguration<Paciente>
             .HasConversion(new IdentificacaoConverter())
             .HasColumnName("Identificacao");
 
+        // Colunas-sombra (string crua) para busca translatavel em SQL sem passar pelo value converter
+        // JSON da Identificacao (que causaria InvalidCastException ao comparar com string). Mantidas em
+        // sincronia via gatilho de gravacao no SaveChanges do contexto. NomeBusca normalizado (lowercase
+        // + sem diacriticos); CpfBusca apenas digitos. Espelha o padrao EmentaBusca do Legislativo.
+        builder.Property<string>("NomeBusca").HasMaxLength(Identificacao.ComprimentoNome);
+        builder.Property<string?>("CpfBusca").HasMaxLength(11);
+        builder.HasIndex("TenantId", "NomeBusca");
+        builder.HasIndex("TenantId", "CpfBusca");
+
         builder.ComplexProperty(paciente => paciente.Endereco, MapearEndereco);
 
         builder.OwnsMany(paciente => paciente.Condicoes, MapearCondicoes);

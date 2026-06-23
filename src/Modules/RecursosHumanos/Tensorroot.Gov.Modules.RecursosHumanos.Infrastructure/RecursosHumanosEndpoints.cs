@@ -291,6 +291,22 @@ internal static partial class RecursosHumanosEndpoints
             => Results.Ok(await sender.Send(new ListarServidoresAtivosQuery(), cancellationToken)))
             .RequirePermission("recursoshumanos.ver");
 
+        // NAVEGABILIDADE (Onda 0): lista/busca paginada de servidores por nome/matricula, filtros
+        // situacao/regime/cargo. CPF mascarado na projecao (LGPD).
+        grupo.MapGet("/servidores", async (
+            string? termo, SituacaoServidor? situacao, RegimePrevidenciario? regime, Guid? cargoId,
+            int? pagina, int? tamanho, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(
+                new BuscarServidoresQuery(termo, situacao, regime, cargoId, pagina, tamanho), cancellationToken)))
+            .RequirePermission("recursoshumanos.ver");
+
+        // NAVEGABILIDADE (Onda 0): FICHA FUNCIONAL completa do servidor (dados pessoais + vinculo/cargo +
+        // timeline do vinculo + dependentes + historico de folhas e ponto). CPF mascarado (LGPD).
+        grupo.MapGet("/servidores/{servidorId:guid}/ficha-funcional", async (
+            Guid servidorId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterFichaFuncionalQuery(servidorId), cancellationToken)))
+            .RequirePermission("recursoshumanos.ver");
+
         // P0-1: vincula pensao alimenticia judicial (percentual ou valor fixo) — deduz IRRF + desconto/repasse.
         grupo.MapPost("/servidores/{servidorId:guid}/pensao-alimenticia", async (
             Guid servidorId, PensaoAlimenticiaPayload payload, ISender sender, CancellationToken cancellationToken) =>

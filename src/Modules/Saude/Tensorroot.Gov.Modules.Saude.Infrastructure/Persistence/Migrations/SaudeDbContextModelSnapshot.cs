@@ -46,6 +46,14 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("HashAnterior")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("HashAtual")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("IpAddress")
                         .HasColumnType("nvarchar(max)");
 
@@ -54,6 +62,9 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("OldValues")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("Sequencia")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
@@ -65,6 +76,8 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Sequencia");
 
                     b.HasIndex("TenantId", "TimestampUtc");
 
@@ -128,6 +141,72 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                     b.ToTable("Atendimentos", "saude");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.FundoMunicipalSaude", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Cnpj")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("FundosMunicipaisSaude", "saude");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.RegraClassificacaoAsps", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Efeito")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FonteRecurso")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Funcao")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Subfuncao")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("VigenciaInicio")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Funcao", "Subfuncao", "FonteRecurso", "VigenciaInicio");
+
+                    b.ToTable("RegrasClassificacaoAsps", "saude");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Paciente", b =>
                 {
                     b.Property<Guid>("Id")
@@ -141,10 +220,18 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                     b.Property<bool>("CnsConfirmado")
                         .HasColumnType("bit");
 
+                    b.Property<string>("CpfBusca")
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
                     b.Property<string>("Identificacao")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Identificacao");
+
+                    b.Property<string>("NomeBusca")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("Situacao")
                         .IsRequired()
@@ -197,6 +284,10 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId", "Cns")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "CpfBusca");
+
+                    b.HasIndex("TenantId", "NomeBusca");
 
                     b.ToTable("Pacientes", "saude");
                 });
@@ -278,115 +369,6 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                     b.ToTable("SolicitacoesRegulacao", "saude");
                 });
 
-            modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("AttemptCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeadLetteredOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("NextAttemptUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("OccurredOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ProcessedOnUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProcessedOnUtc", "DeadLetteredOnUtc", "NextAttemptUtc");
-
-                    b.ToTable("OutboxMessages", "saude");
-                });
-
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.FundoMunicipalSaude", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Cnpj")
-                        .IsRequired()
-                        .HasMaxLength(14)
-                        .HasColumnType("nvarchar(14)");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("FundosMunicipaisSaude", "saude");
-                });
-
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.RegraClassificacaoAsps", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Efeito")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("FonteRecurso")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Funcao")
-                        .IsRequired()
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<string>("Subfuncao")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("VigenciaInicio")
-                        .HasColumnType("date");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Funcao", "Subfuncao", "FonteRecurso", "VigenciaInicio");
-
-                    b.ToTable("RegrasClassificacaoAsps", "saude");
-                });
-
             modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal.LinhaExecucaoSaude", b =>
                 {
                     b.Property<Guid>("Id")
@@ -458,6 +440,49 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("ParametrosFiscaisSaude", "saude");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeadLetteredOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("NextAttemptUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OccurredOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ProcessedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessedOnUtc", "DeadLetteredOnUtc", "NextAttemptUtc");
+
+                    b.ToTable("OutboxMessages", "saude");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendimento", b =>
@@ -614,6 +639,46 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                     b.Navigation("SolicitacoesExame");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.FundoMunicipalSaude", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.ContaBlocoFinanciamento", "Contas", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Bloco")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("FonteRecurso")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("nvarchar(10)");
+
+                            b1.Property<Guid>("FundoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("TotalExecutado")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<decimal>("TotalRecebido")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("FundoId", "Bloco", "FonteRecurso")
+                                .IsUnique();
+
+                            b1.ToTable("ContasBlocoFinanciamentoSaude", "saude");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FundoId");
+                        });
+
+                    b.Navigation("Contas");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Paciente", b =>
                 {
                     b.OwnsMany("Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Alergia", "Alergias", b1 =>
@@ -684,46 +749,6 @@ namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Migrations
                     b.Navigation("Alergias");
 
                     b.Navigation("Condicoes");
-                });
-
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.FundoMunicipalSaude", b =>
-                {
-                    b.OwnsMany("Tensorroot.Gov.Modules.Saude.Domain.Fiscal.ContaBlocoFinanciamento", "Contas", b1 =>
-                        {
-                            b1.Property<Guid>("Id")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<string>("Bloco")
-                                .IsRequired()
-                                .HasMaxLength(20)
-                                .HasColumnType("nvarchar(20)");
-
-                            b1.Property<string>("FonteRecurso")
-                                .IsRequired()
-                                .HasMaxLength(10)
-                                .HasColumnType("nvarchar(10)");
-
-                            b1.Property<Guid>("FundoId")
-                                .HasColumnType("uniqueidentifier");
-
-                            b1.Property<decimal>("TotalExecutado")
-                                .HasColumnType("decimal(18,2)");
-
-                            b1.Property<decimal>("TotalRecebido")
-                                .HasColumnType("decimal(18,2)");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("FundoId", "Bloco", "FonteRecurso")
-                                .IsUnique();
-
-                            b1.ToTable("ContasBlocoFinanciamentoSaude", "saude");
-
-                            b1.WithOwner()
-                                .HasForeignKey("FundoId");
-                        });
-
-                    b.Navigation("Contas");
                 });
 #pragma warning restore 612, 618
         }

@@ -31,6 +31,14 @@ public sealed class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
         builder.Property(veiculo => veiculo.Renavam)
             .HasConversion(renavam => renavam.Digitos, valor => Renavam.Criar(valor))
             .HasMaxLength(11);
+
+        // Colunas-sombra (string crua) para busca textual por placa/RENAVAM sem passar pelos value
+        // converters dos VOs Placa/Renavam (que causariam InvalidCastException no LIKE). Sincronizadas
+        // no SaveChanges do contexto. Espelham o padrao EmentaBusca do Legislativo.
+        builder.Property<string>("PlacaBusca").HasMaxLength(7);
+        builder.Property<string>("RenavamBusca").HasMaxLength(11);
+        builder.HasIndex("TenantId", "PlacaBusca");
+        builder.HasIndex("TenantId", "RenavamBusca");
         builder.Property(veiculo => veiculo.Odometro)
             .HasConversion(odometro => odometro.Valor, valor => Odometro.De(valor));
         builder.Property(veiculo => veiculo.Horimetro)

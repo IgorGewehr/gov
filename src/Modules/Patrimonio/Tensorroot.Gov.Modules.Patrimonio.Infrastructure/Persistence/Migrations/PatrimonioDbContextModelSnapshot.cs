@@ -45,6 +45,14 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("HashAnterior")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("HashAtual")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<string>("IpAddress")
                         .HasColumnType("nvarchar(max)");
 
@@ -53,6 +61,9 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
 
                     b.Property<string>("OldValues")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("Sequencia")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
@@ -64,6 +75,8 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Sequencia");
 
                     b.HasIndex("TenantId", "TimestampUtc");
 
@@ -103,6 +116,10 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("TombamentoBusca")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
                     b.Property<decimal>("ValorContabil")
                         .HasColumnType("decimal(18,2)");
 
@@ -121,6 +138,8 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                     b.HasKey("Id");
 
                     b.HasIndex("TenantId", "NumeroTombamento");
+
+                    b.HasIndex("TenantId", "TombamentoBusca");
 
                     b.ToTable("Bens", "patrimonio");
                 });
@@ -222,8 +241,16 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                         .HasMaxLength(7)
                         .HasColumnType("nvarchar(7)");
 
+                    b.Property<string>("PlacaBusca")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
                     b.Property<string>("Renavam")
                         .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<string>("RenavamBusca")
                         .HasMaxLength(11)
                         .HasColumnType("nvarchar(11)");
 
@@ -249,8 +276,12 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "PlacaBusca");
+
                     b.HasIndex("TenantId", "Renavam")
                         .IsUnique();
+
+                    b.HasIndex("TenantId", "RenavamBusca");
 
                     b.ToTable("Veiculos", "patrimonio");
                 });
@@ -728,7 +759,36 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                                 .HasForeignKey("VeiculoId");
                         });
 
+                    b.OwnsMany("Tensorroot.Gov.Modules.Patrimonio.Domain.Bens.HistoricoDepreciacao", "HistoricosDepreciacao", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Competencia")
+                                .HasColumnType("date");
+
+                            b1.Property<decimal>("ValorContabilResultante")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<decimal>("ValorDepreciado")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<Guid>("VeiculoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("VeiculoId");
+
+                            b1.ToTable("VeiculosHistoricosDepreciacao", "patrimonio");
+
+                            b1.WithOwner()
+                                .HasForeignKey("VeiculoId");
+                        });
+
                     b.Navigation("Abastecimentos");
+
+                    b.Navigation("HistoricosDepreciacao");
 
                     b.Navigation("Licenciamentos");
 

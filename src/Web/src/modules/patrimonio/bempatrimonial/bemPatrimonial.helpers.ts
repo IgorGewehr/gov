@@ -48,6 +48,15 @@ export const TIPO_BEM_OPCOES: SelectOption[] = [
   { value: '2', label: 'Imóvel' },
 ];
 
+/** Opções de filtro por situação do bem (value = nome do enum no contrato). */
+export const SITUACAO_BEM_OPCOES: SelectOption[] = [
+  { value: 'EmIncorporacao', label: 'Em incorporação' },
+  { value: 'Tombado', label: 'Tombado' },
+  { value: 'Cedido', label: 'Cedido' },
+  { value: 'Baixada', label: 'Baixado' },
+  { value: 'Alienada', label: 'Alienado' },
+];
+
 export function tipoBemNumero(value: string): TipoBemNumero {
   return value === '2' ? 2 : 1;
 }

@@ -13,6 +13,9 @@ export const transparenciaKeys = {
   declaracoesLista: (params: ListarDeclaracoesParams) =>
     [...transparenciaKeys.declaracoes(), 'lista', params] as const,
   declaracao: (id: string) => [...transparenciaKeys.declaracoes(), 'detalhe', id] as const,
+  fiscal: () => [...transparenciaKeys.all, 'fiscal'] as const,
+  minimos: (exercicio: number) => [...transparenciaKeys.fiscal(), 'minimos', exercicio] as const,
+  asps: (exercicio: number) => [...transparenciaKeys.fiscal(), 'asps', exercicio] as const,
 };
 
 /** Resposta dos endpoints de criação (POST) — `{ id }`. */

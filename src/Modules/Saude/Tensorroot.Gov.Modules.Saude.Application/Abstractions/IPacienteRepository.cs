@@ -26,4 +26,22 @@ public interface IPacienteRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns><c>true</c> se ja existir; caso contrario, <c>false</c>.</returns>
     Task<bool> ExistePorCnsAsync(Cns cns, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Busca paginada de pacientes por nome/CNS/CPF (navegabilidade — Onda 0), com filtro opcional por
+    /// situacao. Tenant-scoped via Global Query Filter. O nome casa por trecho (case/acento-insensivel);
+    /// CNS/CPF casam por digitos. Ordena por nome. Os parametros sao normalizados na implementacao.
+    /// </summary>
+    /// <param name="termo">Termo livre (nome, CNS ou CPF); nulo lista tudo.</param>
+    /// <param name="situacao">Filtro opcional por situacao do cadastro.</param>
+    /// <param name="pagina">Pagina (base 1).</param>
+    /// <param name="tamanho">Tamanho da pagina.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Pagina de pacientes e o total que atende ao filtro.</returns>
+    Task<(IReadOnlyList<Paciente> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoPaciente? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken);
 }

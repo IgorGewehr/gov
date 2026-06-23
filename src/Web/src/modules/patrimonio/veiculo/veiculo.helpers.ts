@@ -1,6 +1,15 @@
 // Helpers de apresentação compartilhados pelas telas de Veiculo (frota).
-import type { TagVariant } from '../../../components/ui';
+import type { SelectOption, TagVariant } from '../../../components/ui';
 import type { SituacaoVeiculo } from './veiculo.api';
+
+/** Opções de filtro por situação do veículo (value = nome do enum no contrato). */
+export const SITUACAO_VEICULO_OPCOES: SelectOption[] = [
+  { value: 'EmIncorporacao', label: 'Em incorporação' },
+  { value: 'Tombado', label: 'Tombado' },
+  { value: 'Cedido', label: 'Cedido' },
+  { value: 'Baixada', label: 'Baixado' },
+  { value: 'Alienada', label: 'Alienado' },
+];
 
 /** Rótulo legível (PT-BR) da situação do veículo. */
 export function situacaoVeiculoLabel(situacao: SituacaoVeiculo): string {

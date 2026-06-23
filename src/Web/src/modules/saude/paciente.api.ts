@@ -1,6 +1,8 @@
 // Camada de API do agregado Paciente (módulo Saúde) — PEP/CADSUS. DTOs + funções de
 // acesso HTTP + hooks TanStack Query para CADA endpoint de paciente.
 // Contrato REAL (SaudeEndpoints.cs):
+//   GET  /saude/pacientes?termo=&situacao=&pagina=&tamanho= -> BuscarPacientes (gated saude.prontuario.ler; ISensivelLgpd -> trilha de acesso)
+//                                                              -> ResultadoPaginado<PacienteItemLista>
 //   POST /saude/pacientes                                  -> CadastrarPaciente            -> { id }
 //   GET  /saude/pacientes/por-cns/{cns}                    -> ObterPacientePorCns          -> PacienteResumo | null
 //   GET  /saude/pacientes/{id}/historico-clinico           -> ObterHistoricoClinico        -> HistoricoClinico
@@ -9,12 +11,46 @@
 //   POST /saude/pacientes/{id}/condicoes                   -> RegistrarCondicaoDeSaude     -> 204
 //   POST /saude/pacientes/{id}/alergias                    -> RegistrarAlergia             -> 204
 //   POST /saude/pacientes/{id}/inativacao                  -> InativarPaciente             -> 204
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { http } from '../../api/http';
 import { saudeKeys } from './saude.keys';
 import type { IdResponse } from './saude.keys';
 
 // --- DTOs ---
+
+/**
+ * Envelope de leitura paginada compartilhado por TODOS os list/search do backend
+ * (ResultadoPaginado<T>): `tamanho` default 20, máx 100; paginação 1-based.
+ */
+export interface ResultadoPaginado<T> {
+  itens: T[];
+  total: number;
+  pagina: number;
+  tamanho: number;
+}
+
+/**
+ * Item da lista/busca de pacientes (PacienteItemLista). LGPD: minimização — o CPF
+ * NÃO é devolvido na lista. A consulta é sensível (gera trilha de acesso no backend).
+ */
+export interface PacienteItemLista {
+  id: string;
+  cns: string;
+  nome: string;
+  nomeSocial: string | null;
+  dataNascimento: string;
+  sexo: string;
+  cnsConfirmado: boolean;
+  situacao: string;
+}
+
+/** Filtros da busca de pacientes (todos opcionais salvo a paginação; 1-based). */
+export interface PacienteBuscaFiltro {
+  termo?: string;
+  situacao?: string;
+  pagina: number;
+  tamanho: number;
+}
 
 /** Sexo (1 = Feminino, 2 = Masculino, 9 = Ignorado) — conforme CADSUS. */
 export type Sexo = 1 | 2 | 9;
@@ -98,6 +134,26 @@ export interface InativarPacienteInput {
 
 // --- Acesso HTTP ---
 
+function normalizarTexto(valor?: string): string | undefined {
+  const limpo = valor?.trim();
+  return limpo && limpo.length > 0 ? limpo : undefined;
+}
+
+function buscarPacientes(
+  filtro: PacienteBuscaFiltro,
+  signal?: AbortSignal,
+): Promise<ResultadoPaginado<PacienteItemLista>> {
+  return http.get<ResultadoPaginado<PacienteItemLista>>('/saude/pacientes', {
+    query: {
+      termo: normalizarTexto(filtro.termo),
+      situacao: normalizarTexto(filtro.situacao),
+      pagina: filtro.pagina,
+      tamanho: filtro.tamanho,
+    },
+    signal,
+  });
+}
+
 function obterPacientePorCns(cns: string, signal?: AbortSignal): Promise<PacienteResumo | null> {
   return http.get<PacienteResumo | null>(`/saude/pacientes/por-cns/${encodeURIComponent(cns)}`, { signal });
 }
@@ -135,6 +191,21 @@ function inativarPaciente(pacienteId: string, input: InativarPacienteInput): Pro
 }
 
 // --- Hooks TanStack Query — QUERIES ---
+
+/**
+ * Lista/busca paginada de pacientes (BuscarPacientes). Consulta sensível (LGPD) —
+ * cada acesso gera trilha no backend. `keepPreviousData` evita "flicker" ao paginar;
+ * `enabled` permite suprimir a requisição quando o usuário não tem a permissão de
+ * leitura do prontuário (gating de UI — o backend é a fonte da verdade de autorização).
+ */
+export function useBuscarPacientes(filtro: PacienteBuscaFiltro, enabled = true) {
+  return useQuery({
+    queryKey: saudeKeys.pacientesBusca(filtro),
+    queryFn: ({ signal }) => buscarPacientes(filtro, signal),
+    placeholderData: keepPreviousData,
+    enabled,
+  });
+}
 
 /** Consulta o resumo de um paciente pelo CNS. `enabled` controla disparo sob demanda. */
 export function usePacientePorCns(cns: string, enabled = true) {

@@ -18,6 +18,9 @@ const DeclaracaoFiscalListPage = lazy(() =>
 const DeclaracaoFiscalDetailPage = lazy(() =>
   import('./DeclaracaoFiscalDetailPage').then((m) => ({ default: m.DeclaracaoFiscalDetailPage })),
 );
+const PainelMinimosPage = lazy(() =>
+  import('./PainelMinimosPage').then((m) => ({ default: m.PainelMinimosPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'transparencia',
@@ -30,6 +33,7 @@ const MODULE: ModuleDefinition = {
         { path: 'remessas-tce/:id', element: <RemessaDetailPage /> },
         { path: 'declaracoes-fiscais', element: <DeclaracaoFiscalListPage /> },
         { path: 'declaracoes-fiscais/:id', element: <DeclaracaoFiscalDetailPage /> },
+        { path: 'minimos', element: <PainelMinimosPage /> },
       ],
     },
   ],

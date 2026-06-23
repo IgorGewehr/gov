@@ -525,7 +525,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: IncorporarVeiculo, RegistrarAbastecimento, AbrirOrdemServico, ConcluirManutencao, RegistrarMulta, RegistrarLicenciamento, DesignarMotorista
-queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes
+queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes, BuscarVeiculos
 domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada, VeiculoDepreciado
 integrationEventsPublished: BemIncorporadoIntegrationEvent, BemDepreciadoIntegrationEvent, BemBaixadoIntegrationEvent, BemReavaliadoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent

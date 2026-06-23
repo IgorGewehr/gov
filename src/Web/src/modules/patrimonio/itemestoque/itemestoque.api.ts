@@ -13,6 +13,7 @@
 //   GET    /api/patrimonio/estoque/curva-abc                      (ObterPosicaoCurvaAbc)
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../../api/http';
+import type { ResultadoPaginado } from '../shared/paginacaoTipos';
 
 // ---------------------------------------------------------------------------
 // Enums de domínio (numéricos no contrato; rótulos PT-BR na UI)
@@ -47,6 +48,31 @@ export interface ItemEstoqueDetalhe {
   custoMedio: number;
   classificacaoAbc: ClassificacaoAbcNome;
   situacao: SituacaoItemEstoque;
+}
+
+/**
+ * Item da LISTA NAVEGÁVEL do almoxarifado (Onda 0 — Navegabilidade).
+ * Projeção de GET /patrimonio/estoque/itens?termo&situacao&classificacaoAbc&pagina&tamanho
+ * -> ItemEstoqueItemLista. Busca casa por trecho em código e descrição.
+ */
+export interface ItemEstoqueItemLista {
+  id: string;
+  codigo: string;
+  descricao: string;
+  unidadeMedida: string;
+  saldo: number;
+  custoMedio: number;
+  classificacaoAbc: ClassificacaoAbcNome;
+  situacao: SituacaoItemEstoque;
+}
+
+/** Filtros da lista navegável do almoxarifado. */
+export interface ItemEstoqueFiltro {
+  termo?: string;
+  situacao?: SituacaoItemEstoque;
+  classificacaoAbc?: ClassificacaoAbcValor;
+  pagina: number;
+  tamanho: number;
 }
 
 /** ItemReposicaoResumo — projeção de ListarItensAbaixoDoPontoPedidoQuery (§6.2). */
@@ -128,6 +154,16 @@ interface CriadoResponse {
 export const itemEstoqueKeys = {
   all: ['patrimonio', 'itemestoque'] as const,
   item: (id: string) => [...itemEstoqueKeys.all, 'detalhe', id] as const,
+  lista: (filtro: ItemEstoqueFiltro) =>
+    [
+      ...itemEstoqueKeys.all,
+      'lista',
+      filtro.termo ?? '',
+      filtro.situacao ?? '',
+      filtro.classificacaoAbc ?? '',
+      filtro.pagina,
+      filtro.tamanho,
+    ] as const,
   reposicao: () => [...itemEstoqueKeys.all, 'reposicao'] as const,
   curvaAbc: () => [...itemEstoqueKeys.all, 'curva-abc'] as const,
   movimentos: (id: string, de: string, ate: string) =>
@@ -140,6 +176,22 @@ export const itemEstoqueKeys = {
 
 function obterItem(itemId: string, signal?: AbortSignal): Promise<ItemEstoqueDetalhe> {
   return http.get<ItemEstoqueDetalhe>(`/patrimonio/estoque/itens/${itemId}`, { signal });
+}
+
+function listarItens(
+  filtro: ItemEstoqueFiltro,
+  signal?: AbortSignal,
+): Promise<ResultadoPaginado<ItemEstoqueItemLista>> {
+  return http.get<ResultadoPaginado<ItemEstoqueItemLista>>('/patrimonio/estoque/itens', {
+    query: {
+      termo: filtro.termo,
+      situacao: filtro.situacao,
+      classificacaoAbc: filtro.classificacaoAbc,
+      pagina: filtro.pagina,
+      tamanho: filtro.tamanho,
+    },
+    signal,
+  });
 }
 
 function listarReposicao(signal?: AbortSignal): Promise<ItemReposicaoResumo[]> {
@@ -189,6 +241,18 @@ function inativarItem(itemId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Hooks TanStack Query — Consultas (§6)
 // ---------------------------------------------------------------------------
+
+/**
+ * LISTA NAVEGÁVEL do almoxarifado (Onda 0) — busca por código/descrição + filtros
+ * de situação e classe ABC, paginada. Mantém os dados anteriores ao paginar/filtrar.
+ */
+export function useItensLista(filtro: ItemEstoqueFiltro) {
+  return useQuery({
+    queryKey: itemEstoqueKeys.lista(filtro),
+    queryFn: ({ signal }) => listarItens(filtro, signal),
+    placeholderData: (anterior) => anterior,
+  });
+}
 
 /** ObterItemEstoque — detalhe do item por Id (§6.1). */
 export function useItemEstoque(id: string) {

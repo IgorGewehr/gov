@@ -470,7 +470,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: AdmitirServidor, RegistrarPosse, IniciarExercicio, ConcederEstabilidade, RegistrarAfastamento, DesligarServidor, AdicionarPensaoAlimenticia
-queries: ObterServidorPorMatricula, ListarServidoresAtivos
+queries: ObterServidorPorMatricula, ListarServidoresAtivos, BuscarServidores, ObterFichaFuncional
 domainEvents: ServidorAdmitido, PosseRegistrada, ExercicioIniciado, EstabilidadeConcedida, AfastamentoRegistrado, ServidorDesligado
 integrationEventsPublished: ServidorAdmitidoIntegrationEvent, ServidorDesligadoIntegrationEvent
 integrationEventsConsumed: 

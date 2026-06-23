@@ -170,6 +170,20 @@ public sealed class ApuracaoPontoRepository(RecursosHumanosDbContext context) : 
             .FirstOrDefault();
         return anterior?.SaldoBancoHorasAtualMinutos ?? 0;
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ApuracaoPonto>> ListarPorServidorAsync(Guid servidorId, CancellationToken cancellationToken)
+    {
+        // Filtra pelo servidor no SQL; ordena por competencia (inteiro Ano*100+Mes) em memoria —
+        // Competencia e value-converter e o lote por servidor e pequeno (uma apuracao por competencia).
+        var doServidor = await context.PontoApuracoes
+            .Where(a => a.ServidorId == servidorId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return doServidor
+            .OrderByDescending(a => (a.Competencia.Ano * 100) + a.Competencia.Mes)
+            .ToList();
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio do parque de equipamentos REP (<see cref="RepConfigurado"/>).</summary>

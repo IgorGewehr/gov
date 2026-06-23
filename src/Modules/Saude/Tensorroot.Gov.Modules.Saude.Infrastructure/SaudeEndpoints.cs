@@ -9,6 +9,7 @@ using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Application.Regulacao;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
+using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure;
@@ -71,6 +72,14 @@ internal static class SaudeEndpoints
         grupo.MapPost("/pacientes", async (
             CadastrarPacienteCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
+
+        // NAVEGABILIDADE (Onda 0): lista/busca paginada de pacientes por nome/CNS/CPF, filtro situacao.
+        // PII sensivel (LGPD): exige o verbo FINO e GERA TRILHA DE ACESSO (a query e ISensivelLgpd).
+        grupo.MapGet("/pacientes", async (
+            string? termo, SituacaoPaciente? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarPacientesQuery(termo, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("saude.prontuario.ler");
 
         // LG-A3: leitura de conteudo clinico identificavel exige o verbo FINO (separado de "saude.ver").
         grupo.MapGet("/pacientes/por-cns/{cns}", async (

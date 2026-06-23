@@ -48,4 +48,33 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SaudeDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }
+
+    /// <inheritdoc />
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        SincronizarColunasBuscaPaciente();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        SincronizarColunasBuscaPaciente();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    // Mantem as colunas-sombra de busca do Paciente sincronizadas com a Identificacao (owned/JSON):
+    // NomeBusca normalizado (lowercase + sem diacriticos) e CpfBusca apenas digitos. A busca
+    // (PacienteRepository) normaliza o termo do mesmo modo antes do LIKE, garantindo simetria.
+    private void SincronizarColunasBuscaPaciente()
+    {
+        foreach (var entrada in ChangeTracker.Entries<Paciente>())
+        {
+            if (entrada.State is EntityState.Added or EntityState.Modified)
+            {
+                entrada.Property("NomeBusca").CurrentValue = BuscaTexto.Normalizar(entrada.Entity.Identificacao.Nome);
+                entrada.Property("CpfBusca").CurrentValue = entrada.Entity.Identificacao.Cpf?.Digitos;
+            }
+        }
+    }
 }

@@ -8,6 +8,7 @@
 //  - hooks TanStack Query (useQuery/useMutation) para TODAS as operações.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../../api/http';
+import type { ResultadoPaginado } from '../shared/paginacaoTipos';
 
 // ---------------------------------------------------------------------------
 // DTOs (espelham as projeções/Commands do backend)
@@ -32,6 +33,31 @@ export interface BemPatrimonialDetalhe {
   vidaUtilMeses: number;
   dataIncorporacao: string;
   situacao: SituacaoBemPatrimonial;
+}
+
+/**
+ * Item da LISTA NAVEGÁVEL de bens (Onda 0 — Navegabilidade).
+ * Projeção de GET /patrimonio/bens?termo&tipo&situacao&pagina&tamanho -> BemPatrimonialItemLista.
+ * Busca casa por trecho em descrição e número de tombamento (case-insensitive).
+ */
+export interface BemPatrimonialItemLista {
+  id: string;
+  numeroTombamento: string | null;
+  descricao: string;
+  /** Tipo serializado por nome ("Movel" | "Imovel"). */
+  tipo: string;
+  valorContabil: number;
+  dataIncorporacao: string;
+  situacao: SituacaoBemPatrimonial;
+}
+
+/** Filtros da lista navegável de bens. */
+export interface BemPatrimonialFiltro {
+  termo?: string;
+  tipo?: TipoBemNumero;
+  situacao?: SituacaoBemPatrimonial;
+  pagina: number;
+  tamanho: number;
 }
 
 /** Resumo de bem depreciável (ListarBensDepreciaveisQuery -> BemDepreciavelResumo). */
@@ -133,6 +159,16 @@ export const bemPatrimonialKeys = {
   movimentacoes: (id: string) => [...bemPatrimonialKeys.all, 'movimentacoes', id] as const,
   depreciaveis: (ano: number, mes: number) =>
     [...bemPatrimonialKeys.all, 'depreciaveis', ano, mes] as const,
+  lista: (filtro: BemPatrimonialFiltro) =>
+    [
+      ...bemPatrimonialKeys.all,
+      'lista',
+      filtro.termo ?? '',
+      filtro.tipo ?? '',
+      filtro.situacao ?? '',
+      filtro.pagina,
+      filtro.tamanho,
+    ] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -143,6 +179,22 @@ export const bemPatrimonialKeys = {
 
 function obterBem(id: string, signal?: AbortSignal): Promise<BemPatrimonialDetalhe> {
   return http.get<BemPatrimonialDetalhe>(`/patrimonio/bens/${id}`, { signal });
+}
+
+function listarBens(
+  filtro: BemPatrimonialFiltro,
+  signal?: AbortSignal,
+): Promise<ResultadoPaginado<BemPatrimonialItemLista>> {
+  return http.get<ResultadoPaginado<BemPatrimonialItemLista>>('/patrimonio/bens', {
+    query: {
+      termo: filtro.termo,
+      tipo: filtro.tipo,
+      situacao: filtro.situacao,
+      pagina: filtro.pagina,
+      tamanho: filtro.tamanho,
+    },
+    signal,
+  });
 }
 
 function listarDepreciaveis(
@@ -201,6 +253,18 @@ function alienarBem(id: string, input: AlienarBemInput): Promise<void> {
 // ---------------------------------------------------------------------------
 // Hooks TanStack Query — QUERIES
 // ---------------------------------------------------------------------------
+
+/**
+ * LISTA NAVEGÁVEL de bens (Onda 0) — busca por descrição/tombamento + filtros,
+ * paginada. Mantém os dados anteriores enquanto pagina/filtra (placeholderData).
+ */
+export function useBensLista(filtro: BemPatrimonialFiltro) {
+  return useQuery({
+    queryKey: bemPatrimonialKeys.lista(filtro),
+    queryFn: ({ signal }) => listarBens(filtro, signal),
+    placeholderData: (anterior) => anterior,
+  });
+}
 
 /** Detalhe de um bem patrimonial (ObterBemPatrimonial). */
 export function useBemPatrimonial(id: string) {

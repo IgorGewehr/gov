@@ -491,7 +491,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: IncorporarBem, TombarBem, DepreciarBem, ReavaliarBem, RegistrarImpairment, TransferirBem, CederBem, BaixarBem, AlienarBem
-queries: ObterBemPatrimonial, ListarBensDepreciaveis, ListarMovimentacoesDoBem
+queries: ObterBemPatrimonial, ListarBensDepreciaveis, ListarMovimentacoesDoBem, BuscarBens
 domainEvents: BemIncorporado, BemTombado, BemDepreciado, BemReavaliado, BemBaixado
 integrationEventsPublished: BemIncorporadoIntegrationEvent, BemDepreciadoIntegrationEvent, BemBaixadoIntegrationEvent, BemReavaliadoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent

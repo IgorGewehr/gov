@@ -3,6 +3,7 @@
 export const saudeKeys = {
   all: ['saude'] as const,
   pacientes: () => [...saudeKeys.all, 'pacientes'] as const,
+  pacientesBusca: (filtro: unknown) => [...saudeKeys.pacientes(), 'busca', filtro] as const,
   pacientePorCns: (cns: string) => [...saudeKeys.pacientes(), 'por-cns', cns] as const,
   historico: (pacienteId: string) => [...saudeKeys.pacientes(), 'historico', pacienteId] as const,
   atendimentos: () => [...saudeKeys.all, 'atendimentos'] as const,

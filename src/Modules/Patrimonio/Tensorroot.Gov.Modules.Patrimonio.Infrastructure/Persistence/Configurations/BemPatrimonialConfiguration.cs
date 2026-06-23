@@ -29,6 +29,12 @@ public sealed class BemPatrimonialConfiguration : IEntityTypeConfiguration<BemPa
                 valor => NumeroTombamento.De(valor))
             .HasMaxLength(NumeroTombamento.ComprimentoMaximo);
 
+        // Coluna-sombra (string crua) para busca textual por tombamento sem passar pelo value converter
+        // do VO NumeroTombamento (que causaria InvalidCastException ao comparar com string no LIKE).
+        // Sincronizada no SaveChanges do contexto. Espelha o padrao EmentaBusca do Legislativo.
+        builder.Property<string?>("TombamentoBusca").HasMaxLength(NumeroTombamento.ComprimentoMaximo);
+        builder.HasIndex("TenantId", "TombamentoBusca");
+
         builder.Property(bem => bem.ValorInicial)
             .HasConversion(valor => valor.Valor, valor => ValorMonetario.De(valor))
             .HasColumnType("decimal(18,2)");

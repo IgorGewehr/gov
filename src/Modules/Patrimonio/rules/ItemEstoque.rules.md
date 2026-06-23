@@ -453,7 +453,7 @@ Cada cenário vira teste de integração.
 
 <!-- manifest
 commands: CadastrarItemEstoque, RegistrarEntrada, AtenderRequisicao, AjustarValorRealizavelLiquido, ReclassificarAbc, InativarItem
-queries: ObterItemEstoque, ListarItensAbaixoDoPontoPedido, ListarMovimentosDoItem, ObterPosicaoCurvaAbc
+queries: ObterItemEstoque, ListarItensAbaixoDoPontoPedido, ListarMovimentosDoItem, ObterPosicaoCurvaAbc, BuscarItensEstoque
 domainEvents: RequisicaoAtendida, PontoPedidoAtingido
 integrationEventsPublished: PontoPedidoAtingidoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent

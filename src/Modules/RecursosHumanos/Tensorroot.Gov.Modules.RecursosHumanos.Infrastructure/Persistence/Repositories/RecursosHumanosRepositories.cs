@@ -44,6 +44,78 @@ public sealed class ServidorRepository(RecursosHumanosDbContext context) : IServ
             .OrderBy(servidor => servidor.Matricula)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Servidor> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoServidor? situacao,
+        RegimePrevidenciario? regime,
+        CargoId? cargoId,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Servidores.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            // Nome (complex property → coluna "Nome") casa por trecho via LIKE (case-insensitive pela
+            // collation do banco), com os curingas escapados. A Matricula tem value converter (VO↔string)
+            // e nao e LIKE-avel diretamente: casa por igualdade exata quando o termo for uma matricula
+            // valida (uso real: digitar a matricula completa). Matricula.De normaliza (uppercase/trim).
+            var padrao = "%" + EscaparLike(termo.Trim()) + "%";
+            var matriculaExata = TentarMatricula(termo);
+            consulta = consulta.Where(servidor =>
+                EF.Functions.Like(servidor.DadosPessoais.Nome, padrao, "\\")
+                || (matriculaExata != null && servidor.Matricula == matriculaExata));
+        }
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(servidor => servidor.Situacao == filtroSituacao);
+        }
+
+        if (regime is { } filtroRegime)
+        {
+            consulta = consulta.Where(servidor => servidor.Regime == filtroRegime);
+        }
+
+        if (cargoId is { } filtroCargo)
+        {
+            consulta = consulta.Where(servidor => servidor.CargoId == filtroCargo);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(servidor => servidor.DadosPessoais.Nome)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
+
+    // Escapa os curingas do LIKE (\, %, _) para tratar o termo do usuario como literal.
+    private static string EscaparLike(string termo)
+        => termo.Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("%", "\\%", StringComparison.Ordinal)
+            .Replace("_", "\\_", StringComparison.Ordinal);
+
+    // Constroi a Matricula a partir do termo, ou null se o termo nao for uma matricula valida
+    // (vazio/excede o comprimento). Permite casar a matricula por igualdade exata sem quebrar a busca.
+    private static Matricula? TentarMatricula(string termo)
+    {
+        try
+        {
+            return Matricula.De(termo);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio do agregado <see cref="Cargo"/>.</summary>
@@ -128,6 +200,21 @@ public sealed class FolhaDePagamentoRepository(RecursosHumanosDbContext context)
             .OrderBy(folha => folha.Tipo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<FolhaDePagamento>> ListarPorServidorAsync(Guid servidorId, CancellationToken cancellationToken)
+    {
+        // Folhas em que o servidor tem ao menos um evento (owned EventoFolha.ServidorId). Filtra no SQL;
+        // ordena por competencia (inteiro Ano*100+Mes) e tipo em memoria (lote pequeno por servidor).
+        var doServidor = await context.FolhasDePagamento
+            .Where(folha => folha.Eventos.Any(evento => evento.ServidorId == servidorId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return doServidor
+            .OrderByDescending(folha => (folha.Competencia.Ano * 100) + folha.Competencia.Mes)
+            .ThenBy(folha => folha.Tipo)
+            .ToList();
     }
 }
 

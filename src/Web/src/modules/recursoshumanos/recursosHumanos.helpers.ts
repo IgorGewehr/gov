@@ -40,6 +40,44 @@ export function formatarRegimePrev(regime: string): string {
   }
 }
 
+/**
+ * Opções de SITUAÇÃO do servidor para o filtro da busca. O valor enviado é o NOME do
+ * enum `SituacaoServidor` do backend (bind por nome a partir da query string), não índice.
+ */
+export const SITUACOES_SERVIDOR_FILTRO: SelectOption[] = [
+  { value: 'Nomeado', label: 'Nomeado' },
+  { value: 'Empossado', label: 'Empossado' },
+  { value: 'EmExercicio', label: 'Em exercício' },
+  { value: 'Estavel', label: 'Estável' },
+  { value: 'Afastado', label: 'Afastado' },
+  { value: 'Desligado', label: 'Desligado' },
+];
+
+/**
+ * Opções de REGIME previdenciário para o filtro da busca. O valor enviado é o NOME do
+ * enum `RegimePrevidenciario` do backend ('Rpps'/'Rgps'), não o índice numérico.
+ */
+export const REGIMES_SERVIDOR_FILTRO: SelectOption[] = [
+  { value: 'Rpps', label: 'RPPS (Regime Próprio)' },
+  { value: 'Rgps', label: 'RGPS (Regime Geral)' },
+];
+
+/** Formata o tipo de folha (enum PascalCase do backend) para rótulo PT-BR amigável. */
+export function formatarTipoFolha(tipo: string): string {
+  switch (tipo) {
+    case 'Mensal':
+      return 'Mensal';
+    case 'DecimoTerceiro':
+      return '13º salário';
+    case 'Ferias':
+      return 'Férias';
+    case 'Rescisao':
+      return 'Rescisão';
+    default:
+      return tipo;
+  }
+}
+
 /** Mapeia a situação do servidor para a variante semântica da Tag (cor + texto). */
 export function situacaoServidorTagVariant(situacao: string): TagVariant {
   switch (situacao) {
