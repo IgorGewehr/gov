@@ -281,6 +281,51 @@ internal static class EducacaoEndpoints
             Guid matriculaId, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterDiarioDaMatriculaQuery(matriculaId), cancellationToken)))
             .RequirePermission("educacao.ver");
+
+        MapearDiarioTurma(grupo);
+    }
+
+    private static void MapearDiarioTurma(RouteGroupBuilder grupo)
+    {
+        // Diario coletivo (sub-onda 3a): chamada e notas da turma inteira + boletim/historico.
+        grupo.MapGet("/turmas/{turmaId:guid}/diario", async (
+            Guid turmaId, DateOnly data, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var view = await sender.Send(new ObterDiarioDaTurmaQuery(turmaId, data), cancellationToken);
+            return view is null ? Results.NotFound() : Results.Ok(view);
+        }).RequirePermission("educacao.ver");
+
+        grupo.MapPost("/turmas/{turmaId:guid}/diario/frequencias", async (
+            Guid turmaId, RegistrarFrequenciaTurmaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                lancados = await sender.Send(
+                    new RegistrarFrequenciaTurmaCommand(turmaId, payload.Data, payload.CargaHorariaAula, payload.Presencas),
+                    cancellationToken),
+            }))
+            .RequirePermission("educacao.gerenciar");
+
+        grupo.MapPost("/turmas/{turmaId:guid}/diario/notas", async (
+            Guid turmaId, LancarNotasTurmaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                lancados = await sender.Send(
+                    new LancarNotasTurmaCommand(turmaId, payload.ComponenteCurricularId, payload.Periodo, payload.Notas),
+                    cancellationToken),
+            }))
+            .RequirePermission("educacao.gerenciar");
+
+        grupo.MapGet("/matriculas/{matriculaId:guid}/boletim", async (
+            Guid matriculaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var boletim = await sender.Send(new ObterBoletimQuery(matriculaId), cancellationToken);
+            return boletim is null ? Results.NotFound() : Results.Ok(boletim);
+        }).RequirePermission("educacao.ver");
+
+        grupo.MapGet("/alunos/{alunoId:guid}/historico-escolar", async (
+            Guid alunoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterHistoricoEscolarQuery(alunoId), cancellationToken)))
+            .RequirePermission("educacao.ver");
     }
 
     private sealed record AtualizarDadosCensoPayload(
@@ -296,6 +341,16 @@ internal static class EducacaoEndpoints
     private sealed record LancarNotaPayload(Guid ComponenteCurricularId, string Periodo, decimal Valor);
 
     private sealed record RegistrarAulaPayload(DateOnly Data, string Conteudo, bool DiaLetivo);
+
+    private sealed record RegistrarFrequenciaTurmaPayload(
+        DateOnly Data,
+        int CargaHorariaAula,
+        IReadOnlyList<FrequenciaAlunoLote> Presencas);
+
+    private sealed record LancarNotasTurmaPayload(
+        Guid ComponenteCurricularId,
+        string Periodo,
+        IReadOnlyList<NotaAlunoLote> Notas);
 
     private sealed record AtualizarAlunoPayload(DadosCivisPayload DadosCivis, EnderecoAlunoPayload Endereco);
 

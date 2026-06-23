@@ -72,6 +72,11 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IFolhaDePagamentoRepository, FolhaDePagamentoRepository>();
         services.AddScoped<IRubricaFolhaRepository, RubricaFolhaRepository>();
 
+        // RELATORIOS GERENCIAIS (Onda 3a — ONDA3-DESIGN §4.1): consulta read-side que projeta sobre a
+        // folha/servidores/cargos existentes (folha por secretaria/UO e fonte, evolucao da despesa de
+        // pessoal, mapa de cargos, demonstrativo TCE). Somente leitura — sem dominio novo.
+        services.AddScoped<IRelatoriosFolhaConsulta, RelatoriosFolhaConsulta>();
+
         // AFASTAMENTOS TIPADOS (Onda 1 — efeito na folha): repositorio do agregado, provider de regras
         // (catalogo persistido por tenant + defaults legais parametrizados) e o ajustador que aplica o
         // efeito ao provento-base no lancamento de eventos (gancho da folha — design RH §3.3).

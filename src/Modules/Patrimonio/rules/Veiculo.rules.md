@@ -524,8 +524,8 @@ Cada cenário vira teste de integração.
 | 1.0.0 | 2026-06-21 | Versão inicial — regras derivadas do README do módulo Patrimonio (frota: veículo é-um `BemPatrimonial`; abastecimento sob cota, manutenção/OS, multas, licenciamento/IPVA, motorista/CNH; CTB Lei 9.503/1997 + MCASP/NBC TSP 07). |
 
 <!-- manifest
-commands: IncorporarVeiculo, RegistrarAbastecimento, AbrirOrdemServico, ConcluirManutencao, RegistrarMulta, RegistrarLicenciamento, DesignarMotorista
-queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes, BuscarVeiculos
+commands: IncorporarVeiculo, TombarVeiculo, RegistrarAbastecimento, AbrirOrdemServico, ConcluirManutencao, RegistrarMulta, RegistrarLicenciamento, DesignarMotorista
+queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes, BuscarVeiculos, ObterPainelFrota, ObterCustoPorVeiculo, ListarCnhVencendo, ListarManutencoesAbertas
 domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada, VeiculoDepreciado
 integrationEventsPublished: BemIncorporadoIntegrationEvent, BemDepreciadoIntegrationEvent, BemBaixadoIntegrationEvent, BemReavaliadoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent

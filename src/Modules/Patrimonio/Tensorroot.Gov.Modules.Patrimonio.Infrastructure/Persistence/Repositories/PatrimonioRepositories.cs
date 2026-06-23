@@ -208,6 +208,115 @@ public sealed class VeiculoRepository(PatrimonioDbContext context) : IVeiculoRep
 
         return (itens, total);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<CustoVeiculoLinha>> ProjetarCustosPorVeiculoAsync(
+        DateOnly de,
+        DateOnly ate,
+        CancellationToken cancellationToken)
+    {
+        // As coleções (abastecimentos/OS/multas) são owned tables do agregado; materializamos os veículos
+        // (Global Query Filter aplica o tenant) e agregamos em memória — frota municipal tem cardinalidade
+        // baixa e as coleções já vêm carregadas com o agregado.
+        var veiculos = await context.Veiculos
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return veiculos
+            .Select(veiculo =>
+            {
+                var abastecimentos = veiculo.Abastecimentos
+                    .Where(a => a.Data >= de && a.Data <= ate)
+                    .ToList();
+
+                var gastoCombustivel = abastecimentos.Sum(a => a.Valor.Valor);
+                var litros = abastecimentos.Sum(a => a.Litros);
+
+                var gastoManutencao = veiculo.OrdensServico
+                    .Where(os => os.Situacao == SituacaoOrdemServico.Concluida
+                        && os.DataConclusao is { } conclusao
+                        && conclusao >= de && conclusao <= ate)
+                    .Sum(os => os.CustoRealizado!.Valor);
+
+                var gastoMultas = veiculo.Multas
+                    .Where(m => m.DataInfracao >= de && m.DataInfracao <= ate)
+                    .Sum(m => m.Valor.Valor);
+
+                // Km rodados no período: diferença entre o maior e o menor odômetro dos abastecimentos
+                // do período (proxy de operação; consumo só é determinável com >= 2 abastecimentos e litros > 0).
+                var kmRodados = 0;
+                decimal? consumo = null;
+                if (abastecimentos.Count >= 2)
+                {
+                    var odometros = abastecimentos.Select(a => a.Odometro.Valor).ToList();
+                    kmRodados = odometros.Max() - odometros.Min();
+                    if (litros > 0m && kmRodados > 0)
+                    {
+                        consumo = Math.Round(kmRodados / litros, 2);
+                    }
+                }
+
+                return new CustoVeiculoLinha(
+                    veiculo.Id.Value,
+                    veiculo.Placa.Valor,
+                    veiculo.Descricao,
+                    gastoCombustivel,
+                    litros,
+                    gastoManutencao,
+                    gastoMultas,
+                    kmRodados,
+                    consumo);
+            })
+            .OrderByDescending(linha => linha.CustoTotal)
+            .ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<CnhVencendoLinha>> ListarCnhVencendoAsync(
+        DateOnly referencia,
+        DateOnly ate,
+        CancellationToken cancellationToken)
+    {
+        var veiculos = await context.Veiculos
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return veiculos
+            .SelectMany(veiculo => veiculo.Motoristas
+                .Where(motorista => motorista.ValidadeCnh <= ate)
+                .Select(motorista => new CnhVencendoLinha(
+                    veiculo.Id.Value,
+                    veiculo.Placa.Valor,
+                    motorista.Id.Value,
+                    motorista.Nome,
+                    motorista.Cnh,
+                    motorista.CategoriaCnh,
+                    motorista.ValidadeCnh,
+                    motorista.ValidadeCnh.DayNumber - referencia.DayNumber)))
+            .OrderBy(linha => linha.ValidadeCnh)
+            .ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ManutencaoAbertaLinha>> ListarManutencoesAbertasAsync(CancellationToken cancellationToken)
+    {
+        var veiculos = await context.Veiculos
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return veiculos
+            .SelectMany(veiculo => veiculo.OrdensServico
+                .Where(os => os.Situacao == SituacaoOrdemServico.Aberta)
+                .Select(os => new ManutencaoAbertaLinha(
+                    veiculo.Id.Value,
+                    veiculo.Placa.Valor,
+                    os.Id.Value,
+                    os.Descricao,
+                    os.CustoEstimado.Valor,
+                    os.Odometro.Valor)))
+            .OrderBy(linha => linha.Placa)
+            .ToList();
+    }
 }
 
 /// <summary>Implementação EF Core do repositório do agregado <see cref="ItemEstoque"/>.</summary>

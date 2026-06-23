@@ -60,6 +60,10 @@ public sealed class EducacaoModule : IModule
         services.AddScoped<IDiarioClasseRepository, DiarioClasseRepository>();
         services.AddScoped<ITurmaRepository, TurmaRepository>();
 
+        // Read model do diario coletivo, boletim e historico escolar (sub-onda 3a) — projecao
+        // intra-modulo sobre Turma/Matricula/Aluno/DiarioClasse, sem entidade nova.
+        services.AddScoped<IDiarioTurmaReadModel, DiarioTurmaReadModel>();
+
         // Nucleo fiscal de Educacao (M7 E-1/E-2/E-3): classificacao MDE, FUNDEB por origem, 70% folha.
         services.AddScoped<IRegraClassificacaoMdeRepository, RegraClassificacaoMdeRepository>();
         services.AddScoped<IDistribuicaoFundebRepository, DistribuicaoFundebRepository>();

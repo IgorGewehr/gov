@@ -67,7 +67,100 @@ public interface IVeiculoRepository
         int pagina,
         int tamanho,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Projeta o custo agregado por veículo em um período (Painel de Frota — Onda 3a): combustível
+    /// (abastecimentos no período), manutenção (OS concluídas no período, custo realizado) e multas
+    /// (infrações no período). Inclui consumo médio (km/L) e a placa. Tenant-scoped via Global Query Filter.
+    /// </summary>
+    /// <param name="de">Data inicial (inclusiva).</param>
+    /// <param name="ate">Data final (inclusiva).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Linha de custo/consumo por veículo no período.</returns>
+    Task<IReadOnlyList<CustoVeiculoLinha>> ProjetarCustosPorVeiculoAsync(
+        DateOnly de,
+        DateOnly ate,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista os condutores cuja CNH vence dentro da janela informada a partir da data de referência
+    /// (Painel de Frota — Onda 3a). Inclui CNH já vencida (dias negativos). Tenant-scoped.
+    /// </summary>
+    /// <param name="referencia">Data de referência (hoje).</param>
+    /// <param name="ate">Limite superior da janela de vencimento (inclusivo).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Condutores com CNH a vencer/vencida na janela, com o veículo vinculado.</returns>
+    Task<IReadOnlyList<CnhVencendoLinha>> ListarCnhVencendoAsync(
+        DateOnly referencia,
+        DateOnly ate,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista as ordens de serviço de manutenção em aberto de toda a frota do tenant (Painel de Frota — Onda 3a).
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Ordens de serviço abertas, com a placa do veículo.</returns>
+    Task<IReadOnlyList<ManutencaoAbertaLinha>> ListarManutencoesAbertasAsync(CancellationToken cancellationToken);
 }
+
+/// <summary>Linha de custo/consumo de um veículo em um período (Painel de Frota).</summary>
+/// <param name="VeiculoId">Identificador do veículo.</param>
+/// <param name="Placa">Placa do veículo.</param>
+/// <param name="Descricao">Descrição do veículo.</param>
+/// <param name="GastoCombustivel">Gasto com combustível no período.</param>
+/// <param name="LitrosAbastecidos">Litros abastecidos no período.</param>
+/// <param name="GastoManutencao">Gasto com manutenção (OS concluídas) no período.</param>
+/// <param name="GastoMultas">Valor de multas (infrações) no período.</param>
+/// <param name="KmRodados">Quilômetros rodados no período (odômetro final menos inicial dos abastecimentos).</param>
+/// <param name="ConsumoMedioKmL">Consumo médio km/L no período (nulo se indeterminável).</param>
+public sealed record CustoVeiculoLinha(
+    Guid VeiculoId,
+    string Placa,
+    string Descricao,
+    decimal GastoCombustivel,
+    decimal LitrosAbastecidos,
+    decimal GastoManutencao,
+    decimal GastoMultas,
+    int KmRodados,
+    decimal? ConsumoMedioKmL)
+{
+    /// <summary>Custo total do veículo no período (combustível + manutenção + multas).</summary>
+    public decimal CustoTotal => GastoCombustivel + GastoManutencao + GastoMultas;
+}
+
+/// <summary>Linha de CNH a vencer/vencida de um condutor (Painel de Frota).</summary>
+/// <param name="VeiculoId">Identificador do veículo vinculado.</param>
+/// <param name="Placa">Placa do veículo.</param>
+/// <param name="MotoristaId">Identificador do motorista.</param>
+/// <param name="Nome">Nome do condutor.</param>
+/// <param name="Cnh">Número da CNH.</param>
+/// <param name="CategoriaCnh">Categoria da CNH.</param>
+/// <param name="ValidadeCnh">Validade da CNH.</param>
+/// <param name="DiasParaVencer">Dias até o vencimento (negativo se já vencida).</param>
+public sealed record CnhVencendoLinha(
+    Guid VeiculoId,
+    string Placa,
+    Guid MotoristaId,
+    string Nome,
+    string Cnh,
+    string CategoriaCnh,
+    DateOnly ValidadeCnh,
+    int DiasParaVencer);
+
+/// <summary>Linha de ordem de serviço de manutenção em aberto (Painel de Frota).</summary>
+/// <param name="VeiculoId">Identificador do veículo.</param>
+/// <param name="Placa">Placa do veículo.</param>
+/// <param name="OrdemServicoId">Identificador da ordem de serviço.</param>
+/// <param name="Descricao">Descrição do serviço.</param>
+/// <param name="CustoEstimado">Custo estimado na abertura.</param>
+/// <param name="Odometro">Leitura do odômetro na abertura.</param>
+public sealed record ManutencaoAbertaLinha(
+    Guid VeiculoId,
+    string Placa,
+    Guid OrdemServicoId,
+    string Descricao,
+    decimal CustoEstimado,
+    int Odometro);
 
 /// <summary>Projeção de leitura de uma multa acompanhada da placa do veículo.</summary>
 /// <param name="MultaId">Identificador da multa.</param>

@@ -24,6 +24,17 @@ public interface IDiarioClasseRepository
     /// <returns>O diario da matricula, ou <c>null</c> se inexistente no tenant.</returns>
     Task<DiarioClasseAggregate?> ObterPorMatriculaAsync(MatriculaId matriculaId, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Carrega os diarios (com colecoes filhas) vinculados a um conjunto de matriculas — base do
+    /// lancamento em lote do diario coletivo da turma (sub-onda 3a). Respeita o filtro de tenant.
+    /// </summary>
+    /// <param name="matriculaIds">Matriculas cujas raizes de diario carregar.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Diarios encontrados (pode ser menor que a entrada quando alguma matricula nao tem diario).</returns>
+    Task<IReadOnlyList<DiarioClasseAggregate>> ListarPorMatriculasAsync(
+        IReadOnlyCollection<MatriculaId> matriculaIds,
+        CancellationToken cancellationToken);
+
     /// <summary>Indica se ja existe diario para a matricula informada (vinculo 1-1 — I-7).</summary>
     /// <param name="matriculaId">Matricula vinculada.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>

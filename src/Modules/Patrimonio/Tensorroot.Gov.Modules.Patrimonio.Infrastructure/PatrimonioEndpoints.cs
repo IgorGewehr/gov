@@ -199,6 +199,14 @@ internal static class PatrimonioEndpoints
             => Results.Ok(await sender.Send(new ObterVeiculoQuery(veiculoId), cancellationToken)))
             .RequirePermission("patrimonio.ver");
 
+        // Tombamento do veiculo (EmIncorporacao -> Tombado): gate que habilita as operacoes de frota.
+        grupo.MapPost("/veiculos/{veiculoId:guid}/tombamento", async (
+            Guid veiculoId, TombarBemPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new TombarVeiculoCommand(veiculoId, payload.NumeroTombamento), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
+
         grupo.MapPost("/veiculos/{veiculoId:guid}/abastecimentos", async (
             Guid veiculoId, RegistrarAbastecimentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
@@ -254,6 +262,34 @@ internal static class PatrimonioEndpoints
             await sender.Send(new DesignarMotoristaCommand(veiculoId, payload.Nome, payload.Cnh, payload.CategoriaCnh, payload.ValidadeCnh), cancellationToken);
             return Results.NoContent();
         }).RequirePermission("patrimonio.gerenciar");
+
+        MapearPainelFrota(grupo);
+    }
+
+    // PAINEL DE FROTA (Onda 3a): read models de gestão sobre o agregado Veiculo (custo/consumo por
+    // veículo e período, multas, CNH e manutenções a vencer). Zero entidade nova de domínio — projeção.
+    // Multas RENAINF/DETRAN-RS e IPVA/licenciamento online = M10 (depende de convênio, atrás de ACL).
+    private static void MapearPainelFrota(RouteGroupBuilder grupo)
+    {
+        grupo.MapGet("/frota/painel", async (
+            DateOnly de, DateOnly ate, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterPainelFrotaQuery(de, ate), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/frota/veiculos/{veiculoId:guid}/custos", async (
+            Guid veiculoId, DateOnly de, DateOnly ate, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterCustoPorVeiculoQuery(veiculoId, de, ate), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/frota/cnh-vencendo", async (
+            int? dias, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarCnhVencendoQuery(dias ?? 30), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/frota/manutencoes/abertas", async (
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarManutencoesAbertasQuery(), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
     }
 
     private static void MapearEstoque(RouteGroupBuilder grupo)

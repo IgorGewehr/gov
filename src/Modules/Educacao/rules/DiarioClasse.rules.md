@@ -415,8 +415,8 @@ Cada cenario vira teste de integracao.
 | 1.0.0 | 2026-06-21 | Versao inicial — derivada do README do modulo Educacao (mapa de dominio: agregado DiarioClasse com `RegistroFrequencia`/`RegistroNota`/`RegistroAula`, eventos `FrequenciaRegistrada`/`NotaLancada`/`ResultadoApurado`; regras de frequencia >= 75%, 200 dias letivos, 800h/1.000h; Integration Event `ResultadoApurado` a Transparencia). |
 
 <!-- manifest
-commands: AbrirDiarioClasse, RegistrarFrequencia, LancarNota, RegistrarAula, ApurarResultado
-queries: ObterDiarioDaMatricula, ObterFrequenciaDoDiario
+commands: AbrirDiarioClasse, RegistrarFrequencia, LancarNota, RegistrarAula, ApurarResultado, RegistrarFrequenciaTurma, LancarNotasTurma
+queries: ObterDiarioDaMatricula, ObterFrequenciaDoDiario, ObterDiarioDaTurma, ObterBoletim, ObterHistoricoEscolar
 domainEvents: FrequenciaRegistrada, NotaLancada, ResultadoApurado
 integrationEventsPublished: ResultadoApuradoIntegrationEvent
 integrationEventsConsumed: 

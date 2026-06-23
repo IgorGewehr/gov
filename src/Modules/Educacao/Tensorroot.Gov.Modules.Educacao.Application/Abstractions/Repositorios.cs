@@ -37,6 +37,17 @@ public interface IMatriculaRepository
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Lista as matriculas Ativas de uma turma (independe da data de referencia do Censo) —
+    /// base do lancamento em lote do diario coletivo da turma (sub-onda 3a). Tenant-scoped.
+    /// </summary>
+    /// <param name="turmaId">Turma.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Matriculas Ativas da turma.</returns>
+    Task<IReadOnlyList<Matricula>> ListarAtivasPorTurmaAsync(
+        TurmaId turmaId,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Indica se o aluno ja possui matricula Ativa conflitante (mesmo periodo/turno) na data de
     /// referencia (I-3 — vedacao de vinculo conflitante).
     /// </summary>

@@ -75,6 +75,16 @@ public sealed class MatriculaRepository(EducacaoDbContext context) : IMatriculaR
             .ConfigureAwait(false);
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<Matricula>> ListarAtivasPorTurmaAsync(
+        TurmaId turmaId,
+        CancellationToken cancellationToken)
+        => await context.Matriculas
+            .Where(matricula => matricula.TurmaId == turmaId && matricula.Situacao == SituacaoMatricula.Ativa)
+            .OrderBy(matricula => matricula.AlunoId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <inheritdoc />
     public Task<bool> ExisteMatriculaAtivaConflitanteAsync(
         AlunoId alunoId,
         DateOnly dataReferencia,
@@ -115,6 +125,27 @@ public sealed class DiarioClasseRepository(EducacaoDbContext context) : IDiarioC
             .Include(diario => diario.Notas)
             .Include(diario => diario.Aulas)
             .FirstOrDefaultAsync(diario => diario.MatriculaId == matriculaId, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<DiarioClasseAggregate>> ListarPorMatriculasAsync(
+        IReadOnlyCollection<MatriculaId> matriculaIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(matriculaIds);
+        if (matriculaIds.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = matriculaIds.ToArray();
+        return await context.DiariosClasse
+            .Include(diario => diario.Frequencias)
+            .Include(diario => diario.Notas)
+            .Include(diario => diario.Aulas)
+            .Where(diario => ids.Contains(diario.MatriculaId))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 
     /// <inheritdoc />
     public Task<bool> ExisteParaMatriculaAsync(MatriculaId matriculaId, CancellationToken cancellationToken)
