@@ -10,7 +10,9 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Diagnostics;
 using Tensorroot.Gov.ApiHost.Admin;
+using Tensorroot.Gov.ApiHost.ErrorHandling;
 using Tensorroot.Gov.ApiHost.Modularity;
 using Tensorroot.Gov.ApiHost.Outbox;
 using Tensorroot.Gov.ApiHost.Provisioning;
@@ -50,6 +52,21 @@ builder.Services.AddOpenTelemetry()
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantContext, TenantContext>();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+
+// === Tratamento GLOBAL de erros (RFC 7807 / application/problem+json) ===
+// Toda exceção não tratada (domínio, autorização/deny, validação) vira um ProblemDetails idiomático,
+// SEM stack trace no corpo (nem em Development — a API nunca vaza stack; o detalhe fica só no log
+// Serilog com TraceId/TenantId). O mapa exceção→status vive em MapaExcecaoStatus.
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = contexto =>
+    {
+        // traceId SEMPRE presente, mesmo nos ProblemDetails produzidos por outras partes do pipeline
+        // (ex.: 401 do JWT, 404 de rota) — uniformiza a correlação com o log.
+        contexto.ProblemDetails.Extensions.TryAdd(
+            "traceId",
+            System.Diagnostics.Activity.Current?.Id ?? contexto.HttpContext.TraceIdentifier);
+    });
+builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 
 // === Blocos de construção (TimeProvider + interceptors) + pipeline MediatR ===
 builder.Services.AddInfrastructureBuildingBlocks();
@@ -174,6 +191,15 @@ builder.Services.AddDbContext<AuditoriaReadDbContext>((serviceProvider, options)
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
+
+// Tratamento global de erros — PRIMEIRO middleware após o logging, para capturar exceções de TODO o
+// resto do pipeline (autenticação, gating de licença, endpoints e handlers MediatR). Responde
+// application/problem+json via ProblemDetailsExceptionHandler. Sem opções → usa o IExceptionHandler.
+app.UseExceptionHandler();
+
+// Converte respostas de erro SEM corpo (ex.: 401/403/404 produzidos pelo próprio pipeline) em
+// ProblemDetails, mantendo o contrato application/problem+json uniforme em toda a API.
+app.UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {

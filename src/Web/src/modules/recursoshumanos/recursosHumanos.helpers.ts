@@ -8,6 +8,20 @@ export const PERM_RH_VER = 'recursoshumanos.ver';
 /** Permissão de AÇÃO (criar/editar/comandos) do módulo. */
 export const PERM_RH_GERENCIAR = 'recursoshumanos.gerenciar';
 
+/**
+ * Permissão de AUTOSSERVIÇO (área "Minha Folha"): o servidor acessa SOMENTE os
+ * próprios dados (dado-próprio resolvido do JWT no backend — a UI nunca envia servidorId).
+ */
+export const PERM_RH_AUTOSSERVICO = 'autosservico.proprio';
+
+/** Opções de tipo de folha do meu contracheque (rótulo PT-BR → enum TipoFolha do backend). */
+export const TIPOS_FOLHA_MINHA: SelectOption[] = [
+  { value: 'Mensal', label: 'Mensal' },
+  { value: 'DecimoTerceiro', label: '13º salário' },
+  { value: 'Ferias', label: 'Férias' },
+  { value: 'Rescisao', label: 'Rescisão' },
+];
+
 /** Mapeia a situação do servidor para a variante semântica da Tag (cor + texto). */
 export function situacaoServidorTagVariant(situacao: string): TagVariant {
   switch (situacao) {
