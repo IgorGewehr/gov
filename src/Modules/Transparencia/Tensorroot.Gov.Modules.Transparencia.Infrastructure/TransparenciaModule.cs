@@ -56,6 +56,9 @@ public sealed class TransparenciaModule : IModule
         services.AddScoped<IRemessaTceRepository, RemessaTceRepository>();
         services.AddScoped<IDeclaracaoFiscalRepository, DeclaracaoFiscalRepository>();
 
+        // Ponte RH -> Transparencia: read model do resumo de folha (fonte da remessa de folha ao TCE-RS).
+        services.AddScoped<IResumoFolhaTceRepository, ResumoFolhaTceRepository>();
+
         // Leitura dos itens consolidados (read model alimentado por Integration Events — I-13).
         services.AddScoped<IPublicacaoTransparenciaRepository, SimuladoPublicacaoTransparenciaRepository>();
 

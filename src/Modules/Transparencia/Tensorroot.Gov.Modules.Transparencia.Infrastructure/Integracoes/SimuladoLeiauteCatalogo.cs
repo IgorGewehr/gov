@@ -20,8 +20,9 @@ public sealed class SimuladoLeiauteCatalogo(IConfiguration configuration) : ILei
     public Task<bool> SuportaAsync(Leiaute leiaute, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(leiaute);
-        var suportado = string.Equals(leiaute.Codigo, CodigoSuportado, StringComparison.OrdinalIgnoreCase)
-            && !string.IsNullOrWhiteSpace(leiaute.Versao);
+        var suportado = !string.IsNullOrWhiteSpace(leiaute.Versao)
+            && (string.Equals(leiaute.Codigo, CodigoSuportado, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(leiaute.Codigo, LeiauteFolhaTceSeed.Codigo, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(suportado);
     }
 
@@ -29,6 +30,14 @@ public sealed class SimuladoLeiauteCatalogo(IConfiguration configuration) : ILei
     public Task<LeiauteSiapc> ResolverAsync(Leiaute leiaute, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(leiaute);
+
+        // REMESSA DE FOLHA ao TCE-RS (Res. 1099 / SIAPC Vol. V §3.1): TCE_4810/4820/4960.
+        if (string.Equals(leiaute.Codigo, LeiauteFolhaTceSeed.Codigo, StringComparison.OrdinalIgnoreCase))
+        {
+            var modeloFolha = LeiauteFolhaTceSeed.ModeloPadrao() with { Versao = leiaute.Versao };
+            return Task.FromResult(LeiauteFolhaTceSeed.Construir(modeloFolha));
+        }
+
         if (!string.Equals(leiaute.Codigo, CodigoSuportado, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException($"Leiaute '{leiaute.Codigo}' não suportado.");

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
 
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence;
@@ -21,6 +22,9 @@ public sealed class TransparenciaDbContext(DbContextOptions<TransparenciaDbConte
 
     /// <summary>Declaracoes fiscais (MSC/RREO/RGF/DCA) transmitidas ao SICONFI.</summary>
     public DbSet<DeclaracaoFiscal> DeclaracoesFiscais => Set<DeclaracaoFiscal>();
+
+    /// <summary>Resumos de folha consumidos do RH (read model) — fonte da remessa de folha ao TCE-RS.</summary>
+    public DbSet<ResumoFolhaTce> ResumosFolhaTce => Set<ResumoFolhaTce>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

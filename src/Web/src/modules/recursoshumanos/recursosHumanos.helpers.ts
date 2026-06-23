@@ -139,6 +139,37 @@ export function formatarMinutos(minutos: number): string {
   return `${sinal}${horas}h ${String(min).padStart(2, '0')}min`;
 }
 
+/** Opções da parcela do 13º salário (rótulo → enum numérico do backend). */
+export const PARCELAS_13: SelectOption[] = [
+  { value: '1', label: '1ª parcela — adiantamento (sem descontos)' },
+  { value: '2', label: '2ª parcela — integral (com INSS/RPPS/IRRF)' },
+];
+
+/** Opções de regime jurídico do vínculo na rescisão (RegimeVinculo, backend). */
+export const REGIMES_VINCULO: SelectOption[] = [
+  { value: '1', label: 'Estatutário' },
+  { value: '2', label: 'Empregado público (Celetista)' },
+];
+
+/**
+ * Opções de tipo de desligamento (TipoDesligamento, backend). A matriz parametrizável
+ * (tipo × regime) é quem decide as verbas devidas — aqui apenas o rótulo PT-BR.
+ */
+export const TIPOS_DESLIGAMENTO: SelectOption[] = [
+  { value: '1', label: 'Dispensa sem justa causa' },
+  { value: '2', label: 'Pedido de demissão / exoneração a pedido' },
+  { value: '3', label: 'Justa causa' },
+  { value: '4', label: 'Distrato (acordo CLT 484-A)' },
+  { value: '5', label: 'Aposentadoria' },
+  { value: '6', label: 'Falecimento' },
+  { value: '7', label: 'Exoneração / vacância (estatutário)' },
+];
+
+/** Indica se o tipo de desligamento/regime habilita verbas celetistas (aviso + multa FGTS). */
+export function permiteVerbasCeletistas(regimeVinculo: string): boolean {
+  return regimeVinculo === '2';
+}
+
 /** Opções de mês (1–12) para seletor de competência. */
 export const MESES: SelectOption[] = [
   { value: '1', label: 'Janeiro' },

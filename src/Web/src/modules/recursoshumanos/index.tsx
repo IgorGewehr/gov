@@ -37,6 +37,9 @@ const FolhaListPage = lazy(() =>
 const FolhaDetailPage = lazy(() =>
   import('./FolhaDetailPage').then((m) => ({ default: m.FolhaDetailPage })),
 );
+const CicloAnualPage = lazy(() =>
+  import('./CicloAnualPage').then((m) => ({ default: m.CicloAnualPage })),
+);
 const PontoListPage = lazy(() =>
   import('./PontoListPage').then((m) => ({ default: m.PontoListPage })),
 );
@@ -66,6 +69,7 @@ const MODULE: ModuleDefinition = {
         { path: 'tabelas-legais', element: <TabelasLegaisPage /> },
         { path: 'folhas', element: <FolhaListPage /> },
         { path: 'folhas/:folhaId', element: <FolhaDetailPage /> },
+        { path: 'ciclo-anual', element: <CicloAnualPage /> },
         { path: 'ponto', element: <PontoListPage /> },
         { path: 'ponto/:servidorId', element: <PontoServidorPage /> },
         { path: 'esocial', element: <ESocialPainelPage /> },

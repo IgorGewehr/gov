@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TransparenciaDbContext))]
-    partial class TransparenciaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623050835_ResumoFolhaTceRemessa")]
+    partial class ResumoFolhaTceRemessa
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

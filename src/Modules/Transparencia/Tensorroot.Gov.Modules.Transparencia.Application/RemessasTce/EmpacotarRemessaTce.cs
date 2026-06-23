@@ -73,8 +73,12 @@ public sealed class EmpacotarRemessaTceHandler(
             .ConfigureAwait(false);
 
         // O hash do agregado foi calculado sobre o conteúdo CONSOLIDADO dos .TXT (não sobre o ZIP);
-        // confere a integridade desse conteúdo antes de marcar pronta para transmissão.
-        var conteudoConsolidado = ConsolidarConteudo(remessa);
+        // confere a integridade desse conteúdo antes de marcar pronta para transmissão. A consolidação
+        // segue a ORDEM DO LEIAUTE (leiaute.Registros) — a MESMA usada na geração (MontarArquivos itera
+        // leiaute.Registros). NÃO se pode confiar na ordem da coleção-filha recarregada pelo EF (sem
+        // OrderBy ela não é determinística), o que, em remessas multi-arquivo (folha: TCE_4810/4820/4960),
+        // invertia os bytes e fazia a conferência de hash falhar indevidamente.
+        var conteudoConsolidado = ConsolidarConteudo(remessa, leiauteSiapc);
         remessa.MarcarProntaParaTransmissao(pacote.NomeZip, conteudoConsolidado.Span);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -82,12 +86,22 @@ public sealed class EmpacotarRemessaTceHandler(
         return pacote.NomeZip;
     }
 
-    private static ReadOnlyMemory<byte> ConsolidarConteudo(RemessaTce remessa)
+    private static ReadOnlyMemory<byte> ConsolidarConteudo(RemessaTce remessa, LeiauteSiapc leiaute)
     {
-        var tamanho = remessa.Arquivos.Sum(arquivo => arquivo.Conteudo.Length);
+        // Ordena os arquivos persistidos pela posição do seu registro no leiaute (ordem canônica da
+        // geração); arquivos fora do leiaute (não deveria ocorrer) vão ao fim, preservando estabilidade.
+        var ordemPorArquivo = leiaute.Registros
+            .Select((registro, indice) => (registro.NomeArquivo, indice))
+            .ToDictionary(item => item.NomeArquivo, item => item.indice, StringComparer.OrdinalIgnoreCase);
+
+        var ordenados = remessa.Arquivos
+            .OrderBy(arquivo => ordemPorArquivo.TryGetValue(arquivo.NomeArquivo, out var indice) ? indice : int.MaxValue)
+            .ToList();
+
+        var tamanho = ordenados.Sum(arquivo => arquivo.Conteudo.Length);
         var total = new byte[tamanho];
         var offset = 0;
-        foreach (var arquivo in remessa.Arquivos)
+        foreach (var arquivo in ordenados)
         {
             arquivo.Conteudo.Span.CopyTo(total.AsSpan(offset));
             offset += arquivo.Conteudo.Length;

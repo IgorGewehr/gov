@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Transparencia.Application.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Application.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasTce;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
@@ -25,6 +26,13 @@ internal static class TransparenciaEndpoints
     {
         grupo.MapPost("/remessas-tce", async (
             GerarRemessaTceCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("transparencia.gerenciar");
+
+        // REMESSA DE FOLHA ao TCE-RS (Res. 1099): monta TCE_4810/4820/4960 a partir do resumo consumido do RH.
+        // Reusa o mesmo ciclo da remessa SIAPC (validacao/empacotamento/protocolo) abaixo — mesma RemessaTce.
+        grupo.MapPost("/remessas-folha-tce", async (
+            GerarRemessaFolhaTceCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
             .RequirePermission("transparencia.gerenciar");
 

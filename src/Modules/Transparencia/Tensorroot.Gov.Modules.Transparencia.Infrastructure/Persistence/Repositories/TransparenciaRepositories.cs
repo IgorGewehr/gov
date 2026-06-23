@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Transparencia.Application.Abstractions;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
 
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Repositories;
@@ -32,6 +33,35 @@ public sealed class RemessaTceRepository(TransparenciaDbContext context) : IReme
             .OrderBy(remessa => remessa.DataGeracao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+}
+
+/// <summary>Implementacao EF Core do repositorio do read model <see cref="ResumoFolhaTce"/> (ponte RH).</summary>
+public sealed class ResumoFolhaTceRepository(TransparenciaDbContext context) : IResumoFolhaTceRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(ResumoFolhaTce resumo)
+    {
+        ArgumentNullException.ThrowIfNull(resumo);
+        context.ResumosFolhaTce.Add(resumo);
+    }
+
+    /// <inheritdoc />
+    public Task<ResumoFolhaTce?> ObterPorFolhaAsync(Guid folhaDePagamentoId, CancellationToken cancellationToken)
+        => context.ResumosFolhaTce
+            .Include(resumo => resumo.Servidores)
+            .Include(resumo => resumo.Rubricas)
+            .Include(resumo => resumo.Lancamentos)
+            .FirstOrDefaultAsync(resumo => resumo.FolhaDePagamentoId == folhaDePagamentoId, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ResumoFolhaTce?> ObterPorCompetenciaAsync(int exercicio, int mes, CancellationToken cancellationToken)
+        => context.ResumosFolhaTce
+            .Include(resumo => resumo.Servidores)
+            .Include(resumo => resumo.Rubricas)
+            .Include(resumo => resumo.Lancamentos)
+            .Where(resumo => resumo.Exercicio == exercicio && resumo.Mes == mes)
+            .OrderByDescending(resumo => resumo.FolhaDePagamentoId)
+            .FirstOrDefaultAsync(cancellationToken);
 }
 
 /// <summary>Implementacao EF Core do repositorio do agregado <see cref="DeclaracaoFiscal"/>.</summary>

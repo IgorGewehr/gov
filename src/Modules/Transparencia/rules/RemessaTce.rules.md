@@ -443,9 +443,9 @@ Cada item vira um teste.
 | 1.0.0 | 2026-06-21 | Versão inicial — especificação Rules-as-Code do agregado `RemessaTce` (módulo Transparencia) derivada do README do Bounded Context e das fontes legais (LRF arts. 48/48-A e 23 §3º, LC 131/2009, LAI art. 8 §3º, SIAFIC, Resoluções TCE-RS SIAPC/PAD/e-Validador). Define ciclo `Gerada → Validada → Enviada → Homologada/Rejeitada`, validação local (RDI), imutabilidade por hash, alerta de prazo e Integration Events publicados. |
 
 <!-- manifest
-commands: GerarRemessaTce, ValidarRemessaTce, EmpacotarRemessaTce, RegistrarProtocoloTce, HomologarRemessaTce, VencerPrazoRemessaTce
+commands: GerarRemessaTce, GerarRemessaFolhaTce, ValidarRemessaTce, EmpacotarRemessaTce, RegistrarProtocoloTce, HomologarRemessaTce, VencerPrazoRemessaTce
 queries: ObterRemessaTcePorId, ListarRemessasTcePorPeriodo, BaixarArquivoRemessaTce, ObterCriticasRemessaTce
 domainEvents: RemessaGerada, RemessaValidada, RemessaRejeitada, RemessaProntaParaTransmissao, RemessaEnviadaTce, RemessaHomologada, PrazoRemessaVencido
 integrationEventsPublished: RemessaEnviadaTceIntegrationEvent, RemessaRejeitadaIntegrationEvent, PrazoRemessaVencidoIntegrationEvent
-integrationEventsConsumed: 
+integrationEventsConsumed: FolhaResumoRemessaTceIntegrationEvent
 -->

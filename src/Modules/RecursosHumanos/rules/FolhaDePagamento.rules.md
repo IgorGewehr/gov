@@ -468,6 +468,6 @@ Cada cenário vira teste de integração.
 commands: AbrirFolha, AdicionarEvento, ApurarDescontosLegais, CalcularFolha, FecharFolha, EfetuarPagamento
 queries: ObterFolhaPorCompetencia, ObterContrachequeDoServidor
 domainEvents: FolhaAberta, FolhaCalculada, FolhaFechada, PagamentoEfetuado
-integrationEventsPublished: FolhaFechadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent
+integrationEventsPublished: FolhaFechadaIntegrationEvent, PagamentoEfetuadoIntegrationEvent, FolhaResumoRemessaTceIntegrationEvent
 integrationEventsConsumed: 
 -->
