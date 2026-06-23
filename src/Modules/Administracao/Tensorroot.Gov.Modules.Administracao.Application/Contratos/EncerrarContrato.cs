@@ -21,7 +21,10 @@ public sealed class EncerrarContratoValidator : AbstractValidator<EncerrarContra
 }
 
 /// <summary>Handler do encerramento do contrato.</summary>
-public sealed class EncerrarContratoHandler(IContratoRepository contratos, IUnitOfWork unitOfWork)
+public sealed class EncerrarContratoHandler(
+    IContratoRepository contratos,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
     : ICommandHandler<EncerrarContratoCommand>
 {
     /// <inheritdoc />
@@ -32,7 +35,8 @@ public sealed class EncerrarContratoHandler(IContratoRepository contratos, IUnit
         var contrato = await contratos.ObterPorIdAsync(new ContratoId(request.ContratoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Contrato nao encontrado.");
 
-        contrato.Encerrar();
+        // BUG-A7: o relogio externo fornece a data de referencia (normal vs antecipado); o agregado nao le o relogio.
+        contrato.Encerrar(DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

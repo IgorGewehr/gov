@@ -109,11 +109,38 @@ public sealed class BemPatrimonial : AggregateRoot<BemPatrimonialId>, IMustHaveT
     public IReadOnlyCollection<Impairment> Impairments => _impairments;
 
     /// <summary>Valor depreciável corrente (parte não-terreno acima do residual).</summary>
-    public ValorMonetario ValorDepreciavel => ValorContabil.Subtrair(ValorResidual);
+    public ValorMonetario ValorDepreciavel => SubtrairOuZero(ValorContabil, ValorResidual);
 
-    /// <summary>Parcela mensal linear de depreciação.</summary>
+    /// <summary>Número de competências já depreciadas (parcelas reconhecidas).</summary>
+    public int CompetenciasDepreciadas => _historicosDepreciacao.Count;
+
+    /// <summary>Meses remanescentes de vida útil (vida útil − competências já depreciadas; mínimo zero) — BUG-P1.</summary>
+    public int VidaUtilRemanescenteMeses => Math.Max(0, VidaUtilMeses - CompetenciasDepreciadas);
+
+    /// <summary>
+    /// Parcela mensal linear de depreciação (MCASP / NBC TSP 07). BUG-P1: recalculada sobre o VALOR
+    /// CONTÁBIL corrente (refletindo reavaliações/impairments), abatidos o terreno (que não deprecia)
+    /// e o residual, distribuída pela VIDA ÚTIL REMANESCENTE — não mais congelada no valor inicial/vida
+    /// originais. Para o regime linear puro (sem reavaliação) o resultado permanece constante.
+    /// </summary>
     public decimal ParcelaMensal
-        => Depreciacao.De(ValorInicial.Valor - ValorTerreno, ValorResidual.Valor, VidaUtilMeses).ParcelaMensal;
+    {
+        get
+        {
+            var remanescente = VidaUtilRemanescenteMeses;
+            if (remanescente <= 0)
+            {
+                return 0m;
+            }
+
+            // Base depreciável corrente = valor contábil corrente − terreno (nominal, não deprecia) − residual.
+            var baseContabil = ValorContabil.Valor - ValorTerreno;
+            return Depreciacao.De(Math.Max(0m, baseContabil), ValorResidual.Valor, remanescente).ParcelaMensal;
+        }
+    }
+
+    private static ValorMonetario SubtrairOuZero(ValorMonetario a, ValorMonetario b)
+        => a.Valor <= b.Valor ? ValorMonetario.Zero : a.Subtrair(b);
 
     /// <summary>Incorpora um bem ao acervo (situação inicial <see cref="SituacaoBemPatrimonial.EmIncorporacao"/>).</summary>
     /// <param name="tenantId">Tenant dono do registro.</param>
@@ -195,15 +222,21 @@ public sealed class BemPatrimonial : AggregateRoot<BemPatrimonialId>, IMustHaveT
     }
 
     /// <summary>Reconhece a depreciação linear da competência (terreno não deprecia; limita-se ao residual).</summary>
+    /// <remarks>
+    /// BUG-P2: idempotente por competência — reconhecer a MESMA competência duas vezes é no-op (retorna 0),
+    /// não duplica histórico/evento (reprodutibilidade contábil; retry do Outbox/job/reenvio manual).
+    /// BUG-P3: bem <see cref="SituacaoBemPatrimonial.Cedido"/> permanece no acervo e DEPRECIA (MCASP).
+    /// </remarks>
     /// <param name="competencia">Competência (mês/ano) do reconhecimento.</param>
     /// <returns>Valor efetivamente depreciado na competência.</returns>
-    /// <exception cref="InvalidOperationException">Se o bem não estiver <see cref="SituacaoBemPatrimonial.Tombado"/>.</exception>
+    /// <exception cref="InvalidOperationException">Se o bem não estiver ativo no acervo (Tombado/Cedido).</exception>
     public decimal Depreciar(DateOnly competencia)
     {
         GarantirNaoEncerrado();
-        if (Situacao != SituacaoBemPatrimonial.Tombado)
+        // BUG-P3: Tombado OU Cedido depreciam (ambos permanecem no acervo, sem baixa contábil).
+        if (Situacao is not (SituacaoBemPatrimonial.Tombado or SituacaoBemPatrimonial.Cedido))
         {
-            throw new InvalidOperationException($"A depreciação só ocorre para bem Tombado. Situação atual: {Situacao}.");
+            throw new InvalidOperationException($"A depreciação só ocorre para bem ativo no acervo (Tombado/Cedido). Situação atual: {Situacao}.");
         }
 
         // I-2: só deprecia quando em condições de uso.
@@ -212,14 +245,21 @@ public sealed class BemPatrimonial : AggregateRoot<BemPatrimonialId>, IMustHaveT
             return 0m;
         }
 
-        // I-3: terreno não deprecia; o residual já delimita o piso (I-4).
-        var depreciavel = ValorContabil.Subtrair(ValorResidual);
-        if (depreciavel.Valor <= 0m)
+        // BUG-P2: idempotência por competência — se já reconhecida, é no-op (não relança).
+        if (_historicosDepreciacao.Any(h => h.Competencia == competencia))
         {
             return 0m;
         }
 
-        var parcela = Math.Min(ParcelaMensal, depreciavel.Valor);
+        // I-3/I-4: terreno não deprecia e o residual delimita o piso — base = contábil − terreno − residual.
+        var piso = ValorTerreno + ValorResidual.Valor;
+        var depreciavel = ValorContabil.Valor - piso;
+        if (depreciavel <= 0m)
+        {
+            return 0m;
+        }
+
+        var parcela = Math.Min(ParcelaMensal, depreciavel);
         if (parcela <= 0m)
         {
             return 0m;

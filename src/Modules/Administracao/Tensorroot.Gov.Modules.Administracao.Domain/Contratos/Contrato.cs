@@ -25,7 +25,7 @@ public readonly record struct ContratoId(Guid Value)
 /// no PNCP e condicao de eficacia (art. 174) e a vigencia depende de credito orcamentario (art. 105-106;
 /// LRF). Raiz de agregado tenant-scoped.
 /// </summary>
-public sealed class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
+public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
 {
     private readonly List<Aditivo> _aditivos = [];
     private readonly List<Apostilamento> _apostilamentos = [];
@@ -114,10 +114,6 @@ public sealed class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
 
     /// <summary>Garantias de execucao do contrato.</summary>
     public IReadOnlyCollection<Garantia> Garantias => _garantias;
-
-    /// <summary>Percentual quantitativo acumulado (acrescimos/supressoes) sobre o valor original — base do limite (I-9).</summary>
-    public decimal PercentualQuantitativoAcumulado
-        => _aditivos.Where(a => a.EhQuantitativo).Sum(a => a.PercentualSobreValorOriginal);
 
     /// <summary>
     /// Celebra (assina) um contrato, deixando-o na situacao inicial <see cref="SituacaoContrato.Assinado"/>
@@ -261,92 +257,6 @@ public sealed class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Celebra um termo aditivo respeitando o limite legal de alteracao quantitativa (25%, ate 50% em
-    /// reforma — art. 125; I-9). Atualiza <see cref="ValorAtual"/> e/ou <see cref="VigenciaFim"/> conforme
-    /// o tipo e emite <see cref="AditivoCelebrado"/> (I-10).
-    /// </summary>
-    /// <param name="tipo">Tipo do aditivo.</param>
-    /// <param name="percentual">Percentual sobre o valor original (para quantitativos).</param>
-    /// <param name="valorDelta">Variacao de valor resultante.</param>
-    /// <param name="novaVigenciaFim">Nova data-fim de vigencia (para aditivo de prazo).</param>
-    /// <param name="justificativa">Justificativa do aditivo (obrigatoria).</param>
-    /// <param name="dataCelebracao">Data de celebracao.</param>
-    /// <param name="ehReforma">Indica reforma de edificio/equipamento (limite ampliado a 50%) — I-9.</param>
-    /// <returns>O <see cref="Aditivo"/> registrado.</returns>
-    /// <exception cref="ArgumentException">Se a justificativa for vazia.</exception>
-    /// <exception cref="InvalidOperationException">Se o contrato estiver encerrado (I-14) ou o limite for excedido (I-9).</exception>
-    public Aditivo CelebrarAditivo(
-        TipoAditivo tipo,
-        decimal percentual,
-        ValorMonetario valorDelta,
-        DateOnly? novaVigenciaFim,
-        string justificativa,
-        DateOnly dataCelebracao,
-        bool ehReforma = false)
-    {
-        // I-10/I-14: apto a aditivo (nao encerrado).
-        GarantirNaoEncerrado();
-        ArgumentException.ThrowIfNullOrWhiteSpace(justificativa);
-        ArgumentNullException.ThrowIfNull(valorDelta);
-        ArgumentOutOfRangeException.ThrowIfNegative(percentual);
-
-        var ehQuantitativo = tipo is TipoAditivo.Acrescimo or TipoAditivo.Supressao;
-
-        // I-9/I-16: somente quantitativos contam para o limite.
-        if (ehQuantitativo)
-        {
-            var limite = ehReforma ? LimiteAditivoReforma : LimiteAditivoQuantitativo;
-            var acumulado = PercentualQuantitativoAcumulado + percentual;
-            if (acumulado > limite)
-            {
-                throw new InvalidOperationException(
-                    $"Aditivo excede o limite legal de alteracao quantitativa ({limite}%). Acumulado: {acumulado}%.");
-            }
-        }
-
-        var numero = _aditivos.Count + 1;
-        var aditivo = Aditivo.Registrar(numero, tipo, percentual, valorDelta, novaVigenciaFim, justificativa, dataCelebracao);
-        _aditivos.Add(aditivo);
-
-        switch (tipo)
-        {
-            case TipoAditivo.Acrescimo:
-            case TipoAditivo.Reequilibrio:
-            case TipoAditivo.Qualitativo:
-                ValorAtual = ValorAtual.Somar(valorDelta);
-                break;
-            case TipoAditivo.Supressao:
-                ValorAtual = ValorAtual.Subtrair(valorDelta);
-                break;
-            case TipoAditivo.Prazo:
-                break;
-            default:
-                break;
-        }
-
-        if (novaVigenciaFim is { } novaFim && novaFim > VigenciaFim)
-        {
-            VigenciaFim = novaFim;
-        }
-
-        RaiseDomainEvent(new AditivoCelebrado(Id, aditivo.Id.Value, PercentualQuantitativoAcumulado));
-        return aditivo;
-    }
-
-    /// <summary>
-    /// Marca um aditivo como publicado no PNCP — condicao de sua eficacia (art. 174; I-11). Acionado pelo
-    /// handler do Outbox apos a publicacao efetiva do termo aditivo.
-    /// </summary>
-    /// <param name="aditivoId">Identificador do aditivo publicado.</param>
-    /// <exception cref="InvalidOperationException">Se o aditivo nao pertencer ao contrato.</exception>
-    public void MarcarAditivoPublicado(AditivoId aditivoId)
-    {
-        var aditivo = _aditivos.SingleOrDefault(a => a.Id == aditivoId)
-            ?? throw new InvalidOperationException("Aditivo nao encontrado no contrato.");
-        aditivo.MarcarPublicado();
-    }
-
-    /// <summary>
     /// Registra um apostilamento (reajuste/dotacao/correcao) que dispensa termo aditivo (art. 136; I-13).
     /// </summary>
     /// <param name="tipo">Tipo do apostilamento.</param>
@@ -405,16 +315,25 @@ public sealed class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
     /// Encerra o contrato por termino da vigencia/conclusao do objeto (passa a
     /// <see cref="SituacaoContrato.Encerrado"/>), emitindo <see cref="ContratoEncerrado"/>.
     /// </summary>
-    /// <exception cref="InvalidOperationException">Se a situacao nao for Eficaz/EmExecucao.</exception>
-    public void Encerrar()
+    /// <remarks>
+    /// BUG-A7: o encerramento por conclusao de objeto exige execucao efetiva (<see cref="SituacaoContrato.EmExecucao"/>).
+    /// Um contrato apenas <see cref="SituacaoContrato.Eficaz"/> que nunca executou nao se "encerra" — extingue-se por
+    /// <see cref="Rescindir"/> (extincao antecipada). O evento distingue encerramento normal (vigencia decorrida) de
+    /// antecipado, conforme <paramref name="dataReferencia"/>.
+    /// </remarks>
+    /// <param name="dataReferencia">Data de referencia do encerramento (relogio externo via handler).</param>
+    /// <exception cref="InvalidOperationException">Se a situacao nao for EmExecucao (BUG-A7).</exception>
+    public void Encerrar(DateOnly dataReferencia)
     {
-        if (Situacao is not (SituacaoContrato.Eficaz or SituacaoContrato.EmExecucao))
+        if (Situacao != SituacaoContrato.EmExecucao)
         {
-            throw new InvalidOperationException($"Encerramento exige contrato Eficaz/EmExecucao. Situacao atual: {Situacao}.");
+            throw new InvalidOperationException(
+                $"Encerramento por conclusao do objeto exige contrato EmExecucao; para extincao antecipada de contrato sem execucao use Rescindir. Situacao atual: {Situacao}.");
         }
 
+        var antecipado = dataReferencia < VigenciaFim;
         Situacao = SituacaoContrato.Encerrado;
-        RaiseDomainEvent(new ContratoEncerrado(Id));
+        RaiseDomainEvent(new ContratoEncerrado(Id, antecipado));
     }
 
     /// <summary>

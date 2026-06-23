@@ -14,6 +14,8 @@ namespace Tensorroot.Gov.Modules.Administracao.Tests;
 /// </summary>
 public sealed class LicitacaoFluxoTests : AdministracaoTestBase
 {
+    private static readonly DateTimeOffset Verificacao = new(2026, 6, 21, 12, 0, 0, TimeSpan.Zero);
+
     private static Licitacao NovoPregao()
         => Licitacao.Abrir(
             TenantA,
@@ -114,7 +116,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var fornecedor = Guid.NewGuid();
         var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
         lic.JulgarPropostas(propId.Value);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido");
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", Verificacao);
 
         ((Action)lic.Homologar).Should().Throw<InvalidOperationException>();
         lic.Situacao.Should().Be(SituacaoLicitacao.EmJulgamento);
@@ -218,7 +220,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var fornecedor = Guid.NewGuid();
         var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
         lic.JulgarPropostas(propId.Value);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao);
 
         lic.Homologar();
 
@@ -248,7 +250,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var loteId = lic.AdicionarLote(1, "Lote 1", ValorMonetario.De(100000m));
         var fornecedor = Guid.NewGuid();
         lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc");
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc", Verificacao);
 
         lic.DeclararFracassada("Sem habilitados");
 
@@ -304,7 +306,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
             var fornecedor = Guid.NewGuid();
             var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
             lic.JulgarPropostas(propId.Value);
-            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null);
+            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao);
             id = lic.Id;
             contexto.Licitacoes.Add(lic);
             await contexto.SaveChangesAsync();

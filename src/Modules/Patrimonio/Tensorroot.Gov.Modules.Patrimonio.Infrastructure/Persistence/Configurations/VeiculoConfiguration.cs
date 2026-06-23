@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Frota;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.ValueObjects;
+using Bens = Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Configurations;
 
@@ -49,19 +50,40 @@ public sealed class VeiculoConfiguration : IEntityTypeConfiguration<Veiculo>
         // Propriedade calculada (sem coluna).
         builder.Ignore(veiculo => veiculo.AtivoNoAcervo);
 
+        // Propriedades calculadas (sem coluna) — BUG-P4.
+        builder.Ignore(veiculo => veiculo.CompetenciasDepreciadas);
+        builder.Ignore(veiculo => veiculo.VidaUtilRemanescenteMeses);
+        builder.Ignore(veiculo => veiculo.ParcelaMensalDepreciacao);
+
         builder.OwnsMany(veiculo => veiculo.Abastecimentos, MapearAbastecimentos);
         builder.OwnsMany(veiculo => veiculo.OrdensServico, MapearOrdensServico);
         builder.OwnsMany(veiculo => veiculo.Multas, MapearMultas);
         builder.OwnsMany(veiculo => veiculo.Licenciamentos, MapearLicenciamentos);
         builder.OwnsMany(veiculo => veiculo.Motoristas, MapearMotoristas);
+        builder.OwnsMany(veiculo => veiculo.HistoricosDepreciacao, MapearHistoricosDepreciacao);
 
         builder.Navigation(veiculo => veiculo.Abastecimentos).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(veiculo => veiculo.OrdensServico).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(veiculo => veiculo.Multas).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(veiculo => veiculo.Licenciamentos).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(veiculo => veiculo.Motoristas).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(veiculo => veiculo.HistoricosDepreciacao).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasIndex(veiculo => new { veiculo.TenantId, veiculo.Renavam }).IsUnique();
+    }
+
+    private static void MapearHistoricosDepreciacao(OwnedNavigationBuilder<Veiculo, Bens.HistoricoDepreciacao> historicos)
+    {
+        historicos.ToTable("VeiculosHistoricosDepreciacao");
+        historicos.WithOwner().HasForeignKey("VeiculoId");
+        historicos.HasKey(historico => historico.Id);
+        historicos.Property(historico => historico.Id)
+            .HasConversion(id => id.Value, value => new Bens.HistoricoDepreciacaoId(value))
+            .ValueGeneratedNever();
+        historicos.Property(historico => historico.ValorDepreciado).HasColumnType("decimal(18,2)");
+        historicos.Property(historico => historico.ValorContabilResultante)
+            .HasConversion(valor => valor.Valor, valor => ValorMonetario.De(valor))
+            .HasColumnType("decimal(18,2)");
     }
 
     private static void MapearAbastecimentos(OwnedNavigationBuilder<Veiculo, Abastecimento> abastecimentos)

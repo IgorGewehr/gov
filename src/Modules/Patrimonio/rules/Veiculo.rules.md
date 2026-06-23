@@ -301,6 +301,7 @@ Eventos **emitidos pela raiz `Veiculo`** (frota):
 | `AbastecimentoRegistrado` | `(VeiculoId, decimal Litros, decimal Valor, DateOnly Data)` | `Veiculo.RegistrarAbastecimento` |
 | `ManutencaoConcluida` | `(VeiculoId, ManutencaoOsId OrdemServicoId, decimal CustoRealizado)` | `Veiculo.ConcluirManutencao` |
 | `MultaRegistrada` | `(VeiculoId, string CodigoInfracaoCtb, decimal Valor, DateOnly DataInfracao)` | `Veiculo.RegistrarMulta` |
+| `VeiculoDepreciado` | `(VeiculoId, decimal ValorDepreciado, DateOnly Competencia)` | `Veiculo.Depreciar` (BUG-P4) |
 
 > Os eventos patrimoniais (`BemIncorporado`, `BemTombado`, `BemDepreciado`, `BemBaixado`, `BemReavaliado`)
 > são emitidos pelo agregado `BemPatrimonial` **vinculado** (vide `BemPatrimonial.rules.md`), **não** pelo
@@ -518,13 +519,14 @@ Cada cenário vira teste de integração.
 
 | versao | data | mudança |
 |---|---|---|
+| 2.1.0 | 2026-06-22 | **BUG-P4:** `Veiculo` passa a depreciar linearmente (MCASP/NBC TSP 07) via `Depreciar(competencia)`, com piso no residual e idempotencia por competencia; novo evento de dominio `VeiculoDepreciado` e `IVeiculoRepository.ListarDepreciaveisAsync`. |
 | 2.0.0 | 2026-06-21 | **Refatoração para COMPOSIÇÃO (DDD):** `Veiculo` deixa de herdar (`é-um`) `BemPatrimonial` e passa a ser **agregado próprio** (`AggregateRoot<VeiculoId>`) **vinculado** a um `BemPatrimonial` por `BemPatrimonialId`. Depreciação/tombamento contábil/reavaliação/impairment/baixa/alienação passam a ser responsabilidade do `BemPatrimonial` vinculado; o `Veiculo` cuida só da operação de frota e reflete o encerramento na sua `Situacao`. Removidas as seções de comandos/propriedades "herdados". Manifesto inalterado. |
 | 1.0.0 | 2026-06-21 | Versão inicial — regras derivadas do README do módulo Patrimonio (frota: veículo é-um `BemPatrimonial`; abastecimento sob cota, manutenção/OS, multas, licenciamento/IPVA, motorista/CNH; CTB Lei 9.503/1997 + MCASP/NBC TSP 07). |
 
 <!-- manifest
 commands: IncorporarVeiculo, RegistrarAbastecimento, AbrirOrdemServico, ConcluirManutencao, RegistrarMulta, RegistrarLicenciamento, DesignarMotorista
 queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes
-domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada
+domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada, VeiculoDepreciado
 integrationEventsPublished: BemIncorporadoIntegrationEvent, BemDepreciadoIntegrationEvent, BemBaixadoIntegrationEvent, BemReavaliadoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent
 -->

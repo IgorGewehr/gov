@@ -32,7 +32,8 @@ public sealed class HabilitarLicitanteValidator : AbstractValidator<HabilitarLic
 /// <summary>Handler da habilitacao de licitante.</summary>
 public sealed class HabilitarLicitanteHandler(
     ILicitacaoRepository licitacoes,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
     : ICommandHandler<HabilitarLicitanteCommand>
 {
     /// <inheritdoc />
@@ -43,7 +44,8 @@ public sealed class HabilitarLicitanteHandler(
         var licitacao = await licitacoes.ObterPorIdAsync(new LicitacaoId(request.LicitacaoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Licitacao nao encontrada.");
 
-        licitacao.HabilitarLicitante(request.FornecedorId, request.Resultado, request.Motivo);
+        // BUG-A4: o relogio externo (TimeProvider) fornece a DataVerificacao; o agregado nao le o relogio.
+        licitacao.HabilitarLicitante(request.FornecedorId, request.Resultado, request.Motivo, timeProvider.GetUtcNow());
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

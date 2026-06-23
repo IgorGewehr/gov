@@ -121,7 +121,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
         var contrato = ContratoEficaz(100000m);
 
         var acao = () => contrato.CelebrarAditivo(
-            TipoAditivo.Acrescimo, 26m, ValorMonetario.De(26000m), null, "Mais escopo", new DateOnly(2026, 6, 1));
+            TipoAditivo.Acrescimo, ValorMonetario.De(26000m), null, "Mais escopo", new DateOnly(2026, 6, 1));
 
         acao.Should().Throw<InvalidOperationException>();
         contrato.PercentualQuantitativoAcumulado.Should().Be(0m);
@@ -133,7 +133,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
         var contrato = ContratoEficaz(100000m);
 
         contrato.CelebrarAditivo(
-            TipoAditivo.Acrescimo, 25m, ValorMonetario.De(25000m), null, "Acrescimo", new DateOnly(2026, 6, 1));
+            TipoAditivo.Acrescimo, ValorMonetario.De(25000m), null, "Acrescimo", new DateOnly(2026, 6, 1));
 
         contrato.PercentualQuantitativoAcumulado.Should().Be(25m);
         contrato.ValorAtual.Valor.Should().Be(125000m);
@@ -146,7 +146,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
         var contrato = ContratoEficaz(100000m);
 
         contrato.CelebrarAditivo(
-            TipoAditivo.Acrescimo, 50m, ValorMonetario.De(50000m), null, "Reforma", new DateOnly(2026, 6, 1), ehReforma: true);
+            TipoAditivo.Acrescimo, ValorMonetario.De(50000m), null, "Reforma", new DateOnly(2026, 6, 1), ehReforma: true);
 
         contrato.PercentualQuantitativoAcumulado.Should().Be(50m);
         contrato.ValorAtual.Valor.Should().Be(150000m);
@@ -157,10 +157,10 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var contrato = ContratoEficaz(100000m);
         contrato.CelebrarAditivo(
-            TipoAditivo.Acrescimo, 20m, ValorMonetario.De(20000m), null, "Primeiro", new DateOnly(2026, 6, 1));
+            TipoAditivo.Acrescimo, ValorMonetario.De(20000m), null, "Primeiro", new DateOnly(2026, 6, 1));
 
         var acao = () => contrato.CelebrarAditivo(
-            TipoAditivo.Acrescimo, 10m, ValorMonetario.De(10000m), null, "Segundo", new DateOnly(2026, 7, 1));
+            TipoAditivo.Acrescimo, ValorMonetario.De(10000m), null, "Segundo", new DateOnly(2026, 7, 1));
 
         acao.Should().Throw<InvalidOperationException>();
         contrato.PercentualQuantitativoAcumulado.Should().Be(20m);
@@ -212,14 +212,15 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     public void Invariante_14_contrato_encerrado_nao_admite_transicoes()
     {
         var contrato = ContratoEficaz();
-        contrato.Encerrar();
+        contrato.IniciarExecucao();
+        contrato.Encerrar(new DateOnly(2027, 1, 1));
 
         contrato.Situacao.Should().Be(SituacaoContrato.Encerrado);
         ((Action)(() => contrato.Rescindir("X"))).Should().Throw<InvalidOperationException>();
         ((Action)(() => contrato.Apostilar(TipoApostilamento.Correcao, "x", new DateOnly(2026, 6, 1))))
             .Should().Throw<InvalidOperationException>();
         ((Action)(() => contrato.CelebrarAditivo(
-            TipoAditivo.Prazo, 0m, ValorMonetario.Zero, new DateOnly(2027, 1, 1), "x", new DateOnly(2026, 6, 1))))
+            TipoAditivo.Prazo, ValorMonetario.Zero, new DateOnly(2027, 1, 1), "x", new DateOnly(2026, 6, 1))))
             .Should().Throw<InvalidOperationException>();
     }
 
@@ -264,12 +265,13 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
         ((Action)contrato.IniciarExecucao).Should().Throw<InvalidOperationException>();
     }
 
-    [Fact] // Eficaz --Encerrar--> Encerrado, emite ContratoEncerrado.
-    public void Transicao_encerrar_de_Eficaz_para_Encerrado()
+    [Fact] // EmExecucao --Encerrar--> Encerrado, emite ContratoEncerrado (BUG-A7: exige EmExecucao).
+    public void Transicao_encerrar_de_EmExecucao_para_Encerrado()
     {
         var contrato = ContratoEficaz();
+        contrato.IniciarExecucao();
 
-        contrato.Encerrar();
+        contrato.Encerrar(new DateOnly(2027, 1, 1));
 
         contrato.Situacao.Should().Be(SituacaoContrato.Encerrado);
         contrato.DomainEvents.OfType<ContratoEncerrado>().Should().ContainSingle();
@@ -302,7 +304,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
             await contexto.SaveChangesAsync();
 
             contrato.IniciarExecucao();
-            contrato.Encerrar();
+            contrato.Encerrar(new DateOnly(2027, 1, 1));
             await contexto.SaveChangesAsync();
         }
 

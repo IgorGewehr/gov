@@ -31,6 +31,7 @@ public sealed class Veiculo : AggregateRoot<VeiculoId>, IMustHaveTenant
     private readonly List<Multa> _multas = [];
     private readonly List<Licenciamento> _licenciamentos = [];
     private readonly List<Motorista> _motoristas = [];
+    private readonly List<HistoricoDepreciacao> _historicosDepreciacao = [];
 
     private Veiculo()
     {
@@ -130,8 +131,35 @@ public sealed class Veiculo : AggregateRoot<VeiculoId>, IMustHaveTenant
     /// <summary>Condutores vinculados (CNH).</summary>
     public IReadOnlyCollection<Motorista> Motoristas => _motoristas.AsReadOnly();
 
+    /// <summary>Depreciação reconhecida por competência (BUG-P4).</summary>
+    public IReadOnlyCollection<HistoricoDepreciacao> HistoricosDepreciacao => _historicosDepreciacao.AsReadOnly();
+
     /// <summary>Indica se o veículo está ativo no acervo (apto a operações de frota, I-5).</summary>
     public bool AtivoNoAcervo => Situacao is SituacaoBemPatrimonial.Tombado or SituacaoBemPatrimonial.Cedido;
+
+    /// <summary>Número de competências já depreciadas (BUG-P4).</summary>
+    public int CompetenciasDepreciadas => _historicosDepreciacao.Count;
+
+    /// <summary>Meses remanescentes de vida útil (mínimo zero) — BUG-P4.</summary>
+    public int VidaUtilRemanescenteMeses => Math.Max(0, VidaUtilMeses - CompetenciasDepreciadas);
+
+    /// <summary>
+    /// Parcela mensal linear de depreciação do veículo (MCASP / NBC TSP 07; BUG-P4): valor contábil
+    /// corrente menos residual, distribuído pela vida útil remanescente. Piso no residual.
+    /// </summary>
+    public decimal ParcelaMensalDepreciacao
+    {
+        get
+        {
+            var remanescente = VidaUtilRemanescenteMeses;
+            if (remanescente <= 0)
+            {
+                return 0m;
+            }
+
+            return Depreciacao.De(ValorContabil.Valor, ValorResidual.Valor, remanescente).ParcelaMensal;
+        }
+    }
 
     /// <summary>Incorpora um novo veículo ao acervo da frota (estado inicial <see cref="SituacaoBemPatrimonial.EmIncorporacao"/>).</summary>
     /// <param name="tenantId">Tenant dono do registro.</param>
@@ -329,6 +357,47 @@ public sealed class Veiculo : AggregateRoot<VeiculoId>, IMustHaveTenant
         var motorista = Motorista.Vincular(nome, cnh, categoriaCnh, validadeCnh, hoje);
         _motoristas.Add(motorista);
         MotoristaAtualId = motorista.Id.Value;
+    }
+
+    /// <summary>
+    /// Reconhece a depreciação linear da competência para o veículo (BUG-P4): reaproveita o motor
+    /// linear, com piso no residual e idempotência por competência (não repete a despesa do mês —
+    /// evita reincidir o BUG-P2). Veículo é-um bem patrimonial e deprecia por MCASP/NBC TSP 07.
+    /// </summary>
+    /// <param name="competencia">Competência (mês/ano) do reconhecimento.</param>
+    /// <returns>Valor efetivamente depreciado na competência.</returns>
+    /// <exception cref="InvalidOperationException">Se o veículo não estiver ativo no acervo (Tombado/Cedido).</exception>
+    public decimal Depreciar(DateOnly competencia)
+    {
+        GarantirAtivoNoAcervo();
+
+        if (!EmCondicoesDeUso)
+        {
+            return 0m;
+        }
+
+        // BUG-P4/BUG-P2: idempotência por competência — reconhecer 2x a mesma competência é no-op.
+        if (_historicosDepreciacao.Any(h => h.Competencia == competencia))
+        {
+            return 0m;
+        }
+
+        var depreciavel = ValorContabil.Valor - ValorResidual.Valor;
+        if (depreciavel <= 0m)
+        {
+            return 0m;
+        }
+
+        var parcela = Math.Min(ParcelaMensalDepreciacao, depreciavel);
+        if (parcela <= 0m)
+        {
+            return 0m;
+        }
+
+        ValorContabil = ValorContabil.Subtrair(ValorMonetario.De(parcela));
+        _historicosDepreciacao.Add(HistoricoDepreciacao.Registrar(competencia, parcela, ValorContabil));
+        RaiseDomainEvent(new VeiculoDepreciado(Id, parcela, competencia));
+        return parcela;
     }
 
     private void GarantirAtivoNoAcervo()

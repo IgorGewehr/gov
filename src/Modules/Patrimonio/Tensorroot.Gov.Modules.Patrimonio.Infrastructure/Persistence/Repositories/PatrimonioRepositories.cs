@@ -22,8 +22,10 @@ public sealed class BemPatrimonialRepository(PatrimonioDbContext context) : IBem
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<BemPatrimonial>> ListarDepreciaveisAsync(CancellationToken cancellationToken)
+        // BUG-P3: bem Cedido permanece no acervo e deprecia (MCASP) — filtro aceita Tombado OU Cedido.
         => await context.Bens
-            .Where(bem => bem.Situacao == SituacaoBemPatrimonial.Tombado && bem.EmCondicoesDeUso)
+            .Where(bem => (bem.Situacao == SituacaoBemPatrimonial.Tombado || bem.Situacao == SituacaoBemPatrimonial.Cedido)
+                && bem.EmCondicoesDeUso)
             .OrderBy(bem => bem.DataIncorporacao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -115,6 +117,17 @@ public sealed class VeiculoRepository(PatrimonioDbContext context) : IVeiculoRep
             .OrderBy(pendente => pendente.Placa)
             .ToList();
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Veiculo>> ListarDepreciaveisAsync(CancellationToken cancellationToken)
+        // BUG-P4: veículo é-um bem patrimonial e deprecia por MCASP — ativo no acervo e em condições de uso.
+        => await context.Veiculos
+            .Where(veiculo => (veiculo.Situacao == SituacaoBemPatrimonial.Tombado
+                    || veiculo.Situacao == SituacaoBemPatrimonial.Cedido)
+                && veiculo.EmCondicoesDeUso)
+            .OrderBy(veiculo => veiculo.DataIncorporacao)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }
 
 /// <summary>Implementação EF Core do repositório do agregado <see cref="ItemEstoque"/>.</summary>

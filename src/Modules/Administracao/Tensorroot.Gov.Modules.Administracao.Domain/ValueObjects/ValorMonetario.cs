@@ -33,14 +33,25 @@ public sealed class ValorMonetario : ValueObject
         return new ValorMonetario(Valor + outro.Valor);
     }
 
-    /// <summary>Subtrai outro valor deste, sem permitir resultado negativo.</summary>
+    /// <summary>
+    /// Subtrai outro valor deste. BUG-A5: NAO clampa silenciosamente em zero — underflow (resultado
+    /// negativo) lanca, pois zerar/negativar estado financeiro sem erro e estado impossivel para
+    /// dinheiro publico. O clamp para exibicao deve ser feito explicitamente pelo chamador, se necessario.
+    /// </summary>
     /// <param name="outro">Parcela a subtrair.</param>
-    /// <returns>Novo valor com a diferenca (minimo zero).</returns>
+    /// <returns>Novo valor com a diferenca (nao-negativa).</returns>
+    /// <exception cref="InvalidOperationException">Se a subtracao resultar em valor negativo (underflow).</exception>
     public ValorMonetario Subtrair(ValorMonetario outro)
     {
         ArgumentNullException.ThrowIfNull(outro);
         var resultado = Valor - outro.Valor;
-        return new ValorMonetario(resultado < 0m ? 0m : resultado);
+        if (resultado < 0m)
+        {
+            throw new InvalidOperationException(
+                $"Subtracao monetaria resultaria em valor negativo ({Valor} - {outro.Valor}); operacao rejeitada.");
+        }
+
+        return new ValorMonetario(resultado);
     }
 
     /// <summary>Multiplica este valor por uma quantidade nao-negativa.</summary>

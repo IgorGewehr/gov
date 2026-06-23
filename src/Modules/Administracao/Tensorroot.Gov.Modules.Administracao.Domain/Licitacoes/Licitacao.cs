@@ -229,24 +229,58 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
             throw new InvalidOperationException("Proposta desclassificada nao pode ser indicada vencedora.");
         }
 
-        if (vencedora.Classificacao is null)
+        // BUG-A3: a vencedora deve ser a MELHOR pelo criterio entre as nao-desclassificadas do MESMO lote.
+        // Sem isso, era possivel indicar a de maior preco (red flag TCE).
+        var concorrentesDoLote = _propostas
+            .Where(p => p.LoteId == vencedora.LoteId && p.Situacao != SituacaoProposta.Desclassificada)
+            .ToList();
+
+        var melhor = MelhorPropostaPeloCriterio(concorrentesDoLote);
+        if (melhor is not null && melhor.Id != vencedora.Id && melhor.Valor.Valor != vencedora.Valor.Valor)
         {
-            vencedora.Classificar(1);
+            throw new InvalidOperationException(
+                $"Indicacao invalida: pelo criterio {CriterioJulgamento} a vencedora do lote deve ser a melhor proposta (valor {melhor.Valor}); indicada: {vencedora.Valor}.");
         }
 
+        vencedora.Classificar(1);
         vencedora.MarcarVencedora();
         PropostaVencedoraId = propostaVencedoraId;
         Situacao = SituacaoLicitacao.EmJulgamento;
     }
 
     /// <summary>
-    /// Verifica a habilitacao de um licitante (I-7). Nao altera a situacao do certame.
+    /// Seleciona a melhor proposta do conjunto conforme o criterio de julgamento (art. 33; BUG-A3):
+    /// menor valor para MenorPreco; maior valor para MaiorDesconto/MaiorLance/MaiorRetornoEconomico.
+    /// Para criterios de tecnica (sem ordem por valor pura), retorna null (selecao por nota — fora deste enforcement).
+    /// </summary>
+    private Proposta? MelhorPropostaPeloCriterio(List<Proposta> concorrentes)
+    {
+        if (concorrentes.Count == 0)
+        {
+            return null;
+        }
+
+        return CriterioJulgamento switch
+        {
+            CriterioJulgamento.MenorPreco => concorrentes.OrderBy(p => p.Valor.Valor).First(),
+            CriterioJulgamento.MaiorDesconto
+                or CriterioJulgamento.MaiorLance
+                or CriterioJulgamento.MaiorRetornoEconomico => concorrentes.OrderByDescending(p => p.Valor.Valor).First(),
+            _ => null,
+        };
+    }
+
+    /// <summary>
+    /// Verifica a habilitacao de um licitante (I-7). Nao altera a situacao do certame. Multiplas
+    /// verificacoes do mesmo fornecedor sao permitidas (ex.: reversao por recurso); prevalece a mais
+    /// recente por <see cref="Habilitacao.DataVerificacao"/>/<see cref="Habilitacao.Sequencia"/> (BUG-A4).
     /// </summary>
     /// <param name="fornecedorId">Licitante verificado.</param>
     /// <param name="resultado">Resultado da habilitacao.</param>
     /// <param name="motivo">Motivo (opcional).</param>
+    /// <param name="dataVerificacao">Momento da verificacao (relogio externo via handler; BUG-A4).</param>
     /// <exception cref="InvalidOperationException">Se o certame nao estiver Aberto ou EmJulgamento.</exception>
-    public void HabilitarLicitante(Guid fornecedorId, ResultadoHabilitacao resultado, string? motivo)
+    public void HabilitarLicitante(Guid fornecedorId, ResultadoHabilitacao resultado, string? motivo, DateTimeOffset dataVerificacao)
     {
         // I-7: so sobre certame Aberta ou EmJulgamento.
         if (Situacao is not (SituacaoLicitacao.Aberta or SituacaoLicitacao.EmJulgamento))
@@ -254,8 +288,19 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
             throw new InvalidOperationException($"A habilitacao exige certame Aberto ou EmJulgamento. Situacao atual: {Situacao}.");
         }
 
-        _habilitacoes.Add(Habilitacao.Registrar(fornecedorId, resultado, motivo));
+        var sequencia = _habilitacoes.Count == 0 ? 1L : _habilitacoes.Max(h => h.Sequencia) + 1L;
+        _habilitacoes.Add(Habilitacao.Registrar(fornecedorId, resultado, motivo, dataVerificacao, sequencia));
     }
+
+    /// <summary>Habilitacao mais recente de um fornecedor — por data e, no empate, por sequencia (BUG-A4).</summary>
+    /// <param name="fornecedorId">Fornecedor cujo resultado vigente se quer.</param>
+    /// <returns>A habilitacao prevalente, ou <c>null</c> se nunca verificado.</returns>
+    private Habilitacao? HabilitacaoVigenteDe(Guid fornecedorId)
+        => _habilitacoes
+            .Where(h => h.FornecedorId == fornecedorId)
+            .OrderByDescending(h => h.DataVerificacao)
+            .ThenByDescending(h => h.Sequencia)
+            .FirstOrDefault();
 
     /// <summary>
     /// Homologa o resultado (I-8/I-9): exige EmJulgamento, proposta vencedora definida e vencedor Habilitado.
@@ -278,10 +323,9 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
             ?? throw new InvalidOperationException("Proposta vencedora nao pertence ao certame.");
 
         var fornecedorVencedorId = vencedora.FornecedorId;
-        var habilitado = _habilitacoes
-            .Where(h => h.FornecedorId == fornecedorVencedorId)
-            .OrderBy(_ => 0)
-            .LastOrDefault();
+        // BUG-A4: prevalece a habilitacao MAIS RECENTE (determinismo apos reidratacao do EF Core),
+        // evitando homologar vencedor de fato inabilitado por ordem de materializacao da colecao.
+        var habilitado = HabilitacaoVigenteDe(fornecedorVencedorId);
 
         if (habilitado is null || habilitado.Resultado != ResultadoHabilitacao.Habilitado)
         {
@@ -387,10 +431,10 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
                 continue;
             }
 
-            var habilitado = _habilitacoes
-                .Any(h => h.FornecedorId == proposta.FornecedorId && h.Resultado == ResultadoHabilitacao.Habilitado);
-            var inabilitado = _habilitacoes
-                .Any(h => h.FornecedorId == proposta.FornecedorId && h.Resultado == ResultadoHabilitacao.Inabilitado);
+            // BUG-A4: usa o resultado VIGENTE (mais recente) do fornecedor, nao "existe algum".
+            var vigente = HabilitacaoVigenteDe(proposta.FornecedorId);
+            var habilitado = vigente?.Resultado == ResultadoHabilitacao.Habilitado;
+            var inabilitado = vigente?.Resultado == ResultadoHabilitacao.Inabilitado;
 
             // Proposta valida = nao desclassificada e nao inabilitada (sem habilitacao ainda conta como potencialmente valida).
             if (!inabilitado || habilitado)

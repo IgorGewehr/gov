@@ -22,3 +22,9 @@ public sealed record ManutencaoConcluida(VeiculoId VeiculoId, ManutencaoOsId Ord
 /// <param name="Valor">Valor da multa.</param>
 /// <param name="DataInfracao">Data da infração.</param>
 public sealed record MultaRegistrada(VeiculoId VeiculoId, string CodigoInfracaoCtb, decimal Valor, DateOnly DataInfracao) : IDomainEvent;
+
+/// <summary>Depreciação de uma competência reconhecida sobre o veículo (BUG-P4).</summary>
+/// <param name="VeiculoId">Identificador do veículo.</param>
+/// <param name="ValorDepreciado">Valor depreciado na competência.</param>
+/// <param name="Competencia">Mês/ano de referência do reconhecimento.</param>
+public sealed record VeiculoDepreciado(VeiculoId VeiculoId, decimal ValorDepreciado, DateOnly Competencia) : IDomainEvent;

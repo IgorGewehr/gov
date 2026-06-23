@@ -20,9 +20,13 @@ public sealed record ContratoPublicadoPncp(ContratoId ContratoId, string NumeroC
 /// <param name="PercentualAcumulado">Percentual quantitativo acumulado apos o aditivo.</param>
 public sealed record AditivoCelebrado(ContratoId ContratoId, Guid AditivoId, decimal PercentualAcumulado) : IDomainEvent;
 
-/// <summary>Contrato encerrado por termino da vigencia/conclusao do objeto (terminal).</summary>
+/// <summary>
+/// Contrato encerrado por termino da vigencia/conclusao do objeto (terminal). BUG-A7: distingue
+/// encerramento normal (vigencia decorrida) de antecipado (antes do fim da vigencia).
+/// </summary>
 /// <param name="ContratoId">Identificador do contrato.</param>
-public sealed record ContratoEncerrado(ContratoId ContratoId) : IDomainEvent;
+/// <param name="Antecipado"><c>true</c> se encerrado antes do fim da vigencia (encerramento antecipado).</param>
+public sealed record ContratoEncerrado(ContratoId ContratoId, bool Antecipado) : IDomainEvent;
 
 /// <summary>Contrato rescindido (extincao antecipada com motivacao) — I-15.</summary>
 /// <param name="ContratoId">Identificador do contrato.</param>

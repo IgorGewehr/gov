@@ -45,6 +45,11 @@ public interface IVeiculoRepository
     Task<IReadOnlyList<LicenciamentoPendente>> ListarLicenciamentosPendentesAsync(
         int exercicio,
         CancellationToken cancellationToken);
+
+    /// <summary>Lista os veículos depreciáveis (ativos no acervo e em condições de uso) — BUG-P4.</summary>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Veículos aptos a depreciação.</returns>
+    Task<IReadOnlyList<Veiculo>> ListarDepreciaveisAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>Projeção de leitura de uma multa acompanhada da placa do veículo.</summary>

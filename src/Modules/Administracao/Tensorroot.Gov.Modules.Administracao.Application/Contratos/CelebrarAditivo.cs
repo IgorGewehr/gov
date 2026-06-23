@@ -10,17 +10,19 @@ using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 
 /// <summary>Celebra um termo aditivo do contrato respeitando o limite legal (art. 125; I-9).</summary>
+/// <remarks>
+/// BUG-A1: o comando NAO recebe percentual — ele e derivado de <see cref="ValorDelta"/> sobre o valor
+/// original DENTRO do agregado (fonte unica), impedindo que percentual e valor divirjam e furem o teto.
+/// </remarks>
 /// <param name="ContratoId">Contrato a aditar.</param>
 /// <param name="Tipo">Tipo do aditivo.</param>
-/// <param name="Percentual">Percentual sobre o valor original (para quantitativos).</param>
-/// <param name="ValorDelta">Variacao de valor resultante.</param>
+/// <param name="ValorDelta">Variacao de valor resultante (base do percentual nos quantitativos).</param>
 /// <param name="NovaVigenciaFim">Nova data-fim de vigencia (para aditivo de prazo).</param>
 /// <param name="Justificativa">Justificativa do aditivo.</param>
 /// <param name="EhReforma">Indica reforma de edificio/equipamento (limite ampliado a 50%).</param>
 public sealed record CelebrarAditivoCommand(
     Guid ContratoId,
     TipoAditivo Tipo,
-    decimal Percentual,
     decimal ValorDelta,
     DateOnly? NovaVigenciaFim,
     string Justificativa,
@@ -34,9 +36,10 @@ public sealed class CelebrarAditivoValidator : AbstractValidator<CelebrarAditivo
     {
         RuleFor(comando => comando.ContratoId).NotEmpty().WithMessage("Contrato e obrigatorio.");
         RuleFor(comando => comando.Tipo).IsInEnum().WithMessage("Tipo de aditivo invalido.");
-        RuleFor(comando => comando.Percentual)
-            .InclusiveBetween(0, 50)
-            .WithMessage("Percentual de aditivo fora do intervalo legal.");
+        // BUG-A1: o teto legal e validado no agregado sobre o valorDelta real; aqui so garantimos nao-negatividade.
+        RuleFor(comando => comando.ValorDelta)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Valor do aditivo nao pode ser negativo.");
         RuleFor(comando => comando.Justificativa).NotEmpty().WithMessage("Justificativa do aditivo e obrigatoria.");
     }
 }
@@ -60,7 +63,6 @@ public sealed class CelebrarAditivoHandler(
 
         var aditivo = contrato.CelebrarAditivo(
             request.Tipo,
-            request.Percentual,
             ValorMonetario.De(request.ValorDelta),
             request.NovaVigenciaFim,
             request.Justificativa,

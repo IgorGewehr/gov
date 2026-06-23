@@ -82,6 +82,9 @@ public sealed class LicitacaoConfiguration : IEntityTypeConfiguration<Licitacao>
             .ValueGeneratedNever();
         habilitacoes.Property(habilitacao => habilitacao.Resultado).HasConversion<string>().HasMaxLength(20);
         habilitacoes.Property(habilitacao => habilitacao.Motivo).HasMaxLength(2000);
+        // BUG-A4: data/sequencia persistidas para determinismo da "habilitacao vigente" apos reidratacao.
+        habilitacoes.Property(habilitacao => habilitacao.DataVerificacao);
+        habilitacoes.Property(habilitacao => habilitacao.Sequencia);
     }
 
     private static void MapearRecursos(OwnedNavigationBuilder<Licitacao, Recurso> recursos)
