@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
+using Tensorroot.Gov.Modules.Saude.Application.Agendamento;
 using Tensorroot.Gov.Modules.Saude.Application.Atendimento;
 using Tensorroot.Gov.Modules.Saude.Application.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Application.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Application.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Application.Regulacao;
+using Tensorroot.Gov.Modules.Saude.Domain.Agendamento;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
 using Tensorroot.Gov.Modules.Saude.Domain.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
@@ -30,7 +32,111 @@ internal static class SaudeEndpoints
         MapearProfissionais(grupo);
         MapearAtendimentos(grupo);
         MapearRegulacao(grupo);
+        MapearAgendamento(grupo);
         MapearFiscal(grupo);
+    }
+
+    private static void MapearAgendamento(RouteGroupBuilder grupo)
+    {
+        // Agenda do profissional/UBS (grade → vagas).
+        grupo.MapPost("/agendas", async (
+            AbrirAgendaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.agenda.gerenciar");
+
+        grupo.MapGet("/agendas/{agendaId:guid}", async (
+            Guid agendaId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterAgendaPorIdQuery(agendaId), cancellationToken))).RequirePermission("saude.agenda.ver");
+
+        grupo.MapPost("/agendas/{agendaId:guid}/publicacao", async (
+            Guid agendaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PublicarAgendaCommand(agendaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.gerenciar");
+
+        grupo.MapPost("/agendas/{agendaId:guid}/bloqueio", async (
+            Guid agendaId, MotivoAgendaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new BloquearDiaAgendaCommand(agendaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.gerenciar");
+
+        grupo.MapPost("/agendas/{agendaId:guid}/reabertura", async (
+            Guid agendaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReabrirDiaAgendaCommand(agendaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.gerenciar");
+
+        grupo.MapGet("/agendas/vagas", async (
+            Guid? profissional, Guid? estabelecimento, DateOnly? de, DateOnly? ate, TipoAtendimentoAgenda? tipo,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarVagasLivresQuery(profissional, estabelecimento, de, ate, tipo), cancellationToken)))
+            .RequirePermission("saude.agenda.ver");
+
+        // Agendamentos (marcar/confirmar/cancelar/falta/realizar).
+        grupo.MapPost("/agendamentos", async (
+            MarcarAgendamentoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapGet("/agendamentos", async (
+            Guid? paciente, Guid? profissional, DateOnly? data, SituacaoAgendamento? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarAgendamentosQuery(paciente, profissional, data, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("saude.agenda.ver");
+
+        grupo.MapPost("/agendamentos/{agendamentoId:guid}/confirmacao", async (
+            Guid agendamentoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ConfirmarAgendamentoCommand(agendamentoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapPost("/agendamentos/{agendamentoId:guid}/cancelamento", async (
+            Guid agendamentoId, CancelarAgendamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CancelarAgendamentoCommand(agendamentoId, payload.Motivo, payload.Origem), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapPost("/agendamentos/{agendamentoId:guid}/falta", async (
+            Guid agendamentoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RegistrarFaltaCommand(agendamentoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapPost("/agendamentos/{agendamentoId:guid}/realizacao", async (
+            Guid agendamentoId, RealizarAgendamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RealizarAgendamentoCommand(agendamentoId, payload.AtendimentoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
+
+        // Fila de espera (entrar/listar/convocar/remover).
+        grupo.MapPost("/fila-espera", async (
+            EntrarNaFilaDeEsperaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapGet("/fila-espera", async (
+            Guid? estabelecimento, SituacaoFilaEspera? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarFilaDeEsperaQuery(estabelecimento, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("saude.agenda.ver");
+
+        grupo.MapPost("/fila-espera/{filaId:guid}/convocacao", async (
+            Guid filaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ConvocarDaFilaDeEsperaCommand(filaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
+
+        grupo.MapPost("/fila-espera/{filaId:guid}/remocao", async (
+            Guid filaId, MotivoAgendaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RemoverDaFilaDeEsperaCommand(filaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.agenda.marcar");
     }
 
     private static void MapearEstabelecimentos(RouteGroupBuilder grupo)
@@ -343,4 +449,10 @@ internal static class SaudeEndpoints
     private sealed record VincularProfissionalPayload(Guid EstabelecimentoId, string Cbo, DateOnly DataInicio);
 
     private sealed record EncerrarVinculoPayload(Guid EstabelecimentoId, DateOnly DataFim);
+
+    private sealed record MotivoAgendaPayload(string Motivo);
+
+    private sealed record CancelarAgendamentoPayload(string Motivo, OrigemCancelamento Origem);
+
+    private sealed record RealizarAgendamentoPayload(Guid? AtendimentoId);
 }

@@ -386,6 +386,272 @@ namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Migrat
                     b.ToTable("ParametrosFiscaisVigentes", "transparencia");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico.PortalPublicoConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NomeEnte")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Slug")
+                        .IsUnique();
+
+                    b.ToTable("PortalPublicoConfig", "transparencia");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico.PublicacaoDespesa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CredorDocMascarado")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("CredorNomeOuRazao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Fase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("FonteRecurso")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FuncaoSubfuncao")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("NumeroEmpenho")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid>("OrigemEventoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrigemEventoId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Exercicio", "Fase");
+
+                    b.ToTable("PublicacaoDespesa", "transparencia");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico.PublicacaoReceita", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FonteRecurso")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid>("OrigemEventoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RubricaReceita")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrigemEventoId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Exercicio");
+
+                    b.ToTable("PublicacaoReceita", "transparencia");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico.PublicacaoContrato", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Fornecedor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Modalidade")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("NumeroContrato")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("NumeroContratoPncp")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("Objeto")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("OrigemEventoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrigemEventoId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Exercicio");
+
+                    b.ToTable("PublicacaoContrato", "transparencia");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico.PublicacaoFolhaNominal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CargoDescricao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Competencia")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.Property<decimal>("Descontos")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Liquido")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Lotacao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("OrigemEventoId")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<decimal>("RemuneracaoBruta")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ServidorNome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "OrigemEventoId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Competencia");
+
+                    b.ToTable("PublicacaoFolhaNominal", "transparencia");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.PedidoInformacaoSic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataAbertura")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("FormaResposta")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FundamentoIndeferimento")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("MotivoProrrogacao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateOnly>("PrazoResposta")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("ProrrogadoAte")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Situacao");
+
+                    b.ToTable("PedidoInformacaoSic", "transparencia");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -969,6 +1235,153 @@ namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Migrat
                         .IsRequired();
 
                     b.Navigation("ResultadoValidacao");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.PedidoInformacaoSic", b =>
+                {
+                    b.OwnsOne("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.ProtocoloSic", "Protocolo", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoInformacaoSicId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Ano")
+                                .HasColumnType("int")
+                                .HasColumnName("ProtocoloAno");
+
+                            b1.Property<int>("Sequencial")
+                                .HasColumnType("int")
+                                .HasColumnName("ProtocoloSequencial");
+
+                            b1.Property<string>("Valor")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Protocolo");
+
+                            b1.HasKey("PedidoInformacaoSicId");
+
+                            b1.HasIndex("Valor")
+                                .IsUnique();
+
+                            b1.ToTable("PedidoInformacaoSic", "transparencia");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoInformacaoSicId");
+                        });
+
+                    b.OwnsOne("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.Solicitante", "Solicitante", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoInformacaoSicId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("Anonimo")
+                                .HasColumnType("bit")
+                                .HasColumnName("SolicitanteAnonimo");
+
+                            b1.Property<string>("Contato")
+                                .HasMaxLength(254)
+                                .HasColumnType("nvarchar(254)")
+                                .HasColumnName("SolicitanteContato");
+
+                            b1.Property<string>("Documento")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("SolicitanteDocumento");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("SolicitanteNome");
+
+                            b1.HasKey("PedidoInformacaoSicId");
+
+                            b1.ToTable("PedidoInformacaoSic", "transparencia");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoInformacaoSicId");
+                        });
+
+                    b.OwnsOne("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.RespostaSic", "Resposta", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoInformacaoSicId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Data")
+                                .HasColumnType("date")
+                                .HasColumnName("RespostaData");
+
+                            b1.Property<string>("ReferenciaAnexo")
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("RespostaAnexo");
+
+                            b1.Property<string>("Texto")
+                                .IsRequired()
+                                .HasMaxLength(8000)
+                                .HasColumnType("nvarchar(8000)")
+                                .HasColumnName("RespostaTexto");
+
+                            b1.HasKey("PedidoInformacaoSicId");
+
+                            b1.ToTable("PedidoInformacaoSic", "transparencia");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoInformacaoSicId");
+                        });
+
+                    b.OwnsOne("Tensorroot.Gov.Modules.Transparencia.Domain.Esic.RecursoSic", "Recurso", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoInformacaoSicId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly?>("DataDecisao")
+                                .HasColumnType("date")
+                                .HasColumnName("RecursoDataDecisao");
+
+                            b1.Property<DateOnly>("DataInterposicao")
+                                .HasColumnType("date")
+                                .HasColumnName("RecursoDataInterposicao");
+
+                            b1.Property<string>("Decisao")
+                                .HasMaxLength(8000)
+                                .HasColumnType("nvarchar(8000)")
+                                .HasColumnName("RecursoDecisao");
+
+                            b1.Property<string>("Fundamento")
+                                .IsRequired()
+                                .HasMaxLength(4000)
+                                .HasColumnType("nvarchar(4000)")
+                                .HasColumnName("RecursoFundamento");
+
+                            b1.Property<string>("Instancia")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("RecursoInstancia");
+
+                            b1.Property<string>("Resultado")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)")
+                                .HasColumnName("RecursoResultado");
+
+                            b1.HasKey("PedidoInformacaoSicId");
+
+                            b1.ToTable("PedidoInformacaoSic", "transparencia");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoInformacaoSicId");
+                        });
+
+                    b.Navigation("Protocolo")
+                        .IsRequired();
+
+                    b.Navigation("Solicitante")
+                        .IsRequired();
+
+                    b.Navigation("Resposta");
+
+                    b.Navigation("Recurso");
                 });
 #pragma warning restore 612, 618
         }

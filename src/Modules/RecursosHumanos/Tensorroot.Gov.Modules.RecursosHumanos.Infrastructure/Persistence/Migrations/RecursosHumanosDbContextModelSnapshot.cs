@@ -190,6 +190,175 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("RegrasAfastamento", "recursoshumanos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes.Consignataria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Cnpj")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<string>("RazaoSocial")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Cnpj")
+                        .IsUnique();
+
+                    b.ToTable("Consignatarias", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes.ContratoConsignacao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("CodigoRubrica")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("ConsignatariaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataAverbacao")
+                        .HasColumnType("date");
+
+                    b.Property<string>("GrupoMargem")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("NumeroContratoExterno")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int>("ParcelasPagas")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantidadeParcelas")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ValorParcela")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ConsignatariaId");
+
+                    b.HasIndex("TenantId", "ServidorId", "Situacao");
+
+                    b.ToTable("ContratosConsignacao", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes.ParametrosMargemVigente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("PercentualCartaoBeneficio")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<decimal>("PercentualCartaoConsignado")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<decimal>("PercentualGeral")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VigenciaInicio")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "VigenciaInicio")
+                        .IsUnique();
+
+                    b.ToTable("ParametrosMargem", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes.RubricaConsignavel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<bool>("ContaParaMargem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("GrupoMargem")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Codigo")
+                        .IsUnique();
+
+                    b.ToTable("RubricasConsignaveis", "recursoshumanos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos.Cargo", b =>
                 {
                     b.Property<Guid>("Id")

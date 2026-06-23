@@ -1,12 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Saude.Domain.Agendamento;
 using Tensorroot.Gov.Modules.Saude.Domain.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal;
+using AgendamentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Agendamento.Agendamento;
 using AtendimentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendimento;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence;
@@ -36,6 +38,15 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
 
     /// <summary>Profissionais de saude (equipe das unidades) — master data local, raiz de agregado.</summary>
     public DbSet<Profissional> Profissionais => Set<Profissional>();
+
+    /// <summary>Agendas de disponibilidade do profissional (grade → vagas) — raiz de agregado.</summary>
+    public DbSet<AgendaProfissional> AgendasProfissional => Set<AgendaProfissional>();
+
+    /// <summary>Agendamentos (marcacoes de consulta/exame) — raiz de agregado.</summary>
+    public DbSet<AgendamentoRaiz> Agendamentos => Set<AgendamentoRaiz>();
+
+    /// <summary>Fila de espera por vaga (convocacao por prioridade) — raiz de agregado.</summary>
+    public DbSet<FilaEspera> FilasEspera => Set<FilaEspera>();
 
     /// <summary>Regras de classificacao ASPS versionadas (S-1, LC 141/2012 arts. 3º/4º).</summary>
     public DbSet<RegraClassificacaoAsps> RegrasClassificacaoAsps => Set<RegraClassificacaoAsps>();

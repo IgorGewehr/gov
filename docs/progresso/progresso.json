@@ -1,15 +1,15 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-24 (run noturno) — 29 commits; M0–M6 COMPLETOS + M7 fiscal (mínimos constitucionais nos 3 setores); segurança 6 críticos + 5 altos fechados; ~1.300 testes; iniciando M8",
-  "atividadeAtual": "🚀 RUN AUTÔNOMO — 29 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. M0–M6 COMPLETOS + M7 FISCAL. Espinha fiscal (PCASP→DCASP/MSC→prestação TCE) + PPA/LDO/LOA + encerramento de exercício (resultado+RAP). M5 RH COMPLETO: folha mensal (INSS/IRRF/RPPS) + ciclo anual (13º/férias/rescisão) + ponto (software AFD/AEJ + coletor REP) + eSocial estrutural (assinado via Cofre) + remessa folha TCE + Minha Folha (self-service, isolamento dado-próprio provado). M6 Tributos COMPLETO: IPTU/ISS/ITBI(Tema 1.113)/taxas/COSIP/alvarás/dívida-CDA-protesto-prescrição. M7 FISCAL: Saúde ASPS 15%+FMS, Educação MDE 25%+FUNDEB 70%, Assistência (benefício eventual corrigido p/ lei municipal + FMAS + RMA) — todos provados em runtime. SEGURANÇA: 6 críticos + 5 altos do red-team FECHADOS + hash-chain imutável + RFC 7807 global. Verify-don't-trust pegou 15+ bugs reais (1 travava o boot). EM CURSO: M8 (Painel do Gestor + BI). PENDENTE DE CREDS SUAS p/ validação OFICIAL: MT/e-Validador+PAD, A1 homologado, Azure, eSocial Produção Restrita, RNDS/Educacenso/Censo SUAS. M7 OPERACIONAL (gestão UBS/escolas/CRAS) = escopo grande, após M8/M9.",
+  "atualizadoEm": "2026-06-25 (run autônomo) — 39 commits; FUNDAÇÃO ENDURECIDA (5 P0 anti-travamento) + UI overhaul (nova cara) + profundidade Ondas 0–1 PROVADAS (cadastros-mestres); Onda 2 em curso; 1.362 testes backend + 203 frontend",
+  "atividadeAtual": "🚀 RUN AUTÔNOMO — 41 commits limpos no GitHub (IgorGewehr/gov), cada um verde+re-provado por mim em runtime. BASE: M0–M6 completos + espinha fiscal (PCASP→DCASP/MSC→prestação TCE) + PPA/LDO/LOA + encerramento; M5 RH completo (folha mensal+anual+ponto+eSocial+remessa+Minha Folha); M6 Tributos completo; M7 FISCAL nos 3 setores. SEGURANÇA: 6 críticos + 5 altos do red-team + agora a FUNDAÇÃO ENDURECIDA (5 P0 que travavam/corrompiam em produção e não apareciam em DEV: corrida do hash-chain→alarme falso pro TCE, Key Vault síncrono→trava a API, VOs indesserializáveis no Outbox, Autoria silenciosa, EnsureCreated). UI: OVERHAUL completo (sidebar retrátil, design system refinado, Painel do Gestor virou dashboard com medidor/semáforo, formulários alinhados, tabelas sem corte). PROFUNDIDADE (foco atual, bar 'impecável em tudo'): Onda 0 navegabilidade (listas/busca/ficha) + Onda 1 cadastros-mestres PROVADOS (Aluno/Turma/Matrícula real com picker, Paciente/UBS/Profissional, Afastamentos c/ efeito na folha, Inventário Lei 4.320); Onda 2 EM CURSO (portal público/e-SIC, consignações, agendamento). Verify-don't-trust pegou 18+ bugs reais. PENDENTE DE CREDS SUAS p/ validação OFICIAL: MT/e-Validador+PAD, A1 homologado, Azure, eSocial Produção Restrita, RNDS/Educacenso. PRÓXIMO: Onda 2/3 → M9 → W10.6 (auditoria adversarial por módulo) → M10.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
-    { "label": "Testes backend", "valor": "~1.300 ✓", "cor": "verde" },
-    { "label": "Testes frontend", "valor": "195 ✓", "cor": "verde" },
-    { "label": "Módulos backend", "valor": "13", "cor": "azul" },
-    { "label": "Commits no GitHub", "valor": "29 · verdes", "cor": "azul" },
-    { "label": "Marcos concluídos", "valor": "6 / 11 · M0–M6 ✓; M7 fiscal", "cor": "azul" }
+    { "label": "Testes backend", "valor": "1.362 ✓", "cor": "verde" },
+    { "label": "Testes frontend", "valor": "203 ✓", "cor": "verde" },
+    { "label": "Módulos backend", "valor": "14", "cor": "azul" },
+    { "label": "Commits no GitHub", "valor": "39 · verdes", "cor": "azul" },
+    { "label": "Marcos concluídos", "valor": "6 / 11 · M0–M6 ✓; M7/M8 + profundidade", "cor": "azul" }
   ],
   "marcos": [
     { "id": "M0", "titulo": "Destravar build + bugs críticos", "status": "done", "nota": "Build 0/0, 593 testes; ciclo da despesa de Finanças provado em runtime.", "workflows": [

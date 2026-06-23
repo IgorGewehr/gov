@@ -10,6 +10,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Consignacoes;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Internal;
@@ -77,6 +78,19 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IAfastamentoRepository, AfastamentoRepository>();
         services.AddScoped<IRegraAfastamentoProvider, RegraAfastamentoProvider>();
         services.AddScoped<AjustadorProventoPorAfastamento>();
+
+        // CONSIGNACOES + MARGEM CONSIGNAVEL (Onda 2 — Lei 14.131/2021): cadastro mestre de consignatarias,
+        // catalogo de rubricas consignaveis, contratos de consignacao e percentuais de margem por vigencia.
+        // A CalculadoraMargemConsignavel e a fonte unica da margem (consulta/averbacao/gancho); o
+        // LancadorDescontosConsignados aplica o desconto na folha respeitando a margem (corte por prioridade),
+        // mantendo o MotorDeCalculoFolha puro (mesma porta do AjustadorProventoPorAfastamento — design RH §2.5).
+        services.AddScoped<IConsignatariaRepository, ConsignatariaRepository>();
+        services.AddScoped<IRubricaConsignavelRepository, RubricaConsignavelRepository>();
+        services.AddScoped<IContratoConsignacaoRepository, ContratoConsignacaoRepository>();
+        services.AddScoped<IParametrosMargemProvider, ParametrosMargemProvider>();
+        services.AddScoped<IBaseConsignavelProvider, BaseConsignavelProvider>();
+        services.AddScoped<CalculadoraMargemConsignavel>();
+        services.AddScoped<LancadorDescontosConsignados>();
         services.AddScoped<ITabelasLegaisRepository, TabelasLegaisRepository>();
         services.AddScoped<IServidorRegimeConsulta, ServidorRegimeConsulta>();
         services.AddScoped<IRubricaS1010Consulta, RubricaS1010Consulta>();

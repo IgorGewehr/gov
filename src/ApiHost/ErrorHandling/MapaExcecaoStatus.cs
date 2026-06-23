@@ -151,7 +151,10 @@ internal static class MapaExcecaoStatus
         || Contem(nome, "Fechad")
         || Contem(nome, "Incompatibilidade")
         || Contem(nome, "Ausente")
-        || Contem(nome, "NaoVigente");
+        || Contem(nome, "NaoVigente")
+        || Contem(nome, "Consignacao")          // ConsignacaoException: estouro de margem / consignataria inativa (Lei 14.131/2021).
+        || Contem(nome, "Margem")               // violacao de margem consignavel.
+        || Contem(nome, "Overbooking");          // dupla marcacao da mesma vaga (agendamento Saude).
 
     // Cross-tenant: hoje o guard (TenantSaveChangesInterceptor) lança InvalidOperationException com
     // mensagem "Gravação cross-tenant bloqueada". Detectamos pela mensagem para responder 403 (e não

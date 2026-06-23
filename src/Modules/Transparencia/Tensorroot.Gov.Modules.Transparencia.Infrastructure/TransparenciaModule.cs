@@ -10,11 +10,14 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Transparencia.Application.Abstractions;
+using Tensorroot.Gov.Modules.Transparencia.Application.PortalPublico;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasTce;
+using Tensorroot.Gov.Modules.Transparencia.Domain.Esic;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Fiscal;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Integracoes;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Persistence.Repositories;
+using Tensorroot.Gov.Modules.Transparencia.Infrastructure.PortalPublico;
 
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure;
 
@@ -71,6 +74,17 @@ public sealed class TransparenciaModule : IModule
 
         // Leitura dos itens consolidados (read model alimentado por Integration Events — I-13).
         services.AddScoped<IPublicacaoTransparenciaRepository, SimuladoPublicacaoTransparenciaRepository>();
+
+        // === Onda 2 — PORTAL PUBLICO + e-SIC + DADOS ABERTOS ===
+        // Resolver de tenant por slug publico (sem JWT) e configuracao do portal por tenant.
+        services.AddScoped<ITenantPublicoResolver, TenantPublicoResolver>();
+        services.AddScoped<IPortalPublicoConfigRepository, PortalPublicoConfigRepository>();
+        // Read models publicos (projecao I-13) + leitura paginada read-only.
+        services.AddScoped<IProjecaoPublicaRepository, ProjecaoPublicaRepository>();
+        services.AddScoped<IConsultaPublicaRepository, ConsultaPublicaRepository>();
+        // e-SIC (LAI): agregado + calendario de dias uteis parametrizavel (prazo calculado, nao digitado).
+        services.AddScoped<IPedidoSicRepository, PedidoSicRepository>();
+        services.AddSingleton<ICalendarioDiasUteis, CalendarioDiasUteisPadrao>();
 
         // Catalogo de leiautes (grade posicional versionada por exercicio, dirigida por dados) e calendario.
         services.AddSingleton<ILeiauteCatalogo, SimuladoLeiauteCatalogo>();

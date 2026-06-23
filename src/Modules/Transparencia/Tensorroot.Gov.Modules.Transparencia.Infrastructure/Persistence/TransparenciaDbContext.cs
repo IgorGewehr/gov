@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Domain.Esic;
 using Tensorroot.Gov.Modules.Transparencia.Domain.Fiscal;
+using Tensorroot.Gov.Modules.Transparencia.Domain.PortalPublico;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Fiscal;
@@ -42,6 +44,24 @@ public sealed class TransparenciaDbContext(DbContextOptions<TransparenciaDbConte
 
     /// <summary>Percentuais mínimos versionados por tenant+vigência (M7.0.3 — nunca hardcoded).</summary>
     public DbSet<ParametroFiscalVigente> ParametrosFiscaisVigentes => Set<ParametroFiscalVigente>();
+
+    /// <summary>Configuração do PORTAL PÚBLICO por tenant (slug + nome de exibição) — Onda 2.</summary>
+    public DbSet<PortalPublicoConfig> PortaisPublicos => Set<PortalPublicoConfig>();
+
+    /// <summary>Read model público de DESPESA (transparência ativa, projetado de eventos — I-13).</summary>
+    public DbSet<PublicacaoDespesa> PublicacoesDespesa => Set<PublicacaoDespesa>();
+
+    /// <summary>Read model público de RECEITA arrecadada (projetado de eventos — I-13).</summary>
+    public DbSet<PublicacaoReceita> PublicacoesReceita => Set<PublicacaoReceita>();
+
+    /// <summary>Read model público de CONTRATO (projetado de eventos de Administração — I-13).</summary>
+    public DbSet<PublicacaoContrato> PublicacoesContrato => Set<PublicacaoContrato>();
+
+    /// <summary>Read model público de FOLHA NOMINAL (sem CPF/matrícula; derivado do RH — I-13).</summary>
+    public DbSet<PublicacaoFolhaNominal> PublicacoesFolhaNominal => Set<PublicacaoFolhaNominal>();
+
+    /// <summary>Pedidos de informação e-SIC (transparência passiva — LAI Lei 12.527/2011).</summary>
+    public DbSet<PedidoInformacaoSic> PedidosInformacaoSic => Set<PedidoInformacaoSic>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

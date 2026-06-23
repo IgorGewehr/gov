@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Afastamentos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
@@ -67,6 +68,18 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Regras legais de afastamento parametrizaveis por tenant/vigencia (fonte do efeito na folha).</summary>
     public DbSet<RegraAfastamento> RegrasAfastamento => Set<RegraAfastamento>();
+
+    /// <summary>Cadastro mestre de consignatarias (bancos/entidades habilitadas — Lei 14.131/2021).</summary>
+    public DbSet<Consignataria> Consignatarias => Set<Consignataria>();
+
+    /// <summary>Catalogo parametrizavel de rubricas consignaveis (categoria/balde de margem por tenant).</summary>
+    public DbSet<RubricaConsignavel> RubricasConsignaveis => Set<RubricaConsignavel>();
+
+    /// <summary>Contratos de consignacao dos servidores (efeito determinIstico na folha respeitando a margem).</summary>
+    public DbSet<ContratoConsignacao> ContratosConsignacao => Set<ContratoConsignacao>();
+
+    /// <summary>Percentuais de margem consignavel parametrizaveis por tenant/vigencia (35%+5%+5% default legal).</summary>
+    public DbSet<ParametrosMargemVigente> ParametrosMargem => Set<ParametrosMargemVigente>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

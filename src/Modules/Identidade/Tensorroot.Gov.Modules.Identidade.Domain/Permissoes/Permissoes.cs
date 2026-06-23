@@ -50,6 +50,15 @@ public static class Permissoes
     /// <summary>Gerenciar (mutar) dados do modulo Recursos Humanos.</summary>
     public const string RecursosHumanosGerenciar = "recursoshumanos.gerenciar";
 
+    /// <summary>Consultar consignacoes/margem consignavel (Onda 2 — Lei 14.131/2021).</summary>
+    public const string RhConsignacaoVer = "rh.consignacao.ver";
+
+    /// <summary>Gerenciar consignatarias/rubricas/consignacoes (suspender/reativar/cancelar).</summary>
+    public const string RhConsignacaoGerenciar = "rh.consignacao.gerenciar";
+
+    /// <summary>Averbar uma consignacao (verbo fino: respeita a margem do balde na competencia).</summary>
+    public const string RhConsignacaoAverbar = "rh.consignacao.averbar";
+
     /// <summary>
     /// AUTOSSERVICO DO SERVIDOR ("Minha Folha"): permite ao PROPRIO servidor consultar SOMENTE os
     /// SEUS dados pessoais (contracheque, espelho de ponto, ferias, informe de rendimentos). Verbo
@@ -91,6 +100,15 @@ public static class Permissoes
 
     /// <summary>Gerenciar (mutar) dados do modulo Saude.</summary>
     public const string SaudeGerenciar = "saude.gerenciar";
+
+    /// <summary>Consultar a agenda/vagas/agendamentos (Onda 2 — agendamento de consultas/exames).</summary>
+    public const string SaudeAgendaVer = "saude.agenda.ver";
+
+    /// <summary>Gerenciar grades de agenda (publicar/bloquear/reabrir dia).</summary>
+    public const string SaudeAgendaGerenciar = "saude.agenda.gerenciar";
+
+    /// <summary>Marcar/confirmar/cancelar/registrar falta/realizar agendamentos e fila de espera.</summary>
+    public const string SaudeAgendaMarcar = "saude.agenda.marcar";
 
     /// <summary>Visualizar dados do modulo Educacao (escolas, matriculas, merenda).</summary>
     public const string EducacaoVer = "educacao.ver";
@@ -156,6 +174,12 @@ public static class Permissoes
 
     /// <summary>Gerenciar (mutar) dados do modulo Transparencia.</summary>
     public const string TransparenciaGerenciar = "transparencia.gerenciar";
+
+    /// <summary>Consultar pedidos e-SIC internamente (com PII do solicitante — LAI Lei 12.527/2011).</summary>
+    public const string TransparenciaEsicVer = "transparencia.esic.ver";
+
+    /// <summary>Responder/atender/prorrogar/indeferir/decidir recurso de pedidos e-SIC.</summary>
+    public const string TransparenciaEsicResponder = "transparencia.esic.responder";
 
     /// <summary>
     /// Visualizar o PAINEL DO GESTOR + BI (modulo PainelGestor): indicadores consolidados do municipio
@@ -255,6 +279,9 @@ public static class Permissoes
         TributosItbiArbitrar,
         RecursosHumanosVer,
         RecursosHumanosGerenciar,
+        RhConsignacaoVer,
+        RhConsignacaoGerenciar,
+        RhConsignacaoAverbar,
         PatrimonioVer,
         PatrimonioGerenciar,
         ProtocoloVer,
@@ -262,6 +289,9 @@ public static class Permissoes
         SaudeVer,
         SaudeProntuarioLer,
         SaudeGerenciar,
+        SaudeAgendaVer,
+        SaudeAgendaGerenciar,
+        SaudeAgendaMarcar,
         EducacaoVer,
         EducacaoGerenciar,
         AssistenciaSocialVer,
@@ -278,6 +308,8 @@ public static class Permissoes
         LegislativoComissoesGerenciar,
         TransparenciaVer,
         TransparenciaGerenciar,
+        TransparenciaEsicVer,
+        TransparenciaEsicResponder,
         PainelVer,
         IdentidadeUsuariosGerenciar,
 

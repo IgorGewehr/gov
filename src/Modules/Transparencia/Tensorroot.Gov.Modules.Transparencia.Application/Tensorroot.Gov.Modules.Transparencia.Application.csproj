@@ -6,6 +6,8 @@
     <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
     <!-- Integração cross-module: SOMENTE via Contracts (guardado por NetArchTest). MSC publicada por Financas. -->
     <ProjectReference Include="../../Financas/Tensorroot.Gov.Modules.Financas.Contracts/Tensorroot.Gov.Modules.Financas.Contracts.csproj" />
+    <!-- Portal publico: projeta CONTRATOS/LICITACOES publicados por Administracao (read model I-13). -->
+    <ProjectReference Include="../../Administracao/Tensorroot.Gov.Modules.Administracao.Contracts/Tensorroot.Gov.Modules.Administracao.Contracts.csproj" />
     <!-- Ponte RH -> Transparencia: resumo da folha para a REMESSA TCE-RS (Res. 1099), publicado por RecursosHumanos. -->
     <ProjectReference Include="../../RecursosHumanos/Tensorroot.Gov.Modules.RecursosHumanos.Contracts/Tensorroot.Gov.Modules.RecursosHumanos.Contracts.csproj" />
   </ItemGroup>

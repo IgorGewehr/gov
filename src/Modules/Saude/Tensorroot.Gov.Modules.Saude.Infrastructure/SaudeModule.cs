@@ -64,6 +64,11 @@ public sealed class SaudeModule : IModule
         services.AddScoped<IEstabelecimentoCadastroRepository, EstabelecimentoCadastroRepository>();
         services.AddScoped<IProfissionalCadastroRepository, ProfissionalCadastroRepository>();
 
+        // Agendamento (Onda 2 profundidade): agenda/vagas, marcacao e fila de espera (reusa Paciente/UBS/Profissional).
+        services.AddScoped<IAgendaProfissionalRepository, AgendaProfissionalRepository>();
+        services.AddScoped<IAgendamentoRepository, AgendamentoRepository>();
+        services.AddScoped<IFilaEsperaRepository, FilaEsperaRepository>();
+
         // Gateways/ACLs governamentais: implementacao simulada para dev/testes. Em producao,
         // HTTP resiliente (Polly) atras de Anti-Corruption Layer, com certificados no Azure Key Vault.
         services.AddScoped<ICadsusGateway, SimuladoCadsusGateway>();

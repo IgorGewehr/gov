@@ -7,6 +7,11 @@
   <ItemGroup>
     <ProjectReference Include="../Tensorroot.Gov.Modules.Transparencia.Application/Tensorroot.Gov.Modules.Transparencia.Application.csproj" />
     <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
+    <!-- Portal publico anonimo: resolve o tenant por SLUG no catalogo CENTRAL da plataforma (so o mapa
+         publico slug/nome + checagem de licenca), sem JWT. Mesmo padrao de Identidade (resolve tenant
+         por email no login). NAO toca dado sensivel; apos resolver, fixa TenantOverride e o Global Query
+         Filter por TenantId volta a valer em toda leitura subsequente. -->
+    <ProjectReference Include="../../../Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
   </ItemGroup>
 
   <ItemGroup>

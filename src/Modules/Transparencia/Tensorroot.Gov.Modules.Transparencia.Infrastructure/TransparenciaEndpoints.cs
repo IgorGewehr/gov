@@ -4,11 +4,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Transparencia.Application.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Application.Esic;
 using Tensorroot.Gov.Modules.Transparencia.Application.Fiscal;
+using Tensorroot.Gov.Modules.Transparencia.Application.PortalPublico;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasFolha;
 using Tensorroot.Gov.Modules.Transparencia.Application.RemessasTce;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
+using Tensorroot.Gov.Modules.Transparencia.Domain.Esic;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
+using Tensorroot.Gov.Modules.Transparencia.Infrastructure.PortalPublico;
 
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure;
 
@@ -22,7 +26,80 @@ internal static class TransparenciaEndpoints
         MapearRemessasTce(grupo);
         MapearDeclaracoesFiscais(grupo);
         MapearNucleoFiscal(grupo);
+        MapearEsicInterno(grupo);
+        MapearPortalPublicoConfig(grupo);
+
+        // Superficie PUBLICA anonima (fora de /api): grupo /publico/transparencia/{slug}. Resolve o
+        // tenant por slug (sem JWT), fixa o TenantOverride e expoe leitura read-only + e-SIC do cidadao.
+        TransparenciaPublicaEndpoints.Map(endpoints);
     }
+
+    /// <summary>
+    /// e-SIC INTERNO (autenticado): lista/detalha pedidos do tenant (detalhe COM PII gera trilha de
+    /// acesso LG-3) e executa as transicoes de atendimento/resposta/prorrogacao/indeferimento/recurso.
+    /// </summary>
+    private static void MapearEsicInterno(RouteGroupBuilder grupo)
+    {
+        var esic = grupo.MapGroup("/esic").WithTags("Transparencia.Esic");
+
+        esic.MapGet("/", async (int? ano, SituacaoPedidoSic? situacao, ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ListarPedidosSicQuery(ano, situacao), ct)))
+            .RequirePermission("transparencia.esic.ver");
+
+        esic.MapGet("/{pedidoId:guid}", async (Guid pedidoId, ISender sender, CancellationToken ct) =>
+        {
+            var detalhe = await sender.Send(new ObterPedidoSicInternoQuery(pedidoId), ct);
+            return detalhe is null ? Results.NotFound() : Results.Ok(detalhe);
+        }).RequirePermission("transparencia.esic.ver");
+
+        esic.MapPost("/{pedidoId:guid}/atendimento", async (Guid pedidoId, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new IniciarAtendimentoSicCommand(pedidoId), ct);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.esic.responder");
+
+        esic.MapPost("/{pedidoId:guid}/resposta", async (Guid pedidoId, ResponderSicPayload payload, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new ResponderPedidoSicCommand(pedidoId, payload.Texto, payload.ReferenciaAnexo), ct);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.esic.responder");
+
+        esic.MapPost("/{pedidoId:guid}/prorrogacao", async (Guid pedidoId, ProrrogarSicPayload payload, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new ProrrogarPedidoSicCommand(pedidoId, payload.Motivo), ct);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.esic.responder");
+
+        esic.MapPost("/{pedidoId:guid}/indeferimento", async (Guid pedidoId, IndeferirSicPayload payload, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new IndeferirPedidoSicCommand(pedidoId, payload.FundamentoLegal), ct);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.esic.responder");
+
+        esic.MapPost("/{pedidoId:guid}/recurso/decisao", async (Guid pedidoId, DecidirRecursoSicPayload payload, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new DecidirRecursoSicCommand(pedidoId, payload.Resultado, payload.Decisao), ct);
+            return Results.NoContent();
+        }).RequirePermission("transparencia.esic.responder");
+    }
+
+    /// <summary>INTERNO: configura o slug/nome do portal publico do tenant (transparencia.gerenciar).</summary>
+    private static void MapearPortalPublicoConfig(RouteGroupBuilder grupo)
+    {
+        grupo.MapPost("/portal-publico", async (ConfigurarPortalPayload payload, ISender sender, CancellationToken ct)
+            => Results.Ok(new { slug = await sender.Send(new ConfigurarPortalPublicoCommand(payload.Slug, payload.NomeEnte), ct) }))
+            .RequirePermission("transparencia.gerenciar");
+    }
+
+    private sealed record ResponderSicPayload(string Texto, string? ReferenciaAnexo);
+
+    private sealed record ProrrogarSicPayload(string Motivo);
+
+    private sealed record IndeferirSicPayload(string FundamentoLegal);
+
+    private sealed record DecidirRecursoSicPayload(ResultadoRecurso Resultado, string Decisao);
+
+    private sealed record ConfigurarPortalPayload(string Slug, string NomeEnte);
 
     /// <summary>
     /// M7.0 — Núcleo fiscal dos mínimos constitucionais (Saúde 15% ASPS / Educação 25% MDE): registra as

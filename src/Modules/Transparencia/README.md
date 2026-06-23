@@ -105,6 +105,43 @@ Dada uma `RemessaTCE` não enviada após o prazo legal do `Periodo`
 Quando o Worker verifica os vencimentos
 Então **PrazoRemessaVencido** é publicado, alertando risco de bloqueio de transferências voluntárias (LRF).
 
+## 8.1 Onda 2 — Portal Público + e-SIC + Dados Abertos (PROFUNDIDADE backend)
+
+Superfície **PÚBLICA anônima** (`/publico/transparencia/{slug}`, fora de `/api/...`):
+- **Transparência ativa (read models materializados de Integration Events JÁ publicados — I-13):** `PublicacaoDespesa`
+  (empenho/liquidação/pagamento, de Finanças), `PublicacaoReceita` (RCL, de Finanças), `PublicacaoContrato`
+  (contrato/PNCP/licitação, de Administração), `PublicacaoFolhaNominal` (derivada do `FolhaResumoRemessaTceIntegrationEvent`
+  do RH — **sem CPF/matrícula**). Idempotentes por chave de origem.
+- **Consulta em tempo real:** `GET /resumo-fiscal?exercicio` (receita × despesa por fase).
+- **Dados abertos:** `GET /dados-abertos` (dicionário) + `GET /dados-abertos/{dataset}.csv?exercicio` (stream CSV: despesas,
+  receitas, contratos, folha, diárias/repasses derivados).
+- **e-SIC (transparência passiva, LAI art. 10-16):** `POST /esic` (abre — anônimo permitido), `GET /esic/{protocolo}`
+  (status público **sem PII do solicitante**), `POST /esic/{protocolo}/recurso`.
+
+Agregado **e-SIC** `PedidoInformacaoSic`: protocolo único por (tenant, ano); prazo **20 dias úteis CALCULADO** via
+`ICalendarioDiasUteis` (parametrizável — nunca digitado); prorrogação **única, justificada, antes do vencimento** (+10
+dias úteis); resposta/indeferimento sempre fundamentados; máquina de estados
+`Aberto→EmAtendimento→(Respondido|Indeferido)→[RecursoAberto→RecursoRespondido]→Encerrado`.
+
+Superfície **INTERNA** (autenticada, `/api/transparencia`): `esic` (lista; detalhe COM PII gera **trilha de acesso LG-3**
+via `ISensivelLgpd`); transições atendimento/resposta/prorrogação/indeferimento/recurso (`transparencia.esic.responder`);
+`portal-publico` (configura slug, `transparencia.gerenciar`).
+
+**Resolução de tenant pública (sem JWT):** `ITenantPublicoResolver` resolve o **slug** contra o catálogo CENTRAL da
+plataforma (deriva o slug do nome do ente — mesmo padrão de resolução por e-mail no login do Identidade), verifica a
+**licença** do módulo (senão 404 sem revelar existência) e **fixa o `TenantOverride`** — daí o Global Query Filter por
+TenantId volta a valer em TODA leitura subsequente (anti-vazamento cross-tenant).
+
+**LGPD (público vs. minimizado):** público por lei = nome/cargo/lotação/remuneração de servidor, fornecedor/objeto/valor
+de contrato, despesas/receitas. Minimizado = **CPF mascarado na origem** (`***.456.789-**`), **matrícula omitida**
+(não existe no read model público), **PII do solicitante e-SIC nunca exposta a terceiros**.
+
+> **Integração pendente (fora do escopo deste módulo — disjunto):** (1) registrar uma policy de rate-limit dedicada
+> `"publico"` (mais agressiva, por IP) no `AddRateLimiter` do ApiHost e encadear `.RequireRateLimiting("publico")` no grupo
+> público (hoje herdam o GlobalLimiter por IP); (2) adicionar `transparencia.esic.ver`/`transparencia.esic.responder` ao
+> catálogo de permissões (módulo Identidade) para o papel Administrador recebê-las (o policy provider já materializa a
+> política dinamicamente — deny-by-default preservado até a permissão ser concedida).
+
 ## 9. Fontes
 - Lei 12.527/2011 (LAI) — https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12527.htm
 - LC 131/2009 — https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp131.htm
