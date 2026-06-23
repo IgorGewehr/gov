@@ -3,6 +3,7 @@ using Tensorroot.Gov.Modules.Patrimonio.Application.Abstractions;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Frota;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Requisicoes;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Repositories;
 
@@ -393,6 +394,60 @@ public sealed class ItemEstoqueRepository(PatrimonioDbContext context) : IItemEs
 
         var itens = await consulta
             .OrderBy(item => item.Codigo)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
+}
+
+/// <summary>Implementação EF Core do repositório do agregado <see cref="PedidoRequisicao"/>.</summary>
+public sealed class PedidoRequisicaoRepository(PatrimonioDbContext context) : IPedidoRequisicaoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(PedidoRequisicao pedido)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+        context.PedidosRequisicao.Add(pedido);
+    }
+
+    /// <inheritdoc />
+    public Task<PedidoRequisicao?> ObterPorIdAsync(PedidoRequisicaoId id, CancellationToken cancellationToken)
+        => context.PedidosRequisicao.FirstOrDefaultAsync(pedido => pedido.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<PedidoRequisicao> Itens, int Total)> BuscarAsync(
+        SituacaoPedido? situacao,
+        string? setor,
+        Guid? unidadeId,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.PedidosRequisicao.AsQueryable();
+
+        if (situacao is { } filtroSituacao)
+        {
+            consulta = consulta.Where(pedido => pedido.Situacao == filtroSituacao);
+        }
+
+        if (!string.IsNullOrWhiteSpace(setor))
+        {
+            var padrao = BuscaTexto.MontarPadraoContains(setor);
+            consulta = consulta.Where(pedido => EF.Functions.Like(pedido.SetorSolicitante, padrao, "\\"));
+        }
+
+        if (unidadeId is { } filtroUnidade)
+        {
+            consulta = consulta.Where(pedido => pedido.UnidadeId == filtroUnidade);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderByDescending(pedido => pedido.Data)
             .Skip((pagina - 1) * tamanho)
             .Take(tamanho)
             .ToListAsync(cancellationToken)

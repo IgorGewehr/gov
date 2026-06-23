@@ -8,10 +8,14 @@ using Tensorroot.Gov.Modules.Educacao.Application.DiarioClasse;
 using Tensorroot.Gov.Modules.Educacao.Application.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Application.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Application.Merenda;
+using Tensorroot.Gov.Modules.Educacao.Application.Transporte;
 using Tensorroot.Gov.Modules.Educacao.Application.Turmas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
 using Tensorroot.Gov.Modules.Educacao.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Merenda;
+using Tensorroot.Gov.Modules.Educacao.Domain.Transporte;
 using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure;
@@ -29,6 +33,8 @@ internal static class EducacaoEndpoints
         MapearMatriculas(grupo);
         MapearDiarios(grupo);
         MapearFiscal(grupo);
+        MapearMerenda(grupo);
+        MapearTransporte(grupo);
     }
 
     private static void MapearAlunos(RouteGroupBuilder grupo)
@@ -327,6 +333,121 @@ internal static class EducacaoEndpoints
             => Results.Ok(await sender.Send(new ObterHistoricoEscolarQuery(alunoId), cancellationToken)))
             .RequirePermission("educacao.ver");
     }
+
+    private static void MapearMerenda(RouteGroupBuilder grupo)
+    {
+        // Merenda PNAE (sub-onda 3b): cardapio semanal + distribuicao/consumo de generos do estoque.
+        var merenda = grupo.MapGroup("/merenda");
+
+        merenda.MapPost("/cardapios", async (
+            PlanejarCardapioCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("educacao.gerenciar");
+
+        merenda.MapPost("/cardapios/{cardapioId:guid}/itens", async (
+            Guid cardapioId, AdicionarItemCardapioPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                id = await sender.Send(
+                    new AdicionarItemCardapioCommand(
+                        cardapioId, payload.Dia, payload.Refeicao, payload.GeneroEstoqueId,
+                        payload.QuantidadePerCapita, payload.UnidadeMedida),
+                    cancellationToken),
+            }))
+            .RequirePermission("educacao.gerenciar");
+
+        merenda.MapPost("/cardapios/{cardapioId:guid}/publicacao", async (
+            Guid cardapioId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PublicarCardapioCommand(cardapioId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        merenda.MapGet("/cardapios", async (
+            Guid? escolaId, DateOnly? semana, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarCardapiosQuery(escolaId, semana), cancellationToken)))
+            .RequirePermission("educacao.ver");
+
+        merenda.MapGet("/cardapios/{cardapioId:guid}", async (
+            Guid cardapioId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var ficha = await sender.Send(new ObterCardapioQuery(cardapioId), cancellationToken);
+            return ficha is null ? Results.NotFound() : Results.Ok(ficha);
+        }).RequirePermission("educacao.ver");
+
+        merenda.MapPost("/distribuicoes", async (
+            RegistrarDistribuicaoMerendaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("educacao.gerenciar");
+
+        merenda.MapGet("/consumo", async (
+            Guid escolaId, DateOnly de, DateOnly ate, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterConsumoMerendaQuery(escolaId, de, ate), cancellationToken)))
+            .RequirePermission("educacao.ver");
+    }
+
+    private static void MapearTransporte(RouteGroupBuilder grupo)
+    {
+        // Transporte PNATE (sub-onda 3b): rotas + alunos transportados (reusa Veiculo/Aluno por Id).
+        var transporte = grupo.MapGroup("/transporte");
+
+        transporte.MapPost("/rotas", async (
+            CriarRotaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("educacao.gerenciar");
+
+        transporte.MapGet("/rotas", async (
+            Guid? escolaId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterRotasPorEscolaQuery(escolaId), cancellationToken)))
+            .RequirePermission("educacao.ver");
+
+        transporte.MapPost("/rotas/{rotaId:guid}/alunos", async (
+            Guid rotaId, VincularAlunoRotaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                id = await sender.Send(
+                    new VincularAlunoRotaCommand(rotaId, payload.AlunoId, payload.MatriculaId, payload.PontoEmbarque),
+                    cancellationToken),
+            }))
+            .RequirePermission("educacao.gerenciar");
+
+        transporte.MapGet("/rotas/{rotaId:guid}/alunos", async (
+            Guid rotaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var ficha = await sender.Send(new ListarAlunosDaRotaQuery(rotaId), cancellationToken);
+            return ficha is null ? Results.NotFound() : Results.Ok(ficha);
+        }).RequirePermission("educacao.ver");
+
+        transporte.MapPost("/rotas/{rotaId:guid}/alunos/{alunoTransportadoId:guid}/desligamento", async (
+            Guid rotaId, Guid alunoTransportadoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new DesligarAlunoRotaCommand(rotaId, alunoTransportadoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        transporte.MapPost("/rotas/{rotaId:guid}/ativacao", async (
+            Guid rotaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AtivarRotaCommand(rotaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+
+        transporte.MapPost("/rotas/{rotaId:guid}/encerramento", async (
+            Guid rotaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new EncerrarRotaCommand(rotaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("educacao.gerenciar");
+    }
+
+    private sealed record AdicionarItemCardapioPayload(
+        DiaSemanaCardapio Dia,
+        TipoRefeicao Refeicao,
+        Guid GeneroEstoqueId,
+        decimal QuantidadePerCapita,
+        string UnidadeMedida);
+
+    private sealed record VincularAlunoRotaPayload(Guid AlunoId, Guid? MatriculaId, string PontoEmbarque);
 
     private sealed record AtualizarDadosCensoPayload(
         Domain.ValueObjects.Endereco Endereco,

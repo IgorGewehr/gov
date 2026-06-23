@@ -64,6 +64,13 @@ public sealed class EducacaoModule : IModule
         // intra-modulo sobre Turma/Matricula/Aluno/DiarioClasse, sem entidade nova.
         services.AddScoped<IDiarioTurmaReadModel, DiarioTurmaReadModel>();
 
+        // Sub-onda 3b — Merenda (PNAE): cardapio + distribuicao/consumo (reusa ItemEstoque por Id).
+        services.AddScoped<ICardapioRepository, CardapioRepository>();
+        services.AddScoped<IDistribuicaoMerendaRepository, DistribuicaoMerendaRepository>();
+
+        // Sub-onda 3b — Transporte (PNATE): rotas + alunos transportados (reusa Veiculo/Aluno/Matricula por Id).
+        services.AddScoped<IRotaTransporteRepository, RotaTransporteRepository>();
+
         // Nucleo fiscal de Educacao (M7 E-1/E-2/E-3): classificacao MDE, FUNDEB por origem, 70% folha.
         services.AddScoped<IRegraClassificacaoMdeRepository, RegraClassificacaoMdeRepository>();
         services.AddScoped<IDistribuicaoFundebRepository, DistribuicaoFundebRepository>();

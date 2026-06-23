@@ -1,6 +1,7 @@
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Requisicoes;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
 
@@ -56,3 +57,22 @@ public sealed record InventarioAberto(InventarioId InventarioId, int Exercicio, 
 /// <param name="Exercicio">Exercício (ano-base) do levantamento.</param>
 /// <param name="TotalDivergencias">Quantidade de divergências apuradas.</param>
 public sealed record InventarioEncerrado(InventarioId InventarioId, int Exercicio, int TotalDivergencias) : IDomainEvent;
+
+/// <summary>Pedido de requisição self-service aberto por um setor/UO (fluxo R-1).</summary>
+/// <param name="PedidoRequisicaoId">Identificador do pedido.</param>
+/// <param name="UnidadeId">UO consumidora.</param>
+/// <param name="SetorSolicitante">Setor solicitante.</param>
+/// <param name="TotalItens">Quantidade de linhas (itens) do pedido.</param>
+public sealed record PedidoRequisicaoAberto(PedidoRequisicaoId PedidoRequisicaoId, Guid UnidadeId, string SetorSolicitante, int TotalItens) : IDomainEvent;
+
+/// <summary>Pedido de requisição aprovado — habilita o atendimento (fluxo R-2).</summary>
+/// <param name="PedidoRequisicaoId">Identificador do pedido.</param>
+/// <param name="AprovadorId">Autoridade que aprovou.</param>
+public sealed record PedidoRequisicaoAprovado(PedidoRequisicaoId PedidoRequisicaoId, Guid AprovadorId) : IDomainEvent;
+
+/// <summary>Pedido de requisição atendido — gerou saída de estoque por item (consumo por setor, R-4).</summary>
+/// <param name="PedidoRequisicaoId">Identificador do pedido.</param>
+/// <param name="UnidadeId">UO consumidora.</param>
+/// <param name="SetorSolicitante">Setor solicitante.</param>
+/// <param name="TotalmenteAtendido">Indica se todas as linhas foram atendidas integralmente.</param>
+public sealed record PedidoRequisicaoAtendido(PedidoRequisicaoId PedidoRequisicaoId, Guid UnidadeId, string SetorSolicitante, bool TotalmenteAtendido) : IDomainEvent;

@@ -7,9 +7,11 @@ using Tensorroot.Gov.Modules.Patrimonio.Application.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Frota;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Inventarios;
+using Tensorroot.Gov.Modules.Patrimonio.Application.Requisicoes;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Requisicoes;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure;
 
@@ -24,6 +26,56 @@ internal static class PatrimonioEndpoints
         MapearFrota(grupo);
         MapearEstoque(grupo);
         MapearInventarios(grupo);
+        MapearRequisicoes(grupo);
+    }
+
+    // REQUISICAO DE ALMOXARIFADO self-service (Onda 3b): pedido multi-item por setor/UO -> aprovacao ->
+    // atendimento com SAIDA de estoque (baixa do ItemEstoque existente, respeitando saldo; parcial permitido).
+    // Orquestra ItemEstoque.AtenderRequisicao por item (reuso do motor de estoque). Maquina de estados
+    // Solicitado -> Aprovado -> Atendido | Cancelado.
+    private static void MapearRequisicoes(RouteGroupBuilder grupo)
+    {
+        // Abrir pedido (Solicitado): setor/UO + linhas (item de estoque x quantidade).
+        grupo.MapPost("/requisicoes", async (
+            AbrirPedidoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("patrimonio.gerenciar");
+
+        // Fila/lista paginada de pedidos por situacao/setor/UO.
+        grupo.MapGet("/requisicoes", async (
+            SituacaoPedido? status, string? setor, Guid? unidadeId, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarPedidosQuery(status, setor, unidadeId, pagina, tamanho), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/requisicoes/{pedidoId:guid}", async (
+            Guid pedidoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterPedidoQuery(pedidoId), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        // Aprovacao (Solicitado -> Aprovado): autorizacao via permissao do endpoint (RBAC do setor).
+        grupo.MapPost("/requisicoes/{pedidoId:guid}/aprovacao", async (
+            Guid pedidoId, AprovarPedidoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AprovarPedidoCommand(pedidoId, payload.AprovadorId, payload.Data), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
+
+        // Atendimento (Aprovado -> Atendido): baixa de estoque por item, parcial permitido.
+        grupo.MapPost("/requisicoes/{pedidoId:guid}/atendimento", async (
+            Guid pedidoId, AtenderPedidoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AtenderPedidoCommand(pedidoId, payload.Data), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
+
+        // Cancelamento (Solicitado/Aprovado -> Cancelado): terminal sem efeito de estoque.
+        grupo.MapPost("/requisicoes/{pedidoId:guid}/cancelamento", async (
+            Guid pedidoId, CancelarPedidoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CancelarPedidoCommand(pedidoId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
     }
 
     private static void MapearInventarios(RouteGroupBuilder grupo)
@@ -410,4 +462,10 @@ internal static class PatrimonioEndpoints
     private sealed record EncerrarInventarioPayload(DateOnly DataEncerramento);
 
     private sealed record CancelarInventarioPayload(string Motivo);
+
+    private sealed record AprovarPedidoPayload(Guid AprovadorId, DateOnly Data);
+
+    private sealed record AtenderPedidoPayload(DateOnly Data);
+
+    private sealed record CancelarPedidoPayload(string Motivo);
 }

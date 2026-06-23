@@ -5,6 +5,8 @@ using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
 using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Merenda;
+using Tensorroot.Gov.Modules.Educacao.Domain.Transporte;
 using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Fiscal;
 
@@ -51,6 +53,15 @@ public sealed class EducacaoDbContext(DbContextOptions<EducacaoDbContext> option
 
     /// <summary>Remuneracao dos profissionais da educacao por exercicio (E-2, numerador dos 70%).</summary>
     public DbSet<RemuneracaoMagisterioExercicio> RemuneracoesMagisterio => Set<RemuneracaoMagisterioExercicio>();
+
+    /// <summary>Cardapios semanais do PNAE (planejamento nutricional por escola/faixa etaria/semana) — raiz de agregado.</summary>
+    public DbSet<Cardapio> Cardapios => Set<Cardapio>();
+
+    /// <summary>Distribuicoes de merenda (consumo efetivo de generos por dia/refeicao) — raiz de agregado.</summary>
+    public DbSet<DistribuicaoMerenda> DistribuicoesMerenda => Set<DistribuicaoMerenda>();
+
+    /// <summary>Rotas de transporte escolar (PNATE), com os alunos transportados — raiz de agregado.</summary>
+    public DbSet<RotaTransporte> RotasTransporte => Set<RotaTransporte>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
