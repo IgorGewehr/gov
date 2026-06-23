@@ -5,6 +5,8 @@ import { SubNav, type SubNavItem } from '../../components/ui';
 
 const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/educacao', label: 'Escolas', end: true },
+  { to: '/educacao/alunos', label: 'Alunos' },
+  { to: '/educacao/turmas', label: 'Turmas' },
   { to: '/educacao/matriculas', label: 'Matrículas' },
   { to: '/educacao/fiscal', label: 'Painel Fiscal' },
 ];

@@ -165,11 +165,7 @@ export function MatriculaListPage() {
         />
       )}
 
-      <MatriculaFormModal
-        open={formAberto}
-        onClose={() => setFormAberto(false)}
-        alunoIdInicial={consultaAtiva}
-      />
+      <MatriculaFormModal open={formAberto} onClose={() => setFormAberto(false)} />
 
       {acao && (
         <>

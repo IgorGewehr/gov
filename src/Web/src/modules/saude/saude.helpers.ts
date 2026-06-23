@@ -66,6 +66,52 @@ export const opcoesSituacaoPaciente: { value: string; label: string }[] = [
   { value: 'Inativo', label: 'Inativo' },
 ];
 
+/** Mapeia a situação cadastral (Ativo/Inativo) de estabelecimento/profissional para a Tag. */
+export function situacaoCadastroVariant(situacao: string): TagVariant {
+  return situacao === 'Ativo' ? 'success' : 'danger';
+}
+
+/**
+ * Opções de Situação cadastral (Ativo/Inativo) para os filtros de estabelecimento e
+ * profissional. O `value` é o nome do enum serializado (igualdade exata no backend).
+ */
+export const opcoesSituacaoCadastro: { value: string; label: string }[] = [
+  { value: 'Ativo', label: 'Ativo' },
+  { value: 'Inativo', label: 'Inativo' },
+];
+
+/**
+ * Tipos de estabelecimento (CNES — TipoEstabelecimento). O `value` é o NOME do enum
+ * (o backend faz parse por nome), o `label` é a descrição amigável.
+ */
+export const opcoesTipoEstabelecimento: { value: string; label: string }[] = [
+  { value: 'Ubs', label: 'Unidade Básica de Saúde (UBS)' },
+  { value: 'Upa', label: 'Unidade de Pronto Atendimento (UPA)' },
+  { value: 'Hospital', label: 'Hospital' },
+  { value: 'Caps', label: 'Centro de Atenção Psicossocial (CAPS)' },
+  { value: 'Farmacia', label: 'Farmácia / Dispensação' },
+  { value: 'UnidadeSaudeFamilia', label: 'Unidade de Saúde da Família' },
+  { value: 'CentroEspecialidades', label: 'Centro de Especialidades / Policlínica' },
+  { value: 'Laboratorio', label: 'Laboratório' },
+  { value: 'Outro', label: 'Outro' },
+];
+
+/**
+ * Conselhos de classe (TipoConselho). O `value` é o CÓDIGO numérico (RegistroConselhoDto.Tipo),
+ * conforme esperado pelo backend.
+ */
+export const opcoesConselho: { value: string; label: string }[] = [
+  { value: '1', label: 'CRM — Medicina' },
+  { value: '2', label: 'COREN — Enfermagem' },
+  { value: '3', label: 'CRO — Odontologia' },
+  { value: '4', label: 'CRF — Farmácia' },
+  { value: '5', label: 'CRP — Psicologia' },
+  { value: '6', label: 'CREFITO — Fisioterapia/T.O.' },
+  { value: '7', label: 'CRN — Nutrição' },
+  { value: '8', label: 'CRESS — Serviço Social' },
+  { value: '99', label: 'Outro' },
+];
+
 /** Opções de Sexo (CADSUS) para selects, no formato { value, label }. */
 export const opcoesSexo: { value: string; label: string }[] = [
   { value: '1', label: 'Feminino' },

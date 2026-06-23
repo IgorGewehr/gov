@@ -25,6 +25,10 @@ export const rhKeys = {
   fichaFuncional: (servidorId: string) =>
     [...rhKeys.servidores(), 'ficha-funcional', servidorId] as const,
 
+  afastamentos: () => [...rhKeys.all, 'afastamentos'] as const,
+  afastamentosDoServidor: (servidorId: string) =>
+    [...rhKeys.afastamentos(), 'servidor', servidorId] as const,
+
   cargos: () => [...rhKeys.all, 'cargos'] as const,
   cargosComVagas: (tipo: TipoCargo | null) =>
     [...rhKeys.cargos(), 'com-vagas', tipo ?? 'todos'] as const,

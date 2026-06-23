@@ -5,6 +5,8 @@
 export { saudeKeys } from './saude.keys';
 
 export * from './paciente.api';
+export * from './estabelecimento.api';
+export * from './profissional.api';
 export * from './atendimento.api';
 export * from './regulacao.api';
 export * from './fiscal.api';

@@ -4,6 +4,13 @@ export const educacaoKeys = {
   all: ['educacao'] as const,
   escolas: () => [...educacaoKeys.all, 'escolas'] as const,
   escolaPorInep: (codigoInep: string) => [...educacaoKeys.escolas(), 'inep', codigoInep] as const,
+  alunos: () => [...educacaoKeys.all, 'alunos'] as const,
+  // Filtro serializável (objeto) na key — invalidação por prefixo via educacaoKeys.alunos().
+  alunosBusca: (filtro: unknown) => [...educacaoKeys.alunos(), 'busca', filtro] as const,
+  alunoPorId: (alunoId: string) => [...educacaoKeys.alunos(), 'id', alunoId] as const,
+  turmas: () => [...educacaoKeys.all, 'turmas'] as const,
+  turmasBusca: (filtro: unknown) => [...educacaoKeys.turmas(), 'busca', filtro] as const,
+  turmaPorId: (turmaId: string) => [...educacaoKeys.turmas(), 'id', turmaId] as const,
   matriculas: () => [...educacaoKeys.all, 'matriculas'] as const,
   matriculasPorAluno: (alunoId: string) => [...educacaoKeys.matriculas(), 'aluno', alunoId] as const,
   matriculasDaTurma: (turmaId: string, dataReferencia: string) =>

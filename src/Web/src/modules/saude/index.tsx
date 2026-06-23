@@ -20,6 +20,18 @@ const PacienteListPage = lazy(() =>
 const PacienteDetailPage = lazy(() =>
   import('./PacienteDetailPage').then((m) => ({ default: m.PacienteDetailPage })),
 );
+const EstabelecimentoListPage = lazy(() =>
+  import('./EstabelecimentoListPage').then((m) => ({ default: m.EstabelecimentoListPage })),
+);
+const EstabelecimentoDetailPage = lazy(() =>
+  import('./EstabelecimentoDetailPage').then((m) => ({ default: m.EstabelecimentoDetailPage })),
+);
+const ProfissionalListPage = lazy(() =>
+  import('./ProfissionalListPage').then((m) => ({ default: m.ProfissionalListPage })),
+);
+const ProfissionalDetailPage = lazy(() =>
+  import('./ProfissionalDetailPage').then((m) => ({ default: m.ProfissionalDetailPage })),
+);
 const AtendimentoDetailPage = lazy(() =>
   import('./AtendimentoDetailPage').then((m) => ({ default: m.AtendimentoDetailPage })),
 );
@@ -42,6 +54,10 @@ const MODULE: ModuleDefinition = {
       children: [
         { index: true, element: <PacienteListPage /> },
         { path: 'pacientes/:pacienteId', element: <PacienteDetailPage /> },
+        { path: 'estabelecimentos', element: <EstabelecimentoListPage /> },
+        { path: 'estabelecimentos/:estabelecimentoId', element: <EstabelecimentoDetailPage /> },
+        { path: 'profissionais', element: <ProfissionalListPage /> },
+        { path: 'profissionais/:profissionalId', element: <ProfissionalDetailPage /> },
         { path: 'atendimentos/:atendimentoId', element: <AtendimentoDetailPage /> },
         { path: 'regulacao', element: <RegulacaoListPage /> },
         { path: 'regulacao/:solicitacaoId', element: <RegulacaoDetailPage /> },

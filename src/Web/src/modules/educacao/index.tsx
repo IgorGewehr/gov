@@ -24,6 +24,12 @@ const EscolaListPage = lazy(() =>
 const EscolaDetailPage = lazy(() =>
   import('./EscolaDetailPage').then((m) => ({ default: m.EscolaDetailPage })),
 );
+const AlunoListPage = lazy(() =>
+  import('./AlunoListPage').then((m) => ({ default: m.AlunoListPage })),
+);
+const TurmaListPage = lazy(() =>
+  import('./TurmaListPage').then((m) => ({ default: m.TurmaListPage })),
+);
 const MatriculaListPage = lazy(() =>
   import('./MatriculaListPage').then((m) => ({ default: m.MatriculaListPage })),
 );
@@ -50,6 +56,8 @@ const MODULE: ModuleDefinition = {
       children: [
         { index: true, element: <EscolaListPage /> },
         { path: 'escolas/:codigoInep', element: <EscolaDetailPage /> },
+        { path: 'alunos', element: <AlunoListPage /> },
+        { path: 'turmas', element: <TurmaListPage /> },
         { path: 'matriculas', element: <MatriculaListPage /> },
         { path: 'turmas/matricula-inicial', element: <TurmaMatriculaListPage /> },
         { path: 'matriculas/:matriculaId/diario', element: <DiarioClasseDetailPage /> },

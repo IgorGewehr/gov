@@ -8,6 +8,7 @@ export interface AlertProps {
   variant: AlertVariant;
   title?: ReactNode;
   children: ReactNode;
+  className?: string;
 }
 
 const ICON: Record<AlertVariant, string> = {
@@ -17,10 +18,13 @@ const ICON: Record<AlertVariant, string> = {
   info: 'fas fa-info-circle',
 };
 
-export function Alert({ variant, title, children }: AlertProps) {
+export function Alert({ variant, title, children, className }: AlertProps) {
   const assertive = variant === 'danger' || variant === 'warning';
   return (
-    <div className={`br-message ${variant}`} role={assertive ? 'alert' : 'status'}>
+    <div
+      className={`br-message ${variant}${className ? ` ${className}` : ''}`}
+      role={assertive ? 'alert' : 'status'}
+    >
       <div className="icon">
         <i className={ICON[variant]} aria-hidden="true" />
       </div>

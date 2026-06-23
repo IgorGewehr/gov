@@ -140,9 +140,17 @@ export function ServidorFichaPage() {
         eyebrow="Recursos Humanos"
         title="Ficha funcional"
         actions={
-          <Link className="br-button secondary" to="/recursoshumanos">
-            <i className="fas fa-arrow-left" aria-hidden="true" /> Voltar à lista
-          </Link>
+          <>
+            <Link
+              className="br-button secondary"
+              to={`/recursoshumanos/servidores/${servidorId}/afastamentos`}
+            >
+              <i className="fas fa-user-clock" aria-hidden="true" /> Afastamentos / licenças
+            </Link>
+            <Link className="br-button secondary" to="/recursoshumanos">
+              <i className="fas fa-arrow-left" aria-hidden="true" /> Voltar à lista
+            </Link>
+          </>
         }
       />
 

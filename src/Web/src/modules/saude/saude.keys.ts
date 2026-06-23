@@ -6,6 +6,14 @@ export const saudeKeys = {
   pacientesBusca: (filtro: unknown) => [...saudeKeys.pacientes(), 'busca', filtro] as const,
   pacientePorCns: (cns: string) => [...saudeKeys.pacientes(), 'por-cns', cns] as const,
   historico: (pacienteId: string) => [...saudeKeys.pacientes(), 'historico', pacienteId] as const,
+  estabelecimentos: () => [...saudeKeys.all, 'estabelecimentos'] as const,
+  estabelecimentosBusca: (filtro: unknown) =>
+    [...saudeKeys.estabelecimentos(), 'busca', filtro] as const,
+  estabelecimento: (id: string) => [...saudeKeys.estabelecimentos(), 'detalhe', id] as const,
+  profissionais: () => [...saudeKeys.all, 'profissionais'] as const,
+  profissionaisBusca: (filtro: unknown) =>
+    [...saudeKeys.profissionais(), 'busca', filtro] as const,
+  profissional: (id: string) => [...saudeKeys.profissionais(), 'detalhe', id] as const,
   atendimentos: () => [...saudeKeys.all, 'atendimentos'] as const,
   atendimentosPorPaciente: (pacienteId: string) =>
     [...saudeKeys.atendimentos(), 'paciente', pacienteId] as const,

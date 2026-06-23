@@ -43,6 +43,14 @@ const ItemEstoqueDetailPage = lazy(() =>
   })),
 );
 
+// Inventários (Lei 4.320 art. 96)
+const InventarioListPage = lazy(() =>
+  import('./inventario/InventarioListPage').then((m) => ({ default: m.InventarioListPage })),
+);
+const InventarioDetailPage = lazy(() =>
+  import('./inventario/InventarioDetailPage').then((m) => ({ default: m.InventarioDetailPage })),
+);
+
 const MODULE: ModuleDefinition = {
   id: 'patrimonio',
   nav: {
@@ -63,6 +71,9 @@ const MODULE: ModuleDefinition = {
         // Almoxarifado — itens de estoque
         { path: 'estoque', element: <ItemEstoqueListPage /> },
         { path: 'estoque/itens/:id', element: <ItemEstoqueDetailPage /> },
+        // Inventários — fluxo do levantamento físico × contábil
+        { path: 'inventarios', element: <InventarioListPage /> },
+        { path: 'inventarios/:id', element: <InventarioDetailPage /> },
       ],
     },
   ],

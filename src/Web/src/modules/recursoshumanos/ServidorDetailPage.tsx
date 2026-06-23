@@ -79,6 +79,12 @@ export function ServidorDetailPage() {
                   {servidor.dataExercicio ? formatarData(servidor.dataExercicio) : '—'}
                 </Campo>
               </dl>
+              <Link
+                className="br-button secondary"
+                to={`/recursoshumanos/servidores/${servidor.id}/afastamentos`}
+              >
+                <i className="fas fa-user-clock" aria-hidden="true" /> Afastamentos / licenças
+              </Link>
             </Card>
 
             <Can permission={PERM_RH_GERENCIAR}>

@@ -7,6 +7,8 @@
 //
 // As páginas/modais continuam importando de './api' (compatibilidade total).
 export * from './educacao.keys';
+export * from './aluno.api';
+export * from './turma.api';
 export * from './escola.api';
 export * from './matricula.api';
 export * from './diario.api';
