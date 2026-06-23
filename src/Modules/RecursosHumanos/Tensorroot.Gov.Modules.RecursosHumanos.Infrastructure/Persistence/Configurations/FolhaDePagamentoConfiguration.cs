@@ -25,6 +25,12 @@ public sealed class FolhaDePagamentoConfiguration : IEntityTypeConfiguration<Fol
 
         builder.Property(folha => folha.Situacao).HasConversion<string>().HasMaxLength(20);
 
+        // Tipo da folha do ciclo anual (mensal/13o/ferias/rescisao) + flag de base separada (13o).
+        // O default Mensal e garantido pelo dominio (ctor) e o backfill por defaultValue na migration;
+        // nao usar HasDefaultValue no modelo (evita o aviso de sentinel do enum, cujo CLR default e 0).
+        builder.Property(folha => folha.Tipo).HasConversion<string>().HasMaxLength(20);
+        builder.Property(folha => folha.BaseSeparada);
+
         builder.Property(folha => folha.TotalProventos).HasColumnType("decimal(18,2)");
         builder.Property(folha => folha.TotalDescontos).HasColumnType("decimal(18,2)");
 
@@ -35,7 +41,9 @@ public sealed class FolhaDePagamentoConfiguration : IEntityTypeConfiguration<Fol
         builder.OwnsMany(folha => folha.Eventos, MapearEventos);
         builder.Navigation(folha => folha.Eventos).UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(folha => new { folha.TenantId, folha.Competencia }).IsUnique();
+        // I-1 estendida para o ciclo anual: uma folha por (tenant, competencia, TIPO). Permite que a
+        // mesma competencia tenha folha mensal + 13o + ferias + rescisao coexistindo (design §1.1/§5).
+        builder.HasIndex(folha => new { folha.TenantId, folha.Competencia, folha.Tipo }).IsUnique();
     }
 
     private static void MapearEventos(OwnedNavigationBuilder<FolhaDePagamento, EventoFolha> eventos)

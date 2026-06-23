@@ -40,7 +40,7 @@ public sealed class AbrirFolhaHandler(
 
         var competencia = Competencia.De(request.Ano, request.Mes);
 
-        // I-1: uma folha por competencia por tenant.
+        // I-1: uma folha MENSAL por competencia por tenant (o tipo default e Mensal).
         if (await folhas.ExisteParaCompetenciaAsync(competencia, cancellationToken).ConfigureAwait(false))
         {
             throw new InvalidOperationException("Folha ja aberta para a competencia.");

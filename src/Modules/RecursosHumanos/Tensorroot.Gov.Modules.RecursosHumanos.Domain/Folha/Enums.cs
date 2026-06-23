@@ -10,6 +10,27 @@ public enum TipoEvento
     Desconto = 2,
 }
 
+/// <summary>
+/// Tipo (natureza) de uma folha de pagamento no ciclo anual. Roteia incidencias, abate-teto e eSocial:
+/// a folha MENSAL aplica o teto (CF art. 37, XI); 13o/ferias/rescisao apuram-se em folha propria, sem
+/// abate-teto. O 13o usa BASE SEPARADA de tributacao (Lei 7.713/88 art. 12-A). Parametrizavel via design
+/// FOLHA-CICLO-ANUAL-DESIGN §1.1 — nada hardcoded no calculo.
+/// </summary>
+public enum TipoFolha
+{
+    /// <summary>Folha mensal ordinaria (aplica abate-teto — CF art. 37, XI).</summary>
+    Mensal = 1,
+
+    /// <summary>Gratificacao natalina (13o salario), base separada de tributacao (Lei 7.713/88 art. 12-A).</summary>
+    DecimoTerceiro = 2,
+
+    /// <summary>Ferias (remuneracao do periodo + 1/3 constitucional + abono pecuniario opcional).</summary>
+    Ferias = 3,
+
+    /// <summary>Rescisao/desligamento (verbas rescisorias por tipo de desligamento e regime).</summary>
+    Rescisao = 4,
+}
+
 /// <summary>Situacao (estado) da folha de pagamento na competencia.</summary>
 public enum SituacaoFolha
 {

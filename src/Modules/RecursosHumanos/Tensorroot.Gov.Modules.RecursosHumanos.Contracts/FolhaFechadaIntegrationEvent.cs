@@ -13,10 +13,16 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Contracts;
 /// <param name="FolhaDePagamentoId">Identificador da folha fechada.</param>
 /// <param name="Competencia">Competencia de referencia (<c>AAAA-MM</c>).</param>
 /// <param name="TotalLiquido">Total liquido apurado na folha.</param>
+/// <param name="TipoFolha">
+/// Tipo da folha (<c>Mensal</c>/<c>DecimoTerceiro</c>/<c>Ferias</c>/<c>Rescisao</c>) para a Contabilidade
+/// empenhar na dotacao/elemento de despesa de pessoal correto (13o, ferias e rescisao tem elementos de
+/// despesa proprios). String para nao vazar o enum de dominio entre modulos.
+/// </param>
 public sealed record FolhaFechadaIntegrationEvent(
     Guid EventId,
     DateTime OccurredOnUtc,
     Guid TenantId,
     Guid FolhaDePagamentoId,
     string Competencia,
-    decimal TotalLiquido) : IntegrationEvent(EventId, OccurredOnUtc);
+    decimal TotalLiquido,
+    string TipoFolha = "Mensal") : IntegrationEvent(EventId, OccurredOnUtc);

@@ -27,6 +27,39 @@ public static class MotorDeCalculoFolha
         TabelaInss? tabelaInss,
         TabelaIrrf tabelaIrrf,
         TabelaRpps? tabelaRpps)
+        => Apurar(insumos, tabelaInss, tabelaIrrf, tabelaRpps, OpcoesIrrf.Mensal);
+
+    /// <summary>
+    /// Calcula proventos e descontos legais de uma verba de BASE SEPARADA da folha mensal — o caso do
+    /// 13o salario (gratificacao natalina): INSS/RPPS e IRRF do 13o sao apurados ISOLADAMENTE, sobre a
+    /// propria base, com as MESMAS tabelas da competencia, mas sem somar ao mes (Lei 7.713/88 art. 12-A).
+    /// As <paramref name="opcoes"/> permitem vedar o desconto simplificado do IRRF (regra do 13o). Reusa
+    /// exatamente o mesmo laco de bases por incidencia e a previdencia fail-closed do calculo mensal —
+    /// nao ha segundo motor (design §2.2). Deterministico.
+    /// </summary>
+    /// <param name="insumos">Verbas do 13o (com flags de incidencia), regime, dependentes e pensao.</param>
+    /// <param name="tabelaInss">Tabela INSS vigente; obrigatoria para servidor RGPS.</param>
+    /// <param name="tabelaIrrf">Tabela IRRF vigente; obrigatoria.</param>
+    /// <param name="tabelaRpps">Tabela RPPS municipal vigente; obrigatoria para servidor efetivo (fail-closed).</param>
+    /// <param name="opcoes">Opcoes do IRRF (ex.: <see cref="OpcoesIrrf.DecimoTerceiro"/> veda o simplificado).</param>
+    /// <returns>Resultado deterministico do calculo da base separada.</returns>
+    public static ResultadoCalculoServidor CalcularBaseSeparada(
+        InsumosCalculoServidor insumos,
+        TabelaInss? tabelaInss,
+        TabelaIrrf tabelaIrrf,
+        TabelaRpps? tabelaRpps,
+        OpcoesIrrf opcoes)
+    {
+        ArgumentNullException.ThrowIfNull(opcoes);
+        return Apurar(insumos, tabelaInss, tabelaIrrf, tabelaRpps, opcoes);
+    }
+
+    private static ResultadoCalculoServidor Apurar(
+        InsumosCalculoServidor insumos,
+        TabelaInss? tabelaInss,
+        TabelaIrrf tabelaIrrf,
+        TabelaRpps? tabelaRpps,
+        OpcoesIrrf opcoes)
     {
         ArgumentNullException.ThrowIfNull(insumos);
         ArgumentNullException.ThrowIfNull(tabelaIrrf);
@@ -93,12 +126,14 @@ public static class MotorDeCalculoFolha
 
         var descontoPrevidenciario = descontoInss + descontoRpps;
 
-        // IRRF: base apos previdencia, dependentes e pensao (regra do mais vantajoso na tabela).
+        // IRRF: base apos previdencia, dependentes e pensao (regra do mais vantajoso na tabela). No 13o
+        // (base separada), opcoes.AplicarSimplificado=false veda o desconto simplificado (art. 12-A).
         var descontoIrrf = tabelaIrrf.CalcularImposto(
             baseIrrf,
             descontoPrevidenciario,
             insumos.QuantidadeDependentes,
-            insumos.PensaoAlimenticia);
+            insumos.PensaoAlimenticia,
+            opcoes.AplicarSimplificado);
 
         var totalDescontos = descontoPrevidenciario + descontoIrrf + outrosDescontos;
         var liquido = totalProventos - totalDescontos;

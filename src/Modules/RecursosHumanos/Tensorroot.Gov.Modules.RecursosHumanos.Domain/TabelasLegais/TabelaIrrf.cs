@@ -119,12 +119,19 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
     /// <param name="descontoPrevidenciario">INSS/RPPS retido (deducao legal).</param>
     /// <param name="quantidadeDependentes">Quantidade de dependentes para deducao.</param>
     /// <param name="pensaoAlimenticia">Pensao alimenticia dedutivel.</param>
+    /// <param name="aplicarSimplificado">
+    /// Quando <c>true</c> (default, comportamento mensal), aplica a regra do mais vantajoso usando o
+    /// desconto simplificado. Quando <c>false</c>, o desconto simplificado e VEDADO — caso do IRRF do
+    /// 13o salario, tributacao exclusiva na fonte (Lei 7.713/88 art. 12-A; IN RFB 1.500/2014). Acrescimo
+    /// ADITIVO e parametrizado: nao altera o calculo mensal e nao embute numeros no motor (design §2.2).
+    /// </param>
     /// <returns>Valor do IRRF (2 casas), nao-negativo.</returns>
     public decimal CalcularImposto(
         decimal rendimentoTributavel,
         decimal descontoPrevidenciario,
         int quantidadeDependentes,
-        decimal pensaoAlimenticia)
+        decimal pensaoAlimenticia,
+        bool aplicarSimplificado = true)
     {
         if (rendimentoTributavel <= 0m)
         {
@@ -141,11 +148,11 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
             + pensaoAlimenticia;
         var baseCompleta = rendimentoTributavel - deducoesLegais;
 
-        // Base com desconto simplificado (regra do mais vantajoso).
-        var baseSimplificada = rendimentoTributavel - DescontoSimplificado;
-
-        // Usa a MENOR base nao-negativa entre os dois modelos.
-        var baseImposto = Math.Min(baseCompleta, baseSimplificada);
+        // Regra do mais vantajoso (desconto simplificado) — VEDADA no 13o (art. 12-A): quando
+        // aplicarSimplificado=false, usa-se exclusivamente a base com deducoes legais.
+        var baseImposto = aplicarSimplificado
+            ? Math.Min(baseCompleta, rendimentoTributavel - DescontoSimplificado)
+            : baseCompleta;
         if (baseImposto <= 0m)
         {
             return 0m;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Cargos;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.CicloAnual;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto;
@@ -27,8 +28,34 @@ internal static class RecursosHumanosEndpoints
         MapearRubricas(grupo);
         MapearTabelasLegais(grupo);
         MapearFolha(grupo);
+        MapearCicloAnual(grupo);
         MapearPonto(grupo);
         MapearESocial(grupo);
+    }
+
+    private static void MapearCicloAnual(RouteGroupBuilder grupo)
+    {
+        // Ciclo anual da folha: 13o salario, ferias e rescisao — cada um gera sua folha (Tipo proprio),
+        // reusa rubricas/tabelas e o motor de calculo (design FOLHA-CICLO-ANUAL-DESIGN).
+        var ciclo = grupo.MapGroup("/ciclo-anual");
+
+        // 13o salario (parcela 1 = adiantamento sem desconto; parcela 2 = integral com INSS/IRRF do 13o).
+        ciclo.MapPost("/decimo-terceiro", async (
+            GerarDecimoTerceiroCommand comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { folhaId = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Ferias: remuneracao + 1/3 constitucional + abono pecuniario opcional.
+        ciclo.MapPost("/ferias", async (
+            GerarFeriasCommand comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { folhaId = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Rescisao: verbas rescisorias por tipo de desligamento e regime (matriz parametrizavel).
+        ciclo.MapPost("/rescisao", async (
+            GerarVerbasRescisoriasCommand comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { folhaId = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
     }
 
     private static void MapearESocial(RouteGroupBuilder grupo)

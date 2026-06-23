@@ -55,7 +55,9 @@ public sealed class FecharFolhaHandler(
             folha.TenantId,
             folha.Id.Value,
             folha.Competencia.ToString(),
-            folha.TotalLiquido.Valor);
+            folha.TotalLiquido.Valor,
+            // Roteia o empenho por tipo (despesa de pessoal: 13o/ferias/rescisao tem elemento proprio — design §2.4/§4.4).
+            folha.Tipo.ToString());
 
         await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
     }

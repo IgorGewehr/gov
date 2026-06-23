@@ -86,17 +86,17 @@ public sealed class FolhaDePagamentoRepository(RecursosHumanosDbContext context)
         => context.FolhasDePagamento.FirstOrDefaultAsync(folha => folha.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public Task<FolhaDePagamento?> ObterPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken)
+    public Task<FolhaDePagamento?> ObterPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken, TipoFolha tipo = TipoFolha.Mensal)
     {
         ArgumentNullException.ThrowIfNull(competencia);
-        return context.FolhasDePagamento.FirstOrDefaultAsync(folha => folha.Competencia == competencia, cancellationToken);
+        return context.FolhasDePagamento.FirstOrDefaultAsync(folha => folha.Competencia == competencia && folha.Tipo == tipo, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<bool> ExisteParaCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken)
+    public Task<bool> ExisteParaCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken, TipoFolha tipo = TipoFolha.Mensal)
     {
         ArgumentNullException.ThrowIfNull(competencia);
-        return context.FolhasDePagamento.AnyAsync(folha => folha.Competencia == competencia, cancellationToken);
+        return context.FolhasDePagamento.AnyAsync(folha => folha.Competencia == competencia && folha.Tipo == tipo, cancellationToken);
     }
 }
 

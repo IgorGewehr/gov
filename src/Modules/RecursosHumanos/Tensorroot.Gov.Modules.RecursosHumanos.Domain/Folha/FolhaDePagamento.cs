@@ -34,11 +34,14 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     {
     }
 
-    private FolhaDePagamento(FolhaDePagamentoId id, Guid tenantId, Competencia competencia)
+    private FolhaDePagamento(FolhaDePagamentoId id, Guid tenantId, Competencia competencia, TipoFolha tipo)
         : base(id)
     {
         TenantId = tenantId;
         Competencia = competencia;
+        Tipo = tipo;
+        // 13o tem tributacao em BASE SEPARADA da folha mensal (Lei 7.713/88 art. 12-A — design §2.2).
+        BaseSeparada = tipo == TipoFolha.DecimoTerceiro;
         Situacao = SituacaoFolha.Aberta;
         TotalProventos = 0m;
         TotalDescontos = 0m;
@@ -51,6 +54,12 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
 
     /// <summary>Mes/ano de referencia da folha (<c>AAAA-MM</c>).</summary>
     public Competencia Competencia { get; private set; } = default!;
+
+    /// <summary>Tipo (natureza) da folha: mensal/13o/ferias/rescisao (design §1.1). Default <see cref="TipoFolha.Mensal"/>.</summary>
+    public TipoFolha Tipo { get; private set; } = TipoFolha.Mensal;
+
+    /// <summary>Indica base de tributacao SEPARADA da folha mensal (verdadeiro apenas para o 13o — Lei 7.713/88 art. 12-A).</summary>
+    public bool BaseSeparada { get; private set; }
 
     /// <summary>Situacao atual da folha (aberta/calculada/fechada/paga).</summary>
     public SituacaoFolha Situacao { get; private set; }
@@ -76,15 +85,19 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
     /// <summary>Proventos/descontos por servidor (somente leitura).</summary>
     public IReadOnlyCollection<EventoFolha> Eventos => _eventos;
 
-    /// <summary>Abre uma folha de pagamento para uma competencia (situacao inicial <see cref="SituacaoFolha.Aberta"/> — I-14).</summary>
+    /// <summary>
+    /// Abre uma folha de pagamento para uma competencia (situacao inicial <see cref="SituacaoFolha.Aberta"/> — I-14).
+    /// Overload retrocompativel: o <paramref name="tipo"/> default e <see cref="TipoFolha.Mensal"/> (design §1.1).
+    /// </summary>
     /// <param name="tenantId">Tenant dono do registro.</param>
     /// <param name="competencia">Competencia de referencia.</param>
+    /// <param name="tipo">Tipo da folha (mensal/13o/ferias/rescisao). Default <see cref="TipoFolha.Mensal"/>.</param>
     /// <returns>Nova <see cref="FolhaDePagamento"/> aberta.</returns>
     /// <exception cref="ArgumentNullException">Se a competencia for nula.</exception>
-    public static FolhaDePagamento Abrir(Guid tenantId, Competencia competencia)
+    public static FolhaDePagamento Abrir(Guid tenantId, Competencia competencia, TipoFolha tipo = TipoFolha.Mensal)
     {
         ArgumentNullException.ThrowIfNull(competencia);
-        return new FolhaDePagamento(FolhaDePagamentoId.New(), tenantId, competencia);
+        return new FolhaDePagamento(FolhaDePagamentoId.New(), tenantId, competencia, tipo);
     }
 
     /// <summary>Adiciona um evento (provento/desconto) de um servidor enquanto a folha esta aberta (I-2).</summary>
@@ -153,7 +166,13 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
         // tenant/competencia. Um teto nao-positivo (ex.: secao de config ausente -> default 0) abateria
         // SILENCIOSAMENTE toda a remuneracao, zerando o liquido de todos os servidores — erro catastrofico
         // e auditavel pelo TCE. Recusa o calculo ate o ente configurar o teto vigente (nunca hardcoded).
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(tetoRemuneratorio);
+        // O teto so e exigido na folha Mensal (unica que aplica abate-teto — design §1.1/§5); 13o/ferias/
+        // rescisao apuram-se em folha propria sem teto, entao um teto ausente nao as bloqueia.
+        if (Tipo == TipoFolha.Mensal)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(tetoRemuneratorio);
+        }
+
         if (Situacao is not (SituacaoFolha.Aberta or SituacaoFolha.Calculada))
         {
             throw new InvalidOperationException($"Folha nao calculavel na situacao atual: {Situacao}.");
@@ -166,6 +185,27 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
         // Recalculo idempotente: remove abate-teto de calculos anteriores antes de reaplicar (B-6).
         _eventos.RemoveAll(e => e.Tipo == TipoEvento.Desconto && e.Rubrica == rubricaAbateTeto);
 
+        // Design §1.1 / §5: o teto do art. 37 XI e MENSAL. Folhas de 13o/ferias/rescisao apuram-se em
+        // folha PROPRIA e NAO disparam abate-teto. Somente a folha Mensal aplica o teto.
+        if (Tipo == TipoFolha.Mensal)
+        {
+            AplicarAbateTeto(tetoRemuneratorio, rubricaAbateTeto);
+        }
+
+        TotalProventos = _eventos.Where(e => e.Tipo == TipoEvento.Provento).Sum(e => e.Valor);
+        TotalDescontos = _eventos.Where(e => e.Tipo == TipoEvento.Desconto).Sum(e => e.Valor);
+
+        // I-5 / B-10: liquido nao-negativo (VO valida o piso zero).
+        var liquido = TotalProventos - TotalDescontos;
+        TotalLiquido = LiquidoAPagar.De(liquido < 0m ? 0m : liquido);
+
+        Situacao = SituacaoFolha.Calculada;
+        DataCalculo = hoje;
+        RaiseDomainEvent(new FolhaCalculada(Id, Competencia, TotalLiquido.Valor));
+    }
+
+    private void AplicarAbateTeto(decimal tetoRemuneratorio, Rubrica rubricaAbateTeto)
+    {
         // I-6 / CF art. 37, XI: lanca rubrica de abate-teto por servidor cujos proventos excedem o teto.
         foreach (var servidorId in _eventos.Select(e => e.ServidorId).Distinct().ToList())
         {
@@ -189,17 +229,6 @@ public sealed class FolhaDePagamento : AggregateRoot<FolhaDePagamentoId>, IMustH
                 excesso,
                 regime));
         }
-
-        TotalProventos = _eventos.Where(e => e.Tipo == TipoEvento.Provento).Sum(e => e.Valor);
-        TotalDescontos = _eventos.Where(e => e.Tipo == TipoEvento.Desconto).Sum(e => e.Valor);
-
-        // I-5 / B-10: liquido nao-negativo (VO valida o piso zero).
-        var liquido = TotalProventos - TotalDescontos;
-        TotalLiquido = LiquidoAPagar.De(liquido < 0m ? 0m : liquido);
-
-        Situacao = SituacaoFolha.Calculada;
-        DataCalculo = hoje;
-        RaiseDomainEvent(new FolhaCalculada(Id, Competencia, TotalLiquido.Valor));
     }
 
     /// <summary>

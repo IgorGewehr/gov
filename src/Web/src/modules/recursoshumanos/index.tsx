@@ -43,6 +43,9 @@ const PontoListPage = lazy(() =>
 const PontoServidorPage = lazy(() =>
   import('./PontoServidorPage').then((m) => ({ default: m.PontoServidorPage })),
 );
+const ESocialPainelPage = lazy(() =>
+  import('./ESocialPainelPage').then((m) => ({ default: m.ESocialPainelPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -65,6 +68,7 @@ const MODULE: ModuleDefinition = {
         { path: 'folhas/:folhaId', element: <FolhaDetailPage /> },
         { path: 'ponto', element: <PontoListPage /> },
         { path: 'ponto/:servidorId', element: <PontoServidorPage /> },
+        { path: 'esocial', element: <ESocialPainelPage /> },
       ],
     },
   ],

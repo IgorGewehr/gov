@@ -15,15 +15,17 @@ public interface IFolhaDePagamentoRepository
     /// <returns>A folha, ou <c>null</c> se inexistente no tenant.</returns>
     Task<FolhaDePagamento?> ObterPorIdAsync(FolhaDePagamentoId id, CancellationToken cancellationToken);
 
-    /// <summary>Obtem a folha de uma competencia no tenant atual (indice unico (TenantId, Competencia) — I-1).</summary>
+    /// <summary>Obtem a folha de uma competencia e tipo no tenant atual (indice unico (TenantId, Competencia, Tipo) — I-1).</summary>
     /// <param name="competencia">Competencia de referencia.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    /// <returns>A folha da competencia, ou <c>null</c> se inexistente.</returns>
-    Task<FolhaDePagamento?> ObterPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken);
+    /// <param name="tipo">Tipo da folha (default <see cref="TipoFolha.Mensal"/>).</param>
+    /// <returns>A folha da competencia/tipo, ou <c>null</c> se inexistente.</returns>
+    Task<FolhaDePagamento?> ObterPorCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken, TipoFolha tipo = TipoFolha.Mensal);
 
-    /// <summary>Indica se ja existe folha para a competencia no tenant atual (I-1).</summary>
+    /// <summary>Indica se ja existe folha para a competencia e tipo no tenant atual (I-1).</summary>
     /// <param name="competencia">Competencia de referencia.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    /// <returns><c>true</c> se ja existir folha para a competencia.</returns>
-    Task<bool> ExisteParaCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken);
+    /// <param name="tipo">Tipo da folha (default <see cref="TipoFolha.Mensal"/>).</param>
+    /// <returns><c>true</c> se ja existir folha para a competencia/tipo.</returns>
+    Task<bool> ExisteParaCompetenciaAsync(Competencia competencia, CancellationToken cancellationToken, TipoFolha tipo = TipoFolha.Mensal);
 }

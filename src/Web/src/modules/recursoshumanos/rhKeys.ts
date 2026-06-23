@@ -31,6 +31,9 @@ export const rhKeys = {
   contracheque: (folhaId: string, servidorId: string) =>
     [...rhKeys.folhas(), folhaId, 'contracheque', servidorId] as const,
 
+  esocial: () => [...rhKeys.all, 'esocial'] as const,
+  esocialEventos: () => [...rhKeys.esocial(), 'eventos'] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

@@ -17,6 +17,7 @@ const ABAS: Aba[] = [
   { to: '/recursoshumanos/tabelas-legais', label: 'Tabelas Legais' },
   { to: '/recursoshumanos/folhas', label: 'Folha de Pagamento' },
   { to: '/recursoshumanos/ponto', label: 'Ponto' },
+  { to: '/recursoshumanos/esocial', label: 'eSocial' },
 ];
 
 export function RhSubNav() {
