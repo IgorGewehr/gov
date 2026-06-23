@@ -50,6 +50,12 @@ const AgendamentoListPage = lazy(() =>
 const FilaEsperaListPage = lazy(() =>
   import('./FilaEsperaListPage').then((m) => ({ default: m.FilaEsperaListPage })),
 );
+const FarmaciaPage = lazy(() =>
+  import('./FarmaciaPage').then((m) => ({ default: m.FarmaciaPage })),
+);
+const ImunizacaoPage = lazy(() =>
+  import('./ImunizacaoPage').then((m) => ({ default: m.ImunizacaoPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'saude',
@@ -67,6 +73,8 @@ const MODULE: ModuleDefinition = {
         { path: 'atendimentos/:atendimentoId', element: <AtendimentoDetailPage /> },
         { path: 'agenda', element: <AgendamentoListPage /> },
         { path: 'fila-espera', element: <FilaEsperaListPage /> },
+        { path: 'farmacia', element: <FarmaciaPage /> },
+        { path: 'imunizacao', element: <ImunizacaoPage /> },
         { path: 'regulacao', element: <RegulacaoListPage /> },
         { path: 'regulacao/:solicitacaoId', element: <RegulacaoDetailPage /> },
         { path: 'fiscal', element: <FiscalSaudePainelPage /> },

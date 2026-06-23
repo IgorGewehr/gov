@@ -321,3 +321,102 @@ export function filaAguardando(situacao: string): boolean {
 export function filaRemovivel(situacao: string): boolean {
   return situacao === 'Aguardando' || situacao === 'Convocado';
 }
+
+// --- Farmácia (HÓRUS) ---
+
+/** Mapeia a situação da dispensação (nome do enum) para a variante da Tag. */
+export function situacaoDispensacaoVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Efetivada':
+      return 'success';
+    case 'Estornada':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Dispensação efetivada (não estornada) — admite estorno. */
+export function dispensacaoEfetivada(situacao: string): boolean {
+  return situacao === 'Efetivada';
+}
+
+/**
+ * Forma farmacêutica (FormaFarmaceutica). O `value` é o CÓDIGO numérico do enum
+ * (o backend desserializa por código), o `label` é a descrição amigável.
+ */
+export const opcoesFormaFarmaceutica: { value: string; label: string }[] = [
+  { value: '1', label: 'Comprimido' },
+  { value: '2', label: 'Cápsula' },
+  { value: '3', label: 'Solução / xarope oral' },
+  { value: '4', label: 'Injetável (ampola/frasco)' },
+  { value: '5', label: 'Pomada / creme' },
+  { value: '99', label: 'Outra' },
+];
+
+/** Unidade de medida do estoque (UnidadeMedidaMedicamento). `value` = código numérico. */
+export const opcoesUnidadeMedida: { value: string; label: string }[] = [
+  { value: '1', label: 'Unidade' },
+  { value: '2', label: 'Mililitro (mL)' },
+  { value: '3', label: 'Grama (g)' },
+  { value: '4', label: 'Caixa / embalagem' },
+];
+
+/** Classe de controle especial (TipoControleSngpc — Portaria 344/1998). `value` = código. */
+export const opcoesControleSngpc: { value: string; label: string }[] = [
+  { value: '0', label: 'Sem controle especial' },
+  { value: '1', label: 'Antimicrobiano (RDC 471/2021)' },
+  { value: '2', label: 'Controle especial C1' },
+  { value: '3', label: 'Entorpecente/psicotrópico (Lista A)' },
+  { value: '4', label: 'Psicotrópico (Lista B)' },
+];
+
+// --- Imunização (SI-PNI) ---
+
+/**
+ * Tipo de dose no esquema vacinal (TipoDose). `value` é o CÓDIGO numérico do enum
+ * (Unica=0, Primeira=1, Segunda=2, Terceira=3, R1=11, R2=12, Anual=20).
+ */
+export const opcoesTipoDose: { value: string; label: string }[] = [
+  { value: '1', label: '1ª dose (D1)' },
+  { value: '2', label: '2ª dose (D2)' },
+  { value: '3', label: '3ª dose (D3)' },
+  { value: '11', label: '1º reforço (R1)' },
+  { value: '12', label: '2º reforço (R2)' },
+  { value: '20', label: 'Dose anual' },
+  { value: '0', label: 'Dose única' },
+];
+
+/**
+ * Situação vacinal do paciente para um imunobiológico, derivada da carteira no
+ * cliente (o backend não consolida no DTO da carteira): há próxima dose aprazada
+ * vencida (Atrasado), futura (EmDia) ou nenhuma pendência (Completo).
+ */
+export type SituacaoVacinalNome = 'Completo' | 'EmDia' | 'Atrasado';
+
+/** Mapeia a situação vacinal consolidada para a variante da Tag. */
+export function situacaoVacinalVariant(situacao: SituacaoVacinalNome): TagVariant {
+  switch (situacao) {
+    case 'Completo':
+      return 'success';
+    case 'EmDia':
+      return 'info';
+    case 'Atrasado':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/**
+ * Deriva a situação vacinal de um esquema a partir da próxima dose aprazada (ISO
+ * yyyy-mm-dd) e da data de referência (hoje, ISO). Sem aprazamento = Completo;
+ * aprazada no passado = Atrasado; no futuro = EmDia.
+ */
+export function situacaoVacinalDeAprazamento(
+  proximaDoseAprazada: string | null | undefined,
+  hojeIso: string,
+): SituacaoVacinalNome {
+  if (!proximaDoseAprazada) return 'Completo';
+  return proximaDoseAprazada < hojeIso ? 'Atrasado' : 'EmDia';
+}

@@ -13,3 +13,5 @@ export * from './fiscal.api';
 export * from './agendamento.api';
 export * from './agenda.api';
 export * from './filaEspera.api';
+export * from './farmacia.api';
+export * from './imunizacao.api';

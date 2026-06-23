@@ -9,6 +9,8 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/saude/profissionais', label: 'Profissionais' },
   { to: '/saude/agenda', label: 'Agenda' },
   { to: '/saude/fila-espera', label: 'Fila de espera' },
+  { to: '/saude/farmacia', label: 'Farmácia' },
+  { to: '/saude/imunizacao', label: 'Imunização' },
   { to: '/saude/regulacao', label: 'Regulação' },
   { to: '/saude/fiscal', label: 'Painel Fiscal' },
 ];

@@ -32,6 +32,20 @@ export const saudeKeys = {
   agendamentosBusca: (filtro: unknown) => [...saudeKeys.agendamentos(), 'busca', filtro] as const,
   filaEspera: () => [...saudeKeys.all, 'fila-espera'] as const,
   filaEsperaBusca: (filtro: unknown) => [...saudeKeys.filaEspera(), 'busca', filtro] as const,
+  // Farmácia (HÓRUS): catálogo, estoque por UBS, alertas, dispensação.
+  farmacia: () => [...saudeKeys.all, 'farmacia'] as const,
+  medicamentosBusca: (filtro: unknown) => [...saudeKeys.farmacia(), 'medicamentos', filtro] as const,
+  estoque: (estabId: string) => [...saudeKeys.farmacia(), 'estoque', estabId] as const,
+  alertasValidade: (dias: number | undefined) =>
+    [...saudeKeys.farmacia(), 'alertas-validade', dias ?? null] as const,
+  dispensacoesPaciente: (pacienteId: string, filtro: unknown) =>
+    [...saudeKeys.farmacia(), 'dispensacoes', pacienteId, filtro] as const,
+  // Imunização (SI-PNI): catálogo, carteira do paciente, busca ativa de aprazamentos.
+  imunizacao: () => [...saudeKeys.all, 'imunizacao'] as const,
+  imunobiologicos: () => [...saudeKeys.imunizacao(), 'imunobiologicos'] as const,
+  carteiraVacinacao: (pacienteId: string) =>
+    [...saudeKeys.imunizacao(), 'carteira', pacienteId] as const,
+  aprazamentosVencidos: () => [...saudeKeys.imunizacao(), 'aprazamentos-vencidos'] as const,
 };
 
 /** Resposta dos endpoints de criação (POST) do módulo: `{ id }`. */
