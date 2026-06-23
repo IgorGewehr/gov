@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
+import { DotacaoPicker } from './DespesaPickers';
 import { useEmpenhar } from './financas.api';
 import type { EmpenharInput } from './financas.api';
 import {
@@ -127,13 +128,15 @@ export function EmpenhoFormModal({ open, onClose, dotacaoIdInicial = '' }: Empen
               value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="2026NE000123" />
           )}
         </FormField>
-        <FormField label="Identificador da dotação" required error={errors.dotacaoId}>
-          {({ id, describedBy, invalid }) => (
-            <Input id={id} aria-describedby={describedBy} invalid={invalid}
-              value={dotacaoId} onChange={(e) => setDotacaoId(e.target.value)}
-              placeholder="00000000-0000-0000-0000-000000000000" />
-          )}
-        </FormField>
+        <DotacaoPicker
+          required
+          error={errors.dotacaoId}
+          value={dotacaoId}
+          onChange={(novoId) => {
+            setDotacaoId(novoId);
+            if (errors.dotacaoId) setErrors((prev) => ({ ...prev, dotacaoId: undefined }));
+          }}
+        />
         <FormField label="Tipo de empenho" required error={errors.tipoEmpenho}>
           {({ id, describedBy, invalid }) => (
             <Select id={id} aria-describedby={describedBy} invalid={invalid}

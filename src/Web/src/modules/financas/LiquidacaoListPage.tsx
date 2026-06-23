@@ -8,9 +8,7 @@ import {
   Card,
   DataTable,
   EmptyState,
-  FormField,
   FormRow,
-  Input,
   PageHeader,
   Tag,
   Toolbar,
@@ -24,6 +22,7 @@ import type { LiquidacaoResumo } from './financas.api';
 import { situacaoTagVariant } from './financas.helpers';
 import { FinancasSubNav } from './FinancasSubNav';
 import { LiquidacaoFormModal } from './LiquidacaoFormModal';
+import { EmpenhoPicker } from './DespesaPickers';
 
 export function LiquidacaoListPage() {
   const [empenhoId, setEmpenhoId] = useState('');
@@ -108,18 +107,7 @@ export function LiquidacaoListPage() {
               </Button>
             }
           >
-            <FormField label="Identificador do empenho" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={empenhoId}
-                  onChange={(e) => setEmpenhoId(e.target.value)}
-                  placeholder="00000000-0000-0000-0000-000000000000"
-                />
-              )}
-            </FormField>
+            <EmpenhoPicker required value={empenhoId} onChange={setEmpenhoId} />
           </FormRow>
         </form>
       </Card>
@@ -128,7 +116,7 @@ export function LiquidacaoListPage() {
         <EmptyState
           icon="fas fa-magnifying-glass"
           title="Faça uma consulta"
-          description="Informe o identificador do empenho e clique em Consultar."
+          description="Selecione o empenho e clique em Consultar."
         />
       ) : (
         <DataTable

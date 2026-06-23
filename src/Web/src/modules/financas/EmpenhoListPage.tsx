@@ -9,9 +9,7 @@ import {
   Card,
   DataTable,
   EmptyState,
-  FormField,
   FormRow,
-  Input,
   PageHeader,
   Tag,
   Toolbar,
@@ -25,6 +23,7 @@ import type { EmpenhoResumo } from './financas.api';
 import { situacaoTagVariant } from './financas.helpers';
 import { FinancasSubNav } from './FinancasSubNav';
 import { EmpenhoFormModal } from './EmpenhoFormModal';
+import { DotacaoPicker } from './DespesaPickers';
 
 export function EmpenhoListPage() {
   const [dotacaoId, setDotacaoId] = useState('');
@@ -109,18 +108,7 @@ export function EmpenhoListPage() {
               </Button>
             }
           >
-            <FormField label="Identificador da dotação" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={dotacaoId}
-                  onChange={(e) => setDotacaoId(e.target.value)}
-                  placeholder="00000000-0000-0000-0000-000000000000"
-                />
-              )}
-            </FormField>
+            <DotacaoPicker required value={dotacaoId} onChange={setDotacaoId} />
           </FormRow>
         </form>
       </Card>
@@ -129,7 +117,7 @@ export function EmpenhoListPage() {
         <EmptyState
           icon="fas fa-magnifying-glass"
           title="Faça uma consulta"
-          description="Informe o identificador da dotação e clique em Consultar."
+          description="Selecione a dotação e clique em Consultar."
         />
       ) : (
         <DataTable

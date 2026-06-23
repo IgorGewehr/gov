@@ -7,6 +7,8 @@ import { Button, FormField, Input, Modal, Select, Textarea, useToast } from '../
 import { ApiError } from '../../../api/problemDetails';
 import { ORIGEM_NUMERICA, ORIGEM_ROTULO, useCelebrarContrato } from './contrato.api';
 import type { CelebrarContratoInput, OrigemContratacao } from './contrato.api';
+import { FornecedorPicker } from '../fornecedor/FornecedorPicker';
+import { LicitacaoPicker } from '../licitacao/LicitacaoPicker';
 
 export interface ContratoFormModalProps {
   open: boolean;
@@ -140,18 +142,16 @@ export function ContratoFormModal({ open, onClose }: ContratoFormModalProps) {
       }
     >
       <form id="form-celebrar-contrato" className="br-form" onSubmit={submeter} noValidate>
-        <FormField label="Identificador do fornecedor" required error={errors.fornecedorId}>
-          {({ id, describedBy, invalid }) => (
-            <Input
-              id={id}
-              aria-describedby={describedBy}
-              invalid={invalid}
-              value={fornecedorId}
-              onChange={(e) => setFornecedorId(e.target.value)}
-              placeholder="00000000-0000-0000-0000-000000000000"
-            />
-          )}
-        </FormField>
+        <FornecedorPicker
+          label="Fornecedor"
+          required
+          error={errors.fornecedorId}
+          value={fornecedorId}
+          onChange={(id) => {
+            setFornecedorId(id);
+            if (id !== '') setErrors((prev) => ({ ...prev, fornecedorId: undefined }));
+          }}
+        />
 
         <FormField label="Origem da contratação" required>
           {({ id, describedBy }) => (
@@ -170,18 +170,16 @@ export function ContratoFormModal({ open, onClose }: ContratoFormModalProps) {
         </FormField>
 
         {origem === 'Licitacao' && (
-          <FormField label="Identificador da licitação de origem" required error={errors.licitacaoId}>
-            {({ id, describedBy, invalid }) => (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={licitacaoId}
-                onChange={(e) => setLicitacaoId(e.target.value)}
-                placeholder="00000000-0000-0000-0000-000000000000"
-              />
-            )}
-          </FormField>
+          <LicitacaoPicker
+            label="Licitação de origem"
+            required
+            error={errors.licitacaoId}
+            value={licitacaoId}
+            onChange={(id) => {
+              setLicitacaoId(id);
+              if (id !== '') setErrors((prev) => ({ ...prev, licitacaoId: undefined }));
+            }}
+          />
         )}
 
         <FormField label="Objeto" required error={errors.objeto} help="Máx. 500 caracteres.">

@@ -104,6 +104,7 @@ export function EmpenhoDetailPage() {
               open={acao === 'liquidar'}
               onClose={() => setAcao(null)}
               empenhoIdInicial={empenho.id}
+              empenhoLabelInicial={`Empenho ${empenho.numero} · ${empenho.credorNome}`}
             />
           </>
         )}

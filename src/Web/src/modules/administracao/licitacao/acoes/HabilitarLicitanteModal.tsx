@@ -1,7 +1,7 @@
 // HabilitarLicitante (Aberta | EmJulgamento) — registra habilitação (I-7).
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, FormField, Input, Modal, Select, Textarea, useToast } from '../../../../components/ui';
+import { Button, FormField, Modal, Select, Textarea, useToast } from '../../../../components/ui';
 import type { SelectOption } from '../../../../components/ui';
 import { ApiError } from '../../../../api/problemDetails';
 import { useHabilitarLicitante } from '../licitacao.api';
@@ -9,6 +9,7 @@ import type { ResultadoHabilitacao } from '../licitacao.api';
 import { RESULTADO_HABILITACAO_OPTIONS } from '../licitacao.helpers';
 import { GUID_REGEX, primeiraMensagem } from './licitacaoModais.shared';
 import type { AcaoModalProps } from './licitacaoModais.shared';
+import { FornecedorPicker } from '../../fornecedor/FornecedorPicker';
 
 export function HabilitarLicitanteModal({
   open,
@@ -85,14 +86,14 @@ export function HabilitarLicitanteModal({
         <p className="text-down-01 text-gray-60">
           Fornecedor com sanção de impedimento/inidoneidade vigente deve resultar Inabilitado (art. 7º da NLLC).
         </p>
-        <FormField
-          label="Fornecedor"
-          required
-          error={errors.fornecedorId}
-          help="Selecione um proponente do certame ou informe o identificador."
-        >
-          {({ id, describedBy, invalid }) =>
-            fornecedorOptions.length > 0 ? (
+        {fornecedorOptions.length > 0 ? (
+          <FormField
+            label="Fornecedor"
+            required
+            error={errors.fornecedorId}
+            help="Selecione um proponente do certame."
+          >
+            {({ id, describedBy, invalid }) => (
               <Select
                 id={id}
                 aria-describedby={describedBy}
@@ -102,18 +103,20 @@ export function HabilitarLicitanteModal({
                 value={fornecedorId}
                 onChange={(e) => setFornecedorId(e.target.value)}
               />
-            ) : (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={fornecedorId}
-                onChange={(e) => setFornecedorId(e.target.value)}
-                placeholder="00000000-0000-0000-0000-000000000000"
-              />
-            )
-          }
-        </FormField>
+            )}
+          </FormField>
+        ) : (
+          <FornecedorPicker
+            label="Fornecedor"
+            required
+            error={errors.fornecedorId}
+            value={fornecedorId}
+            onChange={(id) => {
+              setFornecedorId(id);
+              if (id !== '') setErrors((prev) => ({ ...prev, fornecedorId: undefined }));
+            }}
+          />
+        )}
 
         <FormField label="Resultado" required error={errors.resultado}>
           {({ id, describedBy, invalid }) => (

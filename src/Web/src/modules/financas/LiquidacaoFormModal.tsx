@@ -2,7 +2,8 @@
 // validação por campo + mapeamento de ProblemDetails.fieldErrors + Toast.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
+import { Button, FormField, Input, Modal, Select, Tag, useToast } from '../../components/ui';
+import { EmpenhoPicker } from './DespesaPickers';
 import { TIPO_DOCUMENTO_COMPROBATORIO, useLiquidarDespesa } from './financas.api';
 import type { LiquidarDespesaInput } from './financas.api';
 import { TIPOS_DOCUMENTO, hojeIso, mensagemErro, tratarErroCampos } from './financas.helpers';
@@ -11,6 +12,8 @@ export interface LiquidacaoFormModalProps {
   open: boolean;
   onClose: () => void;
   empenhoIdInicial?: string;
+  /** Rótulo do empenho já determinado pelo contexto (ex.: aberto a partir do detalhe). */
+  empenhoLabelInicial?: string;
 }
 
 interface Campos {
@@ -28,7 +31,12 @@ const CONHECIDOS: Record<string, true> = {
   numeroDocumento: true, chaveNfse: true, dataEmissaoDocumento: true,
 };
 
-export function LiquidacaoFormModal({ open, onClose, empenhoIdInicial = '' }: LiquidacaoFormModalProps) {
+export function LiquidacaoFormModal({
+  open,
+  onClose,
+  empenhoIdInicial = '',
+  empenhoLabelInicial,
+}: LiquidacaoFormModalProps) {
   const toast = useToast();
   const mutation = useLiquidarDespesa();
 
@@ -105,13 +113,25 @@ export function LiquidacaoFormModal({ open, onClose, empenhoIdInicial = '' }: Li
       }
     >
       <form id="form-liquidar" className="br-form" onSubmit={submeter} noValidate>
-        <FormField label="Identificador do empenho" required error={errors.empenhoId}>
-          {({ id, describedBy, invalid }) => (
-            <Input id={id} aria-describedby={describedBy} invalid={invalid}
-              value={empenhoId} onChange={(e) => setEmpenhoId(e.target.value)}
-              placeholder="00000000-0000-0000-0000-000000000000" />
-          )}
-        </FormField>
+        {empenhoIdInicial ? (
+          <FormField label="Empenho" required>
+            {() => (
+              <p className="mb-0" aria-live="polite">
+                <Tag variant="info">{empenhoLabelInicial ?? 'Empenho selecionado'}</Tag>
+              </p>
+            )}
+          </FormField>
+        ) : (
+          <EmpenhoPicker
+            required
+            error={errors.empenhoId}
+            value={empenhoId}
+            onChange={(novoId) => {
+              setEmpenhoId(novoId);
+              if (errors.empenhoId) setErrors((prev) => ({ ...prev, empenhoId: undefined }));
+            }}
+          />
+        )}
         <FormField label="Valor (R$)" required error={errors.valor}>
           {({ id, describedBy, invalid }) => (
             <Input id={id} type="number" min="0" step="0.01" inputMode="decimal"
