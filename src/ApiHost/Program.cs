@@ -141,6 +141,21 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 100,
                 Window = TimeSpan.FromMinutes(1),
             }));
+
+    // Policy DEDICADA "publico": superfície ANÔNIMA do portal de transparência
+    // (/publico/transparencia/{slug}/...) é alvo de DoS/scraping. Limite PRÓPRIO, mais
+    // restritivo que o global: SEMPRE particionado por IP (cidadão não tem token/Identity.Name),
+    // janela curta e fila pequena (rejeita cedo em vez de enfileirar carga de abuso).
+    options.AddPolicy("publico", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromSeconds(10),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 2,
+            }));
 });
 
 // === Documentação (Swagger/OpenAPI) + health ===

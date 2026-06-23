@@ -23,10 +23,9 @@ namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.PortalPublico;
 /// <see cref="TenantOverride"/> — assim o Global Query Filter por TenantId volta a valer em TODA leitura
 /// (anti-vazamento cross-tenant).</item>
 /// <item>Todos os endpoints sao <c>.AllowAnonymous()</c> (cidadao nao tem token).</item>
-/// <item>Rate-limit: herdam o GlobalLimiter por IP do ApiHost; recomendado adicionar uma policy
-/// dedicada "publico" (mais agressiva) no <c>AddRateLimiter</c> do ApiHost e encadear
-/// <c>.RequireRateLimiting("publico")</c> aqui (ver README) — nao aplicado por padrao para nao acoplar a
-/// uma policy que pode nao existir.</item>
+/// <item>Rate-limit: o grupo encadeia <c>.RequireRateLimiting("publico")</c> — policy DEDICADA
+/// (por IP, janela curta, fila pequena), MAIS RESTRITIVA que o GlobalLimiter, registrada no
+/// <c>AddRateLimiter</c> do ApiHost. Defende a superficie anonima contra DoS/scraping.</item>
 /// </list>
 /// LGPD: a superficie publica so retorna dado publico/minimizado (CPF mascarado na origem; folha sem
 /// CPF/matricula; status e-SIC sem PII do solicitante).
@@ -38,7 +37,11 @@ internal static class TransparenciaPublicaEndpoints
         var grupo = endpoints
             .MapGroup("/publico/transparencia/{slug}")
             .WithTags("Transparencia.Publico")
-            .AllowAnonymous();
+            .AllowAnonymous()
+            // Rate-limit DEDICADO da superficie anonima (DoS/scraping): policy "publico" registrada no
+            // AddRateLimiter do ApiHost (por IP, janela curta, fila pequena) — mais restritiva que o
+            // GlobalLimiter. Vale para TODOS os endpoints do grupo, inclusive o e-SIC publico.
+            .RequireRateLimiting("publico");
 
         // Consulta de DESPESAS (paginada).
         grupo.MapGet("/despesas", async (

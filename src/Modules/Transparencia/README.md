@@ -136,11 +136,12 @@ TenantId volta a valer em TODA leitura subsequente (anti-vazamento cross-tenant)
 de contrato, despesas/receitas. Minimizado = **CPF mascarado na origem** (`***.456.789-**`), **matrícula omitida**
 (não existe no read model público), **PII do solicitante e-SIC nunca exposta a terceiros**.
 
-> **Integração pendente (fora do escopo deste módulo — disjunto):** (1) registrar uma policy de rate-limit dedicada
-> `"publico"` (mais agressiva, por IP) no `AddRateLimiter` do ApiHost e encadear `.RequireRateLimiting("publico")` no grupo
-> público (hoje herdam o GlobalLimiter por IP); (2) adicionar `transparencia.esic.ver`/`transparencia.esic.responder` ao
-> catálogo de permissões (módulo Identidade) para o papel Administrador recebê-las (o policy provider já materializa a
-> política dinamicamente — deny-by-default preservado até a permissão ser concedida).
+> **Integração transversal (follow-up Onda 2 — CONCLUÍDA):** (1) policy de rate-limit dedicada `"publico"` (por IP,
+> janela curta, fila pequena — mais restritiva que o GlobalLimiter) registrada no `AddRateLimiter` do ApiHost e
+> encadeada via `.RequireRateLimiting("publico")` no grupo público, defendendo a superfície anônima contra DoS/scraping;
+> (2) `transparencia.esic.ver`/`transparencia.esic.responder` no catálogo de permissões (módulo Identidade) e em
+> `Permissoes.Todas` — o papel Administrador as recebe; deny-by-default preservado (o policy provider materializa a
+> política dinamicamente e a permissão só vale onde concedida).
 
 ## 9. Fontes
 - Lei 12.527/2011 (LAI) — https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2011/lei/l12527.htm

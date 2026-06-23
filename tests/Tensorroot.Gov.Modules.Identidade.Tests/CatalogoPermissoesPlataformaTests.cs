@@ -40,4 +40,16 @@ public sealed class CatalogoPermissoesPlataformaTests
         // "Todas" e o teto do admin de tenant; nenhum escopo "plataforma.*" pode estar nele.
         DomainPermissoes.Todas.Should().NotContain(p => p.StartsWith("plataforma.", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void Verbos_eSic_pertencem_ao_catalogo_e_ao_papel_Administrador()
+    {
+        // Follow-up Onda 2: o catalogo DEVE refletir os verbos e-SIC e o papel "Administrador"
+        // (que recebe "Todas") deve concede-los. Sem isso, os endpoints internos de e-SIC ficariam
+        // inacessiveis ate concessao manual. Deny-by-default segue valendo (so o admin os recebe).
+        DomainPermissoes.TransparenciaEsicVer.Should().Be("transparencia.esic.ver");
+        DomainPermissoes.TransparenciaEsicResponder.Should().Be("transparencia.esic.responder");
+        DomainPermissoes.Todas.Should().Contain(DomainPermissoes.TransparenciaEsicVer);
+        DomainPermissoes.Todas.Should().Contain(DomainPermissoes.TransparenciaEsicResponder);
+    }
 }
