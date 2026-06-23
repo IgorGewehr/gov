@@ -10,9 +10,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { formatarData, formatarMoeda } from '../../i18n/format';
@@ -94,28 +96,28 @@ export function DividaAtivaListPage() {
       key: 'acoes',
       header: 'Ações',
       render: (d) => (
-        <div className="d-flex flex-wrap" style={{ gap: '0.25rem' }}>
-          <Button variant="tertiary" onClick={() => setPrescricaoDe(d.id)}>
+        <Toolbar>
+          <Button size="sm" variant="ghost" onClick={() => setPrescricaoDe(d.id)}>
             <i className="fas fa-hourglass-half" aria-hidden="true" /> Prescrição
           </Button>
           <Can permission={PERM_GERENCIAR}>
             {podeEmitirCda(d.situacao) && (
-              <Button variant="tertiary" onClick={() => setCdaDe(d.id)}>
+              <Button size="sm" variant="ghost" onClick={() => setCdaDe(d.id)}>
                 <i className="fas fa-stamp" aria-hidden="true" /> Emitir CDA
               </Button>
             )}
             {podeProtestar(d.situacao) && (
-              <Button variant="tertiary" onClick={() => setProtestoDe(d.id)}>
+              <Button size="sm" variant="ghost" onClick={() => setProtestoDe(d.id)}>
                 <i className="fas fa-file-signature" aria-hidden="true" /> Protesto
               </Button>
             )}
             {podeExecutar(d.situacao) && (
-              <Button variant="tertiary" onClick={() => setExecucaoDe(d.id)}>
+              <Button size="sm" variant="ghost" onClick={() => setExecucaoDe(d.id)}>
                 <i className="fas fa-gavel" aria-hidden="true" /> Execução fiscal
               </Button>
             )}
           </Can>
-        </div>
+        </Toolbar>
       ),
     },
   ];
@@ -127,15 +129,17 @@ export function DividaAtivaListPage() {
         description="Consulte os débitos inscritos em Dívida Ativa de um contribuinte e emita a CDA."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setContribAberto(true)}>
-              <i className="fas fa-user-plus" aria-hidden="true" /> Cadastrar contribuinte
-            </Button>{' '}
-            <Button variant="secondary" onClick={() => setLancamentoAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Lançar crédito
-            </Button>{' '}
-            <Button variant="primary" onClick={() => setInscreverAberto(true)}>
-              <i className="fas fa-file-import" aria-hidden="true" /> Inscrever em Dívida Ativa
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setContribAberto(true)}>
+                <i className="fas fa-user-plus" aria-hidden="true" /> Cadastrar contribuinte
+              </Button>
+              <Button variant="secondary" onClick={() => setLancamentoAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Lançar crédito
+              </Button>
+              <Button variant="primary" onClick={() => setInscreverAberto(true)}>
+                <i className="fas fa-file-import" aria-hidden="true" /> Inscrever em Dívida Ativa
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -144,27 +148,26 @@ export function DividaAtivaListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do contribuinte" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={contribuinteId}
-                    onChange={(e) => setContribuinteId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={contribuinteId.trim() === ''} loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do contribuinte" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={contribuinteId}
+                  onChange={(e) => setContribuinteId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

@@ -4,7 +4,7 @@
 // data informada — cálculo determinístico (sem relógio no servidor). Leitura: tributos.ver.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Button, FormField, Input, Modal, QueryState } from '../../components/ui';
+import { Alert, Button, FormField, FormRow, Input, Modal, QueryState } from '../../components/ui';
 import { formatarData, formatarMoeda } from '../../i18n/format';
 import { useAvaliarPrescricao } from './api';
 
@@ -47,27 +47,26 @@ export function PrescricaoModal({ open, onClose, dividaAtivaId }: PrescricaoModa
       }
     >
       <form className="br-form mb-3" onSubmit={avaliar} noValidate>
-        <div className="row align-items-end">
-          <div className="col">
-            <FormField label="Data de referência" required help="Data do fato para apurar prazo e encargos.">
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  type="date"
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={dataReferencia}
-                  onChange={(e) => setDataReferencia(e.target.value)}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-auto mb-3">
+        <FormRow
+          acao={
             <Button variant="primary" type="submit" disabled={dataReferencia === ''} loading={query.isFetching}>
               Avaliar
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <FormField label="Data de referência" required help="Data do fato para apurar prazo e encargos.">
+            {({ id, describedBy, invalid }) => (
+              <Input
+                id={id}
+                type="date"
+                aria-describedby={describedBy}
+                invalid={invalid}
+                value={dataReferencia}
+                onChange={(e) => setDataReferencia(e.target.value)}
+              />
+            )}
+          </FormField>
+        </FormRow>
       </form>
 
       {consulta === '' ? (

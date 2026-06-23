@@ -9,8 +9,10 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   PageHeader,
   Select,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -57,8 +59,9 @@ export function CargosListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (c) => (
-        <Link className="br-button tertiary small" to={`/recursoshumanos/cargos/${c.id}`}>
+        <Link className="br-button secondary small" to={`/recursoshumanos/cargos/${c.id}`}>
           Detalhes
         </Link>
       ),
@@ -69,42 +72,44 @@ export function CargosListPage() {
     <>
       <RhSubNav />
       <PageHeader
+        eyebrow="Recursos Humanos"
         title="Cargos"
         description="Estrutura de cargos públicos com vagas disponíveis para provimento."
         actions={
           <Can permission={PERM_RH_GERENCIAR}>
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Criar cargo
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Criar cargo
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={(e) => e.preventDefault()}>
-          <div className="row align-items-end">
-            <div className="col-sm-6 col-md-4">
-              <FormField label="Filtrar por tipo">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={filtroTipo}
-                    onChange={(e) => setFiltroTipo(e.target.value)}
-                    placeholder="Todos os tipos"
-                    options={TIPOS_CARGO}
-                  />
-                )}
-              </FormField>
-            </div>
-            {filtroTipo !== '' && (
-              <div className="col-auto mb-3">
+          <FormRow
+            acao={
+              filtroTipo !== '' ? (
                 <Button variant="secondary" onClick={() => setFiltroTipo('')}>
                   Limpar filtro
                 </Button>
-              </div>
-            )}
-          </div>
+              ) : undefined
+            }
+          >
+            <FormField label="Filtrar por tipo">
+              {({ id, describedBy }) => (
+                <Select
+                  id={id}
+                  aria-describedby={describedBy}
+                  value={filtroTipo}
+                  onChange={(e) => setFiltroTipo(e.target.value)}
+                  placeholder="Todos os tipos"
+                  options={TIPOS_CARGO}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

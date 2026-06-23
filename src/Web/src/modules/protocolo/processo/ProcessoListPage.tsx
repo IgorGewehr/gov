@@ -11,10 +11,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column, SelectOption } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
@@ -93,53 +95,59 @@ export function ProcessoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Protocolo"
         title="Processos administrativos"
         description="Consulte os processos por setor responsável e acompanhe o trâmite do PAE."
         actions={
           <Can permission="protocolo.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Autuar processo
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Autuar processo
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-md">
-              <FormField label="Setor responsável (identificador)" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={setorId}
-                    onChange={(e) => setSetorId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-12 col-md-auto">
-              <FormField label="Filtrar por situação">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    options={FILTRO_SITUACAO_OPCOES}
-                    value={filtroSituacao}
-                    onChange={(e) => setFiltroSituacao(e.target.value as '' | SituacaoProcesso)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={setorId.trim() === ''} loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-12 col-md">
+                <FormField label="Setor responsável (identificador)" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={setorId}
+                      onChange={(e) => setSetorId(e.target.value)}
+                      placeholder="00000000-0000-0000-0000-000000000000"
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-md-auto">
+                <FormField label="Filtrar por situação">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      options={FILTRO_SITUACAO_OPCOES}
+                      value={filtroSituacao}
+                      onChange={(e) => setFiltroSituacao(e.target.value as '' | SituacaoProcesso)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

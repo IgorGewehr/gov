@@ -9,9 +9,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -81,9 +83,11 @@ export function PagamentoListPage() {
         description="Ordens de pagamento (3º estágio da despesa, Lei 4.320/64)."
         actions={
           <Can permission="financas.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Emitir ordem
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Emitir ordem
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -92,27 +96,26 @@ export function PagamentoListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador da ordem de pagamento" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={ordemId}
-                    onChange={(e) => setOrdemId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={ordemId.trim() === ''} loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador da ordem de pagamento" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={ordemId}
+                  onChange={(e) => setOrdemId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

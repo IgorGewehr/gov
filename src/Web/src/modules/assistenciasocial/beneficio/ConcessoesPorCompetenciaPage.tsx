@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
@@ -95,51 +96,55 @@ export function ConcessoesPorCompetenciaPage() {
     <>
       <AssistenciaSocialSubNav />
       <PageHeader
+        eyebrow="Assistência Social"
         title="Concessões por competência"
         description="Consulte os benefícios concedidos em uma competência (ano/mês)."
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-sm-4">
-              <FormField label="Ano" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="1900"
-                    max="9999"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={ano}
-                    onChange={(e) => setAno(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-4">
-              <FormField label="Mês" required>
-                {({ id, describedBy, invalid }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    options={MES_OPTIONS}
-                    value={mes}
-                    onChange={(e) => setMes(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-6">
+                <FormField label="Ano" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="1900"
+                      max="9999"
+                      step="1"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={ano}
+                      onChange={(e) => setAno(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-6">
+                <FormField label="Mês" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      options={MES_OPTIONS}
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

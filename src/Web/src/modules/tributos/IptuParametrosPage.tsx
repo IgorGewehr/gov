@@ -3,7 +3,7 @@
 // publicado por um Modal dedicado (PgvFormModal / AliquotasFormModal). Toda ação
 // é gated por "tributos.gerenciar". A apuração consome estes parâmetros.
 import { useState } from 'react';
-import { Button, Card, PageHeader } from '../../components/ui';
+import { Button, Card, PageHeader, Toolbar } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { TributosSubNav } from './TributosSubNav';
 import { PgvFormModal } from './PgvFormModal';
@@ -30,11 +30,11 @@ export function IptuParametrosPage() {
             header={<strong>Planta Genérica de Valores (PGV)</strong>}
             footer={
               <Can permission={PERM_GERENCIAR}>
-                <div className="d-flex justify-content-end">
+                <Toolbar>
                   <Button variant="primary" onClick={() => setPgvAberto(true)}>
                     <i className="fas fa-map-location-dot" aria-hidden="true" /> Publicar PGV
                   </Button>
-                </div>
+                </Toolbar>
               </Can>
             }
           >
@@ -50,11 +50,11 @@ export function IptuParametrosPage() {
             header={<strong>Tabela de alíquotas</strong>}
             footer={
               <Can permission={PERM_GERENCIAR}>
-                <div className="d-flex justify-content-end">
+                <Toolbar>
                   <Button variant="primary" onClick={() => setAliquotasAberto(true)}>
                     <i className="fas fa-percent" aria-hidden="true" /> Publicar alíquotas
                   </Button>
-                </div>
+                </Toolbar>
               </Can>
             }
           >

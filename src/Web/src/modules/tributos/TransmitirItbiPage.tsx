@@ -14,6 +14,7 @@ import {
   Input,
   PageHeader,
   QueryState,
+  Toolbar,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
@@ -76,9 +77,11 @@ export function TransmitirItbiPage() {
         description="Informe o imóvel e o valor declarado, confira o preview e lance a guia da transmissão."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setAliquotasAberto(true)}>
-              <i className="fas fa-percent" aria-hidden="true" /> Configurar alíquotas
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setAliquotasAberto(true)}>
+                <i className="fas fa-percent" aria-hidden="true" /> Configurar alíquotas
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -116,14 +119,20 @@ export function TransmitirItbiPage() {
                 )}
               </FormField>
             </div>
-            <div className="col-md-2 mb-3">
-              <div className="br-checkbox">
-                <input id="itbi-sfh" type="checkbox" checked={sfhCampo} onChange={(e) => setSfhCampo(e.target.checked)} />
-                <label htmlFor="itbi-sfh">SFH</label>
+            <div className="col-md-1">
+              <div className="tg-form-row-acao">
+                <div className="br-checkbox">
+                  <input id="itbi-sfh" type="checkbox" checked={sfhCampo} onChange={(e) => setSfhCampo(e.target.checked)} />
+                  <label htmlFor="itbi-sfh">SFH</label>
+                </div>
               </div>
-              <Button variant="primary" type="submit" loading={query.isFetching && consulta !== null}>
-                <i className="fas fa-magnifying-glass-dollar" aria-hidden="true" /> Preview
-              </Button>
+            </div>
+            <div className="col-md-auto">
+              <div className="tg-form-row-acao">
+                <Button variant="primary" type="submit" loading={query.isFetching && consulta !== null}>
+                  <i className="fas fa-magnifying-glass-dollar" aria-hidden="true" /> Preview
+                </Button>
+              </div>
             </div>
           </div>
         </form>
@@ -149,11 +158,11 @@ export function TransmitirItbiPage() {
                 header={<strong>Preview do ITBI — exercício {preview.exercicio}</strong>}
                 footer={
                   <Can permission={PERM_GERENCIAR}>
-                    <div className="d-flex justify-content-end">
+                    <Toolbar>
                       <Button variant="primary" onClick={() => setLancarAberto(true)}>
                         <i className="fas fa-file-invoice-dollar" aria-hidden="true" /> Lançar e gerar guia
                       </Button>
-                    </div>
+                    </Toolbar>
                   </Can>
                 }
               >

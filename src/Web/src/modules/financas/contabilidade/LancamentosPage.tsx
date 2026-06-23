@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   PageHeader,
+  Toolbar,
   errorMessage,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -64,9 +65,11 @@ export function LancamentosPage() {
         description="Registre lançamentos manuais e acesse o razão de cada conta analítica."
         actions={
           <Can permission="financas.gerenciar">
-            <Button variant="primary" onClick={() => setAberto(true)} disabled={contasAnaliticas.length === 0}>
-              <i className="fas fa-plus" aria-hidden="true" /> Novo lançamento manual
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setAberto(true)} disabled={contasAnaliticas.length === 0}>
+                <i className="fas fa-plus" aria-hidden="true" /> Novo lançamento manual
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

@@ -10,9 +10,11 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
+  Toolbar,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
@@ -64,29 +66,28 @@ export function ApurarIptuPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={apurar}>
-          <div className="row align-items-end">
-            <div className="col-sm-4">
-              <FormField label="Exercício" required help={`Imóvel ${id}`}>
-                {({ id: campoId, describedBy, invalid }) => (
-                  <Input
-                    id={campoId}
-                    type="number"
-                    min={1900}
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicioCampo}
-                    onChange={(e) => setExercicioCampo(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching && exercicio > 0}>
                 <i className="fas fa-calculator" aria-hidden="true" /> Apurar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Exercício" required help={`Imóvel ${id}`}>
+              {({ id: campoId, describedBy, invalid }) => (
+                <Input
+                  id={campoId}
+                  type="number"
+                  min={1900}
+                  inputMode="numeric"
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={exercicioCampo}
+                  onChange={(e) => setExercicioCampo(e.target.value)}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 
@@ -110,11 +111,11 @@ export function ApurarIptuPage() {
                 header={<strong>Apuração do IPTU — exercício {apuracao.exercicio}</strong>}
                 footer={
                   <Can permission={PERM_GERENCIAR}>
-                    <div className="d-flex justify-content-end">
+                    <Toolbar>
                       <Button variant="primary" onClick={() => setLancarAberto(true)}>
                         <i className="fas fa-file-invoice-dollar" aria-hidden="true" /> Lançar e gerar DAM
                       </Button>
-                    </div>
+                    </Toolbar>
                   </Can>
                 }
               >

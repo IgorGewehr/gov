@@ -16,6 +16,7 @@ import {
   PageHeader,
   Tag,
   Textarea,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -173,9 +174,11 @@ export function MelhoriaPage() {
         description="Edital → imóveis beneficiados → encerramento da impugnação → rateio (CTN arts. 81–82)."
         actions={
           etapa !== 'edital' ? (
-            <Button variant="secondary" onClick={reiniciar}>
-              <i className="fas fa-plus" aria-hidden="true" /> Nova obra
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={reiniciar}>
+                <i className="fas fa-plus" aria-hidden="true" /> Nova obra
+              </Button>
+            </Toolbar>
           ) : undefined
         }
       />
@@ -266,9 +269,11 @@ export function MelhoriaPage() {
             </div>
 
             <Can permission={PERM_GERENCIAR}>
-              <Button variant="primary" type="submit" loading={publicar.isPending}>
-                <i className="fas fa-bullhorn" aria-hidden="true" /> Publicar edital
-              </Button>
+              <Toolbar>
+                <Button variant="primary" type="submit" loading={publicar.isPending}>
+                  <i className="fas fa-bullhorn" aria-hidden="true" /> Publicar edital
+                </Button>
+              </Toolbar>
             </Can>
           </form>
         </Card>
@@ -296,12 +301,14 @@ export function MelhoriaPage() {
                   )}
                 </FormField>
               </div>
-              <div className="col-md-6 mb-3">
-                <Can permission={PERM_GERENCIAR}>
-                  <Button variant="secondary" onClick={encerrarPrazo} loading={encerrar.isPending}>
-                    <i className="fas fa-gavel" aria-hidden="true" /> Encerrar prazo
-                  </Button>
-                </Can>
+              <div className="col-md-6">
+                <div className="tg-form-row-acao">
+                  <Can permission={PERM_GERENCIAR}>
+                    <Button variant="secondary" onClick={encerrarPrazo} loading={encerrar.isPending}>
+                      <i className="fas fa-gavel" aria-hidden="true" /> Encerrar prazo
+                    </Button>
+                  </Can>
+                </div>
               </div>
             </div>
           </fieldset>
@@ -323,12 +330,14 @@ export function MelhoriaPage() {
                   )}
                 </FormField>
               </div>
-              <div className="col-md-4 mb-3">
-                <Can permission={PERM_GERENCIAR}>
-                  <Button variant="primary" onClick={ratearObra} loading={ratear.isPending}>
-                    <i className="fas fa-scale-balanced" aria-hidden="true" /> Ratear
-                  </Button>
-                </Can>
+              <div className="col-md-4">
+                <div className="tg-form-row-acao">
+                  <Can permission={PERM_GERENCIAR}>
+                    <Button variant="primary" onClick={ratearObra} loading={ratear.isPending}>
+                      <i className="fas fa-scale-balanced" aria-hidden="true" /> Ratear
+                    </Button>
+                  </Can>
+                </div>
               </div>
             </div>
           </fieldset>

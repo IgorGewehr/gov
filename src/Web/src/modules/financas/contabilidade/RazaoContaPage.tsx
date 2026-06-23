@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   errorMessage,
@@ -99,30 +100,29 @@ export function RazaoContaPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-md-auto">
-              <FormField label="Exercício" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="2000"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicio}
-                    onChange={(e) => setExercicio(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Exercício" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min="2000"
+                  step="1"
+                  inputMode="numeric"
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={exercicio}
+                  onChange={(e) => setExercicio(e.target.value)}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

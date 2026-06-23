@@ -4,8 +4,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, EmptyState, FormField, Input, PageHeader } from '../../components/ui';
+import { Button, Card, EmptyState, FormField, FormRow, Input, PageHeader, Toolbar } from '../../components/ui';
 import { Can } from '../../auth/Can';
+import { LegislativoSecoesNav } from './LegislativoSecoesNav';
 import { VotacaoFormModal } from './VotacaoFormModal';
 
 export function VotacaoConsultaPage() {
@@ -22,40 +23,44 @@ export function VotacaoConsultaPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Votações"
         description="Consulte o placar e o resultado de uma votação pelo identificador."
         actions={
           <Can permission="legislativo.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Iniciar votação
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Iniciar votação
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
+      <LegislativoSecoesNav />
+
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador da votação" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={votacaoId}
-                    onChange={(e) => setVotacaoId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={votacaoId.trim() === ''}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador da votação" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={votacaoId}
+                  onChange={(e) => setVotacaoId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

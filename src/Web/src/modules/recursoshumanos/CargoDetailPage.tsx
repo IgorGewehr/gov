@@ -9,7 +9,11 @@ import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
 import { useCargo } from './api';
 import type { CargoDetalhe } from './api';
-import { PERM_RH_GERENCIAR, situacaoCargoTagVariant } from './recursosHumanos.helpers';
+import {
+  formatarRegimePrev,
+  PERM_RH_GERENCIAR,
+  situacaoCargoTagVariant,
+} from './recursosHumanos.helpers';
 import {
   AlterarVencimentoModal,
   ExtinguirCargoModal,
@@ -58,7 +62,7 @@ export function CargoDetailPage() {
                   <Tag variant={situacaoCargoTagVariant(cargo.situacao)}>{cargo.situacao}</Tag>
                 </Campo>
                 <Campo rotulo="Tipo">{cargo.tipo}</Campo>
-                <Campo rotulo="Regime previdenciário">{cargo.regime}</Campo>
+                <Campo rotulo="Regime previdenciário">{formatarRegimePrev(cargo.regime)}</Campo>
                 <Campo rotulo="Vencimento-base">{formatarMoeda(cargo.vencimento)}</Campo>
                 <Campo rotulo="Lotação">{cargo.lotacao}</Campo>
                 <Campo rotulo="Lei de criação">{cargo.leiCriacao}</Campo>

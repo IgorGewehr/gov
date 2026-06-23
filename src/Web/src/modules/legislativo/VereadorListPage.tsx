@@ -2,7 +2,7 @@
 // abertura do formulario (cadastro/edicao). Inclui o botao "Semear demonstracao"
 // (gated `legislativo.demo.semear`), que popula a demo do PoC.
 import { useState } from 'react';
-import { Button, DataTable, EmptyState, PageHeader, Tag, useToast } from '../../components/ui';
+import { Button, DataTable, EmptyState, PageHeader, Tag, Toolbar, useToast } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
@@ -75,7 +75,7 @@ export function VereadorListPage() {
       header: 'Ações',
       render: (v) => (
         <Can permission="legislativo.gerenciar">
-          <Button variant="tertiary" onClick={() => abrirEdicao(v.id)}>
+          <Button variant="ghost" size="sm" onClick={() => abrirEdicao(v.id)}>
             Editar
           </Button>
         </Can>
@@ -86,10 +86,11 @@ export function VereadorListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Vereadores"
         description="Cadastro dos vereadores da Câmara Municipal."
         actions={
-          <>
+          <Toolbar>
             <Can permission="legislativo.demo.semear">
               <Button variant="secondary" onClick={semearDemo} loading={semear.isPending}>
                 <i className="fas fa-seedling" aria-hidden="true" /> Semear demonstração
@@ -100,7 +101,7 @@ export function VereadorListPage() {
                 <i className="fas fa-plus" aria-hidden="true" /> Cadastrar vereador
               </Button>
             </Can>
-          </>
+          </Toolbar>
         }
       />
 

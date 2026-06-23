@@ -14,6 +14,7 @@ import {
   FormField,
   Input,
   PageHeader,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -124,9 +125,11 @@ export function ApurarIssPage() {
         description="Apure o ISS mensal de um contribuinte por competência e veja o livro fiscal eletrônico."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setAliquotasAberto(true)}>
-              <i className="fas fa-percent" aria-hidden="true" /> Configurar alíquotas
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setAliquotasAberto(true)}>
+                <i className="fas fa-percent" aria-hidden="true" /> Configurar alíquotas
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -198,17 +201,19 @@ export function ApurarIssPage() {
                 )}
               </FormField>
             </div>
-            <div className="col-md-3 mb-3 d-flex" style={{ gap: '0.5rem' }}>
-              <Can permission={PERM_GERENCIAR}>
-                <Button variant="secondary" onClick={sincronizarNfse} loading={sincronizar.isPending}>
-                  <i className="fas fa-cloud-arrow-down" aria-hidden="true" /> Sincronizar NFS-e
-                </Button>
-              </Can>
-              <Can permission={PERM_GERENCIAR}>
-                <Button variant="primary" type="submit" loading={apurar.isPending}>
-                  <i className="fas fa-calculator" aria-hidden="true" /> Apurar
-                </Button>
-              </Can>
+            <div className="col-md-3">
+              <div className="tg-form-row-acao">
+                <Can permission={PERM_GERENCIAR}>
+                  <Toolbar>
+                    <Button variant="secondary" onClick={sincronizarNfse} loading={sincronizar.isPending}>
+                      <i className="fas fa-cloud-arrow-down" aria-hidden="true" /> Sincronizar NFS-e
+                    </Button>
+                    <Button variant="primary" type="submit" loading={apurar.isPending}>
+                      <i className="fas fa-calculator" aria-hidden="true" /> Apurar
+                    </Button>
+                  </Toolbar>
+                </Can>
+              </div>
             </div>
           </div>
         </form>

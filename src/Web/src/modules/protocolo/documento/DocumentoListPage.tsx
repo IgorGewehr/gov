@@ -10,10 +10,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -29,7 +31,7 @@ import {
 import { DocumentoFormModal } from './DocumentoFormModal';
 
 const FILTRO_SITUACAO = [
-  { value: '', label: 'Todas as situacoes' },
+  { value: '', label: 'Todas as situações' },
   { value: 'Rascunho', label: 'Rascunho' },
   { value: 'Juntado', label: 'Juntado' },
   { value: 'Assinado', label: 'Assinado' },
@@ -57,7 +59,7 @@ export function DocumentoListPage() {
   const columns: Column<DocumentoResumo>[] = [
     {
       key: 'situacao',
-      header: 'Situacao',
+      header: 'Situação',
       sortAccessor: (d) => d.situacao,
       render: (d) => <Tag variant={situacaoTagVariant(d.situacao)}>{d.situacao}</Tag>,
     },
@@ -90,7 +92,7 @@ export function DocumentoListPage() {
     },
     {
       key: 'acoes',
-      header: 'Acoes',
+      header: 'Ações',
       render: (d) => (
         <Link
           className="br-button tertiary small"
@@ -105,39 +107,28 @@ export function DocumentoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Protocolo"
         title="Documentos do processo"
-        description="Consulte os documentos juntados a um processo administrativo eletronico (PAE)."
+        description="Consulte os documentos juntados a um processo administrativo eletrônico (PAE)."
         actions={
           <Can permission="protocolo.gerenciar">
-            <Button
-              variant="primary"
-              onClick={() => setFormAberto(true)}
-              disabled={consultaAtiva === ''}
-            >
-              <i className="fas fa-plus" aria-hidden="true" /> Juntar documento
-            </Button>
+            <Toolbar>
+              <Button
+                variant="primary"
+                onClick={() => setFormAberto(true)}
+                disabled={consultaAtiva === ''}
+              >
+                <i className="fas fa-plus" aria-hidden="true" /> Juntar documento
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do processo" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={processoId}
-                    onChange={(e) => setProcessoId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -146,22 +137,35 @@ export function DocumentoListPage() {
               >
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do processo" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={processoId}
+                  onChange={(e) => setProcessoId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 
       {consultaAtiva === '' ? (
         <EmptyState
           icon="fas fa-magnifying-glass"
-          title="Faca uma consulta"
+          title="Faça uma consulta"
           description="Informe o identificador do processo e clique em Consultar."
         />
       ) : (
         <>
           <div className="row align-items-end mb-3">
             <div className="col-sm-4">
-              <FormField label="Filtrar por situacao">
+              <FormField label="Filtrar por situação">
                 {({ id, describedBy }) => (
                   <Select
                     id={id}
@@ -186,7 +190,7 @@ export function DocumentoListPage() {
               <EmptyState
                 icon="fas fa-folder-open"
                 title="Nenhum documento encontrado"
-                description="Este processo nao possui documentos juntados para o filtro atual."
+                description="Este processo não possui documentos juntados para o filtro atual."
               />
             }
           />

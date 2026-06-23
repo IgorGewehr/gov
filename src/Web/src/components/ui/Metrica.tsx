@@ -23,10 +23,19 @@ const TOM_CLASSE: Record<NonNullable<MetricaProps['tom']>, string> = {
   perigo: 'text-danger',
 };
 
+// Acento de status à esquerda do card (4px) — reforça o tom além da cor do texto.
+const TOM_ACENTO: Record<NonNullable<MetricaProps['tom']>, string> = {
+  neutro: '',
+  sucesso: 'tg-metrica-sucesso',
+  alerta: 'tg-metrica-alerta',
+  perigo: 'tg-metrica-perigo',
+};
+
 export function Metrica({ label, valor, secundario, tom = 'neutro' }: MetricaProps) {
   const classeTom = TOM_CLASSE[tom];
+  const classeAcento = TOM_ACENTO[tom];
   return (
-    <div className="tg-metrica">
+    <div className={`tg-metrica${classeAcento ? ` ${classeAcento}` : ''}`}>
       <dt className="tg-metrica-label">{label}</dt>
       <dd className="tg-metrica-valor mb-0">
         <span className={classeTom || undefined}>{valor}</span>

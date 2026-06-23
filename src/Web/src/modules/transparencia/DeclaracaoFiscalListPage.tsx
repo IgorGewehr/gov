@@ -10,10 +10,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -95,70 +97,76 @@ export function DeclaracaoFiscalListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Transparência"
         title="Declarações Fiscais (SICONFI)"
         description="Consulte e consolide MSC, RREO, RGF e DCA transmitidas ao SICONFI/STN."
         actions={
           <Can permission="transparencia.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Consolidar declaração
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Consolidar declaração
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-sm-3">
-              <FormField label="Exercício" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="1900"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicio}
-                    onChange={(e) => setExercicio(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-12 col-sm-4">
-              <FormField label="Tipo de declaração">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    placeholder="Todos"
-                    options={tipoDeclaracaoOptions}
-                    value={tipo}
-                    onChange={(e) => setTipo(e.target.value as TipoDeclaracaoFiscal | '')}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-12 col-sm-3">
-              <FormField label="Situação">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    placeholder="Todas"
-                    options={situacaoDeclaracaoOptions}
-                    value={situacao}
-                    onChange={(e) => setSituacao(e.target.value as SituacaoDeclaracaoFiscal | '')}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-12 col-sm-4">
+                <FormField label="Exercício" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="1900"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={exercicio}
+                      onChange={(e) => setExercicio(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-sm-4">
+                <FormField label="Tipo de declaração">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      placeholder="Todos"
+                      options={tipoDeclaracaoOptions}
+                      value={tipo}
+                      onChange={(e) => setTipo(e.target.value as TipoDeclaracaoFiscal | '')}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-sm-4">
+                <FormField label="Situação">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      placeholder="Todas"
+                      options={situacaoDeclaracaoOptions}
+                      value={situacao}
+                      onChange={(e) => setSituacao(e.target.value as SituacaoDeclaracaoFiscal | '')}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

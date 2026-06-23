@@ -9,6 +9,7 @@ import {
   EmptyState,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -61,10 +62,11 @@ export function EscolaListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Educação"
         title="Escolas da rede"
         description="Consulte e credencie as unidades escolares da rede de ensino do município."
         actions={
-          <div className="d-flex gap-2 flex-wrap">
+          <Toolbar>
             <Link className="br-button secondary" to="/educacao/matriculas">
               <i className="fas fa-user-graduate" aria-hidden="true" /> Matrículas
             </Link>
@@ -73,7 +75,7 @@ export function EscolaListPage() {
                 <i className="fas fa-plus" aria-hidden="true" /> Credenciar escola
               </Button>
             </Can>
-          </div>
+          </Toolbar>
         }
       />
 

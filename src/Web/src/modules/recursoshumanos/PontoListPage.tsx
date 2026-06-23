@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
@@ -91,9 +92,11 @@ export function PontoListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (s) => (
         <Button
-          variant="tertiary"
+          variant="secondary"
+          size="sm"
           onClick={() =>
             navigate(`/recursoshumanos/ponto/${s.id}`, {
               state: { nome: s.nomeServidor, matricula: s.matricula },
@@ -110,6 +113,7 @@ export function PontoListPage() {
     <>
       <RhSubNav />
       <PageHeader
+        eyebrow="Recursos Humanos"
         title="Ponto Eletrônico"
         description="Jornada, marcações e apuração por servidor (Portaria MTP 671/2021)."
       />
@@ -119,76 +123,82 @@ export function PontoListPage() {
           Gere e baixe os arquivos posicionais assinados: o AFD (Arquivo Fonte de Dados) por
           período e o AEJ (Arquivo Eletrônico de Jornada) por competência.
         </p>
-        <div className="row align-items-end">
-          <div className="col-sm-6 col-md-3">
-            <FormField label="AFD — início">
-              {({ id, describedBy }) => (
-                <Input
-                  id={id}
-                  type="date"
-                  aria-describedby={describedBy}
-                  value={inicio}
-                  onChange={(e) => setInicio(e.target.value)}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-sm-6 col-md-3">
-            <FormField label="AFD — fim">
-              {({ id, describedBy }) => (
-                <Input
-                  id={id}
-                  type="date"
-                  aria-describedby={describedBy}
-                  value={fim}
-                  onChange={(e) => setFim(e.target.value)}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-auto mb-3">
+        <FormRow
+          acao={
             <Button variant="secondary" onClick={gerarAfd} loading={baixandoAfd}>
               <i className="fas fa-download" aria-hidden="true" /> Gerar e baixar AFD
             </Button>
+          }
+        >
+          <div className="row">
+            <div className="col-sm-6">
+              <FormField label="AFD — início">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    type="date"
+                    aria-describedby={describedBy}
+                    value={inicio}
+                    onChange={(e) => setInicio(e.target.value)}
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-6">
+              <FormField label="AFD — fim">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    type="date"
+                    aria-describedby={describedBy}
+                    value={fim}
+                    onChange={(e) => setFim(e.target.value)}
+                  />
+                )}
+              </FormField>
+            </div>
           </div>
-        </div>
-        <div className="row align-items-end">
-          <div className="col-sm-6 col-md-3">
-            <FormField label="AEJ — mês">
-              {({ id, describedBy }) => (
-                <Select
-                  id={id}
-                  aria-describedby={describedBy}
-                  value={mes}
-                  onChange={(e) => setMes(e.target.value)}
-                  options={MESES}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-sm-6 col-md-3">
-            <FormField label="AEJ — ano">
-              {({ id, describedBy }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min="2000"
-                  max="2100"
-                  step="1"
-                  inputMode="numeric"
-                  aria-describedby={describedBy}
-                  value={ano}
-                  onChange={(e) => setAno(e.target.value)}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-auto mb-3">
+        </FormRow>
+        <FormRow
+          acao={
             <Button variant="secondary" onClick={gerarAej} loading={baixandoAej}>
               <i className="fas fa-download" aria-hidden="true" /> Gerar e baixar AEJ
             </Button>
+          }
+        >
+          <div className="row">
+            <div className="col-sm-6">
+              <FormField label="AEJ — mês">
+                {({ id, describedBy }) => (
+                  <Select
+                    id={id}
+                    aria-describedby={describedBy}
+                    value={mes}
+                    onChange={(e) => setMes(e.target.value)}
+                    options={MESES}
+                  />
+                )}
+              </FormField>
+            </div>
+            <div className="col-sm-6">
+              <FormField label="AEJ — ano">
+                {({ id, describedBy }) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    step="1"
+                    inputMode="numeric"
+                    aria-describedby={describedBy}
+                    value={ano}
+                    onChange={(e) => setAno(e.target.value)}
+                  />
+                )}
+              </FormField>
+            </div>
           </div>
-        </div>
+        </FormRow>
       </Card>
 
       <DataTable

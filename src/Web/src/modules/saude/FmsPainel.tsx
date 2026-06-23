@@ -11,8 +11,10 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   QueryState,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -61,27 +63,27 @@ export function FmsPainel() {
         </div>
       }
     >
-      <div className="row align-items-end mb-3">
-        <div className="col-md-8">
-          <FormField label="Identificador do Fundo (FMS)">
-            {({ id, describedBy, invalid }) => (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={fundoInput}
-                onChange={(e) => setFundoInput(e.target.value)}
-                placeholder="00000000-0000-0000-0000-000000000000"
-              />
-            )}
-          </FormField>
-        </div>
-        <div className="col-md-4 mb-3">
+      <FormRow
+        className="mb-3"
+        acao={
           <Button variant="primary" onClick={consultar} loading={query.isFetching && fundoId !== ''}>
             <i className="fas fa-magnifying-glass" aria-hidden="true" /> Consultar saldos
           </Button>
-        </div>
-      </div>
+        }
+      >
+        <FormField label="Identificador do Fundo (FMS)">
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              value={fundoInput}
+              onChange={(e) => setFundoInput(e.target.value)}
+              placeholder="00000000-0000-0000-0000-000000000000"
+            />
+          )}
+        </FormField>
+      </FormRow>
 
       {fundoId === '' ? (
         <EmptyState
@@ -108,14 +110,14 @@ export function FmsPainel() {
                 caption="Saldos do FMS por bloco de financiamento"
               />
               <Can permission="saude.gerenciar">
-                <div className="d-flex gap-2 flex-wrap mt-3">
+                <Toolbar align="start" className="mt-3">
                   <Button variant="secondary" onClick={() => setMovimento('parcela')}>
                     <i className="fas fa-arrow-down" aria-hidden="true" /> Receber parcela (FNS)
                   </Button>
                   <Button variant="secondary" onClick={() => setMovimento('execucao')}>
                     <i className="fas fa-arrow-up" aria-hidden="true" /> Executar despesa
                   </Button>
-                </div>
+                </Toolbar>
               </Can>
             </>
           )}

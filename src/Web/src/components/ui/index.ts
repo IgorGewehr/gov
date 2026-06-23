@@ -1,7 +1,7 @@
 // Biblioteca de UI do Tensorroot.Gov — wrappers React tipados sobre o gov.br DS.
 // Ponto de entrada único: importe sempre de '@/components/ui' (ou caminho relativo).
 export { Button } from './Button';
-export type { ButtonProps, ButtonVariant } from './Button';
+export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
 
 export { Input } from './Input';
 export type { InputProps } from './Input';
@@ -15,8 +15,14 @@ export type { SelectProps, SelectOption } from './Select';
 export { FormField } from './FormField';
 export type { FormFieldProps, FormFieldRenderProps } from './FormField';
 
+export { FormRow } from './FormRow';
+export type { FormRowProps } from './FormRow';
+
 export { Card } from './Card';
-export type { CardProps } from './Card';
+export type { CardProps, CardAccent } from './Card';
+
+export { Toolbar } from './Toolbar';
+export type { ToolbarProps, ToolbarGroupProps } from './Toolbar';
 
 export { DataTable } from './DataTable';
 export type { DataTableProps, Column } from './DataTable';
@@ -47,6 +53,9 @@ export type { TagProps, TagVariant } from './Tag';
 
 export { QueryState, errorMessage } from './QueryState';
 export type { QueryStateProps } from './QueryState';
+
+export { SubNav } from './SubNav';
+export type { SubNavProps, SubNavItem } from './SubNav';
 
 export { ToastProvider } from './toast/ToastProvider';
 export { useToast } from './toast/useToast';

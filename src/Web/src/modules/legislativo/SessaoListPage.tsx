@@ -2,13 +2,14 @@
 // link para detalhe e abertura do formulario de agendamento (mutation).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, DataTable, EmptyState, PageHeader, Tag } from '../../components/ui';
+import { Button, DataTable, EmptyState, PageHeader, Tag, Toolbar } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { useSessoesAgendadas } from './api';
 import type { SessaoResumo } from './api';
 import { formatarDataHora, situacaoSessaoTagVariant } from './legislativo.helpers';
+import { LegislativoSecoesNav } from './LegislativoSecoesNav';
 import { SessaoFormModal } from './SessaoFormModal';
 
 export function SessaoListPage() {
@@ -43,16 +44,21 @@ export function SessaoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Sessões"
         description="Sessões plenárias agendadas da Câmara Municipal."
         actions={
           <Can permission="legislativo.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Agendar sessão
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Agendar sessão
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
+
+      <LegislativoSecoesNav />
 
       <DataTable
         caption="Sessões agendadas"

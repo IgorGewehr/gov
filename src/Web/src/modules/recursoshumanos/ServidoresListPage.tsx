@@ -9,6 +9,7 @@ import {
   EmptyState,
   PageHeader,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -16,7 +17,11 @@ import { Can } from '../../auth/Can';
 import { formatarData } from '../../i18n/format';
 import { useServidoresAtivos } from './api';
 import type { ServidorResumo } from './api';
-import { PERM_RH_GERENCIAR, situacaoServidorTagVariant } from './recursosHumanos.helpers';
+import {
+  formatarRegimePrev,
+  PERM_RH_GERENCIAR,
+  situacaoServidorTagVariant,
+} from './recursosHumanos.helpers';
 import { AdmitirServidorFormModal } from './AdmitirServidorFormModal';
 import { RhSubNav } from './RhSubNav';
 
@@ -42,7 +47,7 @@ export function ServidoresListPage() {
       key: 'regime',
       header: 'Regime',
       sortAccessor: (s) => s.regime,
-      render: (s) => s.regime,
+      render: (s) => formatarRegimePrev(s.regime),
     },
     {
       key: 'situacao',
@@ -62,9 +67,10 @@ export function ServidoresListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (s) => (
         <Link
-          className="br-button tertiary small"
+          className="br-button secondary small"
           to={`/recursoshumanos/servidores/${encodeURIComponent(s.matricula)}`}
         >
           Detalhes
@@ -77,13 +83,16 @@ export function ServidoresListPage() {
     <>
       <RhSubNav />
       <PageHeader
+        eyebrow="Recursos Humanos"
         title="Servidores"
         description="Quadro de pessoal ativo do órgão (situação diferente de Desligado)."
         actions={
           <Can permission={PERM_RH_GERENCIAR}>
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-user-plus" aria-hidden="true" /> Admitir servidor
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-user-plus" aria-hidden="true" /> Admitir servidor
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

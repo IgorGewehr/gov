@@ -11,10 +11,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -102,48 +104,24 @@ export function FamiliaListPage() {
     <>
       <AssistenciaSocialSubNav />
       <PageHeader
+        eyebrow="Assistência Social"
         title="Famílias (SUAS)"
         description="Consulte as famílias referenciadas por território (CRAS) e gerencie a gestão socioeconômica."
         actions={
           <Can permission="assistenciasocial.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Referenciar família
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Referenciar família
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-sm">
-              <FormField label="Território de cobertura (CRAS)" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={territorio}
-                    onChange={(e) => setTerritorio(e.target.value)}
-                    placeholder="Ex.: Território Centro"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-auto">
-              <FormField label="Situação">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    options={FILTRO_SITUACAO_OPCOES}
-                    value={filtroSituacao}
-                    onChange={(e) => setFiltroSituacao(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -152,8 +130,38 @@ export function FamiliaListPage() {
               >
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm">
+                <FormField label="Território de cobertura (CRAS)" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={territorio}
+                      onChange={(e) => setTerritorio(e.target.value)}
+                      placeholder="Ex.: Território Centro"
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-auto">
+                <FormField label="Situação">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      options={FILTRO_SITUACAO_OPCOES}
+                      value={filtroSituacao}
+                      onChange={(e) => setFiltroSituacao(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

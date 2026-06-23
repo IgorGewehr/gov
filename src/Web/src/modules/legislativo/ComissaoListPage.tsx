@@ -3,7 +3,7 @@
 // `legislativo.comissoes.gerenciar`).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, DataTable, EmptyState, PageHeader, Tag } from '../../components/ui';
+import { Button, DataTable, EmptyState, PageHeader, Tag, Toolbar } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -45,13 +45,16 @@ export function ComissaoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Comissões"
         description="Comissões permanentes e temporárias da Câmara e suas composições."
         actions={
           <Can permission="legislativo.comissoes.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Criar comissão
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Criar comissão
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

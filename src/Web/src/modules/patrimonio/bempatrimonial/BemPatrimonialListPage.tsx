@@ -11,8 +11,10 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
@@ -22,6 +24,7 @@ import { useBensDepreciaveis } from './bempatrimonial.api';
 import type { BemDepreciavelResumo } from './bempatrimonial.api';
 import { competenciaAtual, guidInvalido } from './bemPatrimonial.helpers';
 import { BemPatrimonialFormModal } from './BemPatrimonialFormModal';
+import { PatrimonioSubNav } from '../PatrimonioSubNav';
 
 export function BemPatrimonialListPage() {
   const navigate = useNavigate();
@@ -94,8 +97,9 @@ export function BemPatrimonialListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (b) => (
-        <Link className="br-button tertiary small" to={`/patrimonio/bens/${b.id}`}>
+        <Link className="br-button secondary small" to={`/patrimonio/bens/${b.id}`}>
           Detalhes
         </Link>
       ),
@@ -104,87 +108,93 @@ export function BemPatrimonialListPage() {
 
   return (
     <>
+      <PatrimonioSubNav />
       <PageHeader
+        eyebrow="Patrimônio"
         title="Bens patrimoniais"
         description="Consulte bens do acervo, acompanhe os depreciáveis por competência e incorpore novos bens."
         actions={
           <Can permission="patrimonio.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Incorporar bem
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Incorporar bem
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4" header={<strong>Consultar bem por identificador</strong>}>
         <form className="br-form" onSubmit={abrirDetalhe}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do bem" required error={idErro}>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={bemId}
-                    onChange={(e) => setBemId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="secondary" type="submit" disabled={bemId.trim() === ''}>
                 Abrir detalhe
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do bem" required error={idErro}>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={bemId}
+                  onChange={(e) => setBemId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 
       <Card className="mb-4" header={<strong>Bens depreciáveis por competência</strong>}>
         <form className="br-form" onSubmit={consultarDepreciaveis}>
-          <div className="row align-items-end">
-            <div className="col-sm-4">
-              <FormField label="Ano" required>
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    step="1"
-                    inputMode="numeric"
-                    value={ano}
-                    onChange={(e) => setAno(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-4">
-              <FormField label="Mês" required>
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    type="number"
-                    min="1"
-                    max="12"
-                    step="1"
-                    inputMode="numeric"
-                    value={mes}
-                    onChange={(e) => setMes(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-6">
+                <FormField label="Ano" required>
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      step="1"
+                      inputMode="numeric"
+                      value={ano}
+                      onChange={(e) => setAno(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-6">
+                <FormField label="Mês" required>
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="number"
+                      min="1"
+                      max="12"
+                      step="1"
+                      inputMode="numeric"
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

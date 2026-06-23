@@ -13,6 +13,7 @@ import {
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -67,13 +68,16 @@ export function ProposicaoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Proposições"
         description="Acompanhe as matérias submetidas à apreciação do Plenário por situação."
         actions={
           <Can permission="legislativo.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Apresentar proposição
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Apresentar proposição
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

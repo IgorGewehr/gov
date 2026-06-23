@@ -22,6 +22,24 @@ export const TIPOS_FOLHA_MINHA: SelectOption[] = [
   { value: 'Rescisao', label: 'Rescisão' },
 ];
 
+/**
+ * Formata o regime previdenciário para exibição em siglas oficiais MAIÚSCULAS.
+ * O backend serializa o enum como PascalCase ('Rpps'/'Rgps'), que renderizado cru
+ * aparece "minúsculo" (Rgps/Rpps) — aqui normalizamos para RGPS/RPPS (EC 103/2019).
+ */
+export function formatarRegimePrev(regime: string): string {
+  switch (regime) {
+    case 'Rpps':
+    case 'RPPS':
+      return 'RPPS';
+    case 'Rgps':
+    case 'RGPS':
+      return 'RGPS';
+    default:
+      return regime.toUpperCase();
+  }
+}
+
 /** Mapeia a situação do servidor para a variante semântica da Tag (cor + texto). */
 export function situacaoServidorTagVariant(situacao: string): TagVariant {
   switch (situacao) {

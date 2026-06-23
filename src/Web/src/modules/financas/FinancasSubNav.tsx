@@ -1,16 +1,9 @@
-// Sub-navegação interna do módulo Finanças (entre os agregados do ciclo da despesa:
-// Dotações, Empenhos, Liquidações, Pagamentos e Restos a Pagar). Mantém UMA entrada na
-// Sidebar e navega por aqui com NavLink acessível (aria-current), aparência de "tag".
-import { NavLink } from 'react-router-dom';
+// Sub-navegação interna do módulo Finanças (ciclo da despesa + contabilidade). Usa o
+// componente compartilhado SubNav (abas com flex-wrap — sempre visíveis, sem scroll
+// horizontal escondido) e mantém o módulo com UMA entrada na Sidebar.
+import { SubNav, type SubNavItem } from '../../components/ui';
 
-interface Aba {
-  to: string;
-  label: string;
-  /** Marca a aba ativa também na rota índice (Dotações). */
-  end?: boolean;
-}
-
-const ABAS: Aba[] = [
+const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/financas', label: 'Dotações', end: true },
   { to: '/financas/empenhos', label: 'Empenhos' },
   { to: '/financas/liquidacoes', label: 'Liquidações' },
@@ -24,21 +17,5 @@ const ABAS: Aba[] = [
 ];
 
 export function FinancasSubNav() {
-  return (
-    <nav className="mb-4" aria-label="Seções de Finanças">
-      <ul className="d-flex flex-wrap list-style-none p-0 m-0" style={{ gap: '0.5rem' }}>
-        {ABAS.map((aba) => (
-          <li key={aba.to}>
-            <NavLink
-              to={aba.to}
-              end={aba.end}
-              className={({ isActive }) => `br-button small ${isActive ? 'primary' : 'secondary'}`}
-            >
-              {aba.label}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
+  return <SubNav ariaLabel="Seções de Finanças" itens={ABAS} />;
 }

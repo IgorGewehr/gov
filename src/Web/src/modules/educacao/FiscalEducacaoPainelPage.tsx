@@ -13,6 +13,7 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
@@ -50,6 +51,7 @@ function MdeCard({ mde }: { mde: ApuracaoMde }) {
   return (
     <Card
       className="mb-4"
+      accent={mde.atingido ? 'success' : 'danger'}
       header={
         <div className="d-flex justify-content-between align-items-center">
           <strong>Indicador MDE — exercício {mde.exercicio}</strong>
@@ -93,6 +95,7 @@ function Fundeb70Card({ f }: { f: ApuracaoFundeb70 }) {
   return (
     <Card
       className="mb-4"
+      accent={f.atingido ? 'success' : 'danger'}
       header={
         <div className="d-flex justify-content-between align-items-center">
           <strong>FUNDEB — piso de 70% (magistério) — exercício {f.exercicio}</strong>
@@ -145,6 +148,7 @@ export function FiscalEducacaoPainelPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Educação"
         title="Painel Fiscal — Educação"
         description="Conformidade constitucional: mínimo de 25% em MDE (CF art. 212) e piso de 70% do FUNDEB no magistério."
       />
@@ -153,26 +157,8 @@ export function FiscalEducacaoPainelPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={apurar}>
-          <div className="row align-items-end">
-            <div className="col-md-3">
-              <FormField label="Exercício" required help="Ano de apuração (MDE e FUNDEB).">
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicioInput}
-                    onChange={(e) => setExercicioInput(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-md-3 mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -180,8 +166,29 @@ export function FiscalEducacaoPainelPage() {
               >
                 <i className="fas fa-magnifying-glass-chart" aria-hidden="true" /> Apurar exercício
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-md-4">
+                <FormField label="Exercício" required help="Ano de apuração (MDE e FUNDEB).">
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      step="1"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={exercicioInput}
+                      onChange={(e) => setExercicioInput(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

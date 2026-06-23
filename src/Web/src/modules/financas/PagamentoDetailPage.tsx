@@ -10,6 +10,7 @@ import {
   PageHeader,
   QueryState,
   Tag,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -100,7 +101,7 @@ export function PagamentoDetailPage() {
                       {confirmando === 'efetuar'
                         ? 'Efetuar o pagamento realiza a baixa financeira da ordem.'
                         : 'Cancelar a ordem reverte os efeitos e libera as liquidações.'}
-                      <div className="d-flex justify-content-end mt-2" style={{ gap: '0.5rem' }}>
+                      <Toolbar className="mt-2">
                         <Button variant="secondary" onClick={() => setConfirmando(null)}
                           disabled={efetuar.isPending || cancelar.isPending}>
                           Voltar
@@ -114,17 +115,17 @@ export function PagamentoDetailPage() {
                             Cancelar ordem
                           </Button>
                         )}
-                      </div>
+                      </Toolbar>
                     </Alert>
                   ) : (
-                    <div className="d-flex justify-content-end" style={{ gap: '0.5rem' }}>
+                    <Toolbar>
                       <Button variant="primary" onClick={() => setConfirmando('efetuar')}>
                         Efetuar pagamento
                       </Button>
                       <Button variant="danger" onClick={() => setConfirmando('cancelar')}>
                         Cancelar ordem
                       </Button>
-                    </div>
+                    </Toolbar>
                   )}
                 </Can>
               }

@@ -9,9 +9,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -81,9 +83,11 @@ export function DotacaoListPage() {
         description="Créditos orçamentários por exercício (Lei 4.320/64). Base do ciclo da despesa."
         actions={
           <Can permission="financas.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Criar dotação
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Criar dotação
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -92,30 +96,29 @@ export function DotacaoListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-md-auto">
-              <FormField label="Exercício" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="2000"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicio}
-                    onChange={(e) => setExercicio(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Exercício" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min="2000"
+                  step="1"
+                  inputMode="numeric"
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={exercicio}
+                  onChange={(e) => setExercicio(e.target.value)}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

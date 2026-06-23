@@ -1,0 +1,122 @@
+/*
+ * TOKENS — single source of truth do Tensorroot.Gov (OVERHAUL-SPEC §1).
+ *
+ * A "cara nova" govtech/fintech NÃO vem de cores novas: vem de disciplina de
+ * tokens, espaçamento, hierarquia e elevação — tudo DENTRO do gov.br DS
+ * (CLAUDE.md §13 + eMAG + WCAG 2.1 AA). Zero magic number nos componentes:
+ * margem/padding/cor/raio/sombra SEMPRE referenciam estas variáveis.
+ *
+ * Mantemos os nomes --tg-* já consumidos no app e remapeamos para a nova escala
+ * (sem tocar nos consumidores). Onde houver token gov.br equivalente, usamos como
+ * fallback à direita (ex.: var(--blue-warm-vivid-70, #1351b4)).
+ */
+
+:root {
+  /* ===== 1.1 Paleta neutra — cinza COM PROPÓSITO (mata o "cinza chapado") ===== */
+  --tg-gray-0: #ffffff; /* surface elevada (cards)            */
+  --tg-gray-5: #f7f9fc; /* fundo de página (app canvas)       */
+  --tg-gray-10: #eef2f7; /* fundo sutil de zebra/hover/inputs  */
+  --tg-gray-20: #e2e8f0; /* bordas sutis (hairline)            */
+  --tg-gray-30: #cbd5e1; /* bordas de ênfase / divisores fortes*/
+  --tg-gray-40: #94a3b8; /* ícones decorativos, placeholders   */
+  --tg-gray-50: #64748b; /* texto muted / secundário           */
+  --tg-gray-70: #334155; /* texto de corpo                     */
+  --tg-gray-90: #0f1d2e; /* títulos / texto forte              */
+
+  /* Remapeia os tokens antigos para a nova escala (sem tocar nos consumidores) */
+  --tg-bg: var(--tg-gray-5);
+  --tg-surface: var(--tg-gray-0);
+  --tg-border: var(--tg-gray-20);
+  --tg-text: var(--tg-gray-90);
+  --tg-muted: var(--tg-gray-50);
+
+  /* ===== 1.2 Cores semânticas (gov.br) + primária navy ===== */
+  --tg-primary: var(--blue-warm-vivid-70, #1351b4);
+  --tg-primary-dark: var(--blue-warm-vivid-80, #0c326f);
+  --tg-navy: #071d41; /* topbar/títulos fortes */
+  --tg-tint: #e8f0fb; /* superfície interativa clara */
+  --tg-tint-strong: #d4e5fb; /* item de menu ativo */
+
+  /* Semânticas: texto/borda escuros = contraste AA; fundo = tint claro.
+     Regra: status NUNCA só por cor — sempre cor + ícone + texto (eMAG/WCAG). */
+  --tg-success: #168821;
+  --tg-success-bg: #e3f5e1;
+  --tg-success-fg: #0d5c16;
+  --tg-warning: #b86e00;
+  --tg-warning-bg: #fdf3e2;
+  --tg-warning-fg: #8a4b00;
+  --tg-danger: #c92a2a;
+  --tg-danger-bg: #fbe7e7;
+  --tg-danger-fg: #9b1c1c;
+  --tg-info: #155bcb;
+  --tg-info-bg: #e8f0fb;
+  --tg-info-fg: #0c326f;
+
+  /* ===== 1.3 Espaçamento — escala 4/8pt (mata os mb-3 manuais) ===== */
+  --tg-space-1: 4px;
+  --tg-space-2: 8px;
+  --tg-space-3: 12px;
+  --tg-space-4: 16px;
+  --tg-space-5: 20px;
+  --tg-space-6: 24px;
+  --tg-space-8: 32px;
+  --tg-space-10: 40px;
+  --tg-space-12: 48px;
+
+  /* ===== 1.4 Tipografia — escala com hierarquia clara ===== */
+  --tg-font-size-display: 26px;
+  --tg-lh-display: 1.2; /* h1 página            */
+  --tg-font-size-h2: 18px;
+  --tg-lh-h2: 1.3; /* título de card/seção */
+  --tg-font-size-h3: 15px;
+  --tg-lh-h3: 1.35; /* sub-bloco            */
+  --tg-font-size-body: 14px;
+  --tg-lh-body: 1.5; /* corpo / tabela       */
+  --tg-font-size-sm: 13px;
+  --tg-lh-sm: 1.45; /* labels, captions     */
+  --tg-font-size-xs: 11.5px;
+  --tg-lh-xs: 1.4; /* overline/eyebrow     */
+  --tg-font-size-kpi: 24px;
+  --tg-lh-kpi: 1.15; /* valor de KPI         */
+  --tg-weight-regular: 400;
+  --tg-weight-medium: 500;
+  --tg-weight-semibold: 600;
+  --tg-weight-bold: 700;
+  --tg-tracking-eyebrow: 0.6px; /* overline maiúsculo */
+
+  /* ===== 1.5 Sombras / Bordas / Raios (elevação REAL) ===== */
+  --tg-shadow-xs: 0 1px 2px rgb(15 29 46 / 6%);
+  --tg-shadow-sm: 0 1px 3px rgb(15 29 46 / 8%), 0 1px 2px rgb(15 29 46 / 4%); /* card padrão */
+  --tg-shadow-md: 0 4px 12px rgb(15 29 46 / 10%); /* hover/menu */
+  --tg-shadow-lg: 0 12px 32px rgb(15 29 46 / 16%); /* modal */
+  --tg-border-hair: 1px solid var(--tg-gray-20);
+  --tg-radius-sm: 6px;
+  --tg-radius-md: 10px;
+  --tg-radius-lg: 14px;
+  --tg-radius-pill: 999px;
+  --tg-focus-ring: 0 0 0 3px rgb(19 81 180 / 35%); /* foco visível consistente */
+
+  /* Dimensões do shell (preservadas) */
+  --tg-topbar-h: 60px;
+  --tg-sidebar-w: 272px;
+  --tg-sidebar-w-rail: 68px;
+}
+
+/* ===== Utilitárias semânticas de texto (garantem AA; usadas por Metrica e telas) =====
+   Definidas localmente para não depender da existência das classes do govbr-ds e
+   para travar o contraste sobre fundo claro. */
+.text-success {
+  color: var(--tg-success-fg);
+}
+
+.text-warning {
+  color: var(--tg-warning-fg);
+}
+
+.text-danger {
+  color: var(--tg-danger-fg);
+}
+
+.text-info {
+  color: var(--tg-info-fg);
+}

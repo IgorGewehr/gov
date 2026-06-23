@@ -14,9 +14,11 @@ import {
   EmptyState,
   errorMessage,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   useToast,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -27,6 +29,7 @@ import type { FornecedorResumo } from './fornecedor.api';
 import { NIVEL_SICAF_LABEL, SITUACAO_LABEL } from './fornecedor.api';
 import { situacaoTagVariant, hojeIso } from './fornecedor.helpers';
 import { FornecedorFormModal } from './FornecedorFormModal';
+import { AdministracaoSubNav } from '../AdministracaoSubNav';
 
 export function FornecedorListPage() {
   const navigate = useNavigate();
@@ -68,28 +71,29 @@ export function FornecedorListPage() {
   const columns: Column<FornecedorResumo>[] = [
     {
       key: 'razaoSocial',
-      header: 'Razao social',
+      header: 'Razão social',
       sortAccessor: (f) => f.razaoSocial,
       render: (f) => f.razaoSocial,
     },
     { key: 'cnpj', header: 'CNPJ', render: (f) => f.cnpj },
     {
       key: 'situacao',
-      header: 'Situacao',
+      header: 'Situação',
       sortAccessor: (f) => f.situacao,
       render: (f) => <Tag variant={situacaoTagVariant(f.situacao)}>{SITUACAO_LABEL[f.situacao]}</Tag>,
     },
     {
       key: 'nivel',
-      header: 'Nivel SICAF',
+      header: 'Nível SICAF',
       sortAccessor: (f) => f.nivelCadastralSICAF,
       render: (f) => NIVEL_SICAF_LABEL[f.nivelCadastralSICAF],
     },
     {
       key: 'acoes',
-      header: 'Acoes',
+      header: 'Ações',
+      sticky: true,
       render: (f) => (
-        <Link className="br-button tertiary small" to={`/administracao/fornecedores/${f.id}`}>
+        <Link className="br-button secondary small" to={`/administracao/fornecedores/${f.id}`}>
           Detalhes
         </Link>
       ),
@@ -98,36 +102,26 @@ export function FornecedorListPage() {
 
   return (
     <>
+      <AdministracaoSubNav />
       <PageHeader
+        eyebrow="Compras e Licitações"
         title="Fornecedores"
-        description="Cadastro e sancao de fornecedores (Lei 14.133/2021 — registro cadastral/SICAF e sancoes)."
+        description="Cadastro e sanção de fornecedores (Lei 14.133/2021 — registro cadastral/SICAF e sanções)."
         actions={
           <Can permission="administracao.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Cadastrar fornecedor
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Cadastrar fornecedor
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4" header={<strong>Consultar fornecedor por CNPJ</strong>}>
         <form className="br-form" onSubmit={consultarPorCnpj}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="CNPJ do fornecedor" help="Com ou sem mascara.">
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={cnpjBusca}
-                    onChange={(e) => setCnpjBusca(e.target.value)}
-                    placeholder="00.000.000/0000-00"
-                    inputMode="numeric"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -136,28 +130,28 @@ export function FornecedorListPage() {
               >
                 Consultar CNPJ
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="CNPJ do fornecedor" help="Com ou sem máscara.">
+              {({ id, describedBy }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  value={cnpjBusca}
+                  onChange={(e) => setCnpjBusca(e.target.value)}
+                  placeholder="00.000.000/0000-00"
+                  inputMode="numeric"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 
-      <Card header={<strong>Fornecedores impedidos (sancao impeditiva vigente)</strong>}>
+      <Card header={<strong>Fornecedores impedidos (sanção impeditiva vigente)</strong>}>
         <form className="br-form mb-3" onSubmit={consultarImpedidos}>
-          <div className="row align-items-end">
-            <div className="col-sm-6">
-              <FormField label="Data de referencia" required help="Apura a vigencia impeditiva na data informada.">
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    type="date"
-                    aria-describedby={describedBy}
-                    value={referencia}
-                    onChange={(e) => setReferencia(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="secondary"
                 type="submit"
@@ -166,11 +160,23 @@ export function FornecedorListPage() {
               >
                 Atualizar lista
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Data de referência" required help="Apura a vigência impeditiva na data informada.">
+              {({ id, describedBy }) => (
+                <Input
+                  id={id}
+                  type="date"
+                  aria-describedby={describedBy}
+                  value={referencia}
+                  onChange={(e) => setReferencia(e.target.value)}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
 
-        <Alert variant="info" title="Referencia">
+        <Alert variant="info" title="Referência">
           Listando fornecedores impedidos em {formatarData(refConsulta)} (art. 156, III/IV).
         </Alert>
 

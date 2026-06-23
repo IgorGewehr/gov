@@ -8,10 +8,12 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
   Spinner,
+  Toolbar,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { useToast } from '../../components/ui';
@@ -165,14 +167,17 @@ export function TribunaPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Tribuna"
         description="Controle o uso da palavra dos oradores inscritos com cronômetro em tempo real."
         actions={
           sessaoId !== '' ? (
             <Can permission="legislativo.tribuna.controlar">
-              <Button variant="primary" onClick={() => setInscricaoAberta(true)}>
-                <i className="fas fa-plus" aria-hidden="true" /> Inscrever orador
-              </Button>
+              <Toolbar>
+                <Button variant="primary" onClick={() => setInscricaoAberta(true)}>
+                  <i className="fas fa-plus" aria-hidden="true" /> Inscrever orador
+                </Button>
+              </Toolbar>
             </Can>
           ) : undefined
         }
@@ -182,27 +187,26 @@ export function TribunaPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={carregar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador da sessão" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={sessaoInput}
-                    onChange={(e) => setSessaoInput(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={sessaoInput.trim() === ''}>
                 Carregar tribuna
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador da sessão" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={sessaoInput}
+                  onChange={(e) => setSessaoInput(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

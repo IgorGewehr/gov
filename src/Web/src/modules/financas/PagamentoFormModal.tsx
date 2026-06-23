@@ -191,11 +191,13 @@ export function PagamentoFormModal({ open, onClose }: PagamentoFormModalProps) {
                   )}
                 </FormField>
               </div>
-              <div className="col-auto mb-3">
-                <Button variant="secondary" onClick={() => setItens((a) => a.filter((_, idx) => idx !== i))}
-                  disabled={itens.length === 1} aria-label={`Remover item ${i + 1}`}>
-                  <i className="fas fa-trash" aria-hidden="true" />
-                </Button>
+              <div className="col-auto">
+                <div className="tg-form-row-acao">
+                  <Button variant="secondary" onClick={() => setItens((a) => a.filter((_, idx) => idx !== i))}
+                    disabled={itens.length === 1} aria-label={`Remover item ${i + 1}`}>
+                    <i className="fas fa-trash" aria-hidden="true" />
+                  </Button>
+                </div>
               </div>
             </div>
           ))}

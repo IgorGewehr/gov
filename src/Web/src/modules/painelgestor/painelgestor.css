@@ -1,0 +1,386 @@
+/*
+ * DATAVIZ do PAINEL DO GESTOR — primitivos visuais LOCAIS do módulo (barra de
+ * progresso, medidor de limite LRF, faixa-resumo de KPIs). Vive aqui (e não em
+ * styles/) porque é específico do dashboard executivo; consome SOMENTE os tokens
+ * globais (--tg-*) — zero magic number, zero cor nova. Tudo namespaced em `.pg-`
+ * para não vazar para outros módulos. Padrão gov.br: status = cor + texto/ícone.
+ */
+
+/* ============================================================
+ * Faixa-resumo de KPIs (hero) — os números que SALTAM no topo
+ * ============================================================ */
+.pg-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--tg-space-4);
+  margin-bottom: var(--tg-space-6);
+}
+
+.pg-resumo-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-2);
+  padding: var(--tg-space-5);
+  background: var(--tg-surface);
+  border: var(--tg-border-hair);
+  border-radius: var(--tg-radius-md);
+  box-shadow: var(--tg-shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Acento de status à esquerda (4px) — reforça o semáforo além da cor. */
+.pg-resumo-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--tg-gray-30);
+}
+
+.pg-resumo-item.is-sucesso::before {
+  background: var(--tg-success);
+}
+
+.pg-resumo-item.is-alerta::before {
+  background: var(--tg-warning);
+}
+
+.pg-resumo-item.is-perigo::before {
+  background: var(--tg-danger);
+}
+
+.pg-resumo-item.is-info::before {
+  background: var(--tg-info);
+}
+
+.pg-resumo-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--tg-space-2);
+}
+
+.pg-resumo-icone {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: var(--tg-radius-sm);
+  background: var(--tg-gray-10);
+  color: var(--tg-gray-50);
+  font-size: 14px;
+}
+
+.pg-resumo-item.is-sucesso .pg-resumo-icone {
+  background: var(--tg-success-bg);
+  color: var(--tg-success-fg);
+}
+
+.pg-resumo-item.is-alerta .pg-resumo-icone {
+  background: var(--tg-warning-bg);
+  color: var(--tg-warning-fg);
+}
+
+.pg-resumo-item.is-perigo .pg-resumo-icone {
+  background: var(--tg-danger-bg);
+  color: var(--tg-danger-fg);
+}
+
+.pg-resumo-item.is-info .pg-resumo-icone {
+  background: var(--tg-info-bg);
+  color: var(--tg-info-fg);
+}
+
+.pg-resumo-label {
+  font-size: var(--tg-font-size-xs);
+  font-weight: var(--tg-weight-semibold);
+  letter-spacing: var(--tg-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--tg-gray-50);
+}
+
+.pg-resumo-valor {
+  font-size: var(--tg-font-size-display);
+  line-height: var(--tg-lh-display);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+}
+
+.pg-resumo-secundario {
+  font-size: var(--tg-font-size-sm);
+  color: var(--tg-gray-50);
+  font-weight: var(--tg-weight-medium);
+}
+
+/* ============================================================
+ * Barra de progresso com semáforo (execução, arrecadação, etc.)
+ * ============================================================ */
+.pg-barra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-2);
+}
+
+.pg-barra-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tg-space-3);
+}
+
+.pg-barra-rotulo {
+  font-size: var(--tg-font-size-sm);
+  font-weight: var(--tg-weight-semibold);
+  color: var(--tg-gray-70);
+}
+
+.pg-barra-valor {
+  font-size: var(--tg-font-size-sm);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-barra-trilho {
+  position: relative;
+  height: 10px;
+  border-radius: var(--tg-radius-pill);
+  background: var(--tg-gray-10);
+  overflow: hidden;
+}
+
+.pg-barra-preenchimento {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: var(--tg-radius-pill);
+  background: var(--tg-primary);
+  transition: width 0.4s ease;
+  min-width: 2px;
+}
+
+.pg-barra-preenchimento.is-sucesso {
+  background: var(--tg-success);
+}
+
+.pg-barra-preenchimento.is-alerta {
+  background: var(--tg-warning);
+}
+
+.pg-barra-preenchimento.is-perigo {
+  background: var(--tg-danger);
+}
+
+.pg-barra-preenchimento.is-info {
+  background: var(--tg-info);
+}
+
+.pg-barra-rodape {
+  font-size: var(--tg-font-size-xs);
+  color: var(--tg-gray-50);
+}
+
+/* ============================================================
+ * Medidor de LIMITE (gauge linear) — % vs faixas legais (LRF).
+ * O trilho mostra marcadores das faixas (alerta/prudencial/legal)
+ * e o ponteiro indica a posição atual. Semáforo por cor + texto.
+ * ============================================================ */
+.pg-medidor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-3);
+}
+
+.pg-medidor-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tg-space-3);
+  flex-wrap: wrap;
+}
+
+.pg-medidor-atual {
+  font-size: var(--tg-font-size-kpi);
+  line-height: var(--tg-lh-kpi);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-medidor-atual.is-sucesso {
+  color: var(--tg-success-fg);
+}
+
+.pg-medidor-atual.is-alerta {
+  color: var(--tg-warning-fg);
+}
+
+.pg-medidor-atual.is-perigo {
+  color: var(--tg-danger-fg);
+}
+
+.pg-medidor-trilho {
+  position: relative;
+  height: 14px;
+  border-radius: var(--tg-radius-pill);
+  /* Faixas: verde (até alerta) -> amarelo (alerta..legal) -> vermelho (acima). */
+  background: linear-gradient(
+    90deg,
+    var(--tg-success-bg) 0%,
+    var(--tg-success-bg) var(--pg-faixa-alerta, 60%),
+    var(--tg-warning-bg) var(--pg-faixa-alerta, 60%),
+    var(--tg-warning-bg) var(--pg-faixa-legal, 90%),
+    var(--tg-danger-bg) var(--pg-faixa-legal, 90%),
+    var(--tg-danger-bg) 100%
+  );
+  border: 1px solid var(--tg-gray-20);
+}
+
+/* Marcadores verticais nas faixas (alerta/prudencial/legal). */
+.pg-medidor-marca {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--tg-gray-50);
+  transform: translateX(-1px);
+}
+
+/* Ponteiro da posição atual (losango). */
+.pg-medidor-ponteiro {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--tg-gray-90);
+  border: 2px solid var(--tg-surface);
+  box-shadow: var(--tg-shadow-sm);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.pg-medidor-ponteiro.is-sucesso {
+  background: var(--tg-success);
+}
+
+.pg-medidor-ponteiro.is-alerta {
+  background: var(--tg-warning);
+}
+
+.pg-medidor-ponteiro.is-perigo {
+  background: var(--tg-danger);
+}
+
+/* Legenda das faixas do medidor. */
+.pg-medidor-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--tg-space-2) var(--tg-space-4);
+  font-size: var(--tg-font-size-xs);
+  color: var(--tg-gray-50);
+}
+
+.pg-medidor-legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tg-space-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-medidor-legenda-ponto {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--tg-radius-pill);
+  flex: 0 0 auto;
+}
+
+.pg-ponto-alerta {
+  background: var(--tg-warning);
+}
+
+.pg-ponto-prudencial {
+  background: #d98a00;
+}
+
+.pg-ponto-legal {
+  background: var(--tg-danger);
+}
+
+/* ============================================================
+ * Bloco de mínimo constitucional — medidor + valores
+ * ============================================================ */
+.pg-minimo {
+  padding: var(--tg-space-4) var(--tg-space-5);
+  border: var(--tg-border-hair);
+  border-radius: var(--tg-radius-md);
+  background: var(--tg-surface);
+  box-shadow: var(--tg-shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-3);
+}
+
+.pg-minimo.is-sucesso {
+  box-shadow: var(--tg-shadow-xs), inset 3px 0 0 var(--tg-success);
+}
+
+.pg-minimo.is-perigo {
+  box-shadow: var(--tg-shadow-xs), inset 3px 0 0 var(--tg-danger);
+}
+
+.pg-minimo-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tg-space-3);
+  flex-wrap: wrap;
+}
+
+.pg-minimo-titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--tg-space-2);
+  font-size: var(--tg-font-size-h3);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+  margin: 0;
+}
+
+/* Marcador do mínimo exigido no trilho da barra (linha tracejada). */
+.pg-barra-trilho .pg-barra-limite {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 0;
+  border-left: 2px dashed var(--tg-gray-70);
+  z-index: 1;
+}
+
+.pg-minimo-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--tg-space-3) var(--tg-space-5);
+}
+
+.pg-dado-label {
+  font-size: var(--tg-font-size-xs);
+  font-weight: var(--tg-weight-semibold);
+  letter-spacing: var(--tg-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--tg-gray-50);
+  display: block;
+}
+
+.pg-dado-valor {
+  font-size: var(--tg-font-size-h3);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-vazio {
+  margin: 0;
+  color: var(--tg-gray-50);
+  font-size: var(--tg-font-size-sm);
+}

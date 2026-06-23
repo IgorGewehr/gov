@@ -13,9 +13,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
@@ -28,6 +30,7 @@ import {
 import type { ItemReposicaoResumo, PosicaoAbcResumo } from './itemestoque.api';
 import { classificacaoAbcLabel, classificacaoAbcTagVariant } from './itemEstoque.helpers';
 import { ItemEstoqueFormModal } from './ItemEstoqueFormModal';
+import { PatrimonioSubNav } from '../PatrimonioSubNav';
 
 export function ItemEstoqueListPage() {
   const navigate = useNavigate();
@@ -63,8 +66,9 @@ export function ItemEstoqueListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (i) => (
-        <Link className="br-button tertiary small" to={`/patrimonio/estoque/itens/${i.id}`}>
+        <Link className="br-button secondary small" to={`/patrimonio/estoque/itens/${i.id}`}>
           Detalhes
         </Link>
       ),
@@ -98,41 +102,44 @@ export function ItemEstoqueListPage() {
 
   return (
     <>
+      <PatrimonioSubNav />
       <PageHeader
+        eyebrow="Patrimônio"
         title="Almoxarifado"
         description="Controle de itens de consumo: reposição, curva ABC e movimentos."
         actions={
           <Can permission="patrimonio.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Cadastrar item
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Cadastrar item
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4" header={<strong>Consultar item por identificador</strong>}>
         <form className="br-form" onSubmit={consultarItem}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do item">
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={buscaId}
-                    onChange={(e) => setBuscaId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="secondary" type="submit" disabled={buscaId.trim() === ''}>
                 <i className="fas fa-magnifying-glass" aria-hidden="true" /> Abrir detalhe
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do item">
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={buscaId}
+                  onChange={(e) => setBuscaId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

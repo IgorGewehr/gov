@@ -9,11 +9,13 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
   Select,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -70,56 +72,62 @@ export function RubricasListPage() {
     <>
       <RhSubNav />
       <PageHeader
+        eyebrow="Recursos Humanos"
         title="Rubricas"
         description="Verbas parametrizáveis da folha (S-1010), vigentes na competência consultada."
         actions={
           <Can permission={PERM_RH_GERENCIAR}>
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Nova rubrica
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Nova rubrica
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-sm-4 col-md-3">
-              <FormField label="Mês" required>
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={mes}
-                    onChange={(e) => setMes(e.target.value)}
-                    options={MESES}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-4 col-md-3">
-              <FormField label="Ano" required>
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    value={ano}
-                    onChange={(e) => setAno(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-6">
+                <FormField label="Mês" required>
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      value={mes}
+                      onChange={(e) => setMes(e.target.value)}
+                      options={MESES}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-6">
+                <FormField label="Ano" required>
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      step="1"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      value={ano}
+                      onChange={(e) => setAno(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

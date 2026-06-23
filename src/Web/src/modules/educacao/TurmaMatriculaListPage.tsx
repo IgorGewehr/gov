@@ -10,6 +10,7 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
@@ -66,42 +67,15 @@ export function TurmaMatriculaListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Educação"
         title="Matrícula Inicial por turma"
         description="Liste a Matrícula Inicial de uma turma na data de referência do Censo Escolar."
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-sm-6">
-              <FormField label="Identificador da turma" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={turmaId}
-                    onChange={(e) => setTurmaId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-4">
-              <FormField label="Data de referência (Censo)" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="date"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={dataReferencia}
-                    onChange={(e) => setDataReferencia(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-2 mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -110,8 +84,39 @@ export function TurmaMatriculaListPage() {
               >
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-7">
+                <FormField label="Identificador da turma" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={turmaId}
+                      onChange={(e) => setTurmaId(e.target.value)}
+                      placeholder="00000000-0000-0000-0000-000000000000"
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-5">
+                <FormField label="Data de referência (Censo)" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="date"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={dataReferencia}
+                      onChange={(e) => setDataReferencia(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

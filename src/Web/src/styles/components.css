@@ -1,0 +1,460 @@
+/*
+ * COMPONENTES — refino visual dos wrappers gov.br (OVERHAUL-SPEC §2).
+ *
+ * Tudo via tokens (styles/tokens.css). Eleva os componentes-base ao patamar
+ * govtech/fintech SaaS: elevação real (sombra/hairline), hierarquia tipográfica,
+ * alinhamento disciplinado — DENTRO do gov.br DS (eMAG/WCAG 2.1 AA). Não é rebrand.
+ */
+
+/* ============================================================
+ * 2.1 Button — tamanhos, ícone alinhado por gap, foco visível
+ * ============================================================ */
+.br-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tg-space-2); /* ícone alinhado: sem {' '} manuais */
+  border-radius: var(--tg-radius-sm);
+  font-weight: var(--tg-weight-semibold);
+}
+
+/* Tamanho sm: mapeia para a classe `small` do gov.br. */
+.br-button.small {
+  height: 32px;
+  font-size: var(--tg-font-size-sm);
+}
+
+/* md (default) — altura consistente para parear com inputs. */
+.br-button:not(.small):not(.circle) {
+  height: 40px;
+  font-size: var(--tg-font-size-body);
+}
+
+.br-button:focus-visible {
+  box-shadow: var(--tg-focus-ring);
+  outline: none;
+}
+
+/* primary forte (mantido em layout.css) + secondary com contorno azul nítido. */
+.br-button.secondary {
+  border-color: var(--tg-primary);
+  color: var(--tg-primary-dark);
+}
+
+.br-button.secondary:hover:not(:disabled) {
+  background-color: var(--tg-tint);
+}
+
+/* ghost (= tertiary): sem borda, hover sutil. */
+.br-button.tertiary:hover:not(:disabled) {
+  background-color: var(--tg-gray-10);
+}
+
+/* Ícone decorativo dentro do botão não interfere no baseline. */
+.br-button > i {
+  line-height: 1;
+}
+
+/* ============================================================
+ * 2.2 FormRow — alinha a AÇÃO ao INPUT (não ao label).
+ * Conserta o "Consultar torto" na raiz: a coluna da ação tem um
+ * spacer invisível com a altura da linha do <label>, então input
+ * e botão ficam sempre na mesma linha (independe do label).
+ * ============================================================ */
+.tg-form-row {
+  display: flex;
+  gap: var(--tg-space-3);
+  align-items: flex-end; /* alinha pelo controle, não pelo topo do bloco */
+  flex-wrap: wrap;
+}
+
+/* O campo cresce; a ação só ocupa o necessário. */
+.tg-form-row > .tg-form-row-campo {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.tg-form-row-acao {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Spacer = altura da linha do label, garantindo o alinhamento ao input. */
+.tg-form-row-acao::before {
+  content: '';
+  display: block;
+  height: calc(var(--tg-font-size-sm) * var(--tg-lh-sm));
+  margin-bottom: var(--tg-space-1);
+}
+
+/* Quando a ação acompanha um campo sem label visível, o spacer some. */
+.tg-form-row-acao.tg-sem-label::before {
+  display: none;
+}
+
+/* FormField: label com hierarquia e cor de corpo (gray-70). */
+.br-input > label {
+  font-size: var(--tg-font-size-sm);
+  font-weight: var(--tg-weight-semibold);
+  color: var(--tg-gray-70);
+}
+
+/* ============================================================
+ * 2.3 Card — elevação real (nunca cinza chapado)
+ * ============================================================ */
+.br-card {
+  background: var(--tg-surface);
+  border: var(--tg-border-hair);
+  border-radius: var(--tg-radius-md);
+  box-shadow: var(--tg-shadow-sm);
+}
+
+.br-card > .card-header {
+  padding: var(--tg-space-5) var(--tg-space-6);
+  border-bottom: var(--tg-border-hair);
+}
+
+.br-card > .card-content {
+  padding: var(--tg-space-6);
+}
+
+.br-card > .card-footer {
+  padding: var(--tg-space-4) var(--tg-space-6);
+  border-top: var(--tg-border-hair);
+}
+
+/* Acento de status no topo do card (prop `accent`). */
+.tg-card-accent-primary {
+  box-shadow: var(--tg-shadow-sm), inset 0 3px 0 var(--tg-primary);
+}
+
+.tg-card-accent-success {
+  box-shadow: var(--tg-shadow-sm), inset 0 3px 0 var(--tg-success);
+}
+
+.tg-card-accent-warning {
+  box-shadow: var(--tg-shadow-sm), inset 0 3px 0 var(--tg-warning);
+}
+
+.tg-card-accent-danger {
+  box-shadow: var(--tg-shadow-sm), inset 0 3px 0 var(--tg-danger);
+}
+
+/* ============================================================
+ * 2.4 Table — coluna Ações SEMPRE visível + densidade
+ * ============================================================ */
+.tg-table-scroll {
+  overflow-x: auto;
+  border: var(--tg-border-hair);
+  border-radius: var(--tg-radius-md);
+  background: var(--tg-surface);
+}
+
+.tg-table-scroll .br-table {
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+
+.tg-table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tg-table-scroll th,
+.tg-table-scroll td {
+  padding: var(--tg-space-3) var(--tg-space-4);
+  font-size: var(--tg-font-size-body);
+  line-height: var(--tg-lh-body);
+  vertical-align: middle;
+}
+
+.tg-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tg-gray-5);
+  color: var(--tg-gray-70);
+  font-weight: var(--tg-weight-semibold);
+  border-bottom: 1px solid var(--tg-gray-30);
+  text-align: left;
+}
+
+/* Zebra + hover sutis. */
+.tg-table-scroll tbody tr:nth-child(even) {
+  background: var(--tg-gray-5);
+}
+
+.tg-table-scroll tbody tr:hover {
+  background: var(--tg-tint);
+}
+
+.tg-table-scroll tbody td {
+  border-top: 1px solid var(--tg-gray-20);
+  color: var(--tg-gray-70);
+}
+
+/* Coluna "Ações" fixa à direita: nunca corta. */
+.tg-col-acoes {
+  position: sticky;
+  right: 0;
+  background: var(--tg-surface);
+  box-shadow: -8px 0 8px -8px rgb(15 29 46 / 12%);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tg-table-scroll thead th.tg-col-acoes {
+  background: var(--tg-gray-5);
+  z-index: 2;
+}
+
+.tg-table-scroll tbody tr:nth-child(even) .tg-col-acoes {
+  background: var(--tg-gray-5);
+}
+
+.tg-table-scroll tbody tr:hover .tg-col-acoes {
+  background: var(--tg-tint);
+}
+
+/* Botões de ação na tabela já vêm sm/ghost (reduz largura, evita corte). */
+.tg-col-acoes .br-button {
+  margin-left: var(--tg-space-1);
+}
+
+/* ============================================================
+ * 2.5 SubNav/Tabs — abas sublinhadas limpas (não pílulas azuis)
+ * ============================================================ */
+.tg-subnav {
+  border-bottom: var(--tg-border-hair);
+}
+
+.tg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tg-space-2);
+  padding: var(--tg-space-3) var(--tg-space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; /* sobrepõe a hairline do .tg-subnav */
+  background: transparent;
+  color: var(--tg-gray-50);
+  font-size: var(--tg-font-size-sm);
+  font-weight: var(--tg-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+}
+
+.tg-tab:hover {
+  color: var(--tg-gray-70);
+  background: var(--tg-gray-5);
+}
+
+.tg-tab.active {
+  color: var(--tg-primary-dark);
+  font-weight: var(--tg-weight-semibold);
+  border-bottom-color: var(--tg-primary);
+}
+
+.tg-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--tg-focus-ring);
+  border-radius: var(--tg-radius-sm);
+}
+
+/* ============================================================
+ * 2.6 EmptyState — compacto (inline) x página inteira (page)
+ * ============================================================ */
+.tg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--tg-space-3);
+  padding: var(--tg-space-8);
+  color: var(--tg-gray-70);
+}
+
+.tg-empty.tg-empty-page {
+  min-height: 320px;
+  justify-content: center;
+}
+
+.tg-empty-icone {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--tg-radius-pill);
+  background: var(--tg-gray-10);
+  color: var(--tg-gray-40);
+}
+
+.tg-empty-titulo {
+  margin: 0;
+  font-size: var(--tg-font-size-h3);
+  font-weight: var(--tg-weight-semibold);
+  color: var(--tg-gray-90);
+}
+
+.tg-empty-descricao {
+  margin: 0;
+  font-size: var(--tg-font-size-sm);
+  color: var(--tg-gray-50);
+  max-width: 48ch;
+}
+
+/* ============================================================
+ * 2.7 PageHeader — eyebrow opcional + hierarquia + borda inferior
+ * ============================================================ */
+.tg-page-header {
+  padding-bottom: var(--tg-space-5);
+  border-bottom: var(--tg-border-hair);
+  margin-bottom: var(--tg-space-6);
+}
+
+.tg-page-eyebrow {
+  display: block;
+  font-size: var(--tg-font-size-xs);
+  font-weight: var(--tg-weight-semibold);
+  letter-spacing: var(--tg-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--tg-gray-50);
+  margin-bottom: var(--tg-space-1);
+}
+
+.tg-page-title {
+  font-size: var(--tg-font-size-display);
+  line-height: var(--tg-lh-display);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+}
+
+.tg-page-subtitulo {
+  color: var(--tg-gray-50);
+  font-size: var(--tg-font-size-sm);
+  line-height: var(--tg-lh-sm);
+  max-width: 70ch;
+}
+
+/* ============================================================
+ * 2.8 Toolbar/ActionBar — agrupa ações com hierarquia
+ * ============================================================ */
+.tg-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tg-space-2);
+  flex-wrap: wrap;
+}
+
+.tg-toolbar-end {
+  justify-content: flex-end;
+}
+
+.tg-toolbar-start {
+  justify-content: flex-start;
+}
+
+.tg-toolbar-between {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.tg-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--tg-space-2);
+}
+
+.tg-toolbar-group + .tg-toolbar-group {
+  padding-left: var(--tg-space-3);
+  border-left: var(--tg-border-hair);
+}
+
+/* ============================================================
+ * 2.9 Metrica/MetricaGrade — KPI com elevação e acento de status
+ * (mata o "cinza chapado" do Painel do Gestor)
+ * ============================================================ */
+.tg-metrica-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--tg-space-4);
+  margin: 0;
+}
+
+.tg-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-1);
+  padding: var(--tg-space-4) var(--tg-space-5);
+  background: var(--tg-surface);
+  border: var(--tg-border-hair);
+  border-radius: var(--tg-radius-md);
+  box-shadow: var(--tg-shadow-xs);
+  min-width: 0;
+}
+
+/* Acento de status à esquerda (4px) quando tom != neutro. */
+.tg-metrica-sucesso {
+  box-shadow: var(--tg-shadow-xs), inset 3px 0 0 var(--tg-success);
+}
+
+.tg-metrica-alerta {
+  box-shadow: var(--tg-shadow-xs), inset 3px 0 0 var(--tg-warning);
+}
+
+.tg-metrica-perigo {
+  box-shadow: var(--tg-shadow-xs), inset 3px 0 0 var(--tg-danger);
+}
+
+.tg-metrica-label {
+  font-size: var(--tg-font-size-xs);
+  font-weight: var(--tg-weight-semibold);
+  letter-spacing: var(--tg-tracking-eyebrow);
+  color: var(--tg-gray-50);
+  text-transform: uppercase;
+}
+
+.tg-metrica-valor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tg-space-1);
+  margin: 0;
+}
+
+.tg-metrica-valor > span:first-child {
+  font-size: var(--tg-font-size-kpi);
+  line-height: var(--tg-lh-kpi);
+  font-weight: var(--tg-weight-bold);
+  color: var(--tg-gray-90);
+}
+
+.tg-metrica-secundario {
+  font-size: var(--tg-font-size-sm);
+  font-weight: var(--tg-weight-semibold);
+  color: var(--tg-gray-50);
+}
+
+/* ============================================================
+ * Modal — elevação e raio consistentes (Modal.tsx usa classes gov.br)
+ * ============================================================ */
+.br-modal {
+  border-radius: var(--tg-radius-lg);
+  box-shadow: var(--tg-shadow-lg);
+}
+
+.br-modal-footer {
+  display: flex;
+  gap: var(--tg-space-2);
+  padding-top: var(--tg-space-4);
+  border-top: var(--tg-border-hair);
+}
+
+/* Rodapé de modal já agrupa ações com hierarquia (primário à direita). */
+.br-modal-footer.justify-content-end {
+  justify-content: flex-end;
+}

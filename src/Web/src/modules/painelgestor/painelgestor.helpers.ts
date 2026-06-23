@@ -12,6 +12,14 @@ export function formatarFracao(fracao: number): string {
   })}%`;
 }
 
+/** Moeda compacta para a faixa-resumo: "R$ 12,3 mi", "R$ 4,8 mil", "R$ 980". */
+export function formatarMoedaCompacta(valor: number): string {
+  const abs = Math.abs(valor);
+  if (abs >= 1_000_000) return `R$ ${(valor / 1_000_000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi`;
+  if (abs >= 1_000) return `R$ ${(valor / 1_000).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} mil`;
+  return `R$ ${valor.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`;
+}
+
 /** Exercício corrente (ano), usado como padrão do seletor. */
 export function exercicioAtual(): number {
   return new Date().getFullYear();

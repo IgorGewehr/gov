@@ -10,10 +10,12 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Spinner,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -46,37 +48,24 @@ export function PacienteListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Saúde"
         title="Pacientes"
         description="Localize um paciente pelo Cartão Nacional de Saúde (CNS) para acessar o prontuário."
         actions={
           <Can permission="saude.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Cadastrar paciente
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Cadastrar paciente
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Cartão Nacional de Saúde (CNS)" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    inputMode="numeric"
-                    maxLength={15}
-                    value={cns}
-                    onChange={(e) => setCns(e.target.value.replace(/\D/g, ''))}
-                    placeholder="000000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -85,8 +74,23 @@ export function PacienteListPage() {
               >
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Cartão Nacional de Saúde (CNS)" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  inputMode="numeric"
+                  maxLength={15}
+                  value={cns}
+                  onChange={(e) => setCns(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

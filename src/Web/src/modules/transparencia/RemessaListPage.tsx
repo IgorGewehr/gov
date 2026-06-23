@@ -10,10 +10,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -86,75 +88,79 @@ export function RemessaListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Transparência"
         title="Prestação de contas (TCE-RS)"
         description="Gere, valide e empacote as remessas do SIAPC/PAD e registre o protocolo da transmissão."
         actions={
           <Can permission="transparencia.gerenciar">
-            <div className="d-flex flex-wrap gap-2">
-              <Button variant="primary" onClick={() => setFormAberto(true)}>
-                <i className="fas fa-plus" aria-hidden="true" /> Gerar remessa contábil
-              </Button>
+            <Toolbar>
               <Button variant="secondary" onClick={() => setFormFolhaAberto(true)}>
                 <i className="fas fa-users" aria-hidden="true" /> Gerar remessa de folha
               </Button>
-            </div>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Gerar remessa contábil
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-sm-3">
-              <FormField label="Exercício" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="1900"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicio}
-                    onChange={(e) => setExercicio(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-12 col-sm-3">
-              <FormField label="Tipo de período">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    placeholder="Todos"
-                    options={tipoPeriodoOptions}
-                    value={tipo}
-                    onChange={(e) => setTipo(e.target.value as TipoPeriodo | '')}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-12 col-sm-3">
-              <FormField label="Situação">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    placeholder="Todas"
-                    options={situacaoRemessaOptions}
-                    value={situacao}
-                    onChange={(e) => setSituacao(e.target.value as SituacaoRemessa | '')}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-12 col-sm-4">
+                <FormField label="Exercício" required>
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="1900"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={exercicio}
+                      onChange={(e) => setExercicio(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-sm-4">
+                <FormField label="Tipo de período">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      placeholder="Todos"
+                      options={tipoPeriodoOptions}
+                      value={tipo}
+                      onChange={(e) => setTipo(e.target.value as TipoPeriodo | '')}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-12 col-sm-4">
+                <FormField label="Situação">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      placeholder="Todas"
+                      options={situacaoRemessaOptions}
+                      value={situacao}
+                      onChange={(e) => setSituacao(e.target.value as SituacaoRemessa | '')}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

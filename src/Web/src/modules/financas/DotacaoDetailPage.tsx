@@ -2,7 +2,7 @@
 // Reforçar (suplementação) e Anular crédito. Param de rota -> useQuery + QueryState.
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Card, PageHeader, QueryState, Tag } from '../../components/ui';
+import { Button, Card, PageHeader, QueryState, Tag, Toolbar } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
 import { useAnularCreditoDotacao, useDotacao, useReforcarDotacao } from './financas.api';
@@ -59,14 +59,14 @@ export function DotacaoDetailPage() {
               }
               footer={
                 <Can permission="financas.gerenciar">
-                  <div className="d-flex justify-content-end" style={{ gap: '0.5rem' }}>
+                  <Toolbar>
                     <Button variant="secondary" onClick={() => setAcao('reforcar')}>
                       Reforçar
                     </Button>
                     <Button variant="danger" onClick={() => setAcao('anular')}>
                       Anular crédito
                     </Button>
-                  </div>
+                  </Toolbar>
                 </Can>
               }
             >

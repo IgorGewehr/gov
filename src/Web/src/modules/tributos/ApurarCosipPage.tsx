@@ -14,6 +14,7 @@ import {
   Input,
   PageHeader,
   Select,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -92,9 +93,11 @@ export function ApurarCosipPage() {
         description="Apure a COSIP/CIP por lançamento próprio (consumidores não faturados pela distribuidora)."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setTabelaAberta(true)}>
-              <i className="fas fa-table-list" aria-hidden="true" /> Configurar tabela
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setTabelaAberta(true)}>
+                <i className="fas fa-table-list" aria-hidden="true" /> Configurar tabela
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -152,9 +155,11 @@ export function ApurarCosipPage() {
           </div>
 
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="primary" type="submit" loading={lancar.isPending}>
-              <i className="fas fa-calculator" aria-hidden="true" /> Apurar e lançar
-            </Button>
+            <Toolbar>
+              <Button variant="primary" type="submit" loading={lancar.isPending}>
+                <i className="fas fa-calculator" aria-hidden="true" /> Apurar e lançar
+              </Button>
+            </Toolbar>
           </Can>
         </form>
       </Card>

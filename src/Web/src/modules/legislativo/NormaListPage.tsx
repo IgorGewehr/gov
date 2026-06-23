@@ -10,10 +10,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -81,13 +83,16 @@ export function NormaListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Normas"
         description="Pesquise o acervo de leis, decretos e resoluções da Câmara."
         actions={
           <Can permission="legislativo.normas.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Cadastrar norma
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Cadastrar norma
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -96,56 +101,59 @@ export function NormaListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={buscar}>
-          <div className="row align-items-end">
-            <div className="col-sm-6 col-md-5">
-              <FormField label="Termo">
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={termo}
-                    onChange={(e) => setTermo(e.target.value)}
-                    placeholder="Palavra na ementa ou número"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-6 col-md-3">
-              <FormField label="Tipo">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={tipo}
-                    onChange={(e) => setTipo(e.target.value)}
-                    options={[
-                      { value: '', label: 'Todos' },
-                      ...TIPOS_NORMA.map((t) => ({ value: String(t.value), label: t.label })),
-                    ]}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-sm-4 col-md-2">
-              <FormField label="Ano">
-                {({ id, describedBy }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    type="number"
-                    value={ano}
-                    onChange={(e) => setAno(e.target.value)}
-                    placeholder="Ex.: 2026"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit">
                 <i className="fas fa-search" aria-hidden="true" /> Buscar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-6 col-md-6">
+                <FormField label="Termo">
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      value={termo}
+                      onChange={(e) => setTermo(e.target.value)}
+                      placeholder="Palavra na ementa ou número"
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-6 col-md-4">
+                <FormField label="Tipo">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      value={tipo}
+                      onChange={(e) => setTipo(e.target.value)}
+                      options={[
+                        { value: '', label: 'Todos' },
+                        ...TIPOS_NORMA.map((t) => ({ value: String(t.value), label: t.label })),
+                      ]}
+                    />
+                  )}
+                </FormField>
+              </div>
+              <div className="col-sm-4 col-md-2">
+                <FormField label="Ano">
+                  {({ id, describedBy }) => (
+                    <Input
+                      id={id}
+                      aria-describedby={describedBy}
+                      type="number"
+                      value={ano}
+                      onChange={(e) => setAno(e.target.value)}
+                      placeholder="Ex.: 2026"
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

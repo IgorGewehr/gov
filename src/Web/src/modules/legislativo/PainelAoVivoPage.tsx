@@ -9,6 +9,7 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
@@ -71,7 +72,8 @@ export function PainelAoVivoPage() {
       header: 'Ações',
       render: (v) => (
         <Button
-          variant={v.id === votacaoId ? 'primary' : 'tertiary'}
+          variant={v.id === votacaoId ? 'primary' : 'ghost'}
+          size="sm"
           onClick={() => setVotacaoId(v.id)}
         >
           {v.id === votacaoId ? 'Abrindo' : 'Abrir painel'}
@@ -83,6 +85,7 @@ export function PainelAoVivoPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Painel ao vivo"
         description="Acompanhe o placar nominal das votações de uma sessão em tempo real."
       />
@@ -91,27 +94,26 @@ export function PainelAoVivoPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={buscar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador da sessão" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={sessaoInput}
-                    onChange={(e) => setSessaoInput(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={sessaoInput.trim() === ''}>
                 Carregar votações
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador da sessão" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={sessaoInput}
+                  onChange={(e) => setSessaoInput(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

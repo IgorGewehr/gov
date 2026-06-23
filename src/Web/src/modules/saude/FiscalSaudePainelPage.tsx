@@ -12,6 +12,7 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
@@ -51,6 +52,7 @@ function AspsCard({ asps }: { asps: ApuracaoAsps }) {
   return (
     <Card
       className="mb-4"
+      accent={asps.atingido ? 'success' : 'danger'}
       header={
         <div className="d-flex justify-content-between align-items-center">
           <strong>Indicador ASPS — exercício {asps.exercicio}</strong>
@@ -101,6 +103,7 @@ export function FiscalSaudePainelPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Saúde"
         title="Painel Fiscal — Saúde"
         description="Conformidade constitucional: mínimo de 15% em ASPS (LC 141/2012) e saldos do Fundo Municipal de Saúde."
       />
@@ -109,31 +112,34 @@ export function FiscalSaudePainelPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={apurar}>
-          <div className="row align-items-end">
-            <div className="col-md-3">
-              <FormField label="Exercício" required help="Ano de apuração do mínimo ASPS.">
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    type="number"
-                    min="2000"
-                    max="2100"
-                    step="1"
-                    inputMode="numeric"
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={exercicioInput}
-                    onChange={(e) => setExercicioInput(e.target.value)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-md-3 mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 <i className="fas fa-magnifying-glass-chart" aria-hidden="true" /> Apurar exercício
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-md-4">
+                <FormField label="Exercício" required help="Ano de apuração do mínimo ASPS.">
+                  {({ id, describedBy, invalid }) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="2000"
+                      max="2100"
+                      step="1"
+                      inputMode="numeric"
+                      aria-describedby={describedBy}
+                      invalid={invalid}
+                      value={exercicioInput}
+                      onChange={(e) => setExercicioInput(e.target.value)}
+                    />
+                  )}
+                </FormField>
+              </div>
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

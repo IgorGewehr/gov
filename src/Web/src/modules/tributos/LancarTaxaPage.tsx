@@ -12,6 +12,7 @@ import {
   FormField,
   Input,
   PageHeader,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -81,9 +82,11 @@ export function LancarTaxaPage() {
         description="Lance uma taxa (poder de polícia ou serviço) a um contribuinte a partir da tabela vigente."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setTabelaAberta(true)}>
-              <i className="fas fa-table-list" aria-hidden="true" /> Configurar tabela
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setTabelaAberta(true)}>
+                <i className="fas fa-table-list" aria-hidden="true" /> Configurar tabela
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -148,9 +151,11 @@ export function LancarTaxaPage() {
           </div>
 
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="primary" type="submit" loading={lancar.isPending}>
-              <i className="fas fa-calculator" aria-hidden="true" /> Lançar taxa
-            </Button>
+            <Toolbar>
+              <Button variant="primary" type="submit" loading={lancar.isPending}>
+                <i className="fas fa-calculator" aria-hidden="true" /> Lançar taxa
+              </Button>
+            </Toolbar>
           </Can>
         </form>
       </Card>

@@ -2,7 +2,7 @@
 // Anular (total/parcial) e Liquidar (abre o formulário de liquidação com o empenho).
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Card, PageHeader, QueryState, Tag } from '../../components/ui';
+import { Button, Card, PageHeader, QueryState, Tag, Toolbar } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarMoeda } from '../../i18n/format';
 import { useAnularEmpenho, useEmpenho } from './financas.api';
@@ -59,14 +59,14 @@ export function EmpenhoDetailPage() {
               }
               footer={
                 <Can permission="financas.gerenciar">
-                  <div className="d-flex justify-content-end" style={{ gap: '0.5rem' }}>
+                  <Toolbar>
                     <Button variant="secondary" onClick={() => setAcao('liquidar')}>
                       Liquidar
                     </Button>
                     <Button variant="danger" onClick={() => setAcao('anular')}>
                       Anular
                     </Button>
-                  </div>
+                  </Toolbar>
                 </Can>
               }
             >

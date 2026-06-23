@@ -14,6 +14,7 @@ import {
   Input,
   PageHeader,
   Select,
+  Toolbar,
   useToast,
 } from '../../components/ui';
 import { Can } from '../../auth/Can';
@@ -103,9 +104,11 @@ export function EmitirAlvaraPage() {
         description="Emita o alvará (ato de polícia) e lance a Taxa de Licença (TLL) correspondente."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="secondary" onClick={() => setRenovarAberto(true)}>
-              <i className="fas fa-rotate" aria-hidden="true" /> Renovar alvará
-            </Button>
+            <Toolbar>
+              <Button variant="secondary" onClick={() => setRenovarAberto(true)}>
+                <i className="fas fa-rotate" aria-hidden="true" /> Renovar alvará
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -207,9 +210,11 @@ export function EmitirAlvaraPage() {
           </fieldset>
 
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="primary" type="submit" loading={emitir.isPending}>
-              <i className="fas fa-stamp" aria-hidden="true" /> Emitir alvará
-            </Button>
+            <Toolbar>
+              <Button variant="primary" type="submit" loading={emitir.isPending}>
+                <i className="fas fa-stamp" aria-hidden="true" /> Emitir alvará
+              </Button>
+            </Toolbar>
           </Can>
         </form>
       </Card>

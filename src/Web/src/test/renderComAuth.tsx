@@ -4,7 +4,6 @@
 // usado em src/auth/Can.test.tsx, centralizado para reuso entre os modulos.
 import type { ReactElement } from 'react';
 import { setAccessToken } from '../api/authToken';
-import { AuthProvider } from '../auth/AuthProvider';
 import { renderWithProviders } from './renderWithProviders';
 import type { RenderOptions } from './renderWithProviders';
 
@@ -41,6 +40,8 @@ export function renderComAuth(
   permissoes: string[] = ['assistenciasocial.ver', 'assistenciasocial.gerenciar'],
   options: RenderOptions = {},
 ) {
+  // Define o token ANTES de renderizar: o AuthProvider de renderWithProviders deriva
+  // a sessão (e as permissões) dele no primeiro render.
   setAccessToken(tokenFalso(permissoes));
-  return renderWithProviders(<AuthProvider>{ui}</AuthProvider>, options);
+  return renderWithProviders(ui, options);
 }

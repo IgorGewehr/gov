@@ -14,9 +14,11 @@ import {
   EmptyState,
   errorMessage,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { Can } from '../../../auth/Can';
@@ -24,6 +26,7 @@ import { formatarData, formatarMoeda } from '../../../i18n/format';
 import { useLicenciamentosPendentes, useMultasPendentes } from './veiculo.api';
 import type { LicenciamentoResumo, MultaResumo } from './veiculo.api';
 import { VeiculoFormModal } from './VeiculoFormModal';
+import { PatrimonioSubNav } from '../PatrimonioSubNav';
 
 type Aba = 'veiculo' | 'multas' | 'licenciamentos';
 
@@ -40,27 +43,26 @@ function AbaVeiculo() {
   return (
     <Card>
       <form className="br-form" onSubmit={abrir}>
-        <div className="row align-items-end">
-          <div className="col">
-            <FormField label="Identificador do veículo" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={veiculoId}
-                  onChange={(e) => setVeiculoId(e.target.value)}
-                  placeholder="00000000-0000-0000-0000-000000000000"
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-auto mb-3">
+        <FormRow
+          acao={
             <Button variant="primary" type="submit" disabled={veiculoId.trim() === ''}>
               Abrir veículo
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <FormField label="Identificador do veículo" required>
+            {({ id, describedBy, invalid }) => (
+              <Input
+                id={id}
+                aria-describedby={describedBy}
+                invalid={invalid}
+                value={veiculoId}
+                onChange={(e) => setVeiculoId(e.target.value)}
+                placeholder="00000000-0000-0000-0000-000000000000"
+              />
+            )}
+          </FormField>
+        </FormRow>
       </form>
       <EmptyState
         icon="fas fa-truck"
@@ -144,30 +146,29 @@ function AbaLicenciamentos() {
   return (
     <>
       <form className="br-form mb-3" onSubmit={consultar}>
-        <div className="row align-items-end">
-          <div className="col-sm-4">
-            <FormField label="Exercício" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  type="number"
-                  min="1900"
-                  step="1"
-                  inputMode="numeric"
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={String(exercicio)}
-                  onChange={(e) => setExercicio(Number(e.target.value))}
-                />
-              )}
-            </FormField>
-          </div>
-          <div className="col-auto mb-3">
+        <FormRow
+          acao={
             <Button variant="primary" type="submit" loading={query.isFetching}>
               Consultar
             </Button>
-          </div>
-        </div>
+          }
+        >
+          <FormField label="Exercício" required>
+            {({ id, describedBy, invalid }) => (
+              <Input
+                id={id}
+                type="number"
+                min="1900"
+                step="1"
+                inputMode="numeric"
+                aria-describedby={describedBy}
+                invalid={invalid}
+                value={String(exercicio)}
+                onChange={(e) => setExercicio(Number(e.target.value))}
+              />
+            )}
+          </FormField>
+        </FormRow>
       </form>
       <DataTable
         caption={`Veículos sem licenciamento Regular no exercício ${consultado}`}
@@ -195,14 +196,18 @@ export function VeiculoListPage() {
 
   return (
     <>
+      <PatrimonioSubNav />
       <PageHeader
+        eyebrow="Patrimônio"
         title="Frota"
         description="Gestão operacional da frota: veículos, abastecimento, manutenção, multas e licenciamento."
         actions={
           <Can permission="patrimonio.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Incorporar veículo
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Incorporar veículo
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

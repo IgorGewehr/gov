@@ -110,10 +110,12 @@ export function MscPage() {
                   )}
                 </FormField>
               </div>
-              <div className="col-auto mb-3">
-                <Button variant="primary" type="submit" loading={gerar.isPending}>
-                  <i className="fas fa-table-cells" aria-hidden="true" /> Gerar MSC
-                </Button>
+              <div className="col-auto">
+                <div className="tg-form-row-acao">
+                  <Button variant="primary" type="submit" loading={gerar.isPending}>
+                    <i className="fas fa-table-cells" aria-hidden="true" /> Gerar MSC
+                  </Button>
+                </div>
               </div>
             </div>
           </form>

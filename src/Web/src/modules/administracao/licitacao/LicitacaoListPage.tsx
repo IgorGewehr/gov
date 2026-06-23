@@ -9,9 +9,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
@@ -26,6 +28,7 @@ import {
   situacaoTagVariant,
 } from './licitacao.helpers';
 import { LicitacaoFormModal } from './LicitacaoFormModal';
+import { AdministracaoSubNav } from '../AdministracaoSubNav';
 
 export function LicitacaoListPage() {
   const [situacao, setSituacao] = useState<SituacaoLicitacao>('Aberta');
@@ -69,8 +72,9 @@ export function LicitacaoListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (l) => (
-        <Link className="br-button tertiary small" to={`/administracao/licitacoes/${l.id}`}>
+        <Link className="br-button secondary small" to={`/administracao/licitacoes/${l.id}`}>
           Detalhes
         </Link>
       ),
@@ -79,40 +83,43 @@ export function LicitacaoListPage() {
 
   return (
     <>
+      <AdministracaoSubNav />
       <PageHeader
+        eyebrow="Compras e Licitações"
         title="Licitações"
         description="Procedimentos de seleção competitiva sob a Lei 14.133/2021 (NLLC)."
         actions={
           <Can permission="administracao.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Abrir licitação
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Abrir licitação
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={(e) => e.preventDefault()}>
-          <div className="row align-items-end">
-            <div className="col-sm-6 col-md-4">
-              <FormField label="Filtrar por situação">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    options={SITUACAO_OPTIONS}
-                    value={situacao}
-                    onChange={(e) => setSituacao(e.target.value as SituacaoLicitacao)}
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="secondary" onClick={() => query.refetch()} loading={query.isFetching}>
                 <i className="fas fa-rotate" aria-hidden="true" /> Atualizar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Filtrar por situação">
+              {({ id, describedBy }) => (
+                <Select
+                  id={id}
+                  aria-describedby={describedBy}
+                  options={SITUACAO_OPTIONS}
+                  value={situacao}
+                  onChange={(e) => setSituacao(e.target.value as SituacaoLicitacao)}
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

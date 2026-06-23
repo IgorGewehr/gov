@@ -9,6 +9,7 @@ import {
   EmptyState,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
   useToast,
 } from '../../../components/ui';
@@ -84,9 +85,11 @@ export function PlanoDeContasPage() {
         description="Plano de Contas Aplicado ao Setor Público (PCASP). Contas analíticas levam ao razão."
         actions={
           <Can permission="financas.gerenciar">
-            <Button variant="primary" onClick={semearPlano} loading={semear.isPending}>
-              <i className="fas fa-seedling" aria-hidden="true" /> Semear plano de contas
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={semearPlano} loading={semear.isPending}>
+                <i className="fas fa-seedling" aria-hidden="true" /> Semear plano de contas
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

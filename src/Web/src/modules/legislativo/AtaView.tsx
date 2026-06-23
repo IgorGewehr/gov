@@ -8,6 +8,7 @@ import {
   Card,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   QueryState,
@@ -30,6 +31,7 @@ export function AtaView() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Ata da sessão"
         description="Gere e visualize a ata textual de uma sessão plenária."
       />
@@ -38,27 +40,26 @@ export function AtaView() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={gerar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador da sessão" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={sessaoInput}
-                    onChange={(e) => setSessaoInput(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={sessaoInput.trim() === ''}>
                 Gerar ata
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador da sessão" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={sessaoInput}
+                  onChange={(e) => setSessaoInput(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

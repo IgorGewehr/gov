@@ -11,9 +11,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -75,16 +77,16 @@ export function MatriculaListPage() {
           </Link>
           {podeGerenciar && (
             <>
-              <Button variant="tertiary" className="small" onClick={() => abrir('situacao', m.id)}>
+              <Button variant="ghost" size="sm" onClick={() => abrir('situacao', m.id)}>
                 Situação
               </Button>
-              <Button variant="tertiary" className="small" onClick={() => abrir('rematricular', m.id)}>
+              <Button variant="ghost" size="sm" onClick={() => abrir('rematricular', m.id)}>
                 Rematricular
               </Button>
-              <Button variant="tertiary" className="small" onClick={() => abrir('transferir', m.id)}>
+              <Button variant="ghost" size="sm" onClick={() => abrir('transferir', m.id)}>
                 Transferir
               </Button>
-              <Button variant="tertiary" className="small" onClick={() => abrir('encerrar', m.id)}>
+              <Button variant="ghost" size="sm" onClick={() => abrir('encerrar', m.id)}>
                 Encerrar
               </Button>
             </>
@@ -97,10 +99,11 @@ export function MatriculaListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Educação"
         title="Matrículas"
         description="Consulte as matrículas de um aluno e gerencie o ciclo de vida do vínculo (Censo Escolar)."
         actions={
-          <div className="d-flex gap-2 flex-wrap">
+          <Toolbar>
             <Link className="br-button secondary" to="/educacao/turmas/matricula-inicial">
               <i className="fas fa-users" aria-hidden="true" /> Matrícula Inicial por turma
             </Link>
@@ -109,33 +112,32 @@ export function MatriculaListPage() {
                 <i className="fas fa-plus" aria-hidden="true" /> Matricular aluno
               </Button>
             </Can>
-          </div>
+          </Toolbar>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do aluno" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={alunoId}
-                    onChange={(e) => setAlunoId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={alunoId.trim() === ''} loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do aluno" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={alunoId}
+                  onChange={(e) => setAlunoId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

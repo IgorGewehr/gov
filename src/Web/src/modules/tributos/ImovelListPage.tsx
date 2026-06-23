@@ -10,9 +10,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -74,7 +76,7 @@ export function ImovelListPage() {
       key: 'acoes',
       header: 'Ações',
       render: (i) => (
-        <Button variant="tertiary" onClick={() => navigate(`/tributos/imoveis/${i.id}/iptu`)}>
+        <Button size="sm" variant="ghost" onClick={() => navigate(`/tributos/imoveis/${i.id}/iptu`)}>
           <i className="fas fa-calculator" aria-hidden="true" /> Apurar IPTU
         </Button>
       ),
@@ -88,9 +90,11 @@ export function ImovelListPage() {
         description="Consulte os imóveis de um contribuinte e apure o IPTU."
         actions={
           <Can permission={PERM_GERENCIAR}>
-            <Button variant="primary" onClick={() => setImovelAberto(true)}>
-              <i className="fas fa-house-circle-check" aria-hidden="true" /> Cadastrar imóvel
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setImovelAberto(true)}>
+                <i className="fas fa-house-circle-check" aria-hidden="true" /> Cadastrar imóvel
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -99,27 +103,26 @@ export function ImovelListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col">
-              <FormField label="Identificador do contribuinte" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input
-                    id={id}
-                    aria-describedby={describedBy}
-                    invalid={invalid}
-                    value={contribuinteId}
-                    onChange={(e) => setContribuinteId(e.target.value)}
-                    placeholder="00000000-0000-0000-0000-000000000000"
-                  />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" disabled={contribuinteId.trim() === ''} loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Identificador do contribuinte" required>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={contribuinteId}
+                  onChange={(e) => setContribuinteId(e.target.value)}
+                  placeholder="00000000-0000-0000-0000-000000000000"
+                />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

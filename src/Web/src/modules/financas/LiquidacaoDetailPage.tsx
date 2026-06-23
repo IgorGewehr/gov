@@ -1,7 +1,7 @@
 // Detalhe de uma Liquidação (GET /liquidacoes/{id}) + ação Estornar (reverte o 2º estágio).
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Alert, Button, Card, PageHeader, QueryState, Tag, useToast } from '../../components/ui';
+import { Alert, Button, Card, PageHeader, QueryState, Tag, Toolbar, useToast } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { formatarData, formatarMoeda } from '../../i18n/format';
 import { useEstornarLiquidacao, useLiquidacao } from './financas.api';
@@ -67,21 +67,21 @@ export function LiquidacaoDetailPage() {
                 {confirmando ? (
                   <Alert variant="warning" title="Confirmar estorno?">
                     O estorno reverte a liquidação e seus efeitos no saldo do empenho.
-                    <div className="d-flex justify-content-end mt-2" style={{ gap: '0.5rem' }}>
+                    <Toolbar className="mt-2">
                       <Button variant="secondary" onClick={() => setConfirmando(false)} disabled={estornar.isPending}>
                         Cancelar
                       </Button>
                       <Button variant="danger" onClick={aoEstornar} loading={estornar.isPending}>
                         Estornar
                       </Button>
-                    </div>
+                    </Toolbar>
                   </Alert>
                 ) : (
-                  <div className="d-flex justify-content-end">
+                  <Toolbar>
                     <Button variant="danger" onClick={() => setConfirmando(true)}>
                       Estornar
                     </Button>
-                  </div>
+                  </Toolbar>
                 )}
               </Can>
             }

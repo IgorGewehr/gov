@@ -12,10 +12,12 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
@@ -29,6 +31,7 @@ import {
 import type { ContratoResumo } from './contrato.api';
 import { situacaoTagVariant } from './contrato.helpers';
 import { ContratoFormModal } from './ContratoFormModal';
+import { AdministracaoSubNav } from '../AdministracaoSubNav';
 
 type Criterio = 'vigentes' | 'fornecedor';
 
@@ -95,8 +98,9 @@ export function ContratoListPage() {
     {
       key: 'acoes',
       header: 'Ações',
+      sticky: true,
       render: (c) => (
-        <Link className="br-button tertiary small" to={`/administracao/contratos/${c.id}`}>
+        <Link className="br-button secondary small" to={`/administracao/contratos/${c.id}`}>
           Detalhes
         </Link>
       ),
@@ -105,71 +109,26 @@ export function ContratoListPage() {
 
   return (
     <>
+      <AdministracaoSubNav />
       <PageHeader
+        eyebrow="Compras e Licitações"
         title="Contratos"
         description="Consulte os contratos administrativos vigentes ou por fornecedor (Lei 14.133/2021)."
         actions={
           <Can permission="administracao.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Celebrar contrato
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Celebrar contrato
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-sm-4">
-              <FormField label="Critério de consulta">
-                {({ id, describedBy }) => (
-                  <Select
-                    id={id}
-                    aria-describedby={describedBy}
-                    value={criterio}
-                    onChange={(e) => setCriterio(e.target.value as Criterio)}
-                    options={[
-                      { value: 'vigentes', label: 'Contratos vigentes (por data)' },
-                      { value: 'fornecedor', label: 'Por fornecedor' },
-                    ]}
-                  />
-                )}
-              </FormField>
-            </div>
-
-            {criterio === 'vigentes' ? (
-              <div className="col-sm-4">
-                <FormField label="Data de referência" required>
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      type="date"
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                      value={referencia}
-                      onChange={(e) => setReferencia(e.target.value)}
-                    />
-                  )}
-                </FormField>
-              </div>
-            ) : (
-              <div className="col-sm-4">
-                <FormField label="Identificador do fornecedor" required>
-                  {({ id, describedBy, invalid }) => (
-                    <Input
-                      id={id}
-                      aria-describedby={describedBy}
-                      invalid={invalid}
-                      value={fornecedorId}
-                      onChange={(e) => setFornecedorId(e.target.value)}
-                      placeholder="00000000-0000-0000-0000-000000000000"
-                    />
-                  )}
-                </FormField>
-              </div>
-            )}
-
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button
                 variant="primary"
                 type="submit"
@@ -178,8 +137,59 @@ export function ContratoListPage() {
               >
                 Consultar
               </Button>
+            }
+          >
+            <div className="row">
+              <div className="col-sm-6">
+                <FormField label="Critério de consulta">
+                  {({ id, describedBy }) => (
+                    <Select
+                      id={id}
+                      aria-describedby={describedBy}
+                      value={criterio}
+                      onChange={(e) => setCriterio(e.target.value as Criterio)}
+                      options={[
+                        { value: 'vigentes', label: 'Contratos vigentes (por data)' },
+                        { value: 'fornecedor', label: 'Por fornecedor' },
+                      ]}
+                    />
+                  )}
+                </FormField>
+              </div>
+
+              {criterio === 'vigentes' ? (
+                <div className="col-sm-6">
+                  <FormField label="Data de referência" required>
+                    {({ id, describedBy, invalid }) => (
+                      <Input
+                        id={id}
+                        type="date"
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                        value={referencia}
+                        onChange={(e) => setReferencia(e.target.value)}
+                      />
+                    )}
+                  </FormField>
+                </div>
+              ) : (
+                <div className="col-sm-6">
+                  <FormField label="Identificador do fornecedor" required>
+                    {({ id, describedBy, invalid }) => (
+                      <Input
+                        id={id}
+                        aria-describedby={describedBy}
+                        invalid={invalid}
+                        value={fornecedorId}
+                        onChange={(e) => setFornecedorId(e.target.value)}
+                        placeholder="00000000-0000-0000-0000-000000000000"
+                      />
+                    )}
+                  </FormField>
+                </div>
+              )}
             </div>
-          </div>
+          </FormRow>
         </form>
       </Card>
 

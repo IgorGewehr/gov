@@ -8,9 +8,11 @@ import {
   DataTable,
   EmptyState,
   FormField,
+  FormRow,
   Input,
   PageHeader,
   Tag,
+  Toolbar,
   errorMessage,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
@@ -57,14 +59,14 @@ export function RestosAPagarListPage() {
       header: 'Ações',
       render: (r) => (
         <Can permission="financas.gerenciar">
-          <div className="d-flex" style={{ gap: '0.25rem' }}>
-            <Button variant="tertiary" className="small" onClick={() => setAcao({ tipo: 'pagar', resto: r })}>
+          <Toolbar>
+            <Button size="sm" variant="ghost" onClick={() => setAcao({ tipo: 'pagar', resto: r })}>
               Pagar
             </Button>
-            <Button variant="tertiary" className="small" onClick={() => setAcao({ tipo: 'cancelar', resto: r })}>
+            <Button size="sm" variant="ghost" onClick={() => setAcao({ tipo: 'cancelar', resto: r })}>
               Cancelar
             </Button>
-          </div>
+          </Toolbar>
         </Can>
       ),
     },
@@ -77,9 +79,11 @@ export function RestosAPagarListPage() {
         description="Despesas empenhadas e não pagas no encerramento do exercício (Lei 4.320/64, art. 36)."
         actions={
           <Can permission="financas.gerenciar">
-            <Button variant="primary" onClick={() => setEncerrarAberto(true)}>
-              <i className="fas fa-flag-checkered" aria-hidden="true" /> Encerrar exercício
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setEncerrarAberto(true)}>
+                <i className="fas fa-flag-checkered" aria-hidden="true" /> Encerrar exercício
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -88,22 +92,21 @@ export function RestosAPagarListPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>
-          <div className="row align-items-end">
-            <div className="col-12 col-md-auto">
-              <FormField label="Exercício de inscrição" required>
-                {({ id, describedBy, invalid }) => (
-                  <Input id={id} type="number" min="2000" step="1" inputMode="numeric"
-                    aria-describedby={describedBy} invalid={invalid}
-                    value={exercicio} onChange={(e) => setExercicio(e.target.value)} />
-                )}
-              </FormField>
-            </div>
-            <div className="col-auto mb-3">
+          <FormRow
+            acao={
               <Button variant="primary" type="submit" loading={query.isFetching}>
                 Consultar
               </Button>
-            </div>
-          </div>
+            }
+          >
+            <FormField label="Exercício de inscrição" required>
+              {({ id, describedBy, invalid }) => (
+                <Input id={id} type="number" min="2000" step="1" inputMode="numeric"
+                  aria-describedby={describedBy} invalid={invalid}
+                  value={exercicio} onChange={(e) => setExercicio(e.target.value)} />
+              )}
+            </FormField>
+          </FormRow>
         </form>
       </Card>
 

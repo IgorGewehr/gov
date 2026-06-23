@@ -4,7 +4,7 @@
 // folha (remuneração do magistério, numerador dos 70%). Ações gated por
 // "educacao.gerenciar"; alimentam o indicador de 70% exibido acima.
 import { useState } from 'react';
-import { Alert, Button, Card } from '../../components/ui';
+import { Alert, Button, Card, Toolbar } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { ORIGEM_FUNDEB_LABEL } from './fiscal.api';
 import {
@@ -38,7 +38,7 @@ export function FundebGestaoPainel({ exercicio }: FundebGestaoPainelProps) {
       )}
 
       <Can permission="educacao.gerenciar">
-        <div className="d-flex gap-2 flex-wrap mt-2">
+        <Toolbar align="start" className="mt-2">
           <Button variant="secondary" onClick={() => setAcao('abrir')}>
             <i className="fas fa-folder-plus" aria-hidden="true" /> Abrir distribuição
           </Button>
@@ -59,7 +59,7 @@ export function FundebGestaoPainel({ exercicio }: FundebGestaoPainelProps) {
           <Button variant="primary" onClick={() => setAcao('remuneracao')}>
             <i className="fas fa-user-tie" aria-hidden="true" /> Registrar remuneração
           </Button>
-        </div>
+        </Toolbar>
       </Can>
 
       <Alert variant="warning" title="Conciliação, não recálculo">

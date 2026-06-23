@@ -16,6 +16,8 @@ export interface Column<T> {
   sortAccessor?: (row: T) => string | number;
   /** Alinhamento do conteúdo. */
   align?: 'start' | 'center' | 'end';
+  /** Fixa a coluna à direita (não corta em scroll horizontal). Use na coluna de ações. */
+  sticky?: boolean;
 }
 
 export interface DataTableProps<T> {
@@ -85,60 +87,69 @@ export function DataTable<T>({
     return <>{empty ?? <EmptyState title="Nenhum registro encontrado." />}</>;
   }
 
+  // Classe da célula: alinhamento + coluna fixa (sticky-right) quando aplicável.
+  // Compat: colunas com key 'acoes' são tratadas como sticky mesmo sem a flag.
+  function colClasse(column: Column<T>): string {
+    const sticky = column.sticky || column.key === 'acoes';
+    return [`text-${column.align ?? 'start'}`, sticky ? 'tg-col-acoes' : ''].filter(Boolean).join(' ');
+  }
+
   return (
-    <div className="br-table">
-      <table>
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            {columns.map((column) => {
-              const sortable = Boolean(column.sortAccessor);
-              const active = sort?.key === column.key;
-              const ariaSort: React.AriaAttributes['aria-sort'] = active
-                ? sort?.direction === 'asc'
-                  ? 'ascending'
-                  : 'descending'
-                : sortable
-                  ? 'none'
-                  : undefined;
-              return (
-                <th key={column.key} scope="col" aria-sort={ariaSort} className={`text-${column.align ?? 'start'}`}>
-                  {sortable ? (
-                    <button
-                      type="button"
-                      className="br-button tertiary small"
-                      onClick={() => toggleSort(column.key)}
-                    >
-                      {column.header}{' '}
-                      <i
-                        className={`fas ${active ? (sort?.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}`}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  ) : (
-                    column.header
-                  )}
-                </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedRows.map((row) => (
-            <tr
-              key={rowKey(row)}
-              onClick={onRowClick ? () => onRowClick(row) : undefined}
-              style={onRowClick ? { cursor: 'pointer' } : undefined}
-            >
-              {columns.map((column) => (
-                <td key={column.key} className={`text-${column.align ?? 'start'}`}>
-                  {column.render(row)}
-                </td>
-              ))}
+    <div className="tg-table-scroll">
+      <div className="br-table">
+        <table>
+          <caption>{caption}</caption>
+          <thead>
+            <tr>
+              {columns.map((column) => {
+                const sortable = Boolean(column.sortAccessor);
+                const active = sort?.key === column.key;
+                const ariaSort: React.AriaAttributes['aria-sort'] = active
+                  ? sort?.direction === 'asc'
+                    ? 'ascending'
+                    : 'descending'
+                  : sortable
+                    ? 'none'
+                    : undefined;
+                return (
+                  <th key={column.key} scope="col" aria-sort={ariaSort} className={colClasse(column)}>
+                    {sortable ? (
+                      <button
+                        type="button"
+                        className="br-button tertiary small"
+                        onClick={() => toggleSort(column.key)}
+                      >
+                        {column.header}
+                        <i
+                          className={`fas ${active ? (sort?.direction === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}`}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedRows.map((row) => (
+              <tr
+                key={rowKey(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                style={onRowClick ? { cursor: 'pointer' } : undefined}
+              >
+                {columns.map((column) => (
+                  <td key={column.key} className={colClasse(column)}>
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

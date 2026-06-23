@@ -17,6 +17,7 @@ import {
   PageHeader,
   Tag,
   Textarea,
+  Toolbar,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { formatarData } from '../../../i18n/format';
@@ -76,13 +77,16 @@ export function ProntuarioSuasListPage() {
     <>
       <AssistenciaSocialSubNav />
       <PageHeader
+        eyebrow="Assistência Social"
         title="Prontuário SUAS"
         description="Acompanhamento familiar sigiloso (PAIF em CRAS / PAEFI em CREAS). Toda leitura é auditada."
         actions={
           <Can permission="assistenciasocial.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-folder-plus" aria-hidden="true" /> Abrir prontuário
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-folder-plus" aria-hidden="true" /> Abrir prontuário
+              </Button>
+            </Toolbar>
           </Can>
         }
       />
@@ -143,11 +147,11 @@ export function ProntuarioSuasListPage() {
               />
             )}
           </FormField>
-          <div className="d-flex justify-content-end">
+          <Toolbar>
             <Button variant="primary" type="submit" disabled={!formValido} loading={query.isFetching}>
               <i className="fas fa-magnifying-glass" aria-hidden="true" /> Consultar prontuário
             </Button>
-          </div>
+          </Toolbar>
         </form>
       </Card>
 

@@ -40,7 +40,7 @@ describe('DocumentoListPage', () => {
 
   it('exibe o estado inicial pedindo uma consulta', () => {
     renderComAuth(<DocumentoListPage />, ['protocolo.ver', 'protocolo.gerenciar']);
-    expect(screen.getByText('Faca uma consulta')).toBeInTheDocument();
+    expect(screen.getByText('Faça uma consulta')).toBeInTheDocument();
   });
 
   it('consulta e mostra os documentos do processo em tabela', async () => {

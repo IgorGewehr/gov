@@ -13,6 +13,7 @@ import {
   PageHeader,
   Select,
   Tag,
+  Toolbar,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
@@ -65,13 +66,16 @@ export function RegulacaoListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Saúde"
         title="Fila de regulação"
         description="Solicitações de procedimentos (SIGTAP) aguardando regulação, ordenadas por risco/urgência."
         actions={
           <Can permission="saude.gerenciar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Nova solicitação
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Nova solicitação
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

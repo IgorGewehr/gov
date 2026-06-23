@@ -3,7 +3,7 @@
 // (gated `legislativo.diario.publicar`).
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, DataTable, EmptyState, PageHeader, Tag } from '../../components/ui';
+import { Button, DataTable, EmptyState, PageHeader, Tag, Toolbar } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { formatarData } from '../../i18n/format';
@@ -66,13 +66,16 @@ export function DiarioListPage() {
   return (
     <>
       <PageHeader
+        eyebrow="Legislativo"
         title="Diário Oficial"
         description="Edições do Diário Oficial do Legislativo (publicidade dos atos)."
         actions={
           <Can permission="legislativo.diario.publicar">
-            <Button variant="primary" onClick={() => setFormAberto(true)}>
-              <i className="fas fa-plus" aria-hidden="true" /> Montar edição
-            </Button>
+            <Toolbar>
+              <Button variant="primary" onClick={() => setFormAberto(true)}>
+                <i className="fas fa-plus" aria-hidden="true" /> Montar edição
+              </Button>
+            </Toolbar>
           </Can>
         }
       />

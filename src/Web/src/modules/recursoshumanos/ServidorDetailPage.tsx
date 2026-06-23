@@ -9,7 +9,11 @@ import { Can } from '../../auth/Can';
 import { formatarData } from '../../i18n/format';
 import { useServidorPorMatricula } from './api';
 import type { ServidorResumo } from './api';
-import { PERM_RH_GERENCIAR, situacaoServidorTagVariant } from './recursosHumanos.helpers';
+import {
+  formatarRegimePrev,
+  PERM_RH_GERENCIAR,
+  situacaoServidorTagVariant,
+} from './recursosHumanos.helpers';
 import {
   ConcederEstabilidadeModal,
   DesligarServidorModal,
@@ -69,7 +73,7 @@ export function ServidorDetailPage() {
                     {servidor.situacao}
                   </Tag>
                 </Campo>
-                <Campo rotulo="Regime previdenciário">{servidor.regime}</Campo>
+                <Campo rotulo="Regime previdenciário">{formatarRegimePrev(servidor.regime)}</Campo>
                 <Campo rotulo="Data de nomeação">{formatarData(servidor.dataNomeacao)}</Campo>
                 <Campo rotulo="Início de exercício">
                   {servidor.dataExercicio ? formatarData(servidor.dataExercicio) : '—'}
