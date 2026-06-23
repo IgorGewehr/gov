@@ -10,7 +10,9 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Application.Contribuintes;
+using Tensorroot.Gov.Modules.Tributos.Application.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Application.Nfse;
+using Tensorroot.Gov.Modules.Tributos.Infrastructure.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Repositories;
@@ -72,6 +74,20 @@ public sealed class TributosModule : IModule
         services.AddScoped<ITabelaCosipRepository, TabelaCosipRepository>();
         services.AddScoped<IObraContribuicaoMelhoriaRepository, ObraContribuicaoMelhoriaRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
+
+        // Protesto extrajudicial (Lei 9.492/97) — ACL versionada por CRA. Simulado em dev/testes; o adapter
+        // de produção (leiaute oficial CRA-RS, HttpClient + Polly) entra por configuração quando obtido o
+        // convênio. // TODO(validar-oficial): leiaute/endpoint do CRA-RS.
+        var protestoProvider = configuration["Protesto:Provider"] ?? "Simulado";
+        if (string.Equals(protestoProvider, "CraRs", StringComparison.OrdinalIgnoreCase))
+        {
+            // TODO(validar-oficial): registrar AdnProtestoCraGateway com HttpClient resiliente quando houver leiaute oficial.
+            services.AddSingleton<IProtestoCraGateway, SimuladoProtestoCraGateway>();
+        }
+        else
+        {
+            services.AddSingleton<IProtestoCraGateway, SimuladoProtestoCraGateway>();
+        }
 
         // Gateway NFS-e/ADN: HTTP resiliente (Polly) em produção; simulado para dev/testes.
         var nfseProvider = configuration["Nfse:Provider"] ?? "Simulado";

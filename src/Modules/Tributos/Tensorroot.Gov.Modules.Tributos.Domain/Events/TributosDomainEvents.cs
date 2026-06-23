@@ -54,6 +54,31 @@ public sealed record ParcelamentoFirmado(DividaAtivaId DividaAtivaId) : IDomainE
 /// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
 public sealed record DividaQuitada(DividaAtivaId DividaAtivaId) : IDomainEvent;
 
+/// <summary>Remessa de protesto extrajudicial da CDA gerada (Lei 9.492/97 — ato ao CRA/cartório).</summary>
+/// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="NumeroCda">Número da CDA remetida.</param>
+/// <param name="IdentificadorCra">CRA estadual de destino.</param>
+public sealed record RemessaProtestoGerada(DividaAtivaId DividaAtivaId, Guid TenantId, string NumeroCda, string IdentificadorCra) : IDomainEvent;
+
+/// <summary>Retorno do protesto processado (ocorrência do CRA/cartório).</summary>
+/// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="Ocorrencia">Ocorrência de retorno.</param>
+public sealed record RetornoProtestoProcessado(DividaAtivaId DividaAtivaId, Guid TenantId, OcorrenciaProtesto Ocorrencia) : IDomainEvent;
+
+/// <summary>Execução fiscal ajuizada (gancho de saída — gera/exporta CDA + petição).</summary>
+/// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="NumeroCda">Número da CDA, quando emitida.</param>
+public sealed record ExecucaoFiscalAjuizada(DividaAtivaId DividaAtivaId, Guid TenantId, string? NumeroCda) : IDomainEvent;
+
+/// <summary>Prescrição interrompida (CTN art. 174 p.ú.) — o quinquênio reinicia.</summary>
+/// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="DataInterrupcao">Data do marco interruptivo.</param>
+public sealed record PrescricaoInterrompida(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataInterrupcao) : IDomainEvent;
+
 /// <summary>Imóvel cadastrado no cadastro imobiliário.</summary>
 /// <param name="ImovelId">Identificador do imóvel.</param>
 /// <param name="TenantId">Tenant dono do registro.</param>

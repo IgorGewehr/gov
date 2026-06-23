@@ -8,19 +8,21 @@ namespace Tensorroot.Gov.Modules.Tributos.Application.Dividas;
 /// <summary>Resumo de uma Dívida Ativa para leitura.</summary>
 /// <param name="Id">Identificador da dívida.</param>
 /// <param name="ContribuinteId">Contribuinte devedor.</param>
-/// <param name="ValorInscrito">Valor inscrito.</param>
+/// <param name="ValorOriginario">Valor originário inscrito.</param>
 /// <param name="Situacao">Situação atual.</param>
 /// <param name="DataInscricao">Data de inscrição.</param>
 /// <param name="DataPrescricao">Data-limite de prescrição.</param>
 /// <param name="NumeroCda">Número da CDA, se emitida.</param>
+/// <param name="NumeroInscricao">Número da inscrição no Registro de Dívida Ativa.</param>
 public sealed record DividaAtivaResumo(
     Guid Id,
     Guid ContribuinteId,
-    decimal ValorInscrito,
+    decimal ValorOriginario,
     string Situacao,
     DateOnly DataInscricao,
     DateOnly DataPrescricao,
-    string? NumeroCda);
+    string? NumeroCda,
+    long NumeroInscricao);
 
 /// <summary>Lista as dívidas ativas de um contribuinte.</summary>
 /// <param name="ContribuinteId">Contribuinte.</param>
@@ -46,11 +48,12 @@ public sealed class ObterDividasAtivasDoContribuinteHandler(IDividaAtivaReposito
             .Select(divida => new DividaAtivaResumo(
                 divida.Id.Value,
                 divida.ContribuinteId.Value,
-                divida.ValorInscrito.Valor,
+                divida.ValorOriginario.Valor,
                 divida.Situacao.ToString(),
                 divida.DataInscricao,
                 divida.DataPrescricao,
-                divida.NumeroCda))
+                divida.NumeroCda,
+                divida.NumeroInscricao))
             .ToList();
     }
 }

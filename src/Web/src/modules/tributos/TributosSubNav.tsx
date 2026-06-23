@@ -16,6 +16,10 @@ const ABAS: Aba[] = [
   { to: '/tributos/iptu/parametros', label: 'Parâmetros do IPTU' },
   { to: '/tributos/iss', label: 'ISS' },
   { to: '/tributos/itbi', label: 'ITBI' },
+  { to: '/tributos/taxas', label: 'Taxas' },
+  { to: '/tributos/cosip', label: 'COSIP' },
+  { to: '/tributos/alvaras', label: 'Alvarás' },
+  { to: '/tributos/melhoria', label: 'Contribuição de Melhoria' },
 ];
 
 export function TributosSubNav() {

@@ -36,6 +36,18 @@ const ApurarIssPage = lazy(() =>
 const TransmitirItbiPage = lazy(() =>
   import('./TransmitirItbiPage').then((m) => ({ default: m.TransmitirItbiPage })),
 );
+const LancarTaxaPage = lazy(() =>
+  import('./LancarTaxaPage').then((m) => ({ default: m.LancarTaxaPage })),
+);
+const ApurarCosipPage = lazy(() =>
+  import('./ApurarCosipPage').then((m) => ({ default: m.ApurarCosipPage })),
+);
+const EmitirAlvaraPage = lazy(() =>
+  import('./EmitirAlvaraPage').then((m) => ({ default: m.EmitirAlvaraPage })),
+);
+const MelhoriaPage = lazy(() =>
+  import('./MelhoriaPage').then((m) => ({ default: m.MelhoriaPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'tributos',
@@ -54,6 +66,10 @@ const MODULE: ModuleDefinition = {
         { path: 'iptu/parametros', element: <IptuParametrosPage /> },
         { path: 'iss', element: <ApurarIssPage /> },
         { path: 'itbi', element: <TransmitirItbiPage /> },
+        { path: 'taxas', element: <LancarTaxaPage /> },
+        { path: 'cosip', element: <ApurarCosipPage /> },
+        { path: 'alvaras', element: <EmitirAlvaraPage /> },
+        { path: 'melhoria', element: <MelhoriaPage /> },
       ],
     },
   ],

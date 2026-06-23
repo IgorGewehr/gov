@@ -51,11 +51,23 @@ public sealed class DividaAtivaFluxoTests : IDisposable
             await contexto.SaveChangesAsync();
 
             lancamento.InscreverEmDividaAtiva(new DateOnly(2026, 6, 20));
-            var divida = DividaAtiva.Inscrever(TenantA, contribuinte.Id, lancamento.Id, lancamento.ValorPrincipal, new DateOnly(2026, 6, 20));
+            var divida = DividaAtiva.Inscrever(
+                TenantA,
+                contribuinte.Id,
+                lancamento.Id,
+                lancamento.TipoTributo,
+                lancamento.ValorPrincipal,
+                lancamento.Vencimento,
+                lancamento.Vencimento,
+                new DateOnly(2026, 6, 20),
+                1,
+                "IPTU — competência 01/2024",
+                "Art. 50 do CTM",
+                RegraEncargosDivida.Criar(2m, 1m, 0.5m, "Art. 99 do CTM"));
             contexto.DividasAtivas.Add(divida);
             await contexto.SaveChangesAsync();
 
-            divida.EmitirCda("CDA-2026/000123");
+            divida.EmitirCda("CDA-2026/000123", contribuinte.Nome, null, null, new DateOnly(2026, 6, 20), null);
             await contexto.SaveChangesAsync();
         }
 
@@ -66,7 +78,7 @@ public sealed class DividaAtivaFluxoTests : IDisposable
             dividas.Should().HaveCount(1);
             dividas[0].Situacao.Should().Be(SituacaoDividaAtiva.CdaEmitida);
             dividas[0].NumeroCda.Should().Be("CDA-2026/000123");
-            dividas[0].ValorInscrito.Valor.Should().Be(1500.00m);
+            dividas[0].ValorOriginario.Valor.Should().Be(1500.00m);
             dividas[0].TenantId.Should().Be(TenantA);
 
             var lancamentos = await contexto.Lancamentos.ToListAsync();

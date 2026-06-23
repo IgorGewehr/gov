@@ -62,6 +62,14 @@ public interface IDividaAtivaRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Dívidas ativas do contribuinte.</returns>
     Task<IReadOnlyList<DividaAtiva>> ListarPorContribuinteAsync(ContribuinteId contribuinteId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Obtém o próximo número sequencial de inscrição no Registro de Dívida Ativa do tenant (inc. V da CDA).
+    /// Deriva do total já inscrito + 1. // TODO(validar-oficial): formato/sequência oficial do TIDA por exercício.
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Próximo número de inscrição (&gt;= 1).</returns>
+    Task<long> ObterProximoNumeroInscricaoAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>Repositório do agregado <see cref="Imovel"/> (cadastro imobiliário).</summary>

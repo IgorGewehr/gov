@@ -384,11 +384,12 @@ Cada cenário vira teste de integração.
 | versao | data | mudança |
 |---|---|---|
 | 1.0.0 | 2026-06-21 | Versão inicial — retrofit fiel do código existente (`DividaAtiva.cs`, `InscreverEmDividaAtiva`, `EmitirCda`, `QuitarDivida`, `ObterDividasAtivasDoContribuinte`). |
+| 2.0.0 | 2026-06-23 | M6 parte 4 — DA→CDA→cobrança/protesto→execução→prescrição. Inscrição enriquecida (origem/natureza, fundamento legal, valor originário, constituição definitiva, número de inscrição, regra de encargos parametrizável multa/juros/correção — lei municipal). CDA com requisitos legais obrigatórios (LEF art. 2º §5º I–VI / CTN art. 202) via VO `CertidaoDividaAtiva` que RECUSA se faltar requisito (`CdaRequisitoAusenteException`). Protesto extrajudicial (Lei 9.492/97; STF ADI 5.135; STJ REsp 1.895.557) como ato auditável `RemessaProtesto` atrás de ACL `IProtestoCraGateway` versionada por CRA (`GerarRemessaProtesto`/`ProcessarRetornoProtesto`). Gancho de execução fiscal (`AjuizarExecucaoFiscal`). Prescrição real (CTN art. 174): termo inicial = constituição definitiva ou última interrupção (`InterromperPrescricao`, parcelamento), prazo parametrizável; `AvaliarPrescricaoDivida` sinaliza prescrita e apura encargos. Renomeia `ValorInscrito`→`ValorOriginario`. // TODO(validar-oficial): leiaute CRA-RS, índice de correção do CTM, art. 40 LEF pós-Lei 14.195/2021. |
 
 <!-- manifest
-commands: InscreverEmDividaAtiva, EmitirCda, QuitarDivida
-queries: ObterDividasAtivasDoContribuinte
-domainEvents: DividaAtivaInscrita, CdaEmitida, ParcelamentoFirmado, DividaQuitada
+commands: InscreverEmDividaAtiva, EmitirCda, QuitarDivida, GerarRemessaProtesto, ProcessarRetornoProtesto, AjuizarExecucaoFiscal
+queries: ObterDividasAtivasDoContribuinte, AvaliarPrescricaoDivida
+domainEvents: DividaAtivaInscrita, CdaEmitida, ParcelamentoFirmado, DividaQuitada, RemessaProtestoGerada, RetornoProtestoProcessado, ExecucaoFiscalAjuizada, PrescricaoInterrompida
 integrationEventsPublished: ReceitaArrecadadaIntegrationEvent
 integrationEventsConsumed: 
 -->

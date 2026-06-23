@@ -37,7 +37,7 @@ public sealed class QuitarDividaHandler(
             agoraUtc,
             tenant.TenantId,
             request.DividaAtivaId,
-            divida.ValorInscrito.Valor,
+            divida.ValorOriginario.Valor,
             DateOnly.FromDateTime(agoraUtc));
 
         await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);

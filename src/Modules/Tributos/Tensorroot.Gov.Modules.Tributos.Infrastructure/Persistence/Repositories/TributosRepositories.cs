@@ -48,13 +48,24 @@ public sealed class DividaAtivaRepository(TributosDbContext context) : IDividaAt
 
     /// <inheritdoc />
     public Task<DividaAtiva?> ObterPorIdAsync(DividaAtivaId id, CancellationToken cancellationToken)
-        => context.DividasAtivas.FirstOrDefaultAsync(divida => divida.Id == id, cancellationToken);
+        => context.DividasAtivas
+            .Include(divida => divida.RemessasProtesto)
+            .FirstOrDefaultAsync(divida => divida.Id == id, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<DividaAtiva>> ListarPorContribuinteAsync(ContribuinteId contribuinteId, CancellationToken cancellationToken)
         => await context.DividasAtivas
+            .Include(divida => divida.RemessasProtesto)
             .Where(divida => divida.ContribuinteId == contribuinteId)
             .OrderBy(divida => divida.DataInscricao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<long> ObterProximoNumeroInscricaoAsync(CancellationToken cancellationToken)
+    {
+        // Conta as inscrições do tenant (Global Query Filter aplica o isolamento) e devolve o próximo sequencial.
+        var total = await context.DividasAtivas.LongCountAsync(cancellationToken).ConfigureAwait(false);
+        return total + 1;
+    }
 }
