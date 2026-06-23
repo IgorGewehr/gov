@@ -54,6 +54,14 @@ const InventarioDetailPage = lazy(() =>
   import('./inventario/InventarioDetailPage').then((m) => ({ default: m.InventarioDetailPage })),
 );
 
+// Requisições de almoxarifado (Onda 3b) — fila por situação/setor + fluxo de aprovação/atendimento
+const RequisicaoListPage = lazy(() =>
+  import('./requisicao/RequisicaoListPage').then((m) => ({ default: m.RequisicaoListPage })),
+);
+const RequisicaoDetailPage = lazy(() =>
+  import('./requisicao/RequisicaoDetailPage').then((m) => ({ default: m.RequisicaoDetailPage })),
+);
+
 const MODULE: ModuleDefinition = {
   id: 'patrimonio',
   nav: {
@@ -78,6 +86,9 @@ const MODULE: ModuleDefinition = {
         // Inventários — fluxo do levantamento físico × contábil
         { path: 'inventarios', element: <InventarioListPage /> },
         { path: 'inventarios/:id', element: <InventarioDetailPage /> },
+        // Requisições de almoxarifado — fila + fluxo de aprovação/atendimento
+        { path: 'requisicoes', element: <RequisicaoListPage /> },
+        { path: 'requisicoes/:id', element: <RequisicaoDetailPage /> },
       ],
     },
   ],

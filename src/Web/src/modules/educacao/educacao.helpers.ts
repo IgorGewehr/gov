@@ -134,6 +134,70 @@ export function resultadoAlunoTagVariant(resultado: string | null): TagVariant {
   }
 }
 
+// --- Merenda (PNAE) ---
+
+/** Faixa etária PNAE (Domain.Merenda.FaixaEtariaPnae). */
+export const opcoesFaixaEtariaPnae: SelectOption[] = [
+  { value: '0', label: 'Creche (0 a 3 anos)' },
+  { value: '1', label: 'Pré-escola (4 a 5 anos)' },
+  { value: '2', label: 'Ensino Fundamental/Médio' },
+  { value: '3', label: 'Educação de Jovens e Adultos (EJA)' },
+];
+
+/** Tipo de refeição (Domain.Merenda.TipoRefeicao). */
+export const opcoesTipoRefeicao: SelectOption[] = [
+  { value: '0', label: 'Desjejum' },
+  { value: '1', label: 'Lanche da manhã' },
+  { value: '2', label: 'Almoço' },
+  { value: '3', label: 'Lanche da tarde' },
+  { value: '4', label: 'Jantar' },
+];
+
+/** Dia da semana do cardápio (Domain.Merenda.DiaSemanaCardapio). */
+export const opcoesDiaSemanaCardapio: SelectOption[] = [
+  { value: '1', label: 'Segunda-feira' },
+  { value: '2', label: 'Terça-feira' },
+  { value: '3', label: 'Quarta-feira' },
+  { value: '4', label: 'Quinta-feira' },
+  { value: '5', label: 'Sexta-feira' },
+];
+
+/** Mapeia a situação do cardápio para a variante semântica da Tag. */
+export function situacaoCardapioTagVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Publicado':
+      return 'success';
+    case 'Planejado':
+      return 'info';
+    case 'Encerrado':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+// --- Transporte (PNATE) ---
+
+/** Modalidade de execução do transporte (Domain.Transporte.ModalidadeTransporte). */
+export const opcoesModalidadeTransporte: SelectOption[] = [
+  { value: '0', label: 'Frota própria' },
+  { value: '1', label: 'Terceirizado' },
+];
+
+/** Mapeia a situação da rota para a variante semântica da Tag. */
+export function situacaoRotaTagVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Ativa':
+      return 'success';
+    case 'Planejada':
+      return 'info';
+    case 'Encerrada':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
 /** Formata percentual (0–100) em pt-BR com uma casa decimal. */
 export function formatarPercentual(valor: number): string {
   return `${valor.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;

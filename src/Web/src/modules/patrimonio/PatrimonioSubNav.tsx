@@ -8,6 +8,7 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/patrimonio/frota', label: 'Frota', end: true },
   { to: '/patrimonio/frota/painel', label: 'Painel de frota' },
   { to: '/patrimonio/estoque', label: 'Almoxarifado' },
+  { to: '/patrimonio/requisicoes', label: 'Requisições' },
   { to: '/patrimonio/inventarios', label: 'Inventários' },
 ];
 

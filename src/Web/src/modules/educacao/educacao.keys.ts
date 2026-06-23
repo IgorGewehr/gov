@@ -29,6 +29,17 @@ export const educacaoKeys = {
   mde: (exercicio: number) => [...educacaoKeys.fiscal(), 'mde', exercicio] as const,
   fundebAplicacao: (exercicio: number) =>
     [...educacaoKeys.fiscal(), 'fundeb', exercicio, 'aplicacao'] as const,
+  // --- Merenda (PNAE) ---
+  merenda: () => [...educacaoKeys.all, 'merenda'] as const,
+  cardapios: () => [...educacaoKeys.merenda(), 'cardapios'] as const,
+  cardapiosBusca: (filtro: unknown) => [...educacaoKeys.cardapios(), 'busca', filtro] as const,
+  cardapioPorId: (cardapioId: string) => [...educacaoKeys.cardapios(), 'id', cardapioId] as const,
+  consumoMerenda: (escolaId: string, de: string, ate: string) =>
+    [...educacaoKeys.merenda(), 'consumo', escolaId, de, ate] as const,
+  // --- Transporte (PNATE) ---
+  rotas: () => [...educacaoKeys.all, 'rotas'] as const,
+  rotasBusca: (filtro: unknown) => [...educacaoKeys.rotas(), 'busca', filtro] as const,
+  rotaPorId: (rotaId: string) => [...educacaoKeys.rotas(), 'id', rotaId] as const,
 };
 
 /** Os endpoints de criação retornam `{ id }` (Results.Ok(new { id })). */

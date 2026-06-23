@@ -48,6 +48,18 @@ const BoletimHistoricoPage = lazy(() =>
 const FiscalEducacaoPainelPage = lazy(() =>
   import('./FiscalEducacaoPainelPage').then((m) => ({ default: m.FiscalEducacaoPainelPage })),
 );
+const MerendaListPage = lazy(() =>
+  import('./MerendaListPage').then((m) => ({ default: m.MerendaListPage })),
+);
+const CardapioDetailPage = lazy(() =>
+  import('./CardapioDetailPage').then((m) => ({ default: m.CardapioDetailPage })),
+);
+const TransporteListPage = lazy(() =>
+  import('./TransporteListPage').then((m) => ({ default: m.TransporteListPage })),
+);
+const RotaDetailPage = lazy(() =>
+  import('./RotaDetailPage').then((m) => ({ default: m.RotaDetailPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'educacao',
@@ -69,6 +81,10 @@ const MODULE: ModuleDefinition = {
         { path: 'matriculas/:matriculaId/diario', element: <DiarioClasseDetailPage /> },
         { path: 'diario-classe', element: <DiarioTurmaPage /> },
         { path: 'boletim', element: <BoletimHistoricoPage /> },
+        { path: 'merenda', element: <MerendaListPage /> },
+        { path: 'merenda/:cardapioId', element: <CardapioDetailPage /> },
+        { path: 'transporte', element: <TransporteListPage /> },
+        { path: 'transporte/:rotaId', element: <RotaDetailPage /> },
         { path: 'fiscal', element: <FiscalEducacaoPainelPage /> },
       ],
     },

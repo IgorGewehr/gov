@@ -14,3 +14,5 @@ export * from './matricula.api';
 export * from './diario.api';
 export * from './diarioTurma.api';
 export * from './fiscal.api';
+export * from './merenda.api';
+export * from './transporte.api';
