@@ -177,4 +177,55 @@ public sealed class ApurarDescontosLegaisTests : RecursosHumanosTestBase
             await acao.Should().ThrowAsync<CalculoFolhaException>();
         }
     }
+
+    [Fact] // F-A3: provento com rubrica FORA de vigencia na competencia -> FAIL-CLOSED (nao presume base zero).
+    public async Task Provento_com_rubrica_fora_de_vigencia_falha_em_vez_de_presumir_base_zero()
+    {
+        Guid folhaId;
+        var competencia = Competencia.De(2026, 6);
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            var servidorId = await SemearServidorAsync(ctx, RegimePrevidenciario.Rgps, 0);
+            foreach (var t in TabelasFederaisSeed.Inss(TenantA))
+            {
+                ctx.TabelasInss.Add(t);
+            }
+
+            foreach (var t in TabelasFederaisSeed.Irrf(TenantA))
+            {
+                ctx.TabelasIrrf.Add(t);
+            }
+
+            // Rubrica cadastrada com vigencia que SO comeca em 2026-07 (posterior a competencia 2026-06):
+            // logo ela NAO esta vigente na competencia apurada e nao aparece no catalogo de incidencias.
+            ctx.Rubricas.Add(RubricaFolha.Criar(
+                TenantA, Rubrica.De("VENCIMENTO"), "Vencimento", NaturezaRubrica.Provento,
+                Competencia.De(2026, 7), incideInss: true, incideIrrf: true));
+
+            var folha = FolhaDePagamento.Abrir(TenantA, competencia);
+            folha.AdicionarEvento(servidorId, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(5000m), 5000m, RegimePrevidenciario.Rgps);
+            folhaId = folha.Id.Value;
+            ctx.FolhasDePagamento.Add(folha);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            var handler = new ApurarDescontosLegaisHandler(
+                new FolhaDePagamentoRepository(ctx), new RubricaFolhaRepository(ctx),
+                new ServidorRegimeConsulta(ctx), new TabelasLegaisProvider(ctx),
+                new ParametrosFolhaProviderFake(), ctx);
+
+            // Sem o fail-closed, o motor presumiria (inss,rpps,irrf)=(false,false,false) -> base zero,
+            // INSS/IRRF subtributados silenciosamente. Com o fix, a apuracao e interrompida.
+            var acao = async () => await handler.Handle(new ApurarDescontosLegaisCommand(folhaId), default);
+            (await acao.Should().ThrowAsync<CalculoFolhaException>())
+                .Which.Message.Should().Contain("vigencia");
+
+            // E nenhum desconto legal foi lancado (apuracao abortada antes de persistir).
+            var folha = await ctx.FolhasDePagamento.Include(f => f.Eventos).SingleAsync(f => f.Id == new FolhaDePagamentoId(folhaId));
+            folha.Eventos.Should().NotContain(e => e.Rubrica.Codigo == "INSS" || e.Rubrica.Codigo == "IRRF");
+        }
+    }
 }

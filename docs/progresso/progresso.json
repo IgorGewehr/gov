@@ -1,14 +1,14 @@
 {
   "produto": "Tensorroot.Gov",
   "subtitulo": "ERP GovTech municipal — Painel de Progresso",
-  "atualizadoEm": "2026-06-23 — 7 commits no GitHub; robustez de auditoria PROVADA; 5 frentes de hardening/PoC + PPA/LDO/LOA",
+  "atualizadoEm": "2026-06-23 — 11 commits; 6 críticos de segurança FECHADOS + provados; corrigindo bugs de qualidade dos motores",
   "atividadeAtual": "🚀 RUN AUTÔNOMO — 7 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. ESPINHA FISCAL M0–M4 + TRILHA LEGISLATIVA COMPLETA (back+front) + M5 (folha motor INSS/IRRF/RPPS líquido 6.034,77 + ponto AFD/AEJ CRC-16 66A7) + M6 (IPTU 162.000→1.458, ISS próprio 50/retido 75, ITBI) — TODOS os motores [OFICIAL] PROVADOS, com frontends. ROBUSTEZ DE AUDITORIA PROVADA: trilha com HASH-CHAIN imutável (adulteração detectada em runtime, 409 aponta a linha exata) + ordem dos interceptors corrigida (W0.2). 2 avaliações isentas (PoC legislativa 78% APROVA / municipal 66%; engenharia: fundação SÓLIDA). Verify-don't-trust pegou 8+ bugs reais. EM EXECUÇÃO (hardening+PoC): red-team segurança+LGPD, reconciliação DTOs front↔back, acessibilidade WCAG AA, ITBI/Tema-1.113 (fix jurídico), PPA/LDO/LOA (implementando), RPPS + encerramento de exercício. ACHADOS p/ o dono: validação OFICIAL precisa de MT/PAD + A1 reais; ITBI×Tema 1.113 (procuradoria). Insumos seus: MT/e-Validador, A1, RPPS×RGPS, Azure, creds homologação.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
     { "label": "Testes backend", "valor": "852 ✓", "cor": "verde" },
     { "label": "Testes frontend", "valor": "182 ✓", "cor": "verde" },
     { "label": "Módulos backend", "valor": "13", "cor": "azul" },
-    { "label": "Commits no GitHub", "valor": "7 · verdes", "cor": "azul" },
+    { "label": "Commits no GitHub", "valor": "11 · verdes", "cor": "azul" },
     { "label": "Marcos concluídos", "valor": "5 / 11 · M5·M6 motores ✓", "cor": "azul" }
   ],
   "marcos": [

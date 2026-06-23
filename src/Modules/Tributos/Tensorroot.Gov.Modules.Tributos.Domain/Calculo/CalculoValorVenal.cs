@@ -63,7 +63,7 @@ public static class CalculadoraValorVenal
         var valorTerreno = decimal.Round(caracteristicas.AreaTerreno * zona.ValorM2Terreno, 2, MidpointRounding.AwayFromZero);
 
         var fatorPadrao = planta.ObterFator(TipoFatorPgv.PadraoConstrutivo, caracteristicas.PadraoConstrutivo);
-        var fatorDepreciacao = planta.ObterFator(TipoFatorPgv.Depreciacao, FaixaIdade(caracteristicas));
+        var fatorDepreciacao = FatorDepreciacao(caracteristicas, planta);
         var fatorUso = planta.ObterFator(TipoFatorPgv.Uso, caracteristicas.TipoUso.ToString());
 
         var valorConstrucao = decimal.Round(
@@ -71,6 +71,12 @@ public static class CalculadoraValorVenal
             2,
             MidpointRounding.AwayFromZero);
 
+        // Convenção de FracaoIdeal (IP-B3): a fração ideal incide sobre o VALOR VENAL TOTAL da unidade
+        // autônoma (terreno comum + construção). Premissa do BCI: `AreaConstruida` registra a área
+        // PRIVATIVA da unidade (não a do prédio inteiro) e `AreaTerreno` o terreno comum do condomínio;
+        // a fração rateia o conjunto. Para imóvel não-condominial, `FracaoIdeal = 1` é neutro.
+        // // TODO(validar-oficial): confirmar contra o CTM/lei do condomínio de Maximiliano de Almeida/RS
+        // se a fração ideal incide sobre o total (terreno + construção) ou somente sobre o terreno comum.
         var bruto = (valorTerreno + valorConstrucao) * caracteristicas.FracaoIdeal;
         var valorVenal = ValorMonetario.De(decimal.Round(bruto, 2, MidpointRounding.AwayFromZero));
 
@@ -89,19 +95,28 @@ public static class CalculadoraValorVenal
     }
 
     /// <summary>
-    /// Deriva a chave de faixa de idade da construção (para o fator de depreciação da PGV).
-    /// A granularidade das faixas é definida pela lei municipal; aqui usamos a idade em anos como
-    /// chave inteira ("0", "1", ...). // TODO(validar-oficial): faixas de depreciação por idade
-    /// conforme a lei da PGV de Maximiliano de Almeida/RS.
+    /// Calcula o fator de depreciação da construção a partir da PGV, casando a idade por INTERVALO de
+    /// faixa (ver <see cref="FaixaDepreciacao"/>). A idade é derivada do EXERCÍCIO do fato gerador
+    /// (<see cref="PlantaValores.Exercicio"/>) — NUNCA do relógio (<c>DateTime.UtcNow</c>) — para que a
+    /// reapuração do mesmo lançamento em outro ano produza SEMPRE o mesmo valor (reprodutibilidade
+    /// inegociável, CLAUDE.md §16; cabeçalho da memória de cálculo). Sem ano de construção conhecido,
+    /// não há depreciação a aplicar → fator neutro 1.
     /// </summary>
-    private static string? FaixaIdade(CaracteristicasImovel caracteristicas)
+    /// <param name="caracteristicas">Características do imóvel (ano de construção).</param>
+    /// <param name="planta">PGV vigente do exercício do fato gerador.</param>
+    /// <returns>O multiplicador de depreciação.</returns>
+    private static decimal FatorDepreciacao(CaracteristicasImovel caracteristicas, PlantaValores planta)
     {
-        if (caracteristicas.AnoConstrucao is not int ano)
+        // Sem construção (lote territorial), não há o que depreciar: fator neutro. Evita exigir
+        // faixa de depreciação para imóvel sem edificação (a parcela de construção é 0 de qualquer modo).
+        if (caracteristicas.AreaConstruida <= 0m || caracteristicas.AnoConstrucao is not int ano)
         {
-            return null;
+            return 1m;
         }
 
-        var idade = DateTime.UtcNow.Year - ano;
-        return idade < 0 ? "0" : idade.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        // Idade pelo exercício do fato gerador (determinístico). Construção futura (ano > exercício)
+        // é clampada a idade 0 — o cadastro já impede ano fora de [1800, 3000].
+        var idade = Math.Max(0, planta.Exercicio - ano);
+        return planta.ObterFatorDepreciacaoPorIdade(idade);
     }
 }

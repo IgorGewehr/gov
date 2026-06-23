@@ -171,4 +171,53 @@ public sealed class MotorItbiTests
 
         acao.Should().Throw<ArgumentOutOfRangeException>();
     }
+
+    [Fact] // IT-T5: triagem no limite EXATO (declarado == limiteInferior) NAO dispara alerta (< estrito).
+    public void Triagem_no_limite_exato_nao_dispara_alerta()
+    {
+        // Venal 300.000, margem 20% -> limiteInferior = 240.000. Declarado EXATAMENTE 240.000.
+        var noLimite = CalculadoraItbi.Calcular(
+            ValorMonetario.De(300_000m), ValorMonetario.De(240_000m),
+            aliquotaGeralPercentual: 2.0m, aliquotaSfhPercentual: 0.5m, margemDivergenciaPercentual: 20m);
+        noLimite.HaDivergenciaReferencia.Should().BeFalse("no limite exato a divergencia e exclusiva (< estrito)");
+
+        // 1 centavo abaixo do limite -> alerta dispara.
+        var abaixoDoLimite = CalculadoraItbi.Calcular(
+            ValorMonetario.De(300_000m), ValorMonetario.De(239_999.99m),
+            aliquotaGeralPercentual: 2.0m, aliquotaSfhPercentual: 0.5m, margemDivergenciaPercentual: 20m);
+        abaixoDoLimite.HaDivergenciaReferencia.Should().BeTrue("um centavo abaixo do limite ja diverge");
+    }
+
+    [Fact] // IT-B4: ITBI incide sobre transmissao ONEROSA (CTN art. 35) -> valor declarado ZERO e rejeitado.
+    public void Lancamento_de_itbi_com_valor_declarado_zero_e_rejeitado()
+    {
+        var validator = new Application.Itbi.LancarItbiValidator();
+        var comando = new Application.Itbi.LancarItbiCommand(
+            ImovelId: Guid.NewGuid(),
+            TransmitenteId: Guid.NewGuid(),
+            AdquirenteId: Guid.NewGuid(),
+            Exercicio: 2026,
+            ValorDeclarado: 0m,
+            Vencimento: new DateOnly(2026, 7, 1));
+
+        var resultado = validator.Validate(comando);
+
+        resultado.IsValid.Should().BeFalse("guia de ITBI R$ 0,00 nao representa transmissao onerosa");
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(comando.ValorDeclarado));
+    }
+
+    [Fact] // IT-B4: valor declarado positivo (1 centavo) passa na validacao (transmissao onerosa minima).
+    public void Lancamento_de_itbi_com_valor_declarado_positivo_e_aceito()
+    {
+        var validator = new Application.Itbi.LancarItbiValidator();
+        var comando = new Application.Itbi.LancarItbiCommand(
+            ImovelId: Guid.NewGuid(),
+            TransmitenteId: Guid.NewGuid(),
+            AdquirenteId: Guid.NewGuid(),
+            Exercicio: 2026,
+            ValorDeclarado: 0.01m,
+            Vencimento: new DateOnly(2026, 7, 1));
+
+        validator.Validate(comando).IsValid.Should().BeTrue();
+    }
 }

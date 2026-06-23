@@ -66,7 +66,11 @@ public sealed class LancarItbiValidator : AbstractValidator<LancarItbiCommand>
         RuleFor(c => c.TransmitenteId).NotEmpty();
         RuleFor(c => c.AdquirenteId).NotEmpty();
         RuleFor(c => c.Exercicio).GreaterThanOrEqualTo(1900);
-        RuleFor(c => c.ValorDeclarado).GreaterThanOrEqualTo(0m);
+        // IT-B4 — O ITBI incide sobre transmissao ONEROSA (CTN art. 35). Valor declarado zero nao e
+        // transmissao onerosa: e doacao (campo do ITCMD estadual) ou indicio de fraude. Exigir > 0
+        // impede a emissao de guia de ITBI R$ 0,00.
+        RuleFor(c => c.ValorDeclarado).GreaterThan(0m)
+            .WithMessage("O valor declarado deve ser maior que zero: o ITBI incide sobre transmissao onerosa (CTN art. 35).");
         RuleFor(c => c.PercentualIsencao).InclusiveBetween(0m, 100m);
         RuleFor(c => c.MargemDivergenciaPercentual).InclusiveBetween(0m, 100m);
         RuleFor(c => c.AdquirenteId).NotEqual(c => c.TransmitenteId)

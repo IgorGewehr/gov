@@ -180,6 +180,66 @@ public sealed class IssItbiPersistenciaTests : IDisposable
     }
 
     [Fact]
+    public async Task Dedup_e_apuracao_isolam_por_tenant_mesma_chave_em_dois_tenants_nao_vaza()
+    {
+        // IS-6 — A MESMA chave de acesso e o MESMO prestador/competencia existem legitimamente em
+        // dois tenants distintos (CNPJs distintos do mesmo grupo, ou colisao). A dedup do Worker e a
+        // base da apuracao do ISS NAO podem cruzar tenants: nem descartar a nota do tenant B como
+        // "ja existente" (sub-apuracao), nem incluir a nota do tenant A na base do tenant B (vazamento).
+        const string chaveCompartilhada = "CHV-COMPARTILHADA-2026";
+        const string cnpjPrestador = "11222333000181";
+        var competencia = Competencia.De(2026, 5);
+
+        // Tenant A grava a nota com a chave compartilhada.
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var nota = NotaFiscalServico.Importar(
+                TenantA, chaveCompartilhada, cnpjPrestador, null,
+                ValorMonetario.De(1_000m), ValorMonetario.De(0m),
+                new DateOnly(2026, 5, 5), competencia, "1.07");
+            contexto.NotasFiscaisServico.Add(nota);
+            await contexto.SaveChangesAsync();
+        }
+
+        // Tenant B: a dedup NAO pode considerar a chave "ja existente" (a nota e de outro tenant).
+        await using (var contexto = CriarContexto(TenantB))
+        {
+            var repositorio = new Infrastructure.Persistence.Repositories.NotaFiscalServicoRepository(contexto);
+            (await repositorio.ExistePorChaveAsync(chaveCompartilhada, CancellationToken.None))
+                .Should().BeFalse("a chave existe apenas no Tenant A; a dedup do Tenant B nao pode descartar a nota como duplicada");
+
+            // Tenant B grava a sua propria nota com a MESMA chave (permitido: indice e (TenantId, Chave)).
+            var notaB = NotaFiscalServico.Importar(
+                TenantB, chaveCompartilhada, cnpjPrestador, null,
+                ValorMonetario.De(2_000m), ValorMonetario.De(0m),
+                new DateOnly(2026, 5, 6), competencia, "1.07");
+            contexto.NotasFiscaisServico.Add(notaB);
+            await contexto.SaveChangesAsync();
+
+            // Agora, no Tenant B, a chave existe (a propria nota dele).
+            (await repositorio.ExistePorChaveAsync(chaveCompartilhada, CancellationToken.None))
+                .Should().BeTrue("agora a chave existe no proprio Tenant B");
+        }
+
+        // A base da apuracao de cada tenant ve SOMENTE a propria nota (sem vazamento de valor).
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var consulta = new Infrastructure.Persistence.Repositories.NotaFiscalServicoConsulta(contexto);
+            var notas = await consulta.ListarVigentesPorPrestadorCompetenciaAsync(cnpjPrestador, competencia, CancellationToken.None);
+            notas.Should().ContainSingle();
+            notas[0].ValorServico.Valor.Should().Be(1_000m, "Tenant A so enxerga a sua nota de R$1.000");
+        }
+
+        await using (var contexto = CriarContexto(TenantB))
+        {
+            var consulta = new Infrastructure.Persistence.Repositories.NotaFiscalServicoConsulta(contexto);
+            var notas = await consulta.ListarVigentesPorPrestadorCompetenciaAsync(cnpjPrestador, competencia, CancellationToken.None);
+            notas.Should().ContainSingle();
+            notas[0].ValorServico.Valor.Should().Be(2_000m, "Tenant B so enxerga a sua nota de R$2.000");
+        }
+    }
+
+    [Fact]
     public void Arbitramento_exige_contraditorio_antes_de_concluir()
     {
         var processo = ProcessoArbitramentoItbi.Instaurar(

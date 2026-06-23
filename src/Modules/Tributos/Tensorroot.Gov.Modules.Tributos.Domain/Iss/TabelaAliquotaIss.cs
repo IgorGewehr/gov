@@ -24,6 +24,14 @@ public readonly record struct TabelaAliquotaIssId(Guid Value)
 /// </summary>
 public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMustHaveTenant
 {
+    /// <summary>
+    /// Sentinela de "item NAO classificado" na lista LC 116. IS-2 (fail-closed): este codigo nunca
+    /// pode ser cadastrado na tabela, sob pena de uma nota de atividade desconhecida ser cobrada com
+    /// alguma aliquota. O ISS so incide sobre atividade efetivamente classificada (CF art. 156 III).
+    /// </summary>
+    public static readonly IReadOnlySet<string> ItensNaoClassificaveis =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "00.00", "0000", "00", "0.00" };
+
     private readonly List<ItemAliquotaIss> _itens = [];
 
     private TabelaAliquotaIss()
@@ -81,6 +89,17 @@ public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMus
         GarantirEditavel();
         ArgumentException.ThrowIfNullOrWhiteSpace(itemListaServico);
         var chave = itemListaServico.Trim();
+
+        // IS-2 — FAIL-CLOSED: proibir o sentinela de "item nao classificado". Sem isto, uma nota de
+        // atividade desconhecida casaria com este item e seria cobrada (fail-open). O ISS exige item
+        // efetivamente classificado na lista LC 116.
+        if (ItensNaoClassificaveis.Contains(chave))
+        {
+            throw new InvalidOperationException(
+                $"O item '{chave}' representa atividade NAO classificada e nao pode ser cadastrado na " +
+                "tabela de ISS (fail-closed): notas sem item LC 116 valido nao podem ser cobradas.");
+        }
+
         if (_itens.Any(i => string.Equals(i.ItemListaServico, chave, StringComparison.OrdinalIgnoreCase)))
         {
             throw new InvalidOperationException($"O item '{chave}' já está definido nesta tabela de ISS.");

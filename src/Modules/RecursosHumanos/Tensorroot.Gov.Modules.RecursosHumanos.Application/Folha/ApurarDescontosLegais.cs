@@ -77,9 +77,18 @@ public sealed class ApurarDescontosLegaisHandler(
                 .Where(e => e.ServidorId == servidorId && !Array.Exists(legais, c => c == e.Rubrica))
                 .Select(e =>
                 {
-                    var (inss, rpps, irrf) = incidencias.TryGetValue(e.Rubrica.Codigo, out var flags)
-                        ? flags
-                        : (false, false, false);
+                    // FAIL-CLOSED (CLAUDE.md S16): se a rubrica lancada nao tem vigencia valida na
+                    // competencia, NAO presumir base zero — isso subtributaria INSS/IRRF silenciosamente,
+                    // sem erro nem rastro. Interromper a apuracao e sinalizar erro auditavel pelo TCE.
+                    if (!incidencias.TryGetValue(e.Rubrica.Codigo, out var flags))
+                    {
+                        throw new CalculoFolhaException(
+                            $"Rubrica '{e.Rubrica.Codigo}' lancada para o servidor {servidorId} nao possui " +
+                            $"vigencia valida na competencia {competencia}. Apuracao interrompida (fail-closed): " +
+                            "as incidencias de INSS/RPPS/IRRF nao podem ser presumidas zero.");
+                    }
+
+                    var (inss, rpps, irrf) = flags;
                     return new VerbaCalculo(e.Rubrica, e.Tipo == TipoEvento.Provento, e.Valor, inss, rpps, irrf);
                 })
                 .ToList();

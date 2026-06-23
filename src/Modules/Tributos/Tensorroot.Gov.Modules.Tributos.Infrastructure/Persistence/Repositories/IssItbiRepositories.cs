@@ -49,9 +49,18 @@ public sealed class ApuracaoIssRepository(TributosDbContext context) : IApuracao
     public Task<ApuracaoIss?> ObterPorContribuinteCompetenciaAsync(ContribuinteId contribuinteId, Competencia competencia, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(competencia);
+
+        // IS-6 — TenantId explicito (defesa em profundidade alem do Global Query Filter): a apuracao
+        // do ISS jamais pode misturar/reutilizar a apuracao de outro tenant para o mesmo contribuinte/
+        // competencia. Isolamento multi-tenant e invariante critica (CLAUDE.md S3/S5).
+        var tenantId = context.CurrentTenantId;
         return context.ApuracoesIss
             .Include(apuracao => apuracao.Itens)
-            .FirstOrDefaultAsync(apuracao => apuracao.ContribuinteId == contribuinteId && apuracao.Competencia == competencia, cancellationToken);
+            .FirstOrDefaultAsync(
+                apuracao => apuracao.TenantId == tenantId
+                    && apuracao.ContribuinteId == contribuinteId
+                    && apuracao.Competencia == competencia,
+                cancellationToken);
     }
 }
 
@@ -67,8 +76,13 @@ public sealed class NotaFiscalServicoConsulta(TributosDbContext context) : INota
         ArgumentException.ThrowIfNullOrWhiteSpace(prestadorCnpj);
         ArgumentNullException.ThrowIfNull(competencia);
 
+        // IS-6 — TenantId explicito na base da apuracao do ISS (defesa em profundidade alem do Global
+        // Query Filter): a base tributavel de um tenant nunca pode incluir notas de outro tenant que
+        // colidam por prestador/competencia. Isolamento multi-tenant e invariante critica (CLAUDE.md S3/S5).
+        var tenantId = context.CurrentTenantId;
         return await context.NotasFiscaisServico
-            .Where(nota => nota.PrestadorCnpj == prestadorCnpj
+            .Where(nota => nota.TenantId == tenantId
+                && nota.PrestadorCnpj == prestadorCnpj
                 && nota.Competencia == competencia
                 && nota.Situacao == SituacaoNfse.Normal)
             .ToListAsync(cancellationToken)

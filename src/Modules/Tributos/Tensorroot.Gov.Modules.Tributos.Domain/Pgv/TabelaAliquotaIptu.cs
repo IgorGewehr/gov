@@ -127,6 +127,16 @@ public sealed class TabelaAliquotaIptu : AggregateRoot<TabelaAliquotaIptuId>, IM
             limite = faixa.ValorVenalMaximo;
         }
 
+        // Garante cobertura do TOPO (IP-B1): a última faixa deve ir até o sentinela "sem teto", senão
+        // imóveis de valor venal alto não casariam faixa e gerariam não-lançamento por exceção
+        // (renúncia de receita não auditada). A última faixa cobre [min, SemTeto] inclusivo.
+        if (limite != SemTeto)
+        {
+            throw new InvalidOperationException(
+                $"A última faixa de valor venal deve cobrir o topo (terminar em {SemTeto} = sem teto); " +
+                $"a tabela termina em {limite}, deixando imóveis de valor venal alto sem alíquota.");
+        }
+
         Vigente = true;
         RaiseDomainEvent(new TabelaAliquotaIptuPublicada(Id, TenantId, Exercicio));
     }
@@ -141,7 +151,12 @@ public sealed class TabelaAliquotaIptu : AggregateRoot<TabelaAliquotaIptuId>, IM
     public decimal AliquotaPara(decimal valorVenal)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(valorVenal);
-        var faixa = _faixas.FirstOrDefault(f => valorVenal >= f.ValorVenalMinimo && valorVenal < f.ValorVenalMaximo)
+
+        // Faixa marginal-simples [min, max). A faixa "sem teto" (max == SemTeto) é INCLUSIVA no topo
+        // (IP-B1): cobre [min, SemTeto], de modo que valor venal == SemTeto não fique a descoberto.
+        var faixa = _faixas.FirstOrDefault(f =>
+                valorVenal >= f.ValorVenalMinimo
+                && (valorVenal < f.ValorVenalMaximo || (f.ValorVenalMaximo == SemTeto && valorVenal <= SemTeto)))
             ?? throw new InvalidOperationException($"Nenhuma faixa de alíquota cobre o valor venal {valorVenal}.");
         return faixa.AliquotaPercentual;
     }

@@ -165,6 +165,48 @@ public sealed class PlantaValores : AggregateRoot<PlantaValoresId>, IMustHaveTen
         return _fatores.FirstOrDefault(f => f.Tipo == tipo && f.Chave == k)?.Multiplicador ?? 1m;
     }
 
+    /// <summary>
+    /// Obtém o fator de depreciação aplicável a uma idade (em anos) da construção, casando a idade
+    /// por INTERVALO de faixa (não por valor exato). As faixas de depreciação são cadastradas com
+    /// chave no formato <c>"min-max"</c> (ex.: <c>"0-5"</c>, <c>"6-10"</c>, ambos inclusivos) ou
+    /// <c>"min+"</c> para faixa aberta no topo (ex.: <c>"31+"</c>). A idade <paramref name="idade"/>
+    /// casa a faixa quando <c>min ≤ idade ≤ max</c>.
+    /// <para>
+    /// FAIL-CLOSED (CLAUDE.md §16): se a PGV define faixas de depreciação mas NENHUMA cobre a idade,
+    /// lança — depreciação obrigatória não pode cair silenciosamente em fator 1 (valor venal
+    /// superestimado). Se a PGV NÃO define nenhuma faixa de depreciação (município não deprecia),
+    /// retorna 1 (neutro) — ausência total de faixas é decisão legítima, não furo de parametrização.
+    /// </para>
+    /// </summary>
+    /// <param name="idade">Idade da construção em anos (≥ 0), derivada do exercício do fato gerador.</param>
+    /// <returns>O multiplicador de depreciação; 1 quando a PGV não cadastra nenhuma faixa.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Se a idade for negativa.</exception>
+    /// <exception cref="InvalidOperationException">Se há faixas de depreciação mas nenhuma cobre a idade.</exception>
+    public decimal ObterFatorDepreciacaoPorIdade(int idade)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(idade);
+
+        var faixasDepreciacao = _fatores.Where(f => f.Tipo == TipoFatorPgv.Depreciacao).ToList();
+        if (faixasDepreciacao.Count == 0)
+        {
+            // Município não cadastrou depreciação por idade: fator neutro (legítimo).
+            return 1m;
+        }
+
+        foreach (var fator in faixasDepreciacao)
+        {
+            if (FaixaDepreciacao.TentarInterpretar(fator.Chave, out var minimo, out var maximo)
+                && idade >= minimo && idade <= maximo)
+            {
+                return fator.Multiplicador;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"A PGV do exercício {Exercicio} define faixas de depreciação, mas nenhuma cobre a idade {idade} ano(s) da construção. " +
+            "Cadastre uma faixa que cubra essa idade (depreciação obrigatória não pode ser silenciosamente ignorada).");
+    }
+
     private void GarantirEditavel()
     {
         if (Vigente)

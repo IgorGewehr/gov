@@ -23,6 +23,9 @@ public enum ModalidadeIss
 /// Memória de cálculo do ISS de UMA NFS-e (auditável): item da lista, base, alíquota aplicada,
 /// modalidade e valor apurado. Determinística e fiscalizável pelo TCE-RS. Ver M6-DESIGN §2.2.
 /// </summary>
+/// <param name="TenantId">Tenant (ente público) dono da nota — para defesa do invariante na escrituração (IS-9).</param>
+/// <param name="PrestadorCnpj">CNPJ do prestador da nota — para defesa do invariante na escrituração (IS-9).</param>
+/// <param name="Competencia">Competência (AAAA-MM) da nota — para defesa do invariante na escrituração (IS-9).</param>
 /// <param name="ChaveAcesso">Chave de acesso da NFS-e.</param>
 /// <param name="ItemListaServico">Item da lista LC 116.</param>
 /// <param name="BaseCalculo">Base de cálculo (valor do serviço, R$).</param>
@@ -30,6 +33,9 @@ public enum ModalidadeIss
 /// <param name="Modalidade">Modalidade de recolhimento.</param>
 /// <param name="IssApurado">ISS apurado (R$).</param>
 public sealed record MemoriaIssNota(
+    Guid TenantId,
+    string PrestadorCnpj,
+    Competencia Competencia,
     string ChaveAcesso,
     string ItemListaServico,
     ValorMonetario BaseCalculo,
@@ -79,6 +85,9 @@ public static class CalculadoraIss
         var issApurado = baseCalculo.AplicarPercentual(item.AliquotaPercentual);
 
         return new MemoriaIssNota(
+            nota.TenantId,
+            nota.PrestadorCnpj,
+            nota.Competencia,
             nota.ChaveAcesso,
             nota.ItemListaServico,
             baseCalculo,

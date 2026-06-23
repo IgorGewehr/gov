@@ -243,6 +243,13 @@ public sealed class Empenho : AggregateRoot<EmpenhoId>, IMustHaveTenant
     public void RegistrarPagamento(ValorMonetario valor)
     {
         ArgumentNullException.ThrowIfNull(valor);
+
+        // C-B6 — Fail-closed: o pagamento ordinario so se aplica a empenho ATIVO do exercicio. Empenho
+        // Anulado/TotalmentePago nao admite pagamento; e empenho InscritoRestosAPagar tem fluxo PROPRIO
+        // (pagamento de RP no exercicio seguinte), pois aqui AtualizarSituacaoPorSaldos retornaria cedo e
+        // deixaria ValorPago avancando com a situacao travada em InscritoRestosAPagar (estado ambiguo).
+        GarantirAtivo();
+
         if (valor.EhMaiorQue(SaldoAPagar))
         {
             throw new SaldoLiquidacaoInsuficienteException(SaldoAPagar.Valor, valor.Valor);

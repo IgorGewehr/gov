@@ -155,4 +155,72 @@ public sealed class MotorIssTests
 
         acao.Should().Throw<InvalidOperationException>().WithMessage("*não está vigente*");
     }
+
+    [Fact] // IS-2: sentinela de item NAO classificado nao pode ser cadastrado na tabela (fail-closed).
+    public void Item_nao_classificado_nao_pode_ser_cadastrado_na_tabela()
+    {
+        var tabela = TabelaAliquotaIss.Criar(Tenant, 202601, "CTM");
+
+        var acao = () => tabela.DefinirItem("00.00", 2.0m);
+
+        acao.Should().Throw<InvalidOperationException>().WithMessage("*NAO classificada*");
+    }
+
+    [Fact] // IS-9: o agregado barra escriturar nota de OUTRA competencia (invariante de dominio, nao do handler).
+    public void Escriturar_nota_de_outra_competencia_e_recusado()
+    {
+        var tabela = CriarTabela();
+        var apuracao = ApuracaoIss.Abrir(Tenant, Domain.Contribuintes.ContribuinteId.New(), Competencia.De(2026, 5));
+
+        // Nota de competencia 2026-04 (CriarNota fixa 2026-05; construimos uma de abril).
+        var notaAbril = NotaFiscalServico.Importar(
+            Tenant, "NFSE-ABR", "12345678000199", null,
+            ValorMonetario.De(1_000m), ValorMonetario.De(0m),
+            new DateOnly(2026, 4, 10), Competencia.De(2026, 4), "1.07");
+
+        var acao = () => apuracao.Escriturar(CalculadoraIss.Apurar(notaAbril, tabela));
+
+        acao.Should().Throw<InvalidOperationException>().WithMessage("*competencia*");
+    }
+
+    [Fact] // IS-9: o agregado barra escriturar nota de OUTRO tenant (defesa em profundidade).
+    public void Escriturar_nota_de_outro_tenant_e_recusado()
+    {
+        var tabela = CriarTabela();
+        var apuracao = ApuracaoIss.Abrir(Tenant, Domain.Contribuintes.ContribuinteId.New(), Competencia.De(2026, 5));
+
+        var outroTenant = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        var notaOutroTenant = NotaFiscalServico.Importar(
+            outroTenant, "NFSE-X", "12345678000199", null,
+            ValorMonetario.De(1_000m), ValorMonetario.De(0m),
+            new DateOnly(2026, 5, 10), Competencia.De(2026, 5), "1.07");
+
+        var acao = () => apuracao.Escriturar(CalculadoraIss.Apurar(notaOutroTenant, tabela));
+
+        acao.Should().Throw<InvalidOperationException>().WithMessage("*tenant*");
+    }
+
+    [Fact] // Agregacao monetaria exata: 333 notas de R$ 0,01 @ 100% somam exatamente R$ 0,33 por nota -> R$ 333 base.
+    public void Agregacao_de_muitas_notas_de_centavo_e_exata()
+    {
+        var tabela = TabelaAliquotaIss.Criar(Tenant, 202601, "CTM centavo");
+        tabela.DefinirItem("1.07", 100m); // 100% para tornar o ISS = base e evidenciar o arredondamento por nota.
+        tabela.Publicar();
+
+        var competencia = Competencia.De(2026, 5);
+        var apuracao = ApuracaoIss.Abrir(Tenant, Domain.Contribuintes.ContribuinteId.New(), competencia);
+
+        for (var i = 0; i < 333; i++)
+        {
+            var nota = NotaFiscalServico.Importar(
+                Tenant, $"NFSE-{i:D4}", "12345678000199", null,
+                ValorMonetario.De(0.01m), ValorMonetario.De(0m),
+                new DateOnly(2026, 5, 10), competencia, "1.07");
+            apuracao.Escriturar(CalculadoraIss.Apurar(nota, tabela));
+        }
+
+        // 333 × R$ 0,01 @ 100% = R$ 3,33 exatos (sem deriva de arredondamento na soma — IS-3).
+        apuracao.QuantidadeNotas.Should().Be(333);
+        apuracao.IssProprio.Valor.Should().Be(3.33m);
+    }
 }

@@ -30,7 +30,11 @@ public sealed class ValorMonetario : ValueObject
     public ValorMonetario Somar(ValorMonetario outro)
     {
         ArgumentNullException.ThrowIfNull(outro);
-        return new ValorMonetario(Valor + outro.Valor);
+
+        // Re-arredonda e valida 2 casas como em De/AplicarPercentual: defesa em profundidade contra
+        // uma parcela nao-arredondada introduzida por refactor (IS-3). Reprodutibilidade inegociavel
+        // (CLAUDE.md S16): mesmo fato gerador -> mesmo valor SEMPRE.
+        return new ValorMonetario(decimal.Round(Valor + outro.Valor, 2, MidpointRounding.AwayFromZero));
     }
 
     /// <summary>Calcula um acréscimo percentual (ex.: multa/juros) sobre este valor.</summary>

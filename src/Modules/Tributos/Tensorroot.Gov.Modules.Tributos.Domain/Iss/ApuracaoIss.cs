@@ -89,6 +89,22 @@ public sealed class ApuracaoIss : AggregateRoot<ApuracaoIssId>, IMustHaveTenant
     {
         ArgumentNullException.ThrowIfNull(memoria);
 
+        // IS-9 — O agregado protege o proprio invariante (CLAUDE.md S7: dominio rico, nada de modelo
+        // anemico): uma nota so pode ser escriturada no livro do MESMO tenant e da MESMA competencia.
+        // Antes, a protecao dependia exclusivamente do handler — aqui ela vira invariante de dominio,
+        // barrando vazamento entre tenants e mistura de competencias na apuracao.
+        if (memoria.TenantId != TenantId)
+        {
+            throw new InvalidOperationException(
+                $"Nota do tenant {memoria.TenantId} nao pode ser escriturada na apuracao do tenant {TenantId}.");
+        }
+
+        if (!memoria.Competencia.Equals(Competencia))
+        {
+            throw new InvalidOperationException(
+                $"Nota da competencia {memoria.Competencia} nao pode ser escriturada na apuracao da competencia {Competencia}.");
+        }
+
         _itens.Add(ItemApuracaoIss.Criar(
             Id,
             memoria.ChaveAcesso,

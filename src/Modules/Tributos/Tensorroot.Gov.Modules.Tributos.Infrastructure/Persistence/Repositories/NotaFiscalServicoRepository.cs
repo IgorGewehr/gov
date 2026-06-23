@@ -9,7 +9,15 @@ public sealed class NotaFiscalServicoRepository(TributosDbContext context) : INo
 {
     /// <inheritdoc />
     public Task<bool> ExistePorChaveAsync(string chaveAcesso, CancellationToken cancellationToken)
-        => context.NotasFiscaisServico.AnyAsync(nota => nota.ChaveAcesso == chaveAcesso, cancellationToken);
+    {
+        // IS-6 — Defesa em profundidade no isolamento multi-tenant (CLAUDE.md S3/S5). O indice unico
+        // de dedup e (TenantId, ChaveAcesso): a mesma chave pode existir legitimamente em tenants
+        // distintos. Filtrar por TenantId EXPLICITO (alem do Global Query Filter) garante que a dedup
+        // do Worker nao descarte uma nota de outro tenant nem dependa unicamente do GQF.
+        var tenantId = context.CurrentTenantId;
+        return context.NotasFiscaisServico
+            .AnyAsync(nota => nota.TenantId == tenantId && nota.ChaveAcesso == chaveAcesso, cancellationToken);
+    }
 
     /// <inheritdoc />
     public void Adicionar(NotaFiscalServico nota)
