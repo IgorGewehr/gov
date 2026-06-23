@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
@@ -50,6 +51,9 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Apuracoes de jornada por servidor/competencia (PTRP/banco de horas).</summary>
     public DbSet<ApuracaoPonto> PontoApuracoes => Set<ApuracaoPonto>();
+
+    /// <summary>Eventos eSocial gerados/assinados/transmitidos (maquina de estados + Outbox).</summary>
+    public DbSet<EventoESocial> EventosESocial => Set<EventoESocial>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

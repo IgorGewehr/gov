@@ -10,7 +10,9 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
+using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Providers;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Repositories;
@@ -67,6 +69,14 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IApuracaoPontoRepository, ApuracaoPontoRepository>();
         services.AddScoped<IServidorPontoConsulta, ServidorPontoConsulta>();
         services.AddScoped<IParametrosPontoProvider, ParametrosPontoProvider>();
+
+        // eSocial (M5): repositorio de eventos, provider do empregador, servico de geracao e o GATEWAY
+        // atras de ACL — impl. SIMULADA por padrao. // TODO(prod: trocar por ESocialGatewaySoap quando
+        // houver creds de Producao Restrita; manter Polly + mTLS + URLs por IOptions/Key Vault).
+        services.AddScoped<IEventoESocialRepository, EventoESocialRepository>();
+        services.AddScoped<IEmpregadorESocialProvider, EmpregadorESocialProvider>();
+        services.AddScoped<GeradorEventoApplicationService>();
+        services.AddSingleton<IESocialGateway, ESocialGatewaySimulado>();
 
         var applicationAssembly = typeof(AdmitirServidorCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

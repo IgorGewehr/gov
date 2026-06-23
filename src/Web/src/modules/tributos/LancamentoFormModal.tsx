@@ -1,13 +1,14 @@
 // Formulário de LANÇAMENTO de crédito tributário (command LancarCredito) em Modal.
 // Espelha o validator: ContribuinteId NotEmpty; TipoTributo IsInEnum; Ano >= 1900;
-// Mes 1..12; ValorPrincipal > 0. Após o lançamento, oferece (opcionalmente) a
-// inscrição imediata em Dívida Ativa (command InscreverEmDividaAtiva).
+// Mes 1..12; ValorPrincipal > 0. A inscrição em Dívida Ativa (que exige fundamento
+// legal + encargos parametrizáveis) é feita na ação dedicada "Inscrever em Dívida
+// Ativa" (InscreverDividaModal), a partir do identificador do lançamento gerado aqui.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Button, FormField, Input, Modal, Select, useToast } from '../../components/ui';
 import type { SelectOption } from '../../components/ui';
 import { ApiError } from '../../api/problemDetails';
-import { TIPO_TRIBUTO_VALOR, useInscreverEmDividaAtiva, useLancarCredito } from './api';
+import { TIPO_TRIBUTO_VALOR, useLancarCredito } from './api';
 import type { LancarCreditoInput, TipoTributo } from './api';
 import { TIPO_TRIBUTO_LABEL } from './dividaAtiva.helpers';
 
@@ -36,7 +37,6 @@ interface FormErrors {
 export function LancamentoFormModal({ open, onClose, contribuinteIdInicial = '' }: LancamentoFormModalProps) {
   const toast = useToast();
   const lancar = useLancarCredito();
-  const inscrever = useInscreverEmDividaAtiva(contribuinteIdInicial);
 
   const [contribuinteId, setContribuinteId] = useState(contribuinteIdInicial);
   const [tipoTributo, setTipoTributo] = useState<TipoTributo | ''>('');
@@ -44,10 +44,9 @@ export function LancamentoFormModal({ open, onClose, contribuinteIdInicial = '' 
   const [mes, setMes] = useState('');
   const [valorPrincipal, setValorPrincipal] = useState('');
   const [vencimento, setVencimento] = useState('');
-  const [inscreverDivida, setInscreverDivida] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const pendente = lancar.isPending || inscrever.isPending;
+  const pendente = lancar.isPending;
 
   function validar(): FormErrors {
     const next: FormErrors = {};
@@ -73,7 +72,6 @@ export function LancamentoFormModal({ open, onClose, contribuinteIdInicial = '' 
     setMes('');
     setValorPrincipal('');
     setVencimento('');
-    setInscreverDivida(false);
     onClose();
   }
 
@@ -94,25 +92,8 @@ export function LancamentoFormModal({ open, onClose, contribuinteIdInicial = '' 
 
     lancar.mutate(input, {
       onSuccess: (resultado) => {
-        if (!inscreverDivida) {
-          toast.success(`Crédito lançado (id ${resultado.id}).`, 'Sucesso');
-          fechar();
-          return;
-        }
-        inscrever.mutate(resultado.id, {
-          onSuccess: (insc) => {
-            toast.success(`Crédito lançado e inscrito em Dívida Ativa (CDA id ${insc.dividaAtivaId}).`, 'Sucesso');
-            fechar();
-          },
-          onError: (error) => {
-            toast.error(
-              error instanceof ApiError
-                ? error.userMessage
-                : 'Crédito lançado, mas não foi possível inscrever em Dívida Ativa (verifique o vencimento).',
-            );
-            fechar();
-          },
-        });
+        toast.success(`Crédito lançado (id ${resultado.id}).`, 'Sucesso');
+        fechar();
       },
       onError: (error) => {
         if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
@@ -246,14 +227,8 @@ export function LancamentoFormModal({ open, onClose, contribuinteIdInicial = '' 
         </FormField>
 
         <Alert variant="info" title="Inscrição em Dívida Ativa">
-          <label className="br-checkbox">
-            <input
-              type="checkbox"
-              checked={inscreverDivida}
-              onChange={(e) => setInscreverDivida(e.target.checked)}
-            />
-            <span>Inscrever imediatamente em Dívida Ativa (somente se já vencido).</span>
-          </label>
+          Após lançar, use a ação &ldquo;Inscrever em Dívida Ativa&rdquo; (com fundamento legal e
+          encargos) informando o identificador do lançamento — somente se já vencido e em aberto.
         </Alert>
       </form>
     </Modal>

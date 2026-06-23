@@ -5,11 +5,11 @@
   "atividadeAtual": "🚀 RUN AUTÔNOMO — 7 commits limpos no GitHub (IgorGewehr/gov), cada um verde+validado por mim em runtime. ESPINHA FISCAL M0–M4 + TRILHA LEGISLATIVA COMPLETA (back+front) + M5 (folha motor INSS/IRRF/RPPS líquido 6.034,77 + ponto AFD/AEJ CRC-16 66A7) + M6 (IPTU 162.000→1.458, ISS próprio 50/retido 75, ITBI) — TODOS os motores [OFICIAL] PROVADOS, com frontends. ROBUSTEZ DE AUDITORIA PROVADA: trilha com HASH-CHAIN imutável (adulteração detectada em runtime, 409 aponta a linha exata) + ordem dos interceptors corrigida (W0.2). 2 avaliações isentas (PoC legislativa 78% APROVA / municipal 66%; engenharia: fundação SÓLIDA). Verify-don't-trust pegou 8+ bugs reais. EM EXECUÇÃO (hardening+PoC): red-team segurança+LGPD, reconciliação DTOs front↔back, acessibilidade WCAG AA, ITBI/Tema-1.113 (fix jurídico), PPA/LDO/LOA (implementando), RPPS + encerramento de exercício. ACHADOS p/ o dono: validação OFICIAL precisa de MT/PAD + A1 reais; ITBI×Tema 1.113 (procuradoria). Insumos seus: MT/e-Validador, A1, RPPS×RGPS, Azure, creds homologação.",
   "metricas": [
     { "label": "Build", "valor": "0 erros · 0 avisos", "cor": "verde" },
-    { "label": "Testes backend", "valor": "852 ✓", "cor": "verde" },
-    { "label": "Testes frontend", "valor": "182 ✓", "cor": "verde" },
+    { "label": "Testes backend", "valor": "~1.067 ✓", "cor": "verde" },
+    { "label": "Testes frontend", "valor": "192 ✓", "cor": "verde" },
     { "label": "Módulos backend", "valor": "13", "cor": "azul" },
     { "label": "Commits no GitHub", "valor": "16 · verdes", "cor": "azul" },
-    { "label": "Marcos concluídos", "valor": "5 / 11 · M5·M6 motores ✓", "cor": "azul" }
+    { "label": "Marcos concluídos", "valor": "6 / 11 · M6 completo; M5 núcleo", "cor": "azul" }
   ],
   "marcos": [
     { "id": "M0", "titulo": "Destravar build + bugs críticos", "status": "done", "nota": "Build 0/0, 593 testes; ciclo da despesa de Finanças provado em runtime.", "workflows": [
@@ -56,14 +56,14 @@
       { "id": "W5.4", "t": "Remessa de folha TCE-RS (Res. 1099)", "s": "pending" },
       { "id": "W5.5", "t": "Minha Folha (self-service do servidor)", "s": "pending" }
     ]},
-    { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "active", "flag": "OFICIAL", "nota": "NÚCLEO PROVADO: IPTU (cadastro imobiliário + PGV + motor valor venal, reprodutível) + ISS (NFS-e passiva) + ITBI (base=declarado, Tema 1.113/STJ) + frontends. Qualidade auditada (IP-R4 reprodutibilidade corrigida). Taxas/dívida-protesto depois.", "workflows": [
+    { "id": "M6", "titulo": "Tributos (cadastro imobiliário + motores)", "status": "done", "flag": "OFICIAL", "nota": "COMPLETO E PROVADO: IPTU (cadastro imobiliário + PGV + motor reprodutível) + ISS (NFS-e passiva) + ITBI (Tema 1.113/STJ) + taxas/COSIP/alvarás/melhoria + dívida ativa/CDA/protesto/prescrição (CTN 174) + frontends. Qualidade auditada (12 bugs). Meio Ambiente/Cemitério → M6.x. Valores do CTM = TODO(validar-oficial).", "workflows": [
       { "id": "W6.1", "t": "Cadastro Imobiliário (CIB/PGV) — PROVADO", "s": "done" },
       { "id": "W6.2", "t": "Motor IPTU + DAM (reprodutível) — PROVADO", "s": "done" },
       { "id": "W6.3", "t": "ISS (NFS-e passiva) + ITBI (Tema 1.113) — PROVADO", "s": "done" },
-      { "id": "W6.fe", "t": "Frontends: imóvel/IPTU/ISS/ITBI", "s": "done" },
-      { "id": "W6.4", "t": "Taxas/COSIP/Alvarás", "s": "pending" },
-      { "id": "W6.5", "t": "Procuradoria: dívida ativa/CDA/protesto/execução", "s": "pending" },
-      { "id": "W6.6", "t": "Meio Ambiente / Plan. Urbano / Cemitério", "s": "pending" }
+      { "id": "W6.4", "t": "Taxas/COSIP/Alvarás/Melhoria — PROVADO", "s": "done" },
+      { "id": "W6.5", "t": "Dívida ativa/CDA/protesto/prescrição — PROVADO", "s": "done" },
+      { "id": "W6.fe", "t": "Frontends: imóvel/IPTU/ISS/ITBI/taxas/dívida", "s": "done" },
+      { "id": "W6.6", "t": "Meio Ambiente / Plan. Urbano / Cemitério — M6.x", "s": "pending" }
     ]},
     { "id": "M7", "titulo": "Saúde / Educação / Assistência (repasses)", "status": "pending", "flag": "OFICIAL", "workflows": [
       { "id": "W7.1", "t": "Saúde: RNDS (FHIR) + SI-PNI", "s": "pending" },

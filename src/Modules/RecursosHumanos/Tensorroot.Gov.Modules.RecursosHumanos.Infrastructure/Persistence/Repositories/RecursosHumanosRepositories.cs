@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
@@ -175,5 +176,68 @@ public sealed class TabelasLegaisRepository(RecursosHumanosDbContext context) : 
     {
         ArgumentNullException.ThrowIfNull(tabela);
         context.TabelasRpps.Add(tabela);
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="EventoESocial"/>.</summary>
+public sealed class EventoESocialRepository(RecursosHumanosDbContext context) : IEventoESocialRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(EventoESocial evento)
+    {
+        ArgumentNullException.ThrowIfNull(evento);
+        context.EventosESocial.Add(evento);
+    }
+
+    /// <inheritdoc />
+    public Task<EventoESocial?> ObterPorIdAsync(EventoESocialId id, CancellationToken cancellationToken)
+        => context.EventosESocial.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<EventoESocial?> ObterPorChaveAsync(ChaveIdempotenciaEvento chave, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(chave);
+        // ChaveIdempotencia e owned (3 colunas). Filtra pelas 3 partes — index unico cobre a busca.
+        return await context.EventosESocial
+            .FirstOrDefaultAsync(
+                e => e.ChaveIdempotencia.TipoEvento == chave.TipoEvento
+                    && e.ChaveIdempotencia.IdNegocio == chave.IdNegocio
+                    && e.ChaveIdempotencia.Competencia == chave.Competencia,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ExisteParaChaveAsync(ChaveIdempotenciaEvento chave, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(chave);
+        return await context.EventosESocial
+            .AnyAsync(
+                e => e.ChaveIdempotencia.TipoEvento == chave.TipoEvento
+                    && e.ChaveIdempotencia.IdNegocio == chave.IdNegocio
+                    && e.ChaveIdempotencia.Competencia == chave.Competencia,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventoESocial>> ListarPorEstadoAsync(EstadoEventoESocial estado, CancellationToken cancellationToken)
+    {
+        // SQLite (dev) nao ordena DateTimeOffset no SQL; materializa filtrado e ordena por GeradoEm em
+        // memoria (lote pequeno por tenant/estado). Em SqlServer o filtro ja usa o indice (TenantId, Estado).
+        var eventos = await context.EventosESocial
+            .Where(e => e.Estado == estado)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return eventos.OrderBy(e => e.GeradoEm).ToList();
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventoESocial>> ListarTodosAsync(CancellationToken cancellationToken)
+    {
+        var eventos = await context.EventosESocial
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return eventos.OrderBy(e => e.GeradoEm).ToList();
     }
 }

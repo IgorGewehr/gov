@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Cargos;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
@@ -27,6 +28,70 @@ internal static class RecursosHumanosEndpoints
         MapearTabelasLegais(grupo);
         MapearFolha(grupo);
         MapearPonto(grupo);
+        MapearESocial(grupo);
+    }
+
+    private static void MapearESocial(RouteGroupBuilder grupo)
+    {
+        var esocial = grupo.MapGroup("/esocial");
+
+        // Geracao de eventos de tabela (a partir da config do tenant / catalogo de rubricas).
+        esocial.MapPost("/eventos/s1000", async (ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(new GerarS1000Command(), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        esocial.MapPost("/eventos/s1005", async (GerarS1005Command comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        esocial.MapPost("/eventos/s1010", async (GerarS1010Command comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Eventos nao-periodicos (do agregado Servidor).
+        esocial.MapPost("/eventos/s2200", async (GerarS2200Command comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        esocial.MapPost("/eventos/s2299", async (GerarS2299Command comando, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(comando, ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Eventos periodicos (da folha fechada/paga): remuneracao (S-1200/1202), pagamentos (S-1210), fechamento (S-1299).
+        esocial.MapPost("/folhas/{folhaId:guid}/remuneracao", async (Guid folhaId, ISender sender, CancellationToken ct)
+            => Results.Ok(new { ids = await sender.Send(new GerarRemuneracaoFolhaCommand(folhaId), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        esocial.MapPost("/folhas/{folhaId:guid}/pagamentos", async (Guid folhaId, ISender sender, CancellationToken ct)
+            => Results.Ok(new { ids = await sender.Send(new GerarPagamentosFolhaCommand(folhaId), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        esocial.MapPost("/folhas/{folhaId:guid}/fechamento-esocial", async (Guid folhaId, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(new GerarFechamentoFolhaCommand(folhaId), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Assinatura (A1 via Cofre) de um evento Gerado.
+        esocial.MapPost("/eventos/{eventoId:guid}/assinatura", async (Guid eventoId, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new AssinarEventoESocialCommand(eventoId), ct);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Transmissao em lote (empacota Assinados, envia, guarda protocolo).
+        esocial.MapPost("/transmissao", async (ISender sender, CancellationToken ct)
+            => Results.Ok(new { transmitidos = await sender.Send(new TransmitirEventosAssinadosCommand(), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Consulta/processamento dos retornos (recibos/erros por evento).
+        esocial.MapPost("/retornos", async (ISender sender, CancellationToken ct)
+            => Results.Ok(new { processados = await sender.Send(new ConsultarRetornosESocialCommand(), ct) }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Inspecao/auditoria: lista os eventos eSocial do tenant (estado, XML gerado, protocolo, recibo).
+        esocial.MapGet("/eventos", async (ISender sender, CancellationToken ct)
+            => Results.Ok(await sender.Send(new ListarEventosESocialQuery(), ct)))
+            .RequirePermission("recursoshumanos.ver");
     }
 
     private static void MapearPonto(RouteGroupBuilder grupo)

@@ -20,11 +20,21 @@ import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { useDividasPorContribuinte } from './api';
 import type { DividaAtivaResumo } from './api';
-import { SITUACAO_DIVIDA_LABEL, podeEmitirCda, situacaoTagVariant } from './dividaAtiva.helpers';
+import {
+  SITUACAO_DIVIDA_LABEL,
+  podeEmitirCda,
+  podeExecutar,
+  podeProtestar,
+  situacaoTagVariant,
+} from './dividaAtiva.helpers';
 import { TributosSubNav } from './TributosSubNav';
 import { ContribuinteFormModal } from './ContribuinteFormModal';
 import { LancamentoFormModal } from './LancamentoFormModal';
+import { InscreverDividaModal } from './InscreverDividaModal';
 import { EmitirCdaModal } from './EmitirCdaModal';
+import { ProtestoModal } from './ProtestoModal';
+import { ExecucaoFiscalModal } from './ExecucaoFiscalModal';
+import { PrescricaoModal } from './PrescricaoModal';
 
 const PERM_GERENCIAR = 'tributos.gerenciar';
 
@@ -33,7 +43,11 @@ export function DividaAtivaListPage() {
   const [consultaAtiva, setConsultaAtiva] = useState('');
   const [contribAberto, setContribAberto] = useState(false);
   const [lancamentoAberto, setLancamentoAberto] = useState(false);
+  const [inscreverAberto, setInscreverAberto] = useState(false);
   const [cdaDe, setCdaDe] = useState<string | null>(null);
+  const [protestoDe, setProtestoDe] = useState<string | null>(null);
+  const [execucaoDe, setExecucaoDe] = useState<string | null>(null);
+  const [prescricaoDe, setPrescricaoDe] = useState<string | null>(null);
 
   const query = useDividasPorContribuinte(consultaAtiva, consultaAtiva.length > 0);
 
@@ -50,15 +64,22 @@ export function DividaAtivaListPage() {
       render: (d) => <Tag variant={situacaoTagVariant(d.situacao)}>{SITUACAO_DIVIDA_LABEL[d.situacao]}</Tag>,
     },
     {
-      key: 'valor',
-      header: 'Valor inscrito',
+      key: 'numeroInscricao',
+      header: 'Inscrição nº',
       align: 'end',
-      sortAccessor: (d) => d.valorInscrito,
-      render: (d) => formatarMoeda(d.valorInscrito),
+      sortAccessor: (d) => d.numeroInscricao,
+      render: (d) => d.numeroInscricao,
+    },
+    {
+      key: 'valor',
+      header: 'Valor originário',
+      align: 'end',
+      sortAccessor: (d) => d.valorOriginario,
+      render: (d) => formatarMoeda(d.valorOriginario),
     },
     {
       key: 'inscricao',
-      header: 'Inscrição',
+      header: 'Data inscrição',
       sortAccessor: (d) => d.dataInscricao,
       render: (d) => formatarData(d.dataInscricao),
     },
@@ -73,15 +94,28 @@ export function DividaAtivaListPage() {
       key: 'acoes',
       header: 'Ações',
       render: (d) => (
-        <Can permission={PERM_GERENCIAR}>
-          {podeEmitirCda(d.situacao) ? (
-            <Button variant="tertiary" onClick={() => setCdaDe(d.id)}>
-              <i className="fas fa-stamp" aria-hidden="true" /> Emitir CDA
-            </Button>
-          ) : (
-            '—'
-          )}
-        </Can>
+        <div className="d-flex flex-wrap" style={{ gap: '0.25rem' }}>
+          <Button variant="tertiary" onClick={() => setPrescricaoDe(d.id)}>
+            <i className="fas fa-hourglass-half" aria-hidden="true" /> Prescrição
+          </Button>
+          <Can permission={PERM_GERENCIAR}>
+            {podeEmitirCda(d.situacao) && (
+              <Button variant="tertiary" onClick={() => setCdaDe(d.id)}>
+                <i className="fas fa-stamp" aria-hidden="true" /> Emitir CDA
+              </Button>
+            )}
+            {podeProtestar(d.situacao) && (
+              <Button variant="tertiary" onClick={() => setProtestoDe(d.id)}>
+                <i className="fas fa-file-signature" aria-hidden="true" /> Protesto
+              </Button>
+            )}
+            {podeExecutar(d.situacao) && (
+              <Button variant="tertiary" onClick={() => setExecucaoDe(d.id)}>
+                <i className="fas fa-gavel" aria-hidden="true" /> Execução fiscal
+              </Button>
+            )}
+          </Can>
+        </div>
       ),
     },
   ];
@@ -96,8 +130,11 @@ export function DividaAtivaListPage() {
             <Button variant="secondary" onClick={() => setContribAberto(true)}>
               <i className="fas fa-user-plus" aria-hidden="true" /> Cadastrar contribuinte
             </Button>{' '}
-            <Button variant="primary" onClick={() => setLancamentoAberto(true)}>
+            <Button variant="secondary" onClick={() => setLancamentoAberto(true)}>
               <i className="fas fa-plus" aria-hidden="true" /> Lançar crédito
+            </Button>{' '}
+            <Button variant="primary" onClick={() => setInscreverAberto(true)}>
+              <i className="fas fa-file-import" aria-hidden="true" /> Inscrever em Dívida Ativa
             </Button>
           </Can>
         }
@@ -161,11 +198,33 @@ export function DividaAtivaListPage() {
         onClose={() => setLancamentoAberto(false)}
         contribuinteIdInicial={consultaAtiva}
       />
+      <InscreverDividaModal
+        open={inscreverAberto}
+        onClose={() => setInscreverAberto(false)}
+        contribuinteIdParaInvalidar={consultaAtiva}
+      />
       <EmitirCdaModal
         open={cdaDe !== null}
         onClose={() => setCdaDe(null)}
         dividaAtivaId={cdaDe ?? ''}
         contribuinteIdParaInvalidar={consultaAtiva}
+      />
+      <ProtestoModal
+        open={protestoDe !== null}
+        onClose={() => setProtestoDe(null)}
+        dividaAtivaId={protestoDe ?? ''}
+        contribuinteIdParaInvalidar={consultaAtiva}
+      />
+      <ExecucaoFiscalModal
+        open={execucaoDe !== null}
+        onClose={() => setExecucaoDe(null)}
+        dividaAtivaId={execucaoDe ?? ''}
+        contribuinteIdParaInvalidar={consultaAtiva}
+      />
+      <PrescricaoModal
+        open={prescricaoDe !== null}
+        onClose={() => setPrescricaoDe(null)}
+        dividaAtivaId={prescricaoDe ?? ''}
       />
     </>
   );

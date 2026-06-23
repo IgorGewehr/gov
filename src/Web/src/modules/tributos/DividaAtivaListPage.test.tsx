@@ -16,11 +16,12 @@ const DIVIDAS: DividaAtivaResumo[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     contribuinteId: 'contrib-1',
-    valorInscrito: 1234.56,
+    valorOriginario: 1234.56,
     situacao: 'Inscrita',
     dataInscricao: '2024-01-10',
     dataPrescricao: '2029-01-10',
     numeroCda: null,
+    numeroInscricao: 2024000001,
   },
 ];
 

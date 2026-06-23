@@ -8,7 +8,8 @@
 // Cobertura REAL do backend (TributosEndpoints.cs /api/tributos):
 //   - Contribuinte: cadastrar pessoa física (modal em DividaAtivaListPage)         [gerenciar]
 //   - Lancamento:   lançar crédito + inscrever em Dívida Ativa (modal)             [gerenciar]
-//   - DividaAtiva:  listar por contribuinte (GET) + emitir CDA (modal por linha)   [ver / gerenciar]
+//   - DividaAtiva:  listar por contribuinte (GET) + emitir CDA + protesto          [ver / gerenciar]
+//                   (remessa/retorno) + execução fiscal + avaliar prescrição (GET) [ver / gerenciar]
 //
 // As páginas são carregadas via React.lazy -> o módulo vira um chunk separado
 // (code-splitting). O <Suspense> do AppLayout cobre o fallback de carregamento.
