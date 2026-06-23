@@ -128,6 +128,21 @@ public static class Permissoes
     /// <summary>Registrar a aplicacao de dose de vacina e o aprazamento da proxima (Onda 3c).</summary>
     public const string SaudeImunizacaoAplicar = "saude.imunizacao.aplicar";
 
+    /// <summary>Consultar dados da Vigilancia Sanitaria: estabelecimentos fiscalizaveis, inspecoes, autos e licencas (Onda 3c-2).</summary>
+    public const string SaudeVigilanciaVer = "saude.vigilancia.ver";
+
+    /// <summary>Gerenciar o cadastro de estabelecimentos sujeitos a VISA (cadastrar/reclassificar/interditar) — Onda 3c-2.</summary>
+    public const string SaudeVigilanciaGerenciar = "saude.vigilancia.gerenciar";
+
+    /// <summary>Conduzir inspecoes/vistorias sanitarias (abrir, registrar itens, concluir, cancelar) — Onda 3c-2.</summary>
+    public const string SaudeVigilanciaInspecionar = "saude.vigilancia.inspecionar";
+
+    /// <summary>Lavrar e processar autos da VISA (infracao/intimacao, defesa, julgamento, regularizacao) — Onda 3c-2.</summary>
+    public const string SaudeVigilanciaAutuar = "saude.vigilancia.autuar";
+
+    /// <summary>Emitir/renovar/cassar licencas/alvaras sanitarios (Onda 3c-2).</summary>
+    public const string SaudeVigilanciaLicenciar = "saude.vigilancia.licenciar";
+
     /// <summary>Visualizar dados do modulo Educacao (escolas, matriculas, merenda).</summary>
     public const string EducacaoVer = "educacao.ver";
 
@@ -316,6 +331,11 @@ public static class Permissoes
         SaudeImunizacaoVer,
         SaudeImunizacaoGerenciar,
         SaudeImunizacaoAplicar,
+        SaudeVigilanciaVer,
+        SaudeVigilanciaGerenciar,
+        SaudeVigilanciaInspecionar,
+        SaudeVigilanciaAutuar,
+        SaudeVigilanciaLicenciar,
         EducacaoVer,
         EducacaoGerenciar,
         AssistenciaSocialVer,

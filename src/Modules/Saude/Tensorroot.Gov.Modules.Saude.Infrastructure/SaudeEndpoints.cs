@@ -36,6 +36,7 @@ internal static partial class SaudeEndpoints
         MapearFiscal(grupo);
         MapearFarmacia(grupo);
         MapearImunizacao(grupo);
+        MapearVigilancia(grupo);
     }
 
     private static void MapearAgendamento(RouteGroupBuilder grupo)

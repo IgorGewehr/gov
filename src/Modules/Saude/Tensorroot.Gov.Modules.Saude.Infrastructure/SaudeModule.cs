@@ -78,6 +78,13 @@ public sealed class SaudeModule : IModule
         services.AddScoped<IImunobiologicoRepository, ImunobiologicoRepository>();
         services.AddScoped<ICarteiraVacinacaoRepository, CarteiraVacinacaoRepository>();
 
+        // Vigilancia Sanitaria (Onda 3c-2): estabelecimento fiscalizavel + inspecao + auto + licenca/alvara.
+        // Independente do PEP; operacao 100% local (SINAVISA/e-SUS VS = M10 atras de ACL).
+        services.AddScoped<IEstabelecimentoFiscalizavelRepository, EstabelecimentoFiscalizavelRepository>();
+        services.AddScoped<IInspecaoRepository, InspecaoRepository>();
+        services.AddScoped<IAutoVisaRepository, AutoVisaRepository>();
+        services.AddScoped<ILicencaSanitariaRepository, LicencaSanitariaRepository>();
+
         // Gateways/ACLs governamentais: implementacao simulada para dev/testes. Em producao,
         // HTTP resiliente (Polly) atras de Anti-Corruption Layer, com certificados no Azure Key Vault.
         services.AddScoped<ICadsusGateway, SimuladoCadsusGateway>();

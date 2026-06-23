@@ -9,6 +9,7 @@ using Tensorroot.Gov.Modules.Saude.Domain.Imunizacao;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
+using Tensorroot.Gov.Modules.Saude.Domain.Vigilancia;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal;
 using AgendamentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Agendamento.Agendamento;
 using AtendimentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendimento;
@@ -76,6 +77,18 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
 
     /// <summary>Carteiras de vacinacao do paciente (doses/aprazamento, LGPD) — raiz de agregado.</summary>
     public DbSet<CarteiraVacinacao> CarteirasVacinacao => Set<CarteiraVacinacao>();
+
+    /// <summary>Estabelecimentos sujeitos a Vigilancia Sanitaria (VISA) — raiz de agregado (Onda 3c-2).</summary>
+    public DbSet<EstabelecimentoFiscalizavel> EstabelecimentosFiscalizaveis => Set<EstabelecimentoFiscalizavel>();
+
+    /// <summary>Inspecoes/vistorias sanitarias (roteiro/checklist + resultado) — raiz de agregado.</summary>
+    public DbSet<Inspecao> Inspecoes => Set<Inspecao>();
+
+    /// <summary>Autos da VISA (infracao/intimacao, prazos, defesa) — raiz de agregado.</summary>
+    public DbSet<AutoVisa> AutosVisa => Set<AutoVisa>();
+
+    /// <summary>Licencas/alvaras sanitarios (emissao/validade/renovacao) — raiz de agregado.</summary>
+    public DbSet<LicencaSanitaria> LicencasSanitarias => Set<LicencaSanitaria>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
