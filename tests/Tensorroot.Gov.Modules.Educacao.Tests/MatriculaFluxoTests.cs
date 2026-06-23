@@ -1,7 +1,10 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
+using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Events;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Xunit;
 
 namespace Tensorroot.Gov.Modules.Educacao.Tests;

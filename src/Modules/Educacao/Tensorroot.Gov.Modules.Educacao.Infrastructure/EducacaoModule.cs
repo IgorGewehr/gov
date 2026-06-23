@@ -55,6 +55,7 @@ public sealed class EducacaoModule : IModule
         });
 
         services.AddScoped<IEscolaRepository, EscolaRepository>();
+        services.AddScoped<IAlunoRepository, AlunoRepository>();
         services.AddScoped<IMatriculaRepository, MatriculaRepository>();
         services.AddScoped<IDiarioClasseRepository, DiarioClasseRepository>();
         services.AddScoped<ITurmaRepository, TurmaRepository>();

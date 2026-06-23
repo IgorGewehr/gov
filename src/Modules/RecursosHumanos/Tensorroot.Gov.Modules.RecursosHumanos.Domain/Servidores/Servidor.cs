@@ -225,8 +225,10 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
             throw new InvalidOperationException("Servidor sem data de exercicio nao adquire estabilidade.");
         }
 
-        // I-5: exige 3 anos completos de efetivo exercicio.
-        var elegivelEm = inicioExercicio.AddYears(AnosParaEstabilidade);
+        // I-5: exige 3 anos completos de efetivo exercicio. Periodos NAO-COMPUTAVEIS (licenca sem
+        // vencimento etc. — ContaTempo=false no agregado Afastamento) ADIAM a elegibilidade: o marco
+        // legal e empurrado para a frente pelos dias nao computaveis acumulados.
+        var elegivelEm = inicioExercicio.AddYears(AnosParaEstabilidade).AddDays(DiasNaoComputaveis);
         if (hoje < elegivelEm)
         {
             throw new InvalidOperationException($"Estabilidade exige {AnosParaEstabilidade} anos de efetivo exercicio.");
@@ -238,23 +240,24 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Registra um afastamento temporario quando o servidor esta em atividade plena (I-7);
-    /// transita para <see cref="SituacaoServidor.Afastado"/> e emite <see cref="AfastamentoRegistrado"/>.
+    /// Total de dias NAO-COMPUTAVEIS de afastamento (licenca sem vencimento etc.) acumulados, que
+    /// atrasam a elegibilidade a estabilidade/aposentadoria. Espelho mantido pelo handler ao
+    /// encerrar afastamentos com <c>ContaTempo=false</c>; o efeito remuneratorio da folha vive no
+    /// agregado <c>Afastamento</c> (cross-aggregate por Id, mesmo modulo).
     /// </summary>
-    /// <param name="inicio">Inicio do afastamento.</param>
-    /// <param name="fim">Fim previsto (nulo quando indeterminado).</param>
-    /// <param name="motivo">Motivo do afastamento.</param>
-    /// <exception cref="ArgumentException">Se o motivo for vazio.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="fim"/> for anterior a <paramref name="inicio"/> (B-7).</exception>
-    /// <exception cref="InvalidOperationException">Se a situacao nao estiver em {EmExercicio, Estavel} (I-7).</exception>
-    public void RegistrarAfastamento(DateOnly inicio, DateOnly? fim, string motivo)
+    public int DiasNaoComputaveis { get; private set; }
+
+    /// <summary>
+    /// ESPELHA o inicio de um afastamento vigente quando o servidor esta em atividade plena (I-7):
+    /// transita para <see cref="SituacaoServidor.Afastado"/>. O afastamento TIPADO e seu efeito na folha
+    /// vivem no agregado <c>Afastamento</c> (criado pelo handler na mesma transacao); este metodo apenas
+    /// mantem o espelho de situacao no <see cref="Servidor"/>. NAO emite evento (o evento eSocial vem do
+    /// agregado <c>Afastamento</c>, ja com o tipo).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Se a situacao nao estiver em {EmExercicio, Estavel} (I-7) ou o servidor estiver desligado (I-8).</exception>
+    public void MarcarAfastado()
     {
         GarantirNaoDesligado();
-        ArgumentException.ThrowIfNullOrWhiteSpace(motivo);
-        if (fim is { } termino && termino < inicio)
-        {
-            throw new ArgumentOutOfRangeException(nameof(fim), "Fim do afastamento nao pode ser anterior ao inicio.");
-        }
 
         // I-7: afastamento exige atividade plena (EmExercicio ou Estavel).
         if (Situacao is not (SituacaoServidor.EmExercicio or SituacaoServidor.Estavel))
@@ -263,7 +266,18 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
         }
 
         Situacao = SituacaoServidor.Afastado;
-        RaiseDomainEvent(new AfastamentoRegistrado(Id, inicio, fim, motivo));
+    }
+
+    /// <summary>
+    /// Acumula dias NAO-COMPUTAVEIS (afastamento sem contagem de tempo) ao retornar de um afastamento cujo
+    /// tipo <c>ContaTempo=false</c> — esses dias atrasam a elegibilidade a estabilidade (ver <see cref="ConcederEstabilidade"/>).
+    /// </summary>
+    /// <param name="dias">Dias nao-computaveis do periodo encerrado (>= 0).</param>
+    /// <exception cref="ArgumentOutOfRangeException">Se <paramref name="dias"/> for negativo.</exception>
+    public void AcumularDiasNaoComputaveis(int dias)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(dias);
+        DiasNaoComputaveis += dias;
     }
 
     /// <summary>

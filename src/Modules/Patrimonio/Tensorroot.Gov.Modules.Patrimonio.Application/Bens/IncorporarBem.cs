@@ -33,7 +33,11 @@ public sealed class IncorporarBemValidator : AbstractValidator<IncorporarBemComm
     public IncorporarBemValidator()
     {
         RuleFor(comando => comando.Descricao).NotEmpty().MaximumLength(200);
-        RuleFor(comando => comando.Tipo).IsInEnum();
+        // Tipo e transportado como int no comando (DTO); valida contra os valores definidos de TipoBem.
+        // (FluentValidation.IsInEnum() so funciona quando a propriedade JA e do tipo enum — em int falha sempre.)
+        RuleFor(comando => comando.Tipo)
+            .Must(tipo => Enum.IsDefined(typeof(TipoBem), tipo))
+            .WithMessage("Tipo de bem invalido (1=Movel, 2=Imovel).");
         RuleFor(comando => comando.ValorInicial).GreaterThan(0);
         RuleFor(comando => comando.ValorResidual)
             .GreaterThanOrEqualTo(0)

@@ -84,6 +84,112 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("AuditTrail", "recursoshumanos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Afastamentos.Afastamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoEventoESocial")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("ContaTempo")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("DiasPagosPeloEnte")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Documento")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateOnly?>("FimEfetivo")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("FimPrevisto")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("Inicio")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("PercentualRemuneracao")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("SuspendeProventos")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ServidorId", "Situacao");
+
+                    b.HasIndex("TenantId", "Tipo");
+
+                    b.ToTable("Afastamentos", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Afastamentos.RegraAfastamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoEventoESocial")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("ContaTempo")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("DiasPagosPeloEnte")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DuracaoPadraoDias")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PercentualRemuneracao")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("SuspendeProventos")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("VigenciaInicio")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Tipo", "VigenciaInicio")
+                        .IsUnique();
+
+                    b.ToTable("RegrasAfastamento", "recursoshumanos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos.Cargo", b =>
                 {
                     b.Property<Guid>("Id")
@@ -558,6 +664,9 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
 
                     b.Property<DateOnly?>("DataPosse")
                         .HasColumnType("date");
+
+                    b.Property<int>("DiasNaoComputaveis")
+                        .HasColumnType("int");
 
                     b.Property<string>("Matricula")
                         .IsRequired()

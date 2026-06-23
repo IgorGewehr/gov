@@ -286,6 +286,49 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                     b.ToTable("Veiculos", "patrimonio");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios.Inventario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataAbertura")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataEncerramento")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Portaria")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Setor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Exercicio", "Tipo", "Setor");
+
+                    b.ToTable("Inventarios", "patrimonio");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -797,6 +840,132 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                     b.Navigation("Multas");
 
                     b.Navigation("OrdensServico");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios.Inventario", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios.MembroComissao", "Comissao", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("InventarioId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<bool>("Presidente")
+                                .HasColumnType("bit");
+
+                            b1.Property<Guid>("ResponsavelId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("InventarioId");
+
+                            b1.ToTable("InventariosComissao", "patrimonio");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InventarioId");
+                        });
+
+                    b.OwnsMany("Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios.ItemInventario", "Itens", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("BemPatrimonialId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("Contado")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("DescricaoSnapshot")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<Guid>("InventarioId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("LocalizacaoEncontrada")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("LocalizacaoEsperada")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("NumeroTombamento")
+                                .HasMaxLength(40)
+                                .HasColumnType("nvarchar(40)");
+
+                            b1.Property<string>("Observacao")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("SituacaoEncontrada")
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<decimal>("ValorContabilSnapshot")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("InventarioId");
+
+                            b1.ToTable("InventariosItens", "patrimonio");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InventarioId");
+                        });
+
+                    b.OwnsMany("Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios.DivergenciaInventario", "Divergencias", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid?>("BemPatrimonialId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Descricao")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.Property<Guid>("InventarioId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Recomendacao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("InventarioId");
+
+                            b1.ToTable("InventariosDivergencias", "patrimonio");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InventarioId");
+                        });
+
+                    b.Navigation("Comissao");
+
+                    b.Navigation("Divergencias");
+
+                    b.Navigation("Itens");
                 });
 #pragma warning restore 612, 618
         }

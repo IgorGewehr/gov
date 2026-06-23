@@ -25,13 +25,6 @@ public sealed record ExercicioIniciado(ServidorId ServidorId, DateOnly DataExerc
 /// <param name="DataEstabilidade">Data de aquisicao da estabilidade.</param>
 public sealed record EstabilidadeConcedida(ServidorId ServidorId, DateOnly DataEstabilidade) : IDomainEvent;
 
-/// <summary>Afastamento temporario do servidor registrado (situacao <c>Afastado</c>); dispara o S-2230.</summary>
-/// <param name="ServidorId">Identificador do servidor.</param>
-/// <param name="Inicio">Inicio do afastamento.</param>
-/// <param name="Fim">Fim previsto do afastamento (nulo quando indeterminado).</param>
-/// <param name="Motivo">Motivo do afastamento.</param>
-public sealed record AfastamentoRegistrado(ServidorId ServidorId, DateOnly Inicio, DateOnly? Fim, string Motivo) : IDomainEvent;
-
 /// <summary>Vinculo do servidor encerrado (situacao <c>Desligado</c>); dispara o S-2299.</summary>
 /// <param name="ServidorId">Identificador do servidor.</param>
 /// <param name="DataDesligamento">Data do desligamento.</param>

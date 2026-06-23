@@ -4,7 +4,10 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Educacao.Contracts;
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
+using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
 
@@ -32,10 +35,15 @@ public sealed class MatricularAlunoValidator : AbstractValidator<MatricularAluno
     }
 }
 
-/// <summary>Handler da Matricula Inicial.</summary>
+/// <summary>
+/// Handler da Matricula Inicial (Onda 1 — ligacao a entidades reais). Carrega Aluno e Turma reais,
+/// valida coerencia (aluno ativo; escola da turma == escola informada), cria a Matricula, incrementa
+/// o contador da Turma e salva TUDO na MESMA transacao (mesmo modulo/contexto — nao viola isolamento).
+/// </summary>
 public sealed class MatricularAlunoHandler(
     IMatriculaRepository matriculas,
     ITurmaRepository turmas,
+    IAlunoRepository alunos,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
     ITenantContext tenant,
@@ -49,27 +57,45 @@ public sealed class MatricularAlunoHandler(
 
         var turmaId = new TurmaId(request.TurmaId);
         var alunoId = new AlunoId(request.AlunoId);
+        var escolaId = new EscolaId(request.EscolaId);
 
-        // I-11: a enturmacao respeita a invariante da Turma (matriculados <= vagas).
-        if (!await turmas.PossuiVagaAsync(turmaId, cancellationToken).ConfigureAwait(false))
+        // O aluno deve existir e estar Ativo.
+        var aluno = await alunos.ObterPorIdAsync(alunoId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Aluno nao encontrado.");
+        if (!aluno.Ativo)
         {
-            throw new InvalidOperationException("Turma sem vaga.");
+            throw new InvalidOperationException("Aluno em situacao terminal nao pode ser matriculado.");
         }
 
-        // I-3: aluno nao pode ter duas matriculas ativas conflitantes no mesmo periodo/turno.
+        // A turma deve existir; carrega o agregado para validar vaga (I-T2) e coerencia de escola.
+        var turma = await turmas.ObterPorIdAsync(turmaId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Turma nao encontrada.");
+
+        // Coerencia aluno-turma-escola: a escola informada deve ser a da turma.
+        if (turma.EscolaId != escolaId)
+        {
+            throw new InvalidOperationException("Escola informada diverge da escola da turma.");
+        }
+
+        // I-3: aluno nao pode ter duas matriculas ativas conflitantes na mesma data de referencia.
         if (await matriculas.ExisteMatriculaAtivaConflitanteAsync(alunoId, request.DataReferencia, cancellationToken).ConfigureAwait(false))
         {
             throw new InvalidOperationException("Aluno ja possui matricula ativa conflitante.");
         }
 
+        // I-T2: a enturmacao incrementa o contador da Turma (valida turma Aberta com vaga).
+        turma.IncrementarMatriculados();
+
         var matricula = Matricula.MatricularAluno(
             tenant.TenantId,
             alunoId,
             turmaId,
-            new EscolaId(request.EscolaId),
+            escolaId,
             request.DataReferencia);
 
         matriculas.Adicionar(matricula);
+
+        // Mesma Unit of Work: Matricula criada + contador da Turma atualizados atomicamente.
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         var evento = new AlunoMatriculadoIntegrationEvent(

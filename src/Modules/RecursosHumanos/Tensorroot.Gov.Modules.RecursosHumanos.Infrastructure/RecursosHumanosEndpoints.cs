@@ -12,6 +12,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.TabelasLegais;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Afastamentos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
@@ -352,13 +353,50 @@ internal static partial class RecursosHumanosEndpoints
         })
             .RequirePermission("recursoshumanos.gerenciar");
 
-        grupo.MapPost("/servidores/{servidorId:guid}/afastamento", async (
-            Guid servidorId, AfastamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        // AFASTAMENTOS TIPADOS (Onda 1): o usuario escolhe o TIPO; o efeito na folha (suspende/reduz/
+        // proporcionaliza, conta tempo) vem da regra do tipo (parametrizada por tenant). Retorna o id do
+        // afastamento criado para encerramento/cancelamento posteriores.
+        grupo.MapPost("/servidores/{servidorId:guid}/afastamentos", async (
+            Guid servidorId, RegistrarAfastamentoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                id = await sender.Send(
+                    new RegistrarAfastamentoCommand(servidorId, payload.Tipo, payload.Inicio, payload.FimPrevisto, payload.Documento),
+                    cancellationToken),
+            }))
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Lista o historico de afastamentos do servidor (ficha de afastamentos).
+        grupo.MapGet("/servidores/{servidorId:guid}/afastamentos", async (
+            Guid servidorId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarAfastamentosDoServidorQuery(servidorId), cancellationToken)))
+            .RequirePermission("recursoshumanos.ver");
+
+        // Encerra um afastamento vigente (retorno do servidor); grava o fim efetivo.
+        grupo.MapPost("/afastamentos/{afastamentoId:guid}/encerramento", async (
+            Guid afastamentoId, EncerrarAfastamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new RegistrarAfastamentoCommand(servidorId, payload.Inicio, payload.Fim, payload.Motivo), cancellationToken);
+            await sender.Send(new EncerrarAfastamentoCommand(afastamentoId, payload.FimEfetivo), cancellationToken);
             return Results.NoContent();
         })
             .RequirePermission("recursoshumanos.gerenciar");
+
+        // Cancela um afastamento vigente lancado por engano/revogado (sem efeito na folha).
+        grupo.MapPost("/afastamentos/{afastamentoId:guid}/cancelamento", async (
+            Guid afastamentoId, CancelarAfastamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CancelarAfastamentoCommand(afastamentoId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        })
+            .RequirePermission("recursoshumanos.gerenciar");
+
+        // Busca paginada de afastamentos por tipo/situacao/competencia (navegabilidade).
+        grupo.MapGet("/afastamentos", async (
+            TipoAfastamento? tipo, SituacaoAfastamento? situacao, int? ano, int? mes,
+            int? pagina, int? tamanho, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(
+                new BuscarAfastamentosQuery(tipo, situacao, ano, mes, pagina, tamanho), cancellationToken)))
+            .RequirePermission("recursoshumanos.ver");
 
         grupo.MapPost("/servidores/{servidorId:guid}/desligamento", async (
             Guid servidorId, DesligamentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
@@ -423,7 +461,15 @@ internal static partial class RecursosHumanosEndpoints
 
     private sealed record ExercicioPayload(DateOnly DataExercicio);
 
-    private sealed record AfastamentoPayload(DateOnly Inicio, DateOnly? Fim, string Motivo);
+    private sealed record RegistrarAfastamentoPayload(
+        TipoAfastamento Tipo,
+        DateOnly Inicio,
+        DateOnly? FimPrevisto,
+        string? Documento);
+
+    private sealed record EncerrarAfastamentoPayload(DateOnly FimEfetivo);
+
+    private sealed record CancelarAfastamentoPayload(string Motivo);
 
     private sealed record DesligamentoPayload(DateOnly DataDesligamento, string Motivo);
 

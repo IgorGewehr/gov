@@ -6,8 +6,10 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Frota;
+using Tensorroot.Gov.Modules.Patrimonio.Application.Inventarios;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure;
 
@@ -21,6 +23,75 @@ internal static class PatrimonioEndpoints
         MapearBens(grupo);
         MapearFrota(grupo);
         MapearEstoque(grupo);
+        MapearInventarios(grupo);
+    }
+
+    private static void MapearInventarios(RouteGroupBuilder grupo)
+    {
+        // Inventario (Lei 4.320 art. 96): abrir -> snapshot -> contagens/sobras -> conciliacao -> encerramento.
+        grupo.MapPost("/inventarios", async (
+            AbrirInventarioCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("patrimonio.gerenciar");
+
+        // Lista/busca paginada de inventarios por exercicio/setor/situacao.
+        grupo.MapGet("/inventarios", async (
+            int? exercicio, string? setor, SituacaoInventario? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarInventariosQuery(exercicio, setor, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/inventarios/{inventarioId:guid}", async (
+            Guid inventarioId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterInventarioQuery(inventarioId), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapGet("/inventarios/{inventarioId:guid}/divergencias", async (
+            Guid inventarioId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarDivergenciasQuery(inventarioId), cancellationToken)))
+            .RequirePermission("patrimonio.ver");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/snapshot", async (
+            Guid inventarioId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CarregarSnapshotCommand(inventarioId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/contagens", async (
+            Guid inventarioId, RegistrarContagemPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RegistrarContagemCommand(
+                inventarioId, payload.BemPatrimonialId, payload.SituacaoEncontrada, payload.LocalizacaoEncontrada, payload.Observacao), cancellationToken);
+            return Results.Created($"/api/patrimonio/inventarios/{inventarioId}", null);
+        }).RequirePermission("patrimonio.gerenciar");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/sobras", async (
+            Guid inventarioId, RegistrarBemNaoCadastradoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RegistrarBemNaoCadastradoCommand(
+                inventarioId, payload.Descricao, payload.Localizacao, payload.ValorEstimado), cancellationToken);
+            return Results.Created($"/api/patrimonio/inventarios/{inventarioId}", null);
+        }).RequirePermission("patrimonio.gerenciar");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/conciliacao", async (
+            Guid inventarioId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ConciliarInventarioCommand(inventarioId), cancellationToken)))
+            .RequirePermission("patrimonio.gerenciar");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/encerramento", async (
+            Guid inventarioId, EncerrarInventarioPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new EncerrarInventarioCommand(inventarioId, payload.DataEncerramento), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
+
+        grupo.MapPost("/inventarios/{inventarioId:guid}/cancelamento", async (
+            Guid inventarioId, CancelarInventarioPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new CancelarInventarioCommand(inventarioId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("patrimonio.gerenciar");
     }
 
     private static void MapearBens(RouteGroupBuilder grupo)
@@ -294,4 +365,13 @@ internal static class PatrimonioEndpoints
     private sealed record AjustarVrlPayload(decimal ValorRealizavelLiquido, DateOnly Data);
 
     private sealed record ReclassificarAbcPayload(int ClassificacaoAbc);
+
+    private sealed record RegistrarContagemPayload(
+        Guid BemPatrimonialId, int SituacaoEncontrada, string? LocalizacaoEncontrada, string? Observacao);
+
+    private sealed record RegistrarBemNaoCadastradoPayload(string Descricao, string Localizacao, decimal ValorEstimado);
+
+    private sealed record EncerrarInventarioPayload(DateOnly DataEncerramento);
+
+    private sealed record CancelarInventarioPayload(string Motivo);
 }

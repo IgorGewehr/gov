@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
 using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Tensorroot.Gov.Modules.Educacao.Domain.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Repositories;
@@ -120,14 +122,168 @@ public sealed class DiarioClasseRepository(EducacaoDbContext context) : IDiarioC
 }
 
 /// <summary>
-/// Implementacao EF Core do colaborador de leitura da Turma. A Turma e modelada em outro contexto
-/// do modulo Educacao e ainda nao possui persistencia propria neste DbContext; a verificacao de
-/// vaga (I-11) e confirmada pela presenca de um identificador de turma valido, ponto de extensao
-/// para a contagem matriculados &lt; vagas quando o agregado Turma for materializado.
+/// Implementacao EF Core do repositorio do agregado <see cref="Turma"/>. A Turma passa a ser
+/// materializada neste DbContext (Onda 1): a verificacao de vaga (I-T2) consulta o estado real do
+/// agregado (situacao Aberta e matriculados &lt; vagas), substituindo o stub historico.
 /// </summary>
-public sealed class TurmaRepository : ITurmaRepository
+public sealed class TurmaRepository(EducacaoDbContext context) : ITurmaRepository
 {
     /// <inheritdoc />
+    public void Adicionar(Turma turma)
+    {
+        ArgumentNullException.ThrowIfNull(turma);
+        context.Turmas.Add(turma);
+    }
+
+    /// <inheritdoc />
+    public Task<Turma?> ObterPorIdAsync(TurmaId id, CancellationToken cancellationToken)
+        => context.Turmas.FirstOrDefaultAsync(turma => turma.Id == id, cancellationToken);
+
+    /// <inheritdoc />
     public Task<bool> PossuiVagaAsync(TurmaId turmaId, CancellationToken cancellationToken)
-        => Task.FromResult(turmaId.Value != Guid.Empty);
+        => context.Turmas.AnyAsync(
+            turma => turma.Id == turmaId
+                && turma.Situacao == SituacaoTurma.Aberta
+                && turma.Matriculados < turma.Vagas,
+            cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExisteDuplicadaAsync(
+        EscolaId escolaId,
+        int anoLetivo,
+        string serie,
+        Turno turno,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serie);
+        var serieNormalizada = serie.Trim();
+        return context.Turmas.AnyAsync(
+            turma => turma.EscolaId == escolaId
+                && turma.AnoLetivo == anoLetivo
+                && turma.Serie == serieNormalizada
+                && turma.Turno == turno,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Turma> Itens, int Total)> BuscarAsync(
+        EscolaId? escolaId,
+        int? anoLetivo,
+        Turno? turno,
+        Etapa? etapa,
+        SituacaoTurma? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Turmas.AsNoTracking();
+
+        if (escolaId is { } escola)
+        {
+            consulta = consulta.Where(turma => turma.EscolaId == escola);
+        }
+
+        if (anoLetivo is { } ano)
+        {
+            consulta = consulta.Where(turma => turma.AnoLetivo == ano);
+        }
+
+        if (turno is { } turnoFiltro)
+        {
+            consulta = consulta.Where(turma => turma.Turno == turnoFiltro);
+        }
+
+        if (etapa is { } etapaFiltro)
+        {
+            consulta = consulta.Where(turma => turma.Etapa == etapaFiltro);
+        }
+
+        if (situacao is { } situacaoFiltro)
+        {
+            consulta = consulta.Where(turma => turma.Situacao == situacaoFiltro);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(turma => turma.AnoLetivo)
+            .ThenBy(turma => turma.Serie)
+            .ThenBy(turma => turma.Turno)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
+}
+
+/// <summary>
+/// Implementacao EF Core do repositorio do agregado <see cref="Aluno"/>. Sempre tenant-scoped via
+/// Global Query Filter; carrega os responsaveis junto ao agregado para preservar suas invariantes.
+/// </summary>
+public sealed class AlunoRepository(EducacaoDbContext context) : IAlunoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(Aluno aluno)
+    {
+        ArgumentNullException.ThrowIfNull(aluno);
+        context.Alunos.Add(aluno);
+    }
+
+    /// <inheritdoc />
+    public Task<Aluno?> ObterPorIdAsync(AlunoId id, CancellationToken cancellationToken)
+        => context.Alunos
+            .Include(aluno => aluno.Responsaveis)
+            .FirstOrDefaultAsync(aluno => aluno.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExisteCpfAsync(string cpf, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(cpf);
+        return context.Alunos.AnyAsync(aluno => aluno.Cpf != null && aluno.Cpf.Digitos == cpf, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<(IReadOnlyList<Aluno> Itens, int Total)> BuscarAsync(
+        string? termo,
+        SituacaoAluno? situacao,
+        int pagina,
+        int tamanho,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.Alunos.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            var termoNormalizado = termo.Trim();
+            var digitos = new string(termoNormalizado.Where(char.IsDigit).ToArray());
+            if (digitos.Length > 0)
+            {
+                consulta = consulta.Where(aluno =>
+                    aluno.DadosCivis.Nome.Contains(termoNormalizado)
+                    || (aluno.Cpf != null && aluno.Cpf.Digitos.Contains(digitos)));
+            }
+            else
+            {
+                consulta = consulta.Where(aluno => aluno.DadosCivis.Nome.Contains(termoNormalizado));
+            }
+        }
+
+        if (situacao is { } situacaoFiltro)
+        {
+            consulta = consulta.Where(aluno => aluno.Situacao == situacaoFiltro);
+        }
+
+        var total = await consulta.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var itens = await consulta
+            .OrderBy(aluno => aluno.DadosCivis.Nome)
+            .Skip((pagina - 1) * tamanho)
+            .Take(tamanho)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return (itens, total);
+    }
 }

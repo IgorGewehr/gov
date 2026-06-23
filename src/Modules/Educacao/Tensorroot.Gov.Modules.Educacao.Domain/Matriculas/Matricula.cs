@@ -1,4 +1,7 @@
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
+using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Events;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
 

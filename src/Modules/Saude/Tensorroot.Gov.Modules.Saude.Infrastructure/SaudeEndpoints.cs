@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Saude.Application.Atendimento;
+using Tensorroot.Gov.Modules.Saude.Application.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Application.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
+using Tensorroot.Gov.Modules.Saude.Application.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Application.Regulacao;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
+using Tensorroot.Gov.Modules.Saude.Domain.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
+using Tensorroot.Gov.Modules.Saude.Domain.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure;
@@ -22,9 +26,86 @@ internal static class SaudeEndpoints
         var grupo = endpoints.MapGroup("/api/saude").WithTags("Saude");
 
         MapearPacientes(grupo);
+        MapearEstabelecimentos(grupo);
+        MapearProfissionais(grupo);
         MapearAtendimentos(grupo);
         MapearRegulacao(grupo);
         MapearFiscal(grupo);
+    }
+
+    private static void MapearEstabelecimentos(RouteGroupBuilder grupo)
+    {
+        grupo.MapPost("/estabelecimentos", async (
+            CadastrarEstabelecimentoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
+
+        grupo.MapGet("/estabelecimentos", async (
+            string? termo, TipoEstabelecimento? tipo, SituacaoEstabelecimento? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarEstabelecimentosQuery(termo, tipo, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("saude.ver");
+
+        grupo.MapGet("/estabelecimentos/{estabelecimentoId:guid}", async (
+            Guid estabelecimentoId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterEstabelecimentoPorIdQuery(estabelecimentoId), cancellationToken))).RequirePermission("saude.ver");
+
+        grupo.MapPut("/estabelecimentos/{estabelecimentoId:guid}", async (
+            Guid estabelecimentoId, AtualizarEstabelecimentoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AtualizarEstabelecimentoCommand(estabelecimentoId, payload.Nome, payload.Tipo, payload.Endereco), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
+
+        grupo.MapPost("/estabelecimentos/{estabelecimentoId:guid}/inativacao", async (
+            Guid estabelecimentoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new InativarEstabelecimentoCommand(estabelecimentoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
+
+        grupo.MapPost("/estabelecimentos/{estabelecimentoId:guid}/reativacao", async (
+            Guid estabelecimentoId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReativarEstabelecimentoCommand(estabelecimentoId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
+    }
+
+    private static void MapearProfissionais(RouteGroupBuilder grupo)
+    {
+        grupo.MapPost("/profissionais", async (
+            CadastrarProfissionalCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) })).RequirePermission("saude.gerenciar");
+
+        grupo.MapGet("/profissionais", async (
+            string? termo, string? cbo, Guid? estabelecimentoId, SituacaoProfissional? situacao, int? pagina, int? tamanho,
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarProfissionaisQuery(termo, cbo, estabelecimentoId, situacao, pagina, tamanho), cancellationToken)))
+            .RequirePermission("saude.ver");
+
+        grupo.MapGet("/profissionais/{profissionalId:guid}", async (
+            Guid profissionalId, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ObterProfissionalPorIdQuery(profissionalId), cancellationToken))).RequirePermission("saude.ver");
+
+        grupo.MapPost("/profissionais/{profissionalId:guid}/vinculos", async (
+            Guid profissionalId, VincularProfissionalPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new VincularProfissionalCommand(profissionalId, payload.EstabelecimentoId, payload.Cbo, payload.DataInicio), cancellationToken) }))
+            .RequirePermission("saude.gerenciar");
+
+        grupo.MapPost("/profissionais/{profissionalId:guid}/vinculos/encerramento", async (
+            Guid profissionalId, EncerrarVinculoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new EncerrarVinculoProfissionalCommand(profissionalId, payload.EstabelecimentoId, payload.DataFim), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
+
+        grupo.MapPost("/profissionais/{profissionalId:guid}/inativacao", async (
+            Guid profissionalId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new InativarProfissionalCommand(profissionalId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("saude.gerenciar");
     }
 
     private static void MapearFiscal(RouteGroupBuilder grupo)
@@ -256,4 +337,10 @@ internal static class SaudeEndpoints
     private sealed record MotivoPayload(string Motivo);
 
     private sealed record ParcelaFmsPayload(BlocoFinanciamentoSaude Bloco, string FonteRecurso, decimal Valor);
+
+    private sealed record AtualizarEstabelecimentoPayload(string Nome, TipoEstabelecimento Tipo, EnderecoEstabelecimentoDto Endereco);
+
+    private sealed record VincularProfissionalPayload(Guid EstabelecimentoId, string Cbo, DateOnly DataInicio);
+
+    private sealed record EncerrarVinculoPayload(Guid EstabelecimentoId, DateOnly DataFim);
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Afastamentos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
@@ -60,6 +61,12 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Eventos eSocial gerados/assinados/transmitidos (maquina de estados + Outbox).</summary>
     public DbSet<EventoESocial> EventosESocial => Set<EventoESocial>();
+
+    /// <summary>Afastamentos/licencas tipados dos servidores (efeito determinIstico na folha).</summary>
+    public DbSet<Afastamento> Afastamentos => Set<Afastamento>();
+
+    /// <summary>Regras legais de afastamento parametrizaveis por tenant/vigencia (fonte do efeito na folha).</summary>
+    public DbSet<RegraAfastamento> RegrasAfastamento => Set<RegraAfastamento>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

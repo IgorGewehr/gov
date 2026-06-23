@@ -11,6 +11,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
+using Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Internal;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Ponto.Coleta;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Servidores;
@@ -69,6 +70,13 @@ public sealed class RecursosHumanosModule : IModule
 
         services.AddScoped<IFolhaDePagamentoRepository, FolhaDePagamentoRepository>();
         services.AddScoped<IRubricaFolhaRepository, RubricaFolhaRepository>();
+
+        // AFASTAMENTOS TIPADOS (Onda 1 — efeito na folha): repositorio do agregado, provider de regras
+        // (catalogo persistido por tenant + defaults legais parametrizados) e o ajustador que aplica o
+        // efeito ao provento-base no lancamento de eventos (gancho da folha — design RH §3.3).
+        services.AddScoped<IAfastamentoRepository, AfastamentoRepository>();
+        services.AddScoped<IRegraAfastamentoProvider, RegraAfastamentoProvider>();
+        services.AddScoped<AjustadorProventoPorAfastamento>();
         services.AddScoped<ITabelasLegaisRepository, TabelasLegaisRepository>();
         services.AddScoped<IServidorRegimeConsulta, ServidorRegimeConsulta>();
         services.AddScoped<IRubricaS1010Consulta, RubricaS1010Consulta>();

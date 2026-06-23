@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Saude.Domain.Estabelecimentos;
 using Tensorroot.Gov.Modules.Saude.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
+using Tensorroot.Gov.Modules.Saude.Domain.Profissionais;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Fiscal;
 using AtendimentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendimento;
@@ -28,6 +30,12 @@ public sealed class SaudeDbContext(DbContextOptions<SaudeDbContext> options, ITe
 
     /// <summary>Solicitacoes de regulacao (SISREG) — raiz de agregado.</summary>
     public DbSet<SolicitacaoRegulacao> SolicitacoesRegulacao => Set<SolicitacaoRegulacao>();
+
+    /// <summary>Estabelecimentos de saude (CNES) — master data local, raiz de agregado.</summary>
+    public DbSet<Estabelecimento> Estabelecimentos => Set<Estabelecimento>();
+
+    /// <summary>Profissionais de saude (equipe das unidades) — master data local, raiz de agregado.</summary>
+    public DbSet<Profissional> Profissionais => Set<Profissional>();
 
     /// <summary>Regras de classificacao ASPS versionadas (S-1, LC 141/2012 arts. 3º/4º).</summary>
     public DbSet<RegraClassificacaoAsps> RegrasClassificacaoAsps => Set<RegraClassificacaoAsps>();

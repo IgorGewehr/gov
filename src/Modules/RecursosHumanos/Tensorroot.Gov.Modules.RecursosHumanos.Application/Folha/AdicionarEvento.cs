@@ -54,6 +54,7 @@ public sealed class AdicionarEventoHandler(
     IFolhaDePagamentoRepository folhas,
     IServidorRegimeConsulta servidores,
     IRubricaS1010Consulta rubricas,
+    AjustadorProventoPorAfastamento ajustadorAfastamento,
     IUnitOfWork unitOfWork)
     : ICommandHandler<AdicionarEventoCommand>
 {
@@ -76,8 +77,29 @@ public sealed class AdicionarEventoHandler(
             throw new InvalidOperationException("Rubrica inexistente ou nao vigente em S-1010 na competencia.");
         }
 
+        // GANCHO DO AFASTAMENTO (design RH §3.3): o provento-base e ajustado pelo efeito dos afastamentos
+        // vigentes do servidor na competencia (suspende/reduz/proporcionaliza) ANTES de lancar a verba —
+        // a folha de um servidor afastado deixa de ser calculada como se ativo. So afeta PROVENTOS; o
+        // MotorDeCalculoFolha continua puro (recebe a verba ja ajustada).
+        var ehProvento = request.Tipo == TipoEvento.Provento;
+        var valorAjustado = await ajustadorAfastamento
+            .AjustarProventoAsync(request.ServidorId, folha.Competencia, ehProvento, request.Valor, cancellationToken)
+            .ConfigureAwait(false);
+
+        // Afastamento que suspende 100% do provento na competencia zera a verba: nao ha o que lancar
+        // (o agregado exige valor > 0). Sem lancamento, o provento simplesmente nao entra na folha.
+        if (valorAjustado <= 0m)
+        {
+            if (ehProvento)
+            {
+                return;
+            }
+
+            valorAjustado = request.Valor;
+        }
+
         // I-2: o agregado garante que so aceita eventos quando Aberta.
-        folha.AdicionarEvento(request.ServidorId, rubrica, request.Tipo, BaseCalculo.De(request.BaseCalculo), request.Valor, regime);
+        folha.AdicionarEvento(request.ServidorId, rubrica, request.Tipo, BaseCalculo.De(request.BaseCalculo), valorAjustado, regime);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

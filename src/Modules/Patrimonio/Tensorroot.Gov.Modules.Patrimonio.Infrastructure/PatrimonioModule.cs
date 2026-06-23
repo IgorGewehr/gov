@@ -54,6 +54,7 @@ public sealed class PatrimonioModule : IModule
         services.AddScoped<IBemPatrimonialRepository, BemPatrimonialRepository>();
         services.AddScoped<IVeiculoRepository, VeiculoRepository>();
         services.AddScoped<IItemEstoqueRepository, ItemEstoqueRepository>();
+        services.AddScoped<IInventarioRepository, InventarioRepository>();
 
         var applicationAssembly = typeof(IncorporarBemCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

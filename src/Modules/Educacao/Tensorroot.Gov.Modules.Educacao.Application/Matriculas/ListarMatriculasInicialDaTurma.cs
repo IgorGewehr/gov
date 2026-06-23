@@ -1,6 +1,7 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
 

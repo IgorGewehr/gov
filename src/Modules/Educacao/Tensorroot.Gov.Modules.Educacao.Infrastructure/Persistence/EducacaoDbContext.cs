@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
 using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Fiscal;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Fiscal;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence;
@@ -22,6 +24,12 @@ public sealed class EducacaoDbContext(DbContextOptions<EducacaoDbContext> option
 
     /// <summary>Escolas (unidades escolares da rede de ensino).</summary>
     public DbSet<Escola> Escolas => Set<Escola>();
+
+    /// <summary>Alunos (cadastro civil da rede de ensino, com responsaveis).</summary>
+    public DbSet<Aluno> Alunos => Set<Aluno>();
+
+    /// <summary>Turmas (etapa/serie/turno por escola e ano letivo, com contador de matriculados).</summary>
+    public DbSet<Turma> Turmas => Set<Turma>();
 
     /// <summary>Matriculas (vinculos aluno-turma-escola).</summary>
     public DbSet<Matricula> Matriculas => Set<Matricula>();

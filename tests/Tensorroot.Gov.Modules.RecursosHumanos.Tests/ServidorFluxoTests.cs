@@ -151,20 +151,10 @@ public sealed class ServidorFluxoTests : RecursosHumanosTestBase
         var servidor = NovoServidor();
         servidor.RegistrarPosse(Nomeacao.AddDays(5));
 
-        var acao = () => servidor.RegistrarAfastamento(Nomeacao.AddDays(6), null, "Licenca");
+        var acao = servidor.MarcarAfastado;
 
         acao.Should().Throw<InvalidOperationException>();
         servidor.Situacao.Should().Be(SituacaoServidor.Empossado);
-    }
-
-    [Fact] // B-7: afastamento com Fim < Inicio e rejeitado.
-    public void Borda_7_afastamento_com_fim_anterior_ao_inicio_e_rejeitado()
-    {
-        var servidor = NovoServidorEmExercicio();
-
-        var acao = () => servidor.RegistrarAfastamento(new DateOnly(2026, 5, 10), new DateOnly(2026, 5, 1), "Licenca");
-
-        acao.Should().Throw<ArgumentOutOfRangeException>();
     }
 
     [Fact] // I-8 + Cenario 10: servidor desligado e terminal (nenhuma transicao).
@@ -177,7 +167,7 @@ public sealed class ServidorFluxoTests : RecursosHumanosTestBase
         ((Action)(() => servidor.RegistrarPosse(Nomeacao.AddDays(5)))).Should().Throw<InvalidOperationException>();
         ((Action)(() => servidor.IniciarExercicio(Nomeacao.AddDays(20)))).Should().Throw<InvalidOperationException>();
         ((Action)(() => servidor.ConcederEstabilidade(new DateOnly(2030, 1, 1)))).Should().Throw<InvalidOperationException>();
-        ((Action)(() => servidor.RegistrarAfastamento(new DateOnly(2026, 7, 1), null, "Licenca"))).Should().Throw<InvalidOperationException>();
+        ((Action)servidor.MarcarAfastado).Should().Throw<InvalidOperationException>();
         ((Action)(() => servidor.Desligar(new DateOnly(2026, 7, 1), "De novo"))).Should().Throw<InvalidOperationException>();
     }
 
@@ -212,22 +202,21 @@ public sealed class ServidorFluxoTests : RecursosHumanosTestBase
         servidor.DomainEvents.OfType<EstabilidadeConcedida>().Should().ContainSingle();
     }
 
-    [Fact] // Cenario 7: EmExercicio --Afastamento--> Afastado, emite AfastamentoRegistrado.
+    [Fact] // Cenario 7: EmExercicio --MarcarAfastado--> Afastado (espelho; evento vem do agregado Afastamento).
     public void Transicao_afastamento_de_EmExercicio_para_Afastado()
     {
         var servidor = NovoServidorEmExercicio();
 
-        servidor.RegistrarAfastamento(new DateOnly(2026, 5, 1), new DateOnly(2026, 6, 1), "Licenca medica");
+        servidor.MarcarAfastado();
 
         servidor.Situacao.Should().Be(SituacaoServidor.Afastado);
-        servidor.DomainEvents.OfType<AfastamentoRegistrado>().Should().ContainSingle();
     }
 
     [Fact] // Afastado --RetornarDeAfastamento--> EmExercicio.
     public void Transicao_retornar_de_afastamento_para_EmExercicio()
     {
         var servidor = NovoServidorEmExercicio();
-        servidor.RegistrarAfastamento(new DateOnly(2026, 5, 1), null, "Licenca");
+        servidor.MarcarAfastado();
 
         servidor.RetornarDeAfastamento();
 
@@ -248,7 +237,7 @@ public sealed class ServidorFluxoTests : RecursosHumanosTestBase
     public void Borda_9_desligar_servidor_afastado_e_permitido()
     {
         var servidor = NovoServidorEmExercicio();
-        servidor.RegistrarAfastamento(new DateOnly(2026, 5, 1), null, "Licenca");
+        servidor.MarcarAfastado();
 
         servidor.Desligar(new DateOnly(2026, 6, 1), "Aposentadoria");
 

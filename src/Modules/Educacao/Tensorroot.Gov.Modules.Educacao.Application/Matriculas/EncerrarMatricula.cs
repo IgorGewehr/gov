@@ -24,9 +24,10 @@ public sealed class EncerrarMatriculaValidator : AbstractValidator<EncerrarMatri
     }
 }
 
-/// <summary>Handler do encerramento de matricula.</summary>
+/// <summary>Handler do encerramento de matricula (libera a vaga na turma na mesma transacao).</summary>
 public sealed class EncerrarMatriculaHandler(
     IMatriculaRepository matriculas,
+    ITurmaRepository turmas,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
     ITenantContext tenant,
@@ -53,6 +54,10 @@ public sealed class EncerrarMatriculaHandler(
             default:
                 throw new InvalidOperationException($"Motivo de encerramento invalido: {request.Motivo}.");
         }
+
+        // Liberacao de vaga: decrementa o contador da turma (mesma transacao).
+        var turma = await turmas.ObterPorIdAsync(matricula.TurmaId, cancellationToken).ConfigureAwait(false);
+        turma?.DecrementarMatriculados();
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

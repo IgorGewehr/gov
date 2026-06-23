@@ -1,5 +1,6 @@
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
 
@@ -43,3 +44,15 @@ public sealed record RequisicaoAtendida(ItemEstoqueId ItemEstoqueId, RequisicaoI
 /// <param name="ItemEstoqueId">Identificador do item de estoque.</param>
 /// <param name="SaldoAtual">Saldo resultante após a baixa.</param>
 public sealed record PontoPedidoAtingido(ItemEstoqueId ItemEstoqueId, decimal SaldoAtual) : IDomainEvent;
+
+/// <summary>Inventário aberto (levantamento iniciado — Lei 4.320 art. 96).</summary>
+/// <param name="InventarioId">Identificador do inventário.</param>
+/// <param name="Exercicio">Exercício (ano-base) do levantamento.</param>
+/// <param name="Tipo">Tipo (anual/por setor/eventual/transferência).</param>
+public sealed record InventarioAberto(InventarioId InventarioId, int Exercicio, TipoInventario Tipo) : IDomainEvent;
+
+/// <summary>Inventário encerrado — apura as recomendações de movimentação/baixa para efetivação downstream.</summary>
+/// <param name="InventarioId">Identificador do inventário.</param>
+/// <param name="Exercicio">Exercício (ano-base) do levantamento.</param>
+/// <param name="TotalDivergencias">Quantidade de divergências apuradas.</param>
+public sealed record InventarioEncerrado(InventarioId InventarioId, int Exercicio, int TotalDivergencias) : IDomainEvent;

@@ -60,10 +60,17 @@ public sealed class SaudeModule : IModule
         services.AddScoped<IAtendimentoRepository, AtendimentoRepository>();
         services.AddScoped<ISolicitacaoRegulacaoRepository, SolicitacaoRegulacaoRepository>();
 
+        // Cadastros-mestres locais (Onda 1 profundidade): estabelecimento (CNES) e profissional (CBO/CNES).
+        services.AddScoped<IEstabelecimentoCadastroRepository, EstabelecimentoCadastroRepository>();
+        services.AddScoped<IProfissionalCadastroRepository, ProfissionalCadastroRepository>();
+
         // Gateways/ACLs governamentais: implementacao simulada para dev/testes. Em producao,
         // HTTP resiliente (Polly) atras de Anti-Corruption Layer, com certificados no Azure Key Vault.
         services.AddScoped<ICadsusGateway, SimuladoCadsusGateway>();
-        services.AddScoped<IEstabelecimentoRepository, SimuladoEstabelecimentoRepository>();
+
+        // ACL CNES agora consulta os AGREGADOS LOCAIS reais (substitui o SimuladoEstabelecimentoRepository
+        // que so checava Guid.Empty). // TODO(prod: CNES oficial quando houver credencial).
+        services.AddScoped<IEstabelecimentoRepository, EstabelecimentoRepository>();
         services.AddScoped<IRndsGateway, SimuladoRndsGateway>();
         services.AddScoped<ISisabGateway, SimuladoSisabGateway>();
         services.AddScoped<ISisregGateway, SimuladoSisregGateway>();

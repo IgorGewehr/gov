@@ -9,9 +9,10 @@ namespace Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
 /// <param name="MatriculaId">Identificador da matricula a transferir.</param>
 public sealed record TransferirAlunoCommand(Guid MatriculaId) : ICommand;
 
-/// <summary>Handler da transferencia de aluno.</summary>
+/// <summary>Handler da transferencia de aluno (libera a vaga na turma de origem na mesma transacao).</summary>
 public sealed class TransferirAlunoHandler(
     IMatriculaRepository matriculas,
+    ITurmaRepository turmas,
     IUnitOfWork unitOfWork)
     : ICommandHandler<TransferirAlunoCommand>
 {
@@ -25,6 +26,10 @@ public sealed class TransferirAlunoHandler(
 
         // Regra de dominio: exige situacao Ativa (I-5); estado terminal nao admite transicao (I-9).
         matricula.Transferir();
+
+        // Liberacao de vaga: decrementa o contador da turma de origem (mesma transacao).
+        var turma = await turmas.ObterPorIdAsync(matricula.TurmaId, cancellationToken).ConfigureAwait(false);
+        turma?.DecrementarMatriculados();
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

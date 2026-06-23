@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
+using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Configurations;
 

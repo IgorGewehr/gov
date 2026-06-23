@@ -84,6 +84,108 @@ namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditTrail", "educacao");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Domain.Alunos.Aluno", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoInepAluno")
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
+
+                    b.Property<string>("Cpf")
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.ComplexProperty<Dictionary<string, object>>("DadosCivis", "Tensorroot.Gov.Modules.Educacao.Domain.Alunos.Aluno.DadosCivis#DadosCivis", b1 =>
+                        {
+                            b1.Property<DateOnly>("DataNascimento")
+                                .HasColumnType("date")
+                                .HasColumnName("DataNascimento");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("Nome");
+
+                            b1.Property<string>("NomeMae")
+                                .IsRequired()
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("NomeMae");
+
+                            b1.Property<string>("NomePai")
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("NomePai");
+
+                            b1.Property<string>("NomeSocial")
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("NomeSocial");
+
+                            b1.Property<string>("Sexo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Sexo");
+                        });
+
+                    b.ComplexProperty<Dictionary<string, object>>("Endereco", "Tensorroot.Gov.Modules.Educacao.Domain.Alunos.Aluno.Endereco#EnderecoAluno", b1 =>
+                        {
+                            b1.Property<string>("Bairro")
+                                .IsRequired()
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("EnderecoBairro");
+
+                            b1.Property<string>("Cep")
+                                .IsRequired()
+                                .HasMaxLength(8)
+                                .HasColumnType("nvarchar(8)")
+                                .HasColumnName("EnderecoCep");
+
+                            b1.Property<string>("Logradouro")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)")
+                                .HasColumnName("EnderecoLogradouro");
+
+                            b1.Property<string>("Municipio")
+                                .IsRequired()
+                                .HasMaxLength(120)
+                                .HasColumnType("nvarchar(120)")
+                                .HasColumnName("EnderecoMunicipio");
+
+                            b1.Property<string>("Numero")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)")
+                                .HasColumnName("EnderecoNumero");
+
+                            b1.Property<string>("Uf")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("nvarchar(2)")
+                                .HasColumnName("EnderecoUf");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Cpf");
+
+                    b.ToTable("Alunos", "educacao");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Domain.DiarioClasse.DiarioClasse", b =>
                 {
                     b.Property<Guid>("Id")
@@ -295,6 +397,56 @@ namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Migrations
                     b.ToTable("Matriculas", "educacao");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Domain.Turmas.Turma", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AnoLetivo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("EscolaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Etapa")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("Matriculados")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Serie")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Turno")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Vagas")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "EscolaId", "AnoLetivo");
+
+                    b.HasIndex("TenantId", "EscolaId", "AnoLetivo", "Serie", "Turno")
+                        .IsUnique();
+
+                    b.ToTable("Turmas", "educacao");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Infrastructure.Fiscal.LinhaExecucaoEducacao", b =>
                 {
                     b.Property<Guid>("Id")
@@ -431,6 +583,53 @@ namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Migrations
                     b.HasIndex("ProcessedOnUtc", "DeadLetteredOnUtc", "NextAttemptUtc");
 
                     b.ToTable("OutboxMessages", "educacao");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Domain.Alunos.Aluno", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Educacao.Domain.Alunos.Responsavel", "Responsaveis", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("AlunoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("AutorizadoBuscar")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("Cpf")
+                                .HasMaxLength(11)
+                                .HasColumnType("nvarchar(11)");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("Parentesco")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<bool>("ResponsavelFinanceiro")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("Telefone")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("AlunoId");
+
+                            b1.ToTable("AlunosResponsaveis", "educacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AlunoId");
+                        });
+
+                    b.Navigation("Responsaveis");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Educacao.Domain.DiarioClasse.DiarioClasse", b =>

@@ -12,26 +12,7 @@ public readonly record struct MatriculaId(Guid Value)
     public override string ToString() => Value.ToString();
 }
 
-/// <summary>Identificador forte do aluno vinculado a matricula (sujeito de dados menor — LGPD art. 14).</summary>
-/// <param name="Value">Valor GUID subjacente.</param>
-public readonly record struct AlunoId(Guid Value)
-{
-    /// <inheritdoc />
-    public override string ToString() => Value.ToString();
-}
-
-/// <summary>Identificador forte da turma de enturmacao do aluno.</summary>
-/// <param name="Value">Valor GUID subjacente.</param>
-public readonly record struct TurmaId(Guid Value)
-{
-    /// <inheritdoc />
-    public override string ToString() => Value.ToString();
-}
-
-/// <summary>Identificador forte da escola da matricula.</summary>
-/// <param name="Value">Valor GUID subjacente.</param>
-public readonly record struct EscolaId(Guid Value)
-{
-    /// <inheritdoc />
-    public override string ToString() => Value.ToString();
-}
+// Os identificadores de Aluno, Turma e Escola referenciados pela Matricula sao agora os
+// identificadores CANONICOS dos respectivos agregados (Onda 1 de profundidade): a Matricula deixa
+// de carregar IDs "soltos" e passa a referenciar entidades reais por Id. O re-apontamento e feito
+// por alias global (ver GlobalUsings.cs deste projeto), mantendo a Matricula INALTERADA.

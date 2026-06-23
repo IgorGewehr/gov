@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Educacao.Contracts;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
+using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 
 namespace Tensorroot.Gov.Modules.Educacao.Application.Matriculas;
 
@@ -43,13 +44,11 @@ public sealed class RematricularAlunoHandler(
             throw new InvalidOperationException("Aluno inapto a rematricula.");
         }
 
-        var turmaDestino = new TurmaId(request.TurmaDestinoId);
+        var turmaDestinoId = new TurmaId(request.TurmaDestinoId);
 
-        // I-11: turma destino com vaga.
-        if (!await turmas.PossuiVagaAsync(turmaDestino, cancellationToken).ConfigureAwait(false))
-        {
-            throw new InvalidOperationException("Turma sem vaga.");
-        }
+        // I-T2: turma destino existente, aberta e com vaga (carrega o agregado real).
+        var turmaDestino = await turmas.ObterPorIdAsync(turmaDestinoId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Turma destino nao encontrada.");
 
         // I-3: aluno sem matricula ativa conflitante na data de referencia.
         if (await matriculas.ExisteMatriculaAtivaConflitanteAsync(anterior.AlunoId, request.DataReferencia, cancellationToken).ConfigureAwait(false))
@@ -57,11 +56,14 @@ public sealed class RematricularAlunoHandler(
             throw new InvalidOperationException("Aluno ja possui matricula ativa conflitante.");
         }
 
+        // I-T2: a enturmacao na turma destino incrementa o contador (valida turma Aberta com vaga).
+        turmaDestino.IncrementarMatriculados();
+
         var novaMatricula = Matricula.MatricularAluno(
             tenant.TenantId,
             anterior.AlunoId,
-            turmaDestino,
-            anterior.EscolaId,
+            turmaDestinoId,
+            turmaDestino.EscolaId,
             request.DataReferencia);
 
         matriculas.Adicionar(novaMatricula);

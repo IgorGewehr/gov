@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Frota;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence;
 
@@ -25,6 +26,9 @@ public sealed class PatrimonioDbContext(DbContextOptions<PatrimonioDbContext> op
 
     /// <summary>Itens de almoxarifado (estoque).</summary>
     public DbSet<ItemEstoque> ItensEstoque => Set<ItemEstoque>();
+
+    /// <summary>Inventários patrimoniais (Lei 4.320 art. 96).</summary>
+    public DbSet<Inventario> Inventarios => Set<Inventario>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
