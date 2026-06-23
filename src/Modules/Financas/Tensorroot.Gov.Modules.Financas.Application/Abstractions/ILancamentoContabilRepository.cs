@@ -24,4 +24,13 @@ public interface ILancamentoContabilRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns><c>true</c> se já existir.</returns>
     Task<bool> ExisteParaOrigemAsync(Guid origemReferenciaId, Guid eventoContabilId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Indica se já existe lançamento para a origem informada, independentemente de roteiro
+    /// (usado pelo encerramento de exercício, cujos lançamentos não têm <c>EventoContabilId</c>).
+    /// </summary>
+    /// <param name="origemReferenciaId">Id determinístico da fase/conta de encerramento.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns><c>true</c> se já existir.</returns>
+    Task<bool> ExisteParaOrigemAsync(Guid origemReferenciaId, CancellationToken cancellationToken);
 }

@@ -26,4 +26,10 @@ public sealed class LancamentoContabilRepository(FinancasDbContext context) : IL
             lancamento => lancamento.OrigemReferenciaId == origemReferenciaId
                 && lancamento.EventoContabilId == eventoContabilId,
             cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExisteParaOrigemAsync(Guid origemReferenciaId, CancellationToken cancellationToken)
+        => context.LancamentosContabeis.AnyAsync(
+            lancamento => lancamento.OrigemReferenciaId == origemReferenciaId,
+            cancellationToken);
 }

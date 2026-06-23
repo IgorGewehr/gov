@@ -71,6 +71,7 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
         Guid tenantId,
         DateOnly data,
         int exercicio,
+        int periodoMes,
         string historico,
         OrigemLancamento origem,
         NaturezaInformacao naturezaInformacao,
@@ -81,7 +82,7 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
         TenantId = tenantId;
         Data = data;
         Exercicio = exercicio;
-        PeriodoMes = data.Month;
+        PeriodoMes = periodoMes;
         Historico = historico;
         Origem = origem;
         NaturezaInformacao = naturezaInformacao;
@@ -98,7 +99,11 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
     /// <summary>Exercício contábil.</summary>
     public int Exercicio { get; private set; }
 
-    /// <summary>Mês do período (1-12), derivado da data, para o balancete mensal/MSC.</summary>
+    /// <summary>
+    /// Mês do período para o balancete/MSC. Em geral 1-12 (derivado da data). Períodos
+    /// extraordinários de encerramento usam <c>13</c> (apuração patrimonial/orçamentária no
+    /// 31/12) e <c>0</c> (abertura do exercício seguinte, 01/01) — ver DESIGN encerramento §2.
+    /// </summary>
     public int PeriodoMes { get; private set; }
 
     /// <summary>Histórico (narrativa do fato).</summary>
@@ -137,6 +142,10 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
     /// <param name="eventoContabilId">Roteiro aplicado.</param>
     /// <param name="linhas">Partidas (≥1 débito e ≥1 crédito, mesma natureza, ΣD=ΣC).</param>
     /// <param name="periodoAberto">Indica se o período (exercício/mês) está aberto.</param>
+    /// <param name="periodoMesOverride">
+    /// Sobrepõe o mês do período (default = <c>data.Month</c>). Usado SOMENTE pelos períodos
+    /// extraordinários do encerramento: <c>13</c> (apuração) e <c>0</c> (abertura). Aceita 0-13.
+    /// </param>
     /// <returns>Novo <see cref="LancamentoContabil"/>.</returns>
     /// <exception cref="PartidaDobradaDesbalanceadaException">Se ΣD ≠ ΣC.</exception>
     /// <exception cref="NaturezasMisturadasException">Se cruzar naturezas.</exception>
@@ -151,10 +160,17 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
         Guid? origemReferenciaId,
         Guid? eventoContabilId,
         IReadOnlyCollection<LinhaLancamento> linhas,
-        bool periodoAberto)
+        bool periodoAberto,
+        int? periodoMesOverride = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(historico);
         ArgumentNullException.ThrowIfNull(linhas);
+
+        var periodoMes = periodoMesOverride ?? data.Month;
+        if (periodoMes is < 0 or > 13)
+        {
+            throw new ArgumentOutOfRangeException(nameof(periodoMesOverride), periodoMes, "Periodo do balancete deve estar entre 0 e 13.");
+        }
 
         if (!periodoAberto)
         {
@@ -170,6 +186,7 @@ public sealed class LancamentoContabil : AggregateRoot<LancamentoContabilId>, IM
             tenantId,
             data,
             exercicio,
+            periodoMes,
             historico,
             origem,
             natureza,

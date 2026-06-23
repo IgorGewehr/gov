@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Commands;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Demonstracoes;
+using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Encerramento;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Msc;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Queries;
 using Tensorroot.Gov.Modules.Financas.Application.Dotacoes;
@@ -61,6 +62,51 @@ internal static class FinancasEndpoints
             .RequirePermission("financas.ver");
 
         MapearMscEDemonstracoes(grupo);
+        MapearEncerramento(grupo);
+    }
+
+    private static void MapearEncerramento(RouteGroupBuilder grupo)
+    {
+        // Encerramento completo de exercício (orquestração: RAP → apuração patrimonial/orçamentária →
+        // congelamento → MSC de encerramento → abertura do seguinte). Idempotente (no-op se congelado).
+        // Operação contábil sensível: exige financas.gerenciar.
+        grupo.MapPost("/contabilidade/encerramento/{exercicio:int}/executar", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new EncerrarExercicioCompletoCommand(exercicio), cancellationToken)))
+            .RequirePermission("financas.gerenciar");
+
+        // Reexecução isolada da apuração patrimonial (zera classes 3/4 — mês 13).
+        grupo.MapPost("/contabilidade/encerramento/{exercicio:int}/apuracao-patrimonial", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { lancamentos = await sender.Send(new ApurarResultadoPatrimonialCommand(exercicio), cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Inscrição isolada de Restos a Pagar (substitui a rota legada; mantém compat em /restos-a-pagar).
+        grupo.MapPost("/contabilidade/encerramento/{exercicio:int}/inscrever-rap", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { inscritos = await sender.Send(new EncerrarExercicioCommand(exercicio), cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Abertura isolada do exercício seguinte (transferência do resultado — mês 0).
+        grupo.MapPost("/contabilidade/encerramento/{exercicio:int}/abrir-seguinte", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { lancamentos = await sender.Send(new AbrirExercicioSeguinteCommand(exercicio), cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Geração da MSC de encerramento (anual, mês 13) — insumo do rascunho da DCA.
+        grupo.MapPost("/contabilidade/msc/encerramento/gerar", async (
+            GerarMscEncerramentoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(
+                new GerarMscEncerramentoCommand(payload.Exercicio, payload.PoderOrgao), cancellationToken)))
+            .RequirePermission("financas.gerenciar");
+
+        // Status do encerramento de um exercício.
+        grupo.MapGet("/contabilidade/encerramento/{exercicio:int}", async (
+            int exercicio, ISender sender, CancellationToken cancellationToken)
+            => await sender.Send(new ConsultarEncerramentoQuery(exercicio), cancellationToken) is { } status
+                ? Results.Ok(status)
+                : Results.NotFound())
+            .RequirePermission("financas.ver");
     }
 
     private static void MapearMscEDemonstracoes(RouteGroupBuilder grupo)
@@ -237,4 +283,6 @@ internal static class FinancasEndpoints
     private sealed record ValorPayload(decimal Valor);
 
     private sealed record GerarMscPayload(int Exercicio, int Mes, string? PoderOrgao);
+
+    private sealed record GerarMscEncerramentoPayload(int Exercicio, string? PoderOrgao);
 }

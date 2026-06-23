@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.ReadModels;
+using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Encerramento;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.EventosContabeis;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Lancamentos;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.PlanoDeContas;
@@ -57,6 +58,9 @@ public sealed class FinancasDbContext(DbContextOptions<FinancasDbContext> option
 
     /// <summary>Registros de controle de geração da MSC (idempotência por competência).</summary>
     public DbSet<MscGeradaRegistro> MscsGeradas => Set<MscGeradaRegistro>();
+
+    /// <summary>Controle do encerramento de exercício (máquina de estados, 1 por tenant+exercício).</summary>
+    public DbSet<EncerramentoExercicio> EncerramentosExercicio => Set<EncerramentoExercicio>();
 
     /// <summary>Planos Plurianuais (PPA — planejamento de 4 anos).</summary>
     public DbSet<PlanoPlurianual> Ppas => Set<PlanoPlurianual>();

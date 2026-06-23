@@ -84,6 +84,11 @@ public sealed class FinancasModule : IModule
         services.AddScoped<IMscGeradaStore, MscGeradaStore>();
         services.AddScoped<MotorContabil>();
 
+        // Encerramento de exercício (apuração patrimonial/orçamentária, RAP, transposição, abertura).
+        services.AddScoped<IEncerramentoExercicioRepository, EncerramentoExercicioRepository>();
+        services.AddScoped<IProjecaoSincronizador, ProjecaoSincronizador>();
+        services.AddScoped<Application.Contabilidade.Encerramento.MotorEncerramento>();
+
         // MSC + demonstrações DCASP (read-models derivados do balancete).
         services.AddScoped<DemonstrativoContexto>();
 

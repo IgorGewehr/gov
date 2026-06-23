@@ -174,6 +174,40 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                     b.ToTable("msc_gerada", "financas");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Encerramento.EncerramentoExercicio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedNever()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("AberturaConcluidaEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EncerradoEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("IniciadoEmUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Exercicio")
+                        .IsUnique();
+
+                    b.ToTable("encerramento_exercicio", "financas");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.EventosContabeis.EventoContabil", b =>
                 {
                     b.Property<Guid>("Id")

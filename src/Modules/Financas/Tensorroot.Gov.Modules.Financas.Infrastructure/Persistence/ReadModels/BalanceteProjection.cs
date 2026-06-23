@@ -97,6 +97,27 @@ public sealed class BalanceteProjection(FinancasDbContext context) : IBalanceteP
     {
         var contaId = conta.Id.Value;
 
+        // Período 0 (Abertura do exercício seguinte, 01/01) — DESIGN encerramento §2/§4.5.
+        // O saldo inicial vem do MENOR período do MESMO exercício que já exista (em geral o mês 1,
+        // ainda sem movimento). Se nenhum existir, transpõe o saldo FINAL do exercício anterior
+        // (último período: mês 13 de apuração, ou mês 12). Contas que encerram (3/4/5/6) já estão
+        // zeradas após a apuração; nada a transpor.
+        if (periodoMes == 0)
+        {
+            if (conta.Encerramento)
+            {
+                return 0m;
+            }
+
+            var fechamentoAnterior = await context.BalancetesConta
+                .Where(linha => linha.ContaId == contaId && linha.Exercicio == exercicio - 1)
+                .OrderByDescending(linha => linha.PeriodoMes)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            return fechamentoAnterior?.SaldoAtual ?? 0m;
+        }
+
+        // Períodos 2..13: herda do maior período anterior do mesmo exercício (mês 13 lê do mês 12).
         if (periodoMes > 1)
         {
             var mesAnterior = await context.BalancetesConta
@@ -107,7 +128,8 @@ public sealed class BalanceteProjection(FinancasDbContext context) : IBalanceteP
             return mesAnterior?.SaldoAtual ?? 0m;
         }
 
-        // Virada de exercício: contas que encerram (5/6/3/4) zeram; permanentes (1/2) carregam o saldo final.
+        // Período 1 (virada de exercício): contas que encerram (5/6/3/4) zeram; permanentes (1/2)
+        // carregam o saldo final do exercício anterior — inclusive o período 0 (abertura), se houver.
         if (conta.Encerramento)
         {
             return 0m;
@@ -118,6 +140,13 @@ public sealed class BalanceteProjection(FinancasDbContext context) : IBalanceteP
             .OrderByDescending(linha => linha.PeriodoMes)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
-        return exercicioAnterior?.SaldoAtual ?? 0m;
+
+        var aberturaEsteExercicio = await context.BalancetesConta
+            .Where(linha => linha.ContaId == contaId && linha.Exercicio == exercicio && linha.PeriodoMes == 0)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // A abertura (mês 0) deste exercício, quando existe, já consolida transposição + resultado.
+        return aberturaEsteExercicio?.SaldoAtual ?? exercicioAnterior?.SaldoAtual ?? 0m;
     }
 }
