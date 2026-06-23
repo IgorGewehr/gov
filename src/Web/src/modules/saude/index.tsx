@@ -56,6 +56,9 @@ const FarmaciaPage = lazy(() =>
 const ImunizacaoPage = lazy(() =>
   import('./ImunizacaoPage').then((m) => ({ default: m.ImunizacaoPage })),
 );
+const VigilanciaPage = lazy(() =>
+  import('./VigilanciaPage').then((m) => ({ default: m.VigilanciaPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'saude',
@@ -77,6 +80,7 @@ const MODULE: ModuleDefinition = {
         { path: 'imunizacao', element: <ImunizacaoPage /> },
         { path: 'regulacao', element: <RegulacaoListPage /> },
         { path: 'regulacao/:solicitacaoId', element: <RegulacaoDetailPage /> },
+        { path: 'vigilancia', element: <VigilanciaPage /> },
         { path: 'fiscal', element: <FiscalSaudePainelPage /> },
       ],
     },
