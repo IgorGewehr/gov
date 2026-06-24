@@ -26,6 +26,7 @@ import { useProcessosDoSetor } from './processo.api';
 import type { ProcessoResumo, SituacaoProcesso } from './processo.api';
 import { SITUACAO_LABEL, situacaoTagVariant } from './processo.helpers';
 import { ProcessoFormModal } from './ProcessoFormModal';
+import { ProtocoloSubNav } from '../ProtocoloSubNav';
 
 const FILTRO_SITUACAO_OPCOES: SelectOption[] = [
   { value: '', label: 'Todas as situações' },
@@ -108,6 +109,7 @@ export function ProcessoListPage() {
           </Can>
         }
       />
+      <ProtocoloSubNav />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>

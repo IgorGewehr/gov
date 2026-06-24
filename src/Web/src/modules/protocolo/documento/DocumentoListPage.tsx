@@ -29,6 +29,7 @@ import {
   situacaoTagVariant,
 } from './documento.helpers';
 import { DocumentoFormModal } from './DocumentoFormModal';
+import { ProtocoloSubNav } from '../ProtocoloSubNav';
 
 const FILTRO_SITUACAO = [
   { value: '', label: 'Todas as situações' },
@@ -124,6 +125,7 @@ export function DocumentoListPage() {
           </Can>
         }
       />
+      <ProtocoloSubNav />
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={consultar}>

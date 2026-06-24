@@ -22,6 +22,15 @@ const DocumentoListPage = lazy(() =>
 const DocumentoDetailPage = lazy(() =>
   import('./documento/DocumentoDetailPage').then((m) => ({ default: m.DocumentoDetailPage })),
 );
+const PlanoClassificacaoPage = lazy(() =>
+  import('./arquivistica/PlanoClassificacaoPage').then((m) => ({ default: m.PlanoClassificacaoPage })),
+);
+const TabelaTemporalidadePage = lazy(() =>
+  import('./arquivistica/TabelaTemporalidadePage').then((m) => ({ default: m.TabelaTemporalidadePage })),
+);
+const DestinacaoPage = lazy(() =>
+  import('./arquivistica/DestinacaoPage').then((m) => ({ default: m.DestinacaoPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'protocolo',
@@ -41,6 +50,9 @@ const MODULE: ModuleDefinition = {
           path: 'processos/:processoId/documentos/:documentoId',
           element: <DocumentoDetailPage />,
         },
+        { path: 'plano-classificacao', element: <PlanoClassificacaoPage /> },
+        { path: 'temporalidade', element: <TabelaTemporalidadePage /> },
+        { path: 'destinacao', element: <DestinacaoPage /> },
       ],
     },
   ],
