@@ -63,6 +63,12 @@ public enum SituacaoLancamento
 /// </summary>
 public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
 {
+    /// <summary>
+    /// Prazo decadencial padrão do direito de lançar, em anos (CTN art. 173, I). Parametrizável por
+    /// tenant via o parâmetro <c>anosDecadencia</c> das factories — nunca hardcoded no cálculo.
+    /// </summary>
+    public const int AnosDecadenciaPadrao = 5;
+
     private Lancamento()
     {
     }
@@ -75,18 +81,50 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
         Competencia competencia,
         ValorMonetario valorPrincipal,
         DateOnly vencimento,
+        DateOnly dataFatoGerador,
+        DateOnly dataConstituicao,
+        int anosDecadencia,
         ImovelId? imovelId)
         : base(id)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(anosDecadencia, 1);
+
+        // INVARIANTE DE DECADÊNCIA (CTN art. 173, I): o direito de constituir o crédito extingue-se
+        // APÓS o prazo (parametrizável) contado do PRIMEIRO DIA DO EXERCÍCIO SEGUINTE ao do fato
+        // gerador. Logo, no próprio dia em que se completa o prazo (data-limite) o direito JÁ se
+        // extinguiu — constituição EM ou APÓS a data-limite é NULA e insanável. Recusada AQUI, antes de
+        // qualquer mutação de estado ou publicação de evento (README §5 / BDD §8).
+        var dataLimite = CalcularDataLimiteDecadencia(dataFatoGerador, anosDecadencia);
+        if (dataConstituicao >= dataLimite)
+        {
+            throw new CreditoTributarioDecaidoException(dataFatoGerador.Year, dataLimite, dataConstituicao);
+        }
+
         TenantId = tenantId;
         ContribuinteId = contribuinteId;
         TipoTributo = tipoTributo;
         Competencia = competencia;
         ValorPrincipal = valorPrincipal;
         Vencimento = vencimento;
+        DataFatoGerador = dataFatoGerador;
+        DataConstituicao = dataConstituicao;
+        AnosDecadencia = anosDecadencia;
         ImovelId = imovelId;
         Situacao = SituacaoLancamento.Aberto;
         RaiseDomainEvent(new CreditoTributarioLancado(id, contribuinteId, valorPrincipal.Valor));
+    }
+
+    /// <summary>
+    /// Termo inicial da decadência (CTN art. 173, I): o primeiro dia do exercício SEGUINTE ao do fato
+    /// gerador. Data-limite = termo inicial + prazo (anos). Determinístico (só datas do fato).
+    /// </summary>
+    /// <param name="dataFatoGerador">Data do fato gerador.</param>
+    /// <param name="anosDecadencia">Prazo decadencial em anos (parametrizável por tenant).</param>
+    /// <returns>Data-limite para constituir o crédito sem decadência.</returns>
+    public static DateOnly CalcularDataLimiteDecadencia(DateOnly dataFatoGerador, int anosDecadencia)
+    {
+        var termoInicial = new DateOnly(dataFatoGerador.Year + 1, 1, 1);
+        return termoInicial.AddYears(anosDecadencia);
     }
 
     /// <summary>Tenant (ente público) dono do registro.</summary>
@@ -108,6 +146,18 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     public DateOnly Vencimento { get; private set; }
 
     /// <summary>
+    /// Data do fato gerador da obrigação tributária — marco a partir do qual se conta a decadência
+    /// (CTN art. 173, I: do 1º dia do exercício seguinte). Persistida para auditoria e rastreabilidade.
+    /// </summary>
+    public DateOnly DataFatoGerador { get; private set; }
+
+    /// <summary>Data em que o crédito foi efetivamente constituído (lançado).</summary>
+    public DateOnly DataConstituicao { get; private set; }
+
+    /// <summary>Prazo decadencial aplicado a este lançamento, em anos (parametrizável por tenant).</summary>
+    public int AnosDecadencia { get; private set; } = AnosDecadenciaPadrao;
+
+    /// <summary>
     /// Imóvel de origem, quando o lançamento decorre do cadastro imobiliário (IPTU). Nulo para
     /// lançamentos não vinculados a imóvel (ex.: ISS).
     /// </summary>
@@ -123,18 +173,25 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     /// <param name="competencia">Competência fiscal.</param>
     /// <param name="valorPrincipal">Valor principal.</param>
     /// <param name="vencimento">Data de vencimento.</param>
+    /// <param name="dataFatoGerador">Data do fato gerador (marco da decadência — CTN art. 173, I).</param>
+    /// <param name="dataConstituicao">Data da constituição do crédito (data do fato — "hoje" administrativo).</param>
+    /// <param name="anosDecadencia">Prazo decadencial em anos (parametrizável por tenant); padrão 5 (CTN art. 173).</param>
     /// <returns>Novo <see cref="Lancamento"/> em aberto.</returns>
+    /// <exception cref="CreditoTributarioDecaidoException">Se o crédito já estiver decaído (CTN art. 173, I).</exception>
     public static Lancamento Lancar(
         Guid tenantId,
         ContribuinteId contribuinteId,
         TipoTributo tipoTributo,
         Competencia competencia,
         ValorMonetario valorPrincipal,
-        DateOnly vencimento)
+        DateOnly vencimento,
+        DateOnly dataFatoGerador,
+        DateOnly dataConstituicao,
+        int anosDecadencia = AnosDecadenciaPadrao)
     {
         ArgumentNullException.ThrowIfNull(competencia);
         ArgumentNullException.ThrowIfNull(valorPrincipal);
-        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, imovelId: null);
+        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, dataFatoGerador, dataConstituicao, anosDecadencia, imovelId: null);
     }
 
     /// <summary>
@@ -148,8 +205,12 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     /// <param name="competencia">Competência fiscal.</param>
     /// <param name="valorPrincipal">Valor principal.</param>
     /// <param name="vencimento">Data de vencimento.</param>
+    /// <param name="dataFatoGerador">Data do fato gerador (marco da decadência — CTN art. 173, I).</param>
+    /// <param name="dataConstituicao">Data da constituição do crédito (data do fato — "hoje" administrativo).</param>
     /// <param name="imovelId">Imóvel de origem (opcional).</param>
+    /// <param name="anosDecadencia">Prazo decadencial em anos (parametrizável por tenant); padrão 5 (CTN art. 173).</param>
     /// <returns>Novo <see cref="Lancamento"/> em aberto.</returns>
+    /// <exception cref="CreditoTributarioDecaidoException">Se o crédito já estiver decaído (CTN art. 173, I).</exception>
     public static Lancamento LancarComImovel(
         Guid tenantId,
         ContribuinteId contribuinteId,
@@ -157,7 +218,10 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
         Competencia competencia,
         ValorMonetario valorPrincipal,
         DateOnly vencimento,
-        ImovelId? imovelId)
+        DateOnly dataFatoGerador,
+        DateOnly dataConstituicao,
+        ImovelId? imovelId,
+        int anosDecadencia = AnosDecadenciaPadrao)
     {
         ArgumentNullException.ThrowIfNull(competencia);
         ArgumentNullException.ThrowIfNull(valorPrincipal);
@@ -166,7 +230,7 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
             throw new ArgumentOutOfRangeException(nameof(tipoTributo), tipoTributo, "Espécie tributária inválida.");
         }
 
-        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, imovelId);
+        return new Lancamento(LancamentoId.New(), tenantId, contribuinteId, tipoTributo, competencia, valorPrincipal, vencimento, dataFatoGerador, dataConstituicao, anosDecadencia, imovelId);
     }
 
     /// <summary>
@@ -179,16 +243,25 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
     /// <param name="exercicio">Exercício fiscal (ano).</param>
     /// <param name="valorPrincipal">IPTU devido apurado.</param>
     /// <param name="vencimento">Vencimento da cota única / 1ª parcela.</param>
+    /// <param name="dataConstituicao">Data da constituição do crédito (data do fato — "hoje" administrativo).</param>
+    /// <param name="anosDecadencia">Prazo decadencial em anos (parametrizável por tenant); padrão 5 (CTN art. 173).</param>
     /// <returns>Novo <see cref="Lancamento"/> de IPTU em aberto.</returns>
+    /// <exception cref="CreditoTributarioDecaidoException">Se o crédito já estiver decaído (CTN art. 173, I).</exception>
     public static Lancamento LancarIptu(
         Guid tenantId,
         ContribuinteId contribuinteId,
         ImovelId imovelId,
         int exercicio,
         ValorMonetario valorPrincipal,
-        DateOnly vencimento)
+        DateOnly vencimento,
+        DateOnly dataConstituicao,
+        int anosDecadencia = AnosDecadenciaPadrao)
     {
         ArgumentNullException.ThrowIfNull(valorPrincipal);
+
+        // Fato gerador do IPTU: 1º de janeiro do exercício (CTN art. 32 + lei municipal). Marco para
+        // a contagem da decadência (CTN art. 173, I).
+        var dataFatoGerador = new DateOnly(exercicio, 1, 1);
         return new Lancamento(
             LancamentoId.New(),
             tenantId,
@@ -197,6 +270,9 @@ public sealed class Lancamento : AggregateRoot<LancamentoId>, IMustHaveTenant
             Competencia.De(exercicio, 1),
             valorPrincipal,
             vencimento,
+            dataFatoGerador,
+            dataConstituicao,
+            anosDecadencia,
             imovelId);
     }
 

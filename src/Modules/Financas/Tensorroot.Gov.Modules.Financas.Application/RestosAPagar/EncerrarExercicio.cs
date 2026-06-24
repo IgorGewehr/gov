@@ -49,21 +49,39 @@ public sealed class EncerrarExercicioHandler(
                 continue;
             }
 
-            var processado = empenho.SaldoAPagar.EhPositivo();
-            var classificacao = processado ? ClassificacaoRestoAPagar.Processado : ClassificacaoRestoAPagar.NaoProcessado;
-            var valorInscrito = processado ? empenho.SaldoAPagar : empenho.SaldoEmpenhado.Subtrair(empenho.ValorPago);
+            // Lei 4.320/64 art. 36 c/c MCASP: o saldo aberto de UM empenho pode gerar DUAS inscricoes
+            // distintas, cada uma na sua classificacao — nao um booleano unico que perde a parcela
+            // empenhada-nao-liquidada:
+            //   Processado     = Liquidado - Pago                 (RP Processado — liquidado nao pago)
+            //   Nao Processado = (Empenhado - Anulado) - Liquidado (RP Nao Processado — empenhado nao liquidado)
+            var valorProcessado = empenho.SaldoAPagar;                              // Liquidado - Pago
+            var valorNaoProcessado = empenho.SaldoEmpenhado.Subtrair(empenho.ValorLiquidado); // SaldoEmpenhado - Liquidado
 
-            var resto = RestoAPagar.Inscrever(
-                tenant.TenantId,
-                empenho.Id,
-                classificacao,
-                valorInscrito,
-                request.Exercicio,
-                exercicioInscricao);
+            if (valorProcessado.EhPositivo())
+            {
+                restos.Adicionar(RestoAPagar.Inscrever(
+                    tenant.TenantId,
+                    empenho.Id,
+                    ClassificacaoRestoAPagar.Processado,
+                    valorProcessado,
+                    request.Exercicio,
+                    exercicioInscricao));
+                inscritos++;
+            }
+
+            if (valorNaoProcessado.EhPositivo())
+            {
+                restos.Adicionar(RestoAPagar.Inscrever(
+                    tenant.TenantId,
+                    empenho.Id,
+                    ClassificacaoRestoAPagar.NaoProcessado,
+                    valorNaoProcessado,
+                    request.Exercicio,
+                    exercicioInscricao));
+                inscritos++;
+            }
 
             empenho.InscreverEmRestosAPagar(exercicioInscricao);
-            restos.Adicionar(resto);
-            inscritos++;
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

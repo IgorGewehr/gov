@@ -57,7 +57,8 @@ public sealed class LancarIptuAnualHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<LancarIptuAnualCommand, ResultadoLancamentoIptu>
 {
     /// <inheritdoc />
@@ -78,13 +79,18 @@ public sealed class LancarIptuAnualHandler(
             tabelas,
             cancellationToken).ConfigureAwait(false);
 
+        // Data da constituição do crédito ("hoje" administrativo) — confrontada com a decadência
+        // (CTN art. 173, I) dentro do agregado. Sem relógio no domínio (CLAUDE.md §16).
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var lancamento = Lancamento.LancarIptu(
             tenant.TenantId,
             imovel.ProprietarioId,
             imovelId,
             request.Exercicio,
             memoria.ImpostoDevido,
-            request.PrimeiroVencimento);
+            request.PrimeiroVencimento,
+            hoje);
 
         var dam = Dam.Gerar(
             tenant.TenantId,

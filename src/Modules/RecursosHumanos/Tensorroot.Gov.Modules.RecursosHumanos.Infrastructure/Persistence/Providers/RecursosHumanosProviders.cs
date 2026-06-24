@@ -62,7 +62,10 @@ public sealed class ServidorRegimeConsulta(RecursosHumanosDbContext context) : I
             .Select(p => new PensaoAlimenticiaCalculo(
                 p.Beneficiario, p.Modalidade, p.Percentual, p.BaseIncidencia, p.ValorFixo))
             .ToList();
-        return new DadosCalculoServidor(servidor.Regime, servidor.Dependentes.Count, pensoes);
+        // RH-D1: deducao de IRRF conta SOMENTE os dependentes ELEGIVEIS (rol fechado da Lei 9.250/1995
+        // art. 35), nunca o total cru de dependentes registrados (que inclui dependentes so para
+        // beneficios). Usar Dependentes.Count cru gera deducao indevida e sub-recolhimento de IRRF.
+        return new DadosCalculoServidor(servidor.Regime, servidor.QuantidadeDependentesElegiveisIrrf, pensoes);
     }
 }
 

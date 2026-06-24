@@ -87,7 +87,8 @@ public sealed class LancarItbiHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<LancarItbiCommand, ResultadoLancamentoItbi>
 {
     /// <inheritdoc />
@@ -127,6 +128,12 @@ public sealed class LancarItbiHandler(
             transmissao.SinalizarDivergenciaTriagem(memoria.ValorVenalReferencia);
         }
 
+        // Fato gerador do ITBI: a transmissão onerosa no exercício informado (CTN art. 35). Data da
+        // constituição = "hoje" administrativo (sem relógio no domínio — CLAUDE.md §16). A decadência
+        // (CTN art. 173, I) é aferida no agregado a partir do exercício do fato gerador.
+        var dataFatoGerador = new DateOnly(request.Exercicio, request.Vencimento.Month, 1);
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         // Contribuinte do ITBI = adquirente (CTN art. 42; usual). Lançamento avulso por transação.
         var lancamento = Lancamento.Lancar(
             tenant.TenantId,
@@ -134,7 +141,9 @@ public sealed class LancarItbiHandler(
             TipoTributo.Itbi,
             Competencia.De(request.Exercicio, request.Vencimento.Month),
             memoria.ImpostoDevido,
-            request.Vencimento);
+            request.Vencimento,
+            dataFatoGerador,
+            hoje);
 
         // Guia avulsa: cota única (1 parcela).
         var dam = Dam.Gerar(tenant.TenantId, lancamento.Id, adquirenteId, memoria.ImpostoDevido, numeroParcelas: 1, request.Vencimento);

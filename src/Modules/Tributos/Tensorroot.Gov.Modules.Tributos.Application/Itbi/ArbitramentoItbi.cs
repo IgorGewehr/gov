@@ -252,13 +252,19 @@ public sealed class ConcluirArbitramentoItbiHandler(
         {
             var adquirenteId = new ContribuinteId(request.AdquirenteId);
             var valorDiferenca = ValorMonetario.De(diferenca);
+            // Lançamento de ofício complementar (CTN art. 149): fato gerador = transmissão original
+            // (exercício da transmissão); data da constituição = data da decisão do arbitramento
+            // (data do fato). A decadência (CTN art. 173, I) é aferida no agregado.
+            var dataFatoGerador = new DateOnly(transmissao.Exercicio, request.VencimentoComplementar.Month, 1);
             var lancamento = Lancamento.Lancar(
                 tenant.TenantId,
                 adquirenteId,
                 TipoTributo.Itbi,
                 Competencia.De(transmissao.Exercicio, request.VencimentoComplementar.Month),
                 valorDiferenca,
-                request.VencimentoComplementar);
+                request.VencimentoComplementar,
+                dataFatoGerador,
+                request.DataDecisao);
             var dam = Dam.Gerar(tenant.TenantId, lancamento.Id, adquirenteId, valorDiferenca, numeroParcelas: 1, request.VencimentoComplementar);
 
             lancamentos.Adicionar(lancamento);

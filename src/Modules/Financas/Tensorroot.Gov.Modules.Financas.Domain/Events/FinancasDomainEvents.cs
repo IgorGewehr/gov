@@ -32,7 +32,13 @@ public sealed record EmpenhoEmitido(EmpenhoId EmpenhoId, DotacaoOrcamentariaId D
 /// <summary>Empenho anulado (parcial ou total).</summary>
 /// <param name="EmpenhoId">Identificador do empenho.</param>
 /// <param name="Valor">Valor anulado.</param>
-public sealed record EmpenhoAnulado(EmpenhoId EmpenhoId, decimal Valor) : IDomainEvent;
+/// <param name="EventoId">
+/// Identificador unico DESTE fato de anulacao. Um mesmo empenho pode ser anulado em parcelas
+/// distintas; o <c>EventoId</c> garante que a contabilizacao do estorno (lancamento inverso) seja
+/// idempotente por FATO — sem ele, anulacoes parciais sucessivas do mesmo empenho colidiriam na
+/// chave de idempotencia (origem + evento) e apenas a primeira geraria lancamento.
+/// </param>
+public sealed record EmpenhoAnulado(EmpenhoId EmpenhoId, decimal Valor, Guid EventoId) : IDomainEvent;
 
 /// <summary>Despesa liquidada (2º estágio — Lei 4.320/64, art. 63).</summary>
 /// <param name="LiquidacaoId">Identificador da liquidação.</param>

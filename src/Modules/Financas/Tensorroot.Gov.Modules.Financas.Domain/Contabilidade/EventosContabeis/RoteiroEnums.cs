@@ -30,7 +30,7 @@ public enum FatoContabil
     /// <summary>Receita arrecadada.</summary>
     ReceitaArrecadada = 8,
 
-    /// <summary>Resto a pagar inscrito (encerramento).</summary>
+    /// <summary>Resto a pagar NÃO PROCESSADO inscrito (encerramento — empenhado não liquidado).</summary>
     RestoAPagarInscrito = 9,
 
     /// <summary>Resto a pagar liquidado.</summary>
@@ -38,6 +38,9 @@ public enum FatoContabil
 
     /// <summary>Resto a pagar pago.</summary>
     RestoAPagarPago = 11,
+
+    /// <summary>Resto a pagar PROCESSADO inscrito (encerramento — liquidado não pago).</summary>
+    RestoAPagarProcessadoInscrito = 12,
 }
 
 /// <summary>

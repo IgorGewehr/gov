@@ -73,7 +73,8 @@ public sealed class EmitirAlvaraHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<EmitirAlvaraCommand, ResultadoEmissaoAlvara>
 {
     /// <inheritdoc />
@@ -99,6 +100,11 @@ public sealed class EmitirAlvaraHandler(
 
         var valorTll = tabela.Calcular(request.QuantidadeBaseTll);
 
+        // Fato gerador da TLL no exercício informado; data da constituição = "hoje" administrativo
+        // (sem relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+        var dataFatoGerador = new DateOnly(request.Exercicio, request.VencimentoTll.Month, 1);
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,
             contribuinteId,
@@ -106,6 +112,8 @@ public sealed class EmitirAlvaraHandler(
             Competencia.De(request.Exercicio, request.VencimentoTll.Month),
             valorTll,
             request.VencimentoTll,
+            dataFatoGerador,
+            hoje,
             imovelId);
 
         var dam = Dam.Gerar(tenant.TenantId, lancamento.Id, contribuinteId, valorTll, numeroParcelas: 1, request.VencimentoTll);

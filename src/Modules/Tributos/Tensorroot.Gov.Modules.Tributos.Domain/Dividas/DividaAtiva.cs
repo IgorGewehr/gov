@@ -256,6 +256,7 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// <param name="processoAdministrativo">Nº do processo administrativo (inc. VI, opcional).</param>
     /// <returns>A CDA válida.</returns>
     /// <exception cref="InvalidOperationException">Se a dívida não estiver recém-inscrita.</exception>
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita na data-base (CTN art. 174).</exception>
     /// <exception cref="CdaRequisitoAusenteException">Se faltar requisito legal.</exception>
     public CertidaoDividaAtiva EmitirCda(
         string numeroCda,
@@ -269,6 +270,13 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
         if (Situacao != SituacaoDividaAtiva.Inscrita)
         {
             throw new InvalidOperationException($"A CDA só pode ser emitida para dívida recém-inscrita. Situação atual: {Situacao}.");
+        }
+
+        // Fail-closed: não se emite CDA (título executivo) de crédito já prescrito (CTN art. 174); a
+        // data-base dos encargos é a referência (data do fato — sem relógio no domínio, CLAUDE.md §16).
+        if (EstaPrescrita(dataBaseEncargos))
+        {
+            throw new DividaAtivaPrescritaException(Id, DataPrescricao, dataBaseEncargos);
         }
 
         var formaCalculo =
@@ -303,9 +311,11 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// <param name="dataGeracao">Data de geração da remessa (data do fato).</param>
     /// <returns>A remessa gerada.</returns>
     /// <exception cref="InvalidOperationException">Se não houver CDA emitida ou a dívida não estiver exigível.</exception>
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita na data de geração (CTN art. 174).</exception>
     public RemessaProtesto GerarRemessaProtesto(string identificadorCra, DateOnly dataGeracao)
     {
-        GarantirExigivel();
+        // Fail-closed: a data de geração é a referência da prescrição (data do fato).
+        GarantirExigivel(dataGeracao);
         if (Situacao != SituacaoDividaAtiva.CdaEmitida || string.IsNullOrWhiteSpace(NumeroCda))
         {
             throw new InvalidOperationException("O protesto requer CDA emitida.");
@@ -358,10 +368,13 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// Ajuíza a execução fiscal (Lei 6.830/80) — GANCHO de saída: o ERP gera/exporta a CDA + petição; o
     /// ajuizamento ocorre no PJe/eproc-RS (integração de saída é decisão de produto). Apenas muda o estado.
     /// </summary>
+    /// <param name="dataReferencia">Data de referência do ajuizamento (data do fato — afere a prescrição).</param>
     /// <exception cref="InvalidOperationException">Se não houver CDA emitida/protestada ou a dívida não estiver exigível.</exception>
-    public void AjuizarExecucaoFiscal()
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita na data de referência (CTN art. 174).</exception>
+    public void AjuizarExecucaoFiscal(DateOnly dataReferencia)
     {
-        GarantirExigivel();
+        // Fail-closed: barra o ajuizamento de execução de dívida prescrita (CTN art. 174).
+        GarantirExigivel(dataReferencia);
         if (Situacao is not (SituacaoDividaAtiva.CdaEmitida or SituacaoDividaAtiva.Protestada))
         {
             throw new InvalidOperationException("A execução fiscal requer CDA emitida (eventualmente protestada).");
@@ -377,9 +390,11 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// </summary>
     /// <param name="dataReconhecimento">Data do reconhecimento/parcelamento (interrompe a prescrição).</param>
     /// <exception cref="InvalidOperationException">Se a dívida não estiver exigível.</exception>
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida já estiver prescrita (CTN art. 174): o crédito extinto não comporta novo parcelamento.</exception>
     public void FirmarParcelamento(DateOnly dataReconhecimento)
     {
-        GarantirExigivel();
+        // Fail-closed: a prescrição extingue o crédito (CTN art. 156, V); não se parcela dívida prescrita.
+        GarantirExigivel(dataReconhecimento);
         DataUltimaInterrupcaoPrescricao = dataReconhecimento;
         Situacao = SituacaoDividaAtiva.Parcelada;
         RaiseDomainEvent(new ParcelamentoFirmado(Id));
@@ -430,11 +445,26 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
         => _remessasProtesto.FirstOrDefault(remessa => remessa.Id == remessaId)
         ?? throw new InvalidOperationException("Remessa de protesto não pertence a esta dívida.");
 
-    private void GarantirExigivel()
+    /// <summary>
+    /// Invariante de exigibilidade do crédito inscrito (fail-closed). Recusa a cobrança quando a dívida
+    /// está suspensa/encerrada OU quando está PRESCRITA na data de referência (CTN art. 174): a prescrição
+    /// extingue o próprio crédito tributário (CTN art. 156, V), de modo que protesto/execução/CDA de
+    /// dívida prescrita são vedados. A data de referência é informada (data do fato — sem relógio no
+    /// domínio, CLAUDE.md §16).
+    /// </summary>
+    /// <param name="referencia">Data de referência do ato de cobrança (data do fato).</param>
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita.</exception>
+    /// <exception cref="InvalidOperationException">Se a dívida não estiver exigível por situação.</exception>
+    private void GarantirExigivel(DateOnly referencia)
     {
         if (Situacao is SituacaoDividaAtiva.Quitada or SituacaoDividaAtiva.Cancelada or SituacaoDividaAtiva.Parcelada)
         {
             throw new InvalidOperationException($"A dívida não está exigível. Situação atual: {Situacao}.");
+        }
+
+        if (EstaPrescrita(referencia))
+        {
+            throw new DividaAtivaPrescritaException(Id, DataPrescricao, referencia);
         }
     }
 }

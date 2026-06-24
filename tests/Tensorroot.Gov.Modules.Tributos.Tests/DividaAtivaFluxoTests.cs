@@ -46,6 +46,8 @@ public sealed class DividaAtivaFluxoTests : IDisposable
                 TipoTributo.Iptu,
                 Competencia.De(2024, 1),
                 ValorMonetario.De(1500.00m),
+                new DateOnly(2024, 3, 10),
+                new DateOnly(2024, 1, 1),
                 new DateOnly(2024, 3, 10));
             contexto.Lancamentos.Add(lancamento);
             await contexto.SaveChangesAsync();

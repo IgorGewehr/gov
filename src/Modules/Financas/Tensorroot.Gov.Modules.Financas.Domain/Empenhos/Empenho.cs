@@ -189,7 +189,7 @@ public sealed class Empenho : AggregateRoot<EmpenhoId>, IMustHaveTenant
         ValorAnulado = ValorAnulado.Somar(valor);
         Situacao = SaldoEmpenhado.EhPositivo() ? SituacaoEmpenho.AnuladoParcial : SituacaoEmpenho.Anulado;
         AtualizarSituacaoPorSaldos();
-        RaiseDomainEvent(new EmpenhoAnulado(Id, valor.Valor));
+        RaiseDomainEvent(new EmpenhoAnulado(Id, valor.Valor, Guid.NewGuid()));
     }
 
     /// <summary>Anula totalmente o empenho (somente sem liquidação registrada).</summary>

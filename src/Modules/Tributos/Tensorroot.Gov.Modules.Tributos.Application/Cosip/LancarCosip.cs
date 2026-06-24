@@ -60,7 +60,8 @@ public sealed class LancarCosipHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<LancarCosipCommand, ResultadoLancamentoCosip>
 {
     /// <inheritdoc />
@@ -76,6 +77,11 @@ public sealed class LancarCosipHandler(
         var contribuinteId = new ContribuinteId(request.ContribuinteId);
         var imovelId = request.ImovelId is null ? (ImovelId?)null : new ImovelId(request.ImovelId.Value);
 
+        // Fato gerador na competência informada; data da constituição = "hoje" administrativo (sem
+        // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+        var dataFatoGerador = new DateOnly(request.Ano, request.Mes, DateTime.DaysInMonth(request.Ano, request.Mes));
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,
             contribuinteId,
@@ -83,6 +89,8 @@ public sealed class LancarCosipHandler(
             Competencia.De(request.Ano, request.Mes),
             valorCosip,
             request.Vencimento,
+            dataFatoGerador,
+            hoje,
             imovelId);
 
         var dam = Dam.Gerar(tenant.TenantId, lancamento.Id, contribuinteId, valorCosip, numeroParcelas: 1, request.Vencimento);

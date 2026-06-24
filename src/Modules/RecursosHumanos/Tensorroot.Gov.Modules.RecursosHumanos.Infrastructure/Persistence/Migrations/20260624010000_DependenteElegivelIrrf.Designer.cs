@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(RecursosHumanosDbContext))]
-    partial class RecursosHumanosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624010000_DependenteElegivelIrrf")]
+    partial class DependenteElegivelIrrf
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

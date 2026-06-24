@@ -68,7 +68,8 @@ public sealed class DividaAtivaCdaProtestoPrescricaoTests : IDisposable
     {
         var lancamento = Lancamento.Lancar(
             TenantA, ContribuinteId.New(), TipoTributo.Iptu,
-            Competencia.De(2024, 1), ValorMonetario.De(1000m), new DateOnly(2024, 3, 10));
+            Competencia.De(2024, 1), ValorMonetario.De(1000m), new DateOnly(2024, 3, 10),
+            new DateOnly(2024, 1, 1), new DateOnly(2024, 3, 10));
 
         // Antes do vencimento: recusa.
         var actAntes = () => lancamento.InscreverEmDividaAtiva(new DateOnly(2024, 1, 1));
@@ -259,7 +260,8 @@ public sealed class DividaAtivaCdaProtestoPrescricaoTests : IDisposable
 
             var lancamento = Lancamento.Lancar(
                 TenantA, contribuinte.Id, TipoTributo.Iss,
-                Competencia.De(2020, 3), ValorMonetario.De(1500m), new DateOnly(2020, 4, 10));
+                Competencia.De(2020, 3), ValorMonetario.De(1500m), new DateOnly(2020, 4, 10),
+                new DateOnly(2020, 3, 31), new DateOnly(2020, 4, 10));
             contexto.Lancamentos.Add(lancamento);
             await contexto.SaveChangesAsync();
 

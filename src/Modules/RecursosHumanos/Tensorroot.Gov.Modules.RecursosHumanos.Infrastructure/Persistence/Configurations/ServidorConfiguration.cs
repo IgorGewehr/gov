@@ -75,5 +75,8 @@ public sealed class ServidorConfiguration : IEntityTypeConfiguration<Servidor>
             .ValueGeneratedNever();
         dependentes.Property(dependente => dependente.Nome).HasMaxLength(200);
         dependentes.Property(dependente => dependente.Parentesco).HasMaxLength(50);
+        // RH-D1: elegibilidade fiscal IRRF (Lei 9.250/1995 art. 35) persistida explicitamente;
+        // default false (fail-closed: nao deduz sem decisao de elegibilidade).
+        dependentes.Property(dependente => dependente.ElegivelIrrf).HasDefaultValue(false);
     }
 }

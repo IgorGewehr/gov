@@ -61,7 +61,8 @@ public sealed class ApurarIssMensalHandler(
     IApuracaoIssRepository apuracoes,
     ILancamentoRepository lancamentos,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<ApurarIssMensalCommand, ResultadoApuracaoIss>
 {
     /// <inheritdoc />
@@ -101,13 +102,21 @@ public sealed class ApurarIssMensalHandler(
         Guid? lancamentoId = null;
         if (apuracao.IssProprio.Valor > 0m)
         {
+            // Fato gerador do ISS: prestação do serviço na competência (LC 116/2003). Adota-se o
+            // último dia do mês da competência. Data da constituição = "hoje" administrativo
+            // (sem relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+            var dataFatoGerador = new DateOnly(competencia.Ano, competencia.Mes, DateTime.DaysInMonth(competencia.Ano, competencia.Mes));
+            var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
             var lancamento = Lancamento.Lancar(
                 tenant.TenantId,
                 contribuinteId,
                 TipoTributo.Iss,
                 competencia,
                 apuracao.IssProprio,
-                request.VencimentoIssProprio);
+                request.VencimentoIssProprio,
+                dataFatoGerador,
+                hoje);
             lancamentos.Adicionar(lancamento);
             lancamentoId = lancamento.Id.Value;
         }

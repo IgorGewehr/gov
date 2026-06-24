@@ -60,7 +60,8 @@ public sealed class TaxasCosipMelhoriaPersistenciaTests : IDisposable
                 new LancamentoRepository(contexto),
                 new DamRepository(contexto),
                 contexto,
-                new TenantContextFakeTaxas(TenantA));
+                new TenantContextFakeTaxas(TenantA),
+                TimeProvider.System);
 
             var resultado = await handler.Handle(
                 new LancarTaxaCommand(contribuinteId.Value, "TXFISC", 2026, QuantidadeBase: 200m, new DateOnly(2026, 7, 1)),
@@ -109,7 +110,8 @@ public sealed class TaxasCosipMelhoriaPersistenciaTests : IDisposable
                 new LancamentoRepository(contexto),
                 new DamRepository(contexto),
                 contexto,
-                new TenantContextFakeTaxas(TenantA));
+                new TenantContextFakeTaxas(TenantA),
+                TimeProvider.System);
 
             var resultado = await handler.Handle(
                 new LancarCosipCommand(contribuinteId.Value, ClasseConsumidorCosip.Residencial, ConsumoKwh: 250m, Ano: 2026, Mes: 5, new DateOnly(2026, 6, 10)),
@@ -161,7 +163,8 @@ public sealed class TaxasCosipMelhoriaPersistenciaTests : IDisposable
                 new LancamentoRepository(contexto),
                 new DamRepository(contexto),
                 contexto,
-                new TenantContextFakeTaxas(TenantA));
+                new TenantContextFakeTaxas(TenantA),
+                TimeProvider.System);
 
             var resultado = await handler.Handle(
                 new RatearContribuicaoMelhoriaCommand(obraId, new DateOnly(2026, 7, 1), NumeroParcelas: 1),

@@ -42,7 +42,8 @@ public sealed class LancarCreditoHandler(
     IContribuinteRepository contribuintes,
     ILancamentoRepository lancamentos,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<LancarCreditoCommand, Guid>
 {
     /// <inheritdoc />
@@ -54,13 +55,20 @@ public sealed class LancarCreditoHandler(
         var contribuinte = await contribuintes.ObterPorIdAsync(contribuinteId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Contribuinte não encontrado.");
 
+        // Fato gerador na competência informada; data da constituição = "hoje" administrativo (sem
+        // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+        var dataFatoGerador = new DateOnly(request.Ano, request.Mes, DateTime.DaysInMonth(request.Ano, request.Mes));
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var lancamento = Lancamento.Lancar(
             tenant.TenantId,
             contribuinte.Id,
             request.TipoTributo,
             Competencia.De(request.Ano, request.Mes),
             ValorMonetario.De(request.ValorPrincipal),
-            request.Vencimento);
+            request.Vencimento,
+            dataFatoGerador,
+            hoje);
 
         lancamentos.Adicionar(lancamento);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

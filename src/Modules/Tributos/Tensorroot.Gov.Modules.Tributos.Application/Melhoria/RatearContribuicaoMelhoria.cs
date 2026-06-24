@@ -54,7 +54,8 @@ public sealed class RatearContribuicaoMelhoriaHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<RatearContribuicaoMelhoriaCommand, ResultadoRateioMelhoria>
 {
     /// <inheritdoc />
@@ -69,6 +70,12 @@ public sealed class RatearContribuicaoMelhoriaHandler(
 
         // Competência usa o mês 1 do ano do vencimento (lançamento por obra, similar ao IPTU anual).
         var competencia = Competencia.De(request.Vencimento.Year, 1);
+
+        // Fato gerador da Contribuição de Melhoria: valorização decorrente da obra, no exercício do
+        // lançamento. Data da constituição = "hoje" administrativo (sem relógio no domínio —
+        // CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+        var dataFatoGerador = new DateOnly(competencia.Ano, 1, 1);
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
         var lancamentosGerados = new List<LancamentoMelhoriaPorImovel>();
         foreach (var imovel in obra.Imoveis)
@@ -86,6 +93,8 @@ public sealed class RatearContribuicaoMelhoriaHandler(
                 competencia,
                 imovel.ContribuicaoRateada,
                 request.Vencimento,
+                dataFatoGerador,
+                hoje,
                 imovel.ImovelId);
 
             var dam = Dam.Gerar(

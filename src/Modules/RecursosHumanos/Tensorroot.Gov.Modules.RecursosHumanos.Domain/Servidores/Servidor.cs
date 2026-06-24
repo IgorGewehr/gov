@@ -133,12 +133,24 @@ public sealed class Servidor : AggregateRoot<ServidorId>, IMustHaveTenant
     /// <param name="nome">Nome civil do dependente.</param>
     /// <param name="parentesco">Grau de parentesco.</param>
     /// <param name="dataNascimento">Data de nascimento.</param>
+    /// <param name="elegivelIrrf">
+    /// <c>true</c> se o dependente e dedutivel do IRRF (rol fechado da Lei 9.250/1995 art. 35);
+    /// <c>false</c> (padrao) se registrado apenas para beneficios. Somente os elegiveis reduzem a
+    /// base do IRRF (ver <see cref="QuantidadeDependentesElegiveisIrrf"/>).
+    /// </param>
     /// <exception cref="InvalidOperationException">Se o servidor estiver desligado (I-8).</exception>
-    public void AdicionarDependente(string nome, string parentesco, DateOnly dataNascimento)
+    public void AdicionarDependente(string nome, string parentesco, DateOnly dataNascimento, bool elegivelIrrf = false)
     {
         GarantirNaoDesligado();
-        _dependentes.Add(Dependente.Registrar(nome, parentesco, dataNascimento));
+        _dependentes.Add(Dependente.Registrar(nome, parentesco, dataNascimento, elegivelIrrf));
     }
+
+    /// <summary>
+    /// Quantidade de dependentes ELEGIVEIS a deducao de IRRF (Lei 9.250/1995 art. 35) — somente estes
+    /// compoem a deducao por dependente na base do imposto. Dependentes registrados apenas para
+    /// beneficios sao excluidos da contagem, evitando deducao indevida e sub-recolhimento na fonte.
+    /// </summary>
+    public int QuantidadeDependentesElegiveisIrrf => _dependentes.Count(dependente => dependente.ElegivelIrrf);
 
     /// <summary>
     /// Acrescenta uma pensao alimenticia judicial ao servidor (desconto na folha + repasse ao

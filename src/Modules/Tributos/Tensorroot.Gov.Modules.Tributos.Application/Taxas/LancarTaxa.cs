@@ -58,7 +58,8 @@ public sealed class LancarTaxaHandler(
     ILancamentoRepository lancamentos,
     IDamRepository dams,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    TimeProvider timeProvider)
     : ICommandHandler<LancarTaxaCommand, ResultadoLancamentoTaxa>
 {
     /// <inheritdoc />
@@ -74,6 +75,11 @@ public sealed class LancarTaxaHandler(
         var contribuinteId = new ContribuinteId(request.ContribuinteId);
         var imovelId = request.ImovelId is null ? (ImovelId?)null : new ImovelId(request.ImovelId.Value);
 
+        // Fato gerador no exercício informado; data da constituição = "hoje" administrativo (sem
+        // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
+        var dataFatoGerador = new DateOnly(request.Exercicio, request.Vencimento.Month, 1);
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,
             contribuinteId,
@@ -81,6 +87,8 @@ public sealed class LancarTaxaHandler(
             Competencia.De(request.Exercicio, request.Vencimento.Month),
             valorTaxa,
             request.Vencimento,
+            dataFatoGerador,
+            hoje,
             imovelId);
 
         var dam = Dam.Gerar(tenant.TenantId, lancamento.Id, contribuinteId, valorTaxa, request.NumeroParcelas, request.Vencimento);

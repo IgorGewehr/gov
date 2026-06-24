@@ -78,7 +78,8 @@ public sealed record FichaPonto(
 /// <param name="Nome">Nome civil do dependente.</param>
 /// <param name="Parentesco">Grau de parentesco.</param>
 /// <param name="DataNascimento">Data de nascimento.</param>
-public sealed record FichaDependente(string Nome, string Parentesco, DateOnly DataNascimento);
+/// <param name="ElegivelIrrf">Indica se o dependente e dedutivel do IRRF (Lei 9.250/1995 art. 35).</param>
+public sealed record FichaDependente(string Nome, string Parentesco, DateOnly DataNascimento, bool ElegivelIrrf);
 
 /// <summary>
 /// FICHA FUNCIONAL completa do servidor (navegabilidade — Onda 0): dados pessoais + vinculo/cargo +
@@ -148,7 +149,7 @@ public sealed class ObterFichaFuncionalHandler(
 
         var timeline = MontarTimeline(servidor);
         var dependentes = servidor.Dependentes
-            .Select(d => new FichaDependente(d.Nome, d.Parentesco, d.DataNascimento))
+            .Select(d => new FichaDependente(d.Nome, d.Parentesco, d.DataNascimento, d.ElegivelIrrf))
             .ToList();
 
         var fichaFolhas = historicoFolhas

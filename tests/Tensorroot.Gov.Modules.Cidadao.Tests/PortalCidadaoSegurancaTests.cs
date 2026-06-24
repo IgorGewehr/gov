@@ -188,8 +188,8 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
             var contribA = Contribuinte.PessoaFisica(TenantA, Cpf.Create(CpfA), "Fulano");
             var contribB = Contribuinte.PessoaFisica(TenantA, Cpf.Create(CpfB), "Sicrano");
             ctxTrib.Contribuintes.AddRange(contribA, contribB);
-            ctxTrib.Lancamentos.Add(Lancamento.Lancar(TenantA, contribA.Id, TipoTributo.Iptu, Competencia.De(2026, 1), ValorMonetario.De(500m), new DateOnly(2026, 3, 10)));
-            ctxTrib.Lancamentos.Add(Lancamento.Lancar(TenantA, contribB.Id, TipoTributo.Iptu, Competencia.De(2026, 1), ValorMonetario.De(999m), new DateOnly(2026, 3, 10)));
+            ctxTrib.Lancamentos.Add(Lancamento.Lancar(TenantA, contribA.Id, TipoTributo.Iptu, Competencia.De(2026, 1), ValorMonetario.De(500m), new DateOnly(2026, 3, 10), new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 10)));
+            ctxTrib.Lancamentos.Add(Lancamento.Lancar(TenantA, contribB.Id, TipoTributo.Iptu, Competencia.De(2026, 1), ValorMonetario.De(999m), new DateOnly(2026, 3, 10), new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 10)));
             await ctxTrib.SaveChangesAsync();
         }
 

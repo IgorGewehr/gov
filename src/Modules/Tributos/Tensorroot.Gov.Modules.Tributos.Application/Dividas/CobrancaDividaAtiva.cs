@@ -146,10 +146,12 @@ public sealed class AjuizarExecucaoFiscalHandler(IDividaAtivaRepository dividas,
         var divida = await dividas.ObterPorIdAsync(new DividaAtivaId(request.DividaAtivaId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Dívida ativa não encontrada.");
 
-        // Despacho que ordena a citação interrompe a prescrição (CTN art. 174 p.ú. I; LC 118/2005,
-        // retroage ao ajuizamento). Marca a interrupção na data do ajuizamento (data do fato).
+        // ORDEM IMPORTA (fail-closed): afere a prescrição na data do ajuizamento ANTES de interromper.
+        // O despacho de citação só interrompe a prescrição (CTN art. 174 p.ú. I; LC 118/2005, retroage
+        // ao ajuizamento) se a ação for tempestiva; dívida já prescrita no ajuizamento é barrada
+        // (DividaAtivaPrescritaException). Se aprovado, marca a interrupção na data do ajuizamento.
+        divida.AjuizarExecucaoFiscal(request.DataAjuizamento);
         divida.InterromperPrescricao(request.DataAjuizamento);
-        divida.AjuizarExecucaoFiscal();
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

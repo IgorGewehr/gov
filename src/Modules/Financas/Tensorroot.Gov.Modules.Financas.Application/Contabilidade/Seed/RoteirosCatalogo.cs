@@ -90,11 +90,20 @@ public static class RoteirosCatalogo
             LinhaRoteiro.PorPapel(C, Pat, PapelConta.VpaTributos),
         ]),
 
-        // RP nao processado inscrito — Orcamentaria.
+        // RP Nao Processado inscrito (empenhado nao liquidado) — Orcamentaria:
+        // D Empenhado a Liquidar / C Empenhos a Liquidar Inscritos em RP Nao Processados.
         new(FatoContabil.RestoAPagarInscrito, "EVT-RP-INSC", "Inscricao de RP Nao Processado",
         [
             LinhaRoteiro.PorCodigo(D, Orc, "6.2.2.1.3.01.00"),
             LinhaRoteiro.PorCodigo(C, Orc, "6.2.2.1.3.05.00"),
+        ]),
+
+        // RP Processado inscrito (liquidado nao pago) — Orcamentaria:
+        // D Liquidado a Pagar / C Empenhos Liquidados Inscritos em RP Processados.
+        new(FatoContabil.RestoAPagarProcessadoInscrito, "EVT-RP-INSC-PROC", "Inscricao de RP Processado",
+        [
+            LinhaRoteiro.PorCodigo(D, Orc, "6.2.2.1.3.03.00"),
+            LinhaRoteiro.PorCodigo(C, Orc, "6.2.2.1.3.07.00"),
         ]),
     ];
 

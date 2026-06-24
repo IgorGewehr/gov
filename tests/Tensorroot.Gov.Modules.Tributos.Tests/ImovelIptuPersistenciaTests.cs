@@ -71,7 +71,7 @@ public sealed class ImovelIptuPersistenciaTests : IDisposable
             var memoria = CalculadoraIptu.Calcular(imovel, pgv, tabela);
             memoria.ImpostoDevido.Valor.Should().Be(2_700m);
 
-            var lancamento = Lancamento.LancarIptu(TenantA, proprietarioId, imovelId, 2026, memoria.ImpostoDevido, new DateOnly(2026, 3, 10));
+            var lancamento = Lancamento.LancarIptu(TenantA, proprietarioId, imovelId, 2026, memoria.ImpostoDevido, new DateOnly(2026, 3, 10), new DateOnly(2026, 3, 10));
             contexto.Lancamentos.Add(lancamento);
 
             var dam = Dam.Gerar(TenantA, lancamento.Id, proprietarioId, memoria.ImpostoDevido, numeroParcelas: 2, new DateOnly(2026, 3, 10));
