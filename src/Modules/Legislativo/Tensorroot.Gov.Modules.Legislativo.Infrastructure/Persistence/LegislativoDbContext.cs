@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Sessoes;
@@ -45,6 +46,9 @@ public sealed class LegislativoDbContext(DbContextOptions<LegislativoDbContext> 
 
     /// <summary>Comissoes (permanentes/temporarias) com composicao e presidencia — G4.</summary>
     public DbSet<Comissao> Comissoes => Set<Comissao>();
+
+    /// <summary>Apuracoes do limite de despesa da Camara — art. 29-A da CF/88 (W9.5).</summary>
+    public DbSet<ApuracaoArt29A> ApuracoesArt29A => Set<ApuracaoArt29A>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

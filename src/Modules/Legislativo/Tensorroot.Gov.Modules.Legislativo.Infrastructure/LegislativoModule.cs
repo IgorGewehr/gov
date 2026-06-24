@@ -12,6 +12,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 using Tensorroot.Gov.Modules.Legislativo.Application;
 using Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
+using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Integracoes;
 using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Repositories;
 
@@ -65,6 +66,12 @@ public sealed class LegislativoModule : IModule
         services.AddScoped<IEdicaoDiarioRepository, EdicaoDiarioRepository>();
         services.AddScoped<ITribunaSessaoRepository, TribunaSessaoRepository>();
         services.AddScoped<IComissaoRepository, ComissaoRepository>();
+        services.AddScoped<IApuracaoArt29ARepository, ApuracaoArt29ARepository>();
+
+        // Porta de leitura da receita (art. 29-A) em escopo dedicado: registra o fallback PADRAO (retorna
+        // null -> base informada manualmente). // TODO(M10): o ApiHost substitui por uma impl real que
+        // crusa para Financas (IConsultaReceitaParaLimiteLegislativo) num escopo dedicado.
+        services.AddScoped<IConsultaReceitaEmEscopoDedicado, ConsultaReceitaEmEscopoDedicadoPadrao>();
 
         var applicationAssembly = typeof(ApresentarProposicaoCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

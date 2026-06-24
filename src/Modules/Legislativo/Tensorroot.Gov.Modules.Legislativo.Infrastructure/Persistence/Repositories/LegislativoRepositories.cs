@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Comissoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.DiarioOficial;
+using Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Sessoes;
@@ -319,4 +320,31 @@ public sealed class ComissaoRepository(LegislativoDbContext context) : IComissao
             .OrderBy(comissao => comissao.Nome)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="ApuracaoArt29A"/>.</summary>
+public sealed class ApuracaoArt29ARepository(LegislativoDbContext context) : IApuracaoArt29ARepository
+{
+    /// <inheritdoc />
+    public void Adicionar(ApuracaoArt29A apuracao)
+    {
+        ArgumentNullException.ThrowIfNull(apuracao);
+        context.ApuracoesArt29A.Add(apuracao);
+    }
+
+    /// <inheritdoc />
+    public Task<ApuracaoArt29A?> ObterPorIdAsync(ApuracaoArt29AId id, CancellationToken cancellationToken)
+        => context.ApuracoesArt29A
+            .Include(apuracao => apuracao.Despesas)
+            .FirstOrDefaultAsync(apuracao => apuracao.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ApuracaoArt29A?> ObterPorExercicioAsync(int exercicio, CancellationToken cancellationToken)
+        => context.ApuracoesArt29A
+            .Include(apuracao => apuracao.Despesas)
+            .FirstOrDefaultAsync(apuracao => apuracao.Exercicio == exercicio, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExisteParaExercicioAsync(int exercicio, CancellationToken cancellationToken)
+        => context.ApuracoesArt29A.AnyAsync(apuracao => apuracao.Exercicio == exercicio, cancellationToken);
 }

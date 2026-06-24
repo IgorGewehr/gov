@@ -1,3 +1,5 @@
+using Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara;
+using Tensorroot.Gov.Modules.Legislativo.Domain.Normas.Lexml;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 
 namespace Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
@@ -16,4 +18,19 @@ public interface ILegislativoParametros
     /// </summary>
     /// <returns>Intervalo minimo (em dias) entre turnos.</returns>
     Interstico IntersticioEntreTurnos();
+
+    /// <summary>
+    /// Identificacao do ente (UF, municipio, autoridade padrao) para compor a URN/XML LexML-BR das
+    /// normas do tenant (W9.5). Parametrizada por configuracao.
+    /// </summary>
+    /// <returns>Identificacao do ente normalizada na grafia LexML.</returns>
+    /// <exception cref="InvalidOperationException">Se a jurisdicao do tenant nao estiver configurada.</exception>
+    IdentificacaoEnte IdentificacaoEnte();
+
+    /// <summary>
+    /// Parametros do art. 29-A (faixas populacionais x percentual, subteto da folha §1, limiar de
+    /// atencao e exercicio-corte da EC 109/2021), conforme a configuracao do tenant (norma-fonte).
+    /// </summary>
+    /// <returns>Parametros validados do art. 29-A.</returns>
+    ParametrosArt29A ParametrosArt29A();
 }

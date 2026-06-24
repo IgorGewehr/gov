@@ -202,6 +202,12 @@ public static class Permissoes
     /// <summary>Gerenciar o cadastro de comissoes (permanentes/temporarias) e sua composicao/presidencia.</summary>
     public const string LegislativoComissoesGerenciar = "legislativo.comissoes.gerenciar";
 
+    /// <summary>
+    /// Gerenciar a apuracao do limite de despesa da Camara (art. 29-A CF/88): abrir/lancar despesa e
+    /// consolidar o demonstrativo do exercicio para a prestacao ao TCE-RS (W9.5).
+    /// </summary>
+    public const string LegislativoLimiteCamaraGerenciar = "legislativo.limite-camara.gerenciar";
+
     /// <summary>Visualizar dados do modulo Transparencia (dados abertos, remessas TCE).</summary>
     public const string TransparenciaVer = "transparencia.ver";
 
@@ -350,6 +356,7 @@ public static class Permissoes
         LegislativoDiarioPublicar,
         LegislativoTribunaControlar,
         LegislativoComissoesGerenciar,
+        LegislativoLimiteCamaraGerenciar,
         TransparenciaVer,
         TransparenciaGerenciar,
         TransparenciaEsicVer,

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../Tensorroot.Gov.Modules.Legislativo.Domain/Tensorroot.Gov.Modules.Legislativo.Domain.csproj" />
     <ProjectReference Include="../Tensorroot.Gov.Modules.Legislativo.Contracts/Tensorroot.Gov.Modules.Legislativo.Contracts.csproj" />
+    <ProjectReference Include="../../Financas/Tensorroot.Gov.Modules.Financas.Contracts/Tensorroot.Gov.Modules.Financas.Contracts.csproj" />
     <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
   </ItemGroup>
 </Project>

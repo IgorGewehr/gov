@@ -7,7 +7,6 @@ using Tensorroot.Gov.Modules.Legislativo.Application.Atas;
 using Tensorroot.Gov.Modules.Legislativo.Application.Comissoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Demonstracao;
 using Tensorroot.Gov.Modules.Legislativo.Application.DiarioOficial;
-using Tensorroot.Gov.Modules.Legislativo.Application.Normas;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Sessoes;
 using Tensorroot.Gov.Modules.Legislativo.Application.Tribuna;
@@ -17,7 +16,7 @@ using Tensorroot.Gov.Modules.Legislativo.Application.Votacoes;
 namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure;
 
 /// <summary>Endpoints HTTP (Minimal API) do modulo Legislativo.</summary>
-internal static class LegislativoEndpoints
+internal static partial class LegislativoEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -32,47 +31,7 @@ internal static class LegislativoEndpoints
         MapearDiarioOficial(grupo);
         MapearTribuna(grupo);
         MapearComissoes(grupo);
-    }
-
-    private static void MapearNormas(RouteGroupBuilder grupo)
-    {
-        grupo.MapGet("/normas", async (
-            string? termo, int? tipo, int? numero, int? ano, int? situacao, int? pagina, int? tamanho,
-            ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(
-                new BuscarNormasQuery(termo, tipo, numero, ano, situacao, pagina ?? 1, tamanho ?? 20), cancellationToken)))
-            .RequirePermission("legislativo.ver");
-
-        grupo.MapGet("/normas/{normaId:guid}", async (
-            Guid normaId, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ObterNormaPorIdQuery(normaId), cancellationToken)))
-            .RequirePermission("legislativo.ver");
-
-        grupo.MapPost("/normas", async (
-            CadastrarNormaCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
-            .RequirePermission("legislativo.normas.gerenciar");
-
-        grupo.MapPost("/normas/{normaId:guid}/revogacao", async (
-            Guid normaId, RevogarNormaPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new RevogarNormaCommand(normaId, payload.DataRevogacao, payload.NormaRevogadoraId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("legislativo.normas.gerenciar");
-
-        grupo.MapPost("/normas/{normaId:guid}/alteracao", async (
-            Guid normaId, RegistrarAlteracaoNormaPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new RegistrarAlteracaoNormaCommand(normaId, payload.DataReferencia, payload.NormaAlteradoraId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("legislativo.normas.gerenciar");
-
-        grupo.MapPost("/normas/{normaId:guid}/proposicao-origem", async (
-            Guid normaId, ProposicaoOrigemPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new VincularProposicaoOrigemCommand(normaId, payload.ProposicaoId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("legislativo.normas.gerenciar");
+        MapearLimiteCamara(grupo);
     }
 
     private static void MapearDiarioOficial(RouteGroupBuilder grupo)
@@ -480,12 +439,6 @@ internal static class LegislativoEndpoints
         string Partido,
         int CargoMesa,
         int Situacao);
-
-    private sealed record RevogarNormaPayload(DateOnly DataRevogacao, Guid? NormaRevogadoraId);
-
-    private sealed record RegistrarAlteracaoNormaPayload(DateOnly DataReferencia, Guid NormaAlteradoraId);
-
-    private sealed record ProposicaoOrigemPayload(Guid ProposicaoId);
 
     private sealed record AdicionarMateriaPayload(int TipoMateria, string Titulo, string? Conteudo, Guid? ReferenciaId);
 

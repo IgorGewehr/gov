@@ -69,6 +69,16 @@ public sealed class AprovarProposicaoHandlerTests : LegislativoTestBase
     private sealed class ParametrosTeste(Interstico intersticio) : ILegislativoParametros
     {
         public Interstico IntersticioEntreTurnos() => intersticio;
+
+        public Tensorroot.Gov.Modules.Legislativo.Domain.Normas.Lexml.IdentificacaoEnte IdentificacaoEnte()
+            => Tensorroot.Gov.Modules.Legislativo.Domain.Normas.Lexml.IdentificacaoEnte.De("RS", "Maximiliano de Almeida", "Camara Municipal");
+
+        public Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara.ParametrosArt29A ParametrosArt29A()
+            => Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara.ParametrosArt29A.De(
+                new[] { Tensorroot.Gov.Modules.Legislativo.Domain.LimiteCamara.FaixaPopulacional.De(int.MaxValue, 0.07m) },
+                subtetoFolhaSobreRepasse: 0.70m,
+                limiarAtencao: 0.95m,
+                exercicioCorteInativos: 2025);
     }
 
     [Fact] // Item 9 (o teste mais importante): aprovar com votacao de OUTRA proposicao falha (BUG-1).
