@@ -5,6 +5,7 @@ using Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.AssistenciaSocial.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Cidadao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Cofre.Infrastructure.Persistence;
+using Tensorroot.Gov.Modules.Convenios.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Identidade.Infrastructure.Persistence;
@@ -76,6 +77,7 @@ public sealed class PendingModelChangesFitness
             { "Cofre", () => new CofreDbContext(Opts<CofreDbContext>(), t) },
             { "PainelGestor", () => new PainelGestorDbContext(Opts<PainelGestorDbContext>(), t) },
             { "Cidadao", () => new CidadaoDbContext(Opts<CidadaoDbContext>(), t) },
+            { "Convenios", () => new ConveniosDbContext(Opts<ConveniosDbContext>(), t) },
             // Platform: DbContext próprio (não ModuleDbContext, sem tenant), mas TEM migrations + snapshot.
             { "Platform", () => new PlatformDbContext(Opts<PlatformDbContext>()) },
             // AuditoriaReadDbContext é read-model SEM migrations/snapshot → fora do escopo do drift.

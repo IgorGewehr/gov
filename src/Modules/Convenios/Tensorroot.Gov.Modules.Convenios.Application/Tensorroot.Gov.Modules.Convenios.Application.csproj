@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Convenios.Domain/Tensorroot.Gov.Modules.Convenios.Domain.csproj" />
+    <ProjectReference Include="../Tensorroot.Gov.Modules.Convenios.Contracts/Tensorroot.Gov.Modules.Convenios.Contracts.csproj" />
+    <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
+    <!-- Integracao cross-module: SOMENTE via Contracts (guardado por NetArchTest). Execucao orcamentaria
+         (empenho/liquidacao/pagamento) e a receita de convenio sao publicadas por Financas. -->
+    <ProjectReference Include="../../Financas/Tensorroot.Gov.Modules.Financas.Contracts/Tensorroot.Gov.Modules.Financas.Contracts.csproj" />
+  </ItemGroup>
+</Project>

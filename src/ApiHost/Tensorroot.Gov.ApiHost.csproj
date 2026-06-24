@@ -25,6 +25,7 @@
     <ProjectReference Include="../Modules/Cofre/Tensorroot.Gov.Modules.Cofre.Infrastructure/Tensorroot.Gov.Modules.Cofre.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/PainelGestor/Tensorroot.Gov.Modules.PainelGestor.Infrastructure/Tensorroot.Gov.Modules.PainelGestor.Infrastructure.csproj" />
     <ProjectReference Include="../Modules/Cidadao/Tensorroot.Gov.Modules.Cidadao.Infrastructure/Tensorroot.Gov.Modules.Cidadao.Infrastructure.csproj" />
+    <ProjectReference Include="../Modules/Convenios/Tensorroot.Gov.Modules.Convenios.Infrastructure/Tensorroot.Gov.Modules.Convenios.Infrastructure.csproj" />
     <ProjectReference Include="../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="../Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
   </ItemGroup>

@@ -228,6 +228,20 @@ public static class Permissoes
     /// </summary>
     public const string PainelVer = "painel.ver";
 
+    /// <summary>
+    /// Visualizar (leitura) o modulo Convenios (W9.6) — convenios federais RECEBIDOS (Dec. 11.531/2023)
+    /// e parcerias-saida OSC/MROSC (Lei 13.019/2014): listas, fichas, plano de trabalho, repasses,
+    /// prestacoes de contas e prazos.
+    /// </summary>
+    public const string ConveniosVer = "convenios.ver";
+
+    /// <summary>
+    /// Gerenciar (mutar) o modulo Convenios (W9.6): registrar proposta/selecao, aprovar plano, celebrar,
+    /// liberar repasses, abrir/submeter/analisar/sanear prestacoes de contas e declarar inadimplencia
+    /// (gatilho LRF que bloqueia novos repasses) nos dois fluxos (recebidos e MROSC).
+    /// </summary>
+    public const string ConveniosGerenciar = "convenios.gerenciar";
+
     // --- Permissoes administrativas e transversais ---
 
     /// <summary>Gerenciar usuarios e papeis (RBAC) do tenant — modulo Identidade.</summary>
@@ -362,6 +376,8 @@ public static class Permissoes
         TransparenciaEsicVer,
         TransparenciaEsicResponder,
         PainelVer,
+        ConveniosVer,
+        ConveniosGerenciar,
         IdentidadeUsuariosGerenciar,
 
         // NOTA (XT-1): AdminModulosConfigurar foi DELIBERADAMENTE removida de "Todas". Licenciar
