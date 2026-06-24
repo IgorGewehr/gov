@@ -4,6 +4,7 @@
 // precisa de "barras/medidores" que os componentes-base (genéricos) não expõem.
 // Regra gov.br/eMAG: status NUNCA só por cor — cada visual carrega rótulo/valor
 // textual e role/aria apropriados. Consome só tokens globais (via painelgestor.css).
+import { useId } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 
 /** Tom semântico compartilhado pelos visuais (status, não decoração). */
@@ -81,15 +82,21 @@ export function BarraProgresso({
   marcaLimite,
 }: BarraProgressoProps) {
   const valor = pct(fracao);
+  // Associa o rótulo visível ao progressbar (WCAG 4.1.2 / aria-progressbar-name):
+  // a barra precisa de nome acessível programático, não só do texto ao lado.
+  const rotuloId = useId();
   return (
     <div className="pg-barra">
       <div className="pg-barra-topo">
-        <span className="pg-barra-rotulo">{rotulo}</span>
+        <span className="pg-barra-rotulo" id={rotuloId}>
+          {rotulo}
+        </span>
         <span className="pg-barra-valor">{valorTexto}</span>
       </div>
       <div
         className="pg-barra-trilho"
         role="progressbar"
+        aria-labelledby={rotuloId}
         aria-valuenow={Math.round(valor)}
         aria-valuemin={0}
         aria-valuemax={100}
@@ -154,6 +161,7 @@ export function MedidorLimite({ atual, atualTexto, faixas, tom = 'neutro' }: Med
         className="pg-medidor-trilho"
         style={trilhoStyle}
         role="meter"
+        aria-label="Percentual atual em relação às faixas legais (LRF)"
         aria-valuenow={Math.round(pct(atual))}
         aria-valuemin={0}
         aria-valuemax={Math.round(limiteLegal * 100)}
