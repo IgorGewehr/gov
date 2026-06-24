@@ -39,7 +39,10 @@ export function Sidebar({ aberta = false, colapsada = false, onAlternar }: Sideb
 
   return (
     <nav className={classes.join(' ')} aria-label="Módulos">
-      <p className="tg-sidebar-title" aria-hidden={colapsada}>
+      {/* Título visual decorativo (duplica o nome do landmark <nav aria-label>):
+          aria-hidden sempre, para leitores não ouvirem "Módulos" duas vezes. No
+          rail colapsado ele some por CSS (não fica truncado como "MÓDULO"). */}
+      <p className="tg-sidebar-title" aria-hidden="true">
         Módulos
       </p>
       <ul className="tg-nav">

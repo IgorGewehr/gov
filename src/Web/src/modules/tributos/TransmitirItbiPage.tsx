@@ -90,8 +90,8 @@ export function TransmitirItbiPage() {
 
       <Card className="mb-4">
         <form className="br-form" onSubmit={gerarPreview}>
-          <div className="row align-items-end">
-            <div className="col-md-5">
+          <div className="row">
+            <div className="col-12 col-md-6">
               <FormField label="Identificador do imóvel" required>
                 {({ id, describedBy, invalid }) => (
                   <Input
@@ -105,36 +105,32 @@ export function TransmitirItbiPage() {
                 )}
               </FormField>
             </div>
-            <div className="col-md-2">
+            <div className="col-6 col-md-2">
               <FormField label="Exercício" required>
                 {({ id, describedBy, invalid }) => (
                   <Input id={id} type="number" min={1900} inputMode="numeric" aria-describedby={describedBy} invalid={invalid} value={exercicioCampo} onChange={(e) => setExercicioCampo(e.target.value)} />
                 )}
               </FormField>
             </div>
-            <div className="col-md-3">
+            <div className="col-6 col-md-4">
               <FormField label="Valor declarado (R$)" required help="Valor da transação informado.">
                 {({ id, describedBy, invalid }) => (
                   <Input id={id} type="number" min="0" step="0.01" inputMode="decimal" aria-describedby={describedBy} invalid={invalid} value={valorCampo} onChange={(e) => setValorCampo(e.target.value)} placeholder="0,00" />
                 )}
               </FormField>
             </div>
-            <div className="col-md-1">
-              <div className="tg-form-row-acao">
-                <div className="br-checkbox">
-                  <input id="itbi-sfh" type="checkbox" checked={sfhCampo} onChange={(e) => setSfhCampo(e.target.checked)} />
-                  <label htmlFor="itbi-sfh">SFH</label>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-auto">
-              <div className="tg-form-row-acao">
-                <Button variant="primary" type="submit" loading={query.isFetching && consulta !== null}>
-                  <i className="fas fa-magnifying-glass-dollar" aria-hidden="true" /> Preview
-                </Button>
-              </div>
-            </div>
           </div>
+
+          <div className="br-checkbox">
+            <input id="itbi-sfh" type="checkbox" checked={sfhCampo} onChange={(e) => setSfhCampo(e.target.checked)} />
+            <label htmlFor="itbi-sfh">Operação enquadrada no SFH (Sistema Financeiro da Habitação)</label>
+          </div>
+
+          <Toolbar>
+            <Button variant="primary" type="submit" loading={query.isFetching && consulta !== null}>
+              <i className="fas fa-magnifying-glass-dollar" aria-hidden="true" /> Preview
+            </Button>
+          </Toolbar>
         </form>
       </Card>
 

@@ -196,6 +196,13 @@ nav ul {
   display: none;
 }
 
+/* No rail, o cabeçalho "MÓDULOS" não cabe e aparecia TRUNCADO ("MÓDULO"). Some
+   por completo no colapsado — o rail mostra só os ícones centralizados (nome via
+   tooltip/aria-label). O landmark <nav aria-label="Módulos"> já nomeia a região. */
+.tg-sidebar.colapsada .tg-sidebar-title {
+  display: none;
+}
+
 /* Rodapé com o botão de recolher/expandir (fica colado embaixo). */
 .tg-sidebar-footer {
   flex: 0 0 auto;
@@ -374,23 +381,104 @@ nav ul {
 }
 
 /* ===== Sub-navegação de módulo (componente SubNav) =====
-   Abas SEMPRE visíveis: quebram em múltiplas linhas em vez de transbordar na
-   horizontal atrás de um scroll invisível (bug de descoberta). Não usamos
-   overflow-x: aqui o conteúdo nunca rola — ele acomoda. O visual das abas
-   (sublinhado, não pílula) vive em components.css (.tg-tab). */
+   Barra de abas que ROLA na horizontal quando não cabem (em vez de quebrar
+   linha de forma bagunçada ou transbordar atrás de um scroll invisível). Setas
+   de rolagem + máscaras de esmaecimento sinalizam que há mais conteúdo; com
+   poucas abas a barra fica centrada e sem setas. O visual de cada aba (pílula
+   do ATIVO + indicador) vive em components.css (.tg-tab). */
+.tg-subnav-pista-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+/* Pista rolável: scroll horizontal próprio, barra de rolagem oculta (a
+   descoberta fica por conta das setas + máscaras, mais limpas). */
 .tg-subnav-lista {
   display: flex;
-  flex-wrap: wrap; /* descoberta total: nenhuma aba fica escondida */
+  flex-wrap: nowrap;
   gap: var(--tg-space-1);
   align-items: stretch;
   list-style: none;
-  padding: 0;
+  padding: 0 0 1px; /* espaço p/ o indicador inferior do ATIVO não cortar */
   margin: 0;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+}
+
+.tg-subnav-lista::-webkit-scrollbar {
+  display: none; /* WebKit/Blink */
 }
 
 /* As abas não encolhem a ponto de cortar o rótulo; mantêm o texto legível. */
 .tg-subnav-lista > li {
   flex: 0 0 auto;
+}
+
+/* Máscaras de esmaecimento nas bordas — só aparecem quando há transbordo
+   naquele lado (classes .mais-inicio / .mais-fim controladas pelo componente).
+   Sinaliza visualmente "há mais abas para rolar". pointer-events: none p/ não
+   bloquear cliques nas abas sob a máscara. */
+.tg-subnav-pista-wrap::before,
+.tg-subnav-pista-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  width: 32px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.tg-subnav-pista-wrap::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--tg-surface), rgb(255 255 255 / 0%));
+}
+
+.tg-subnav-pista-wrap::after {
+  right: 0;
+  background: linear-gradient(270deg, var(--tg-surface), rgb(255 255 255 / 0%));
+}
+
+.tg-subnav-pista-wrap.mais-inicio::before,
+.tg-subnav-pista-wrap.mais-fim::after {
+  opacity: 1;
+}
+
+/* Setas de rolagem: auxílio visual (aria-hidden, fora da ordem de tabulação —
+   os links continuam acessíveis por teclado). Aparecem só quando há transbordo
+   do lado correspondente; encolhem para 0 quando não há (sem buracos no layout). */
+.tg-subnav-seta {
+  flex: 0 0 auto;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  align-self: center;
+  height: calc(100% - 1px);
+  border: 0;
+  background: var(--tg-surface);
+  color: var(--tg-gray-50);
+  font-size: var(--tg-font-size-sm);
+  cursor: pointer;
+  transition: color 0.12s, background-color 0.12s, width 0.12s, opacity 0.12s;
+}
+
+.tg-subnav-seta:hover:not(:disabled) {
+  color: var(--tg-primary);
+  background: var(--tg-tint);
+}
+
+.tg-subnav-seta:disabled {
+  width: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  cursor: default;
 }
 
 /* ===== Cabeçalho de página =====
@@ -486,6 +574,12 @@ nav ul {
 
   .tg-sidebar.colapsada .tg-nav-label {
     display: inline;
+  }
+
+  /* Off-canvas usa largura cheia + rótulos: o cabeçalho "MÓDULOS" volta a caber
+     (não há truncamento aqui), mesmo que a preferência salva seja "colapsada". */
+  .tg-sidebar.colapsada .tg-sidebar-title {
+    display: block;
   }
 
   /* O botão de recolher (rail) não faz sentido no off-canvas — esconde. */

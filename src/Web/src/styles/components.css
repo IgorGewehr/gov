@@ -56,49 +56,193 @@
 }
 
 /* ============================================================
- * 2.2 FormRow — alinha a AÇÃO ao INPUT (não ao label).
- * Conserta o "Consultar torto" na raiz: a coluna da ação tem um
- * spacer invisível com a altura da linha do <label>, então input
- * e botão ficam sempre na mesma linha (independe do label).
+ * 2.2 FormField + FormRow — GRID alinhado e AÇÃO colada ao INPUT.
+ *
+ * Conserta o "Consultar/Apurar/Carregar painel torto" na RAIZ. O problema
+ * antigo era um spacer com altura CHUTADA: não batia com o bloco real do
+ * <label> (font + margens do label + margin-top do input) e, quando o campo
+ * tinha texto de AJUDA (.feedback abaixo do input), a coluna crescia e o
+ * `align-items: flex-end` jogava o botão PARA BAIXO da linha do input.
+ *
+ * Agora não se adivinha nada: derivamos a altura do bloco-rótulo de tokens
+ * (linha do label + a folga colapsada label↔input do gov.br) num ÚNICO lugar
+ * (--tg-field-label-h). O <label> tem altura previsível; a coluna da ação reserva
+ * exatamente esse bloco. Assim o input e o botão nascem na MESMA linha — com ou
+ * sem label, com ou sem texto de ajuda embaixo. Zero magic number espalhado.
  * ============================================================ */
+:root {
+  /* Altura do controle (input/select/botão md do gov.br). */
+  --tg-control-h: 40px;
+  /* Folga entre o label e o topo do input. O <label> tem margin-bottom 4px e o
+     input do gov.br tem margin-top 4px; como são irmãos em bloco, as margens
+     COLAPSAM para 4px (não somam) — por isso usamos um único --tg-space-1. */
+  --tg-field-label-gap: var(--tg-space-1);
+  /* Altura total do bloco-rótulo ACIMA do topo do input:
+     linha do label (font * line-height) + folga colapsada label↔input.
+     Âncora ÚNICA usada pela coluna de ação para nascer na linha do input. */
+  --tg-field-label-h: calc(
+    var(--tg-font-size-sm) * var(--tg-lh-sm) + var(--tg-field-label-gap)
+  );
+}
+
+/* O campo cresce; a ação ocupa só o necessário. Alinhamento pelo TOPO + spacer:
+   a ação desce exatamente a altura do bloco-rótulo e fica na BANDA do input —
+   por isso texto de ajuda abaixo do input NUNCA empurra o botão para baixo. */
 .tg-form-row {
   display: flex;
   gap: var(--tg-space-3);
-  align-items: flex-end; /* alinha pelo controle, não pelo topo do bloco */
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
-/* O campo cresce; a ação só ocupa o necessário. */
 .tg-form-row > .tg-form-row-campo {
   flex: 1 1 220px;
   min-width: 0;
   margin-bottom: 0;
 }
 
+/* O FormField dentro do campo do FormRow não acumula margem (a linha controla). */
+.tg-form-row-campo > .br-input {
+  margin-bottom: 0;
+}
+
+/* Coluna da AÇÃO: reserva a altura EXATA do bloco-rótulo (spacer) e dá ao
+   conteúdo a mesma altura do input — assim o botão nasce na linha do input,
+   independentemente de o campo vizinho ter texto de ajuda mais alto embaixo. */
 .tg-form-row-acao {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  align-self: flex-start;
+  padding-top: var(--tg-field-label-h); /* empurra a ação para a linha do input */
+  margin-bottom: 0;
 }
 
-/* Spacer = altura da linha do label, garantindo o alinhamento ao input. */
-.tg-form-row-acao::before {
-  content: '';
+/* A área da ação tem a altura do controle e centraliza o(s) botão(ões). */
+.tg-form-row-acao > * {
+  min-height: var(--tg-control-h);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Botão solto (sem Toolbar) dentro da ação ocupa a altura do input. */
+.tg-form-row-acao > .br-button {
+  min-height: var(--tg-control-h);
+}
+
+/* Quando a ação acompanha um campo SEM label visível, não reserva o bloco-rótulo. */
+.tg-form-row-acao.tg-sem-label {
+  padding-top: 0;
+}
+
+/* --- Caminho grid do Bootstrap (telas que usam `row`/`col-*` à mão) ---
+   Quando a ação mora numa coluna do Bootstrap dentro de `.row.align-items-end`,
+   o item flex é a COLUNA, não a `.tg-form-row-acao`. Aí o `flex-end` da linha
+   alinharia a coluna pelo campo mais ALTO (o com texto de ajuda) e jogaria o
+   botão para baixo. Forçamos a coluna da ação a alinhar pelo TOPO: o spacer
+   interno (padding-top = bloco-rótulo) é quem posiciona o botão na linha do
+   input — estável com ou sem ajuda no campo vizinho. */
+.row.align-items-end > [class*='col']:has(> .tg-form-row-acao) {
+  align-self: flex-start;
+}
+
+/* FormField: label com hierarquia/cor de corpo e ALTURA previsível (a âncora
+   do alinhamento). line-height fixo evita rótulos de 1 vs 2 linhas desalinharem. */
+.br-input > label {
   display: block;
-  height: calc(var(--tg-font-size-sm) * var(--tg-lh-sm));
+  font-size: var(--tg-font-size-sm);
+  line-height: var(--tg-lh-sm);
+  font-weight: var(--tg-weight-semibold);
+  color: var(--tg-gray-70);
+  margin-bottom: var(--tg-space-1);
+  min-height: calc(var(--tg-font-size-sm) * var(--tg-lh-sm));
+}
+
+/* Todo input/select/textarea ocupa a largura da coluna (grid coerente). */
+.br-input input,
+.br-input textarea {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------
+ * Input de DATA/HORA/MÊS — centraliza o texto na vertical.
+ * O valor ("24/06/2026") nascia colado no topo/baixo da caixa porque o
+ * line-height default não preenchia os 40px. Igualamos o line-height à
+ * altura do controle e centralizamos o "datetime-edit" do WebKit/Blink.
+ * (eMAG/WCAG: só layout — não altera ordem de foco nem semântica.)
+ * ------------------------------------------------------------ */
+.br-input input[type='date'],
+.br-input input[type='datetime-local'],
+.br-input input[type='month'],
+.br-input input[type='time'],
+.br-input input[type='week'] {
+  line-height: var(--tg-control-h);
+  /* Em Firefox o valor já centraliza pela altura/line-height acima. */
+}
+
+/* WebKit/Blink: o campo editável da data ganha centralização explícita. */
+.br-input input[type='date']::-webkit-datetime-edit,
+.br-input input[type='datetime-local']::-webkit-datetime-edit,
+.br-input input[type='month']::-webkit-datetime-edit,
+.br-input input[type='time']::-webkit-datetime-edit,
+.br-input input[type='week']::-webkit-datetime-edit {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--tg-control-h) - 2px); /* desconta a borda (1px+1px) */
+  padding: 0;
+}
+
+/* O ícone do calendário (picker) também centralizado e clicável na altura toda. */
+.br-input input[type='date']::-webkit-calendar-picker-indicator,
+.br-input input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.br-input input[type='month']::-webkit-calendar-picker-indicator,
+.br-input input[type='time']::-webkit-calendar-picker-indicator,
+.br-input input[type='week']::-webkit-calendar-picker-indicator {
+  align-self: center;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------
+ * .br-form — RITMO VERTICAL coerente entre campos e linhas.
+ * Mata os "campos espalhados" das telas de Tributos (Apurar ISS, ITBI,
+ * Lançar taxa): cada `.br-input` e cada `.row` recebem o mesmo respiro
+ * vertical (sem `mb-3` chutado), e a última linha não deixa folga.
+ * Aplica-se a TODA tela com <form className="br-form"> — não tela-a-tela.
+ * ------------------------------------------------------------ */
+.br-form .br-input {
+  margin-bottom: var(--tg-space-4);
+}
+
+/* Linhas (grade Bootstrap) com espaçamento vertical uniforme entre si.
+   Cada coluna mantém a margem do `.br-input` (respiro ao empilhar no mobile);
+   a linha em si zera a margem para não somar com a do campo. */
+.br-form > .row,
+.br-form > .tg-form-row {
   margin-bottom: var(--tg-space-1);
 }
 
-/* Quando a ação acompanha um campo sem label visível, o spacer some. */
-.tg-form-row-acao.tg-sem-label::before {
-  display: none;
+/* Última linha/campo/toolbar do form não deixa folga antes do rodapé do card. */
+.br-form > :last-child {
+  margin-bottom: 0;
 }
 
-/* FormField: label com hierarquia e cor de corpo (gray-70). */
-.br-input > label {
-  font-size: var(--tg-font-size-sm);
-  font-weight: var(--tg-weight-semibold);
-  color: var(--tg-gray-70);
+.br-form > .row:last-child .br-input,
+.br-form > .tg-form-row:last-child .br-input {
+  margin-bottom: 0;
+}
+
+/* Toolbar de AÇÃO no rodapé do form (ex.: "Lançar taxa", "Apurar", "Preview")
+   separada do grid acima. */
+.br-form > .tg-toolbar {
+  margin-top: var(--tg-space-5);
+}
+
+/* Checkbox/radio solto entre linhas do form (ex.: "SFH" no ITBI) com o mesmo ritmo. */
+.br-form > .br-checkbox,
+.br-form > .br-radio {
+  margin-bottom: var(--tg-space-4);
 }
 
 /* ============================================================
@@ -225,38 +369,76 @@
 }
 
 /* ============================================================
- * 2.5 SubNav/Tabs — abas sublinhadas limpas (não pílulas azuis)
+ * 2.5 SubNav/Tabs — abas com ATIVO em destaque forte (pílula + indicador)
+ * O layout/rolagem da barra vive em layout.css (.tg-subnav-*). Aqui mora o
+ * visual de cada aba: estado de repouso discreto, hover sutil e ATIVO
+ * inequívoco (pílula tonal + sublinhado forte), mantendo contraste AA.
  * ============================================================ */
 .tg-subnav {
   border-bottom: var(--tg-border-hair);
 }
 
 .tg-tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--tg-space-2);
-  padding: var(--tg-space-3) var(--tg-space-3);
+  padding: var(--tg-space-3) var(--tg-space-4);
   border: 0;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px; /* sobrepõe a hairline do .tg-subnav */
+  border-radius: var(--tg-radius-sm) var(--tg-radius-sm) 0 0;
   background: transparent;
   color: var(--tg-gray-50);
   font-size: var(--tg-font-size-sm);
   font-weight: var(--tg-weight-medium);
   text-decoration: none;
   white-space: nowrap;
-  transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+  transition: color 0.12s, background-color 0.12s;
+}
+
+/* Indicador inferior (barra) — animado por scaleX; transparente em repouso. */
+.tg-tab::after {
+  content: '';
+  position: absolute;
+  left: var(--tg-space-3);
+  right: var(--tg-space-3);
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--tg-primary);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.16s ease;
+}
+
+.tg-tab > i {
+  font-size: var(--tg-font-size-sm);
+  color: var(--tg-gray-40);
+  transition: color 0.12s;
 }
 
 .tg-tab:hover {
-  color: var(--tg-gray-70);
-  background: var(--tg-gray-5);
+  color: var(--tg-gray-90);
+  background: var(--tg-gray-10);
 }
 
+.tg-tab:hover > i {
+  color: var(--tg-gray-50);
+}
+
+/* ATIVO: pílula tonal + texto forte + barra inferior cheia (sinal redundante,
+   nunca só cor — eMAG). NavLink já emite aria-current="page". */
 .tg-tab.active {
   color: var(--tg-primary-dark);
-  font-weight: var(--tg-weight-semibold);
-  border-bottom-color: var(--tg-primary);
+  background: var(--tg-tint);
+  font-weight: var(--tg-weight-bold);
+}
+
+.tg-tab.active::after {
+  transform: scaleX(1);
+}
+
+.tg-tab.active > i {
+  color: var(--tg-primary);
 }
 
 .tg-tab:focus-visible {

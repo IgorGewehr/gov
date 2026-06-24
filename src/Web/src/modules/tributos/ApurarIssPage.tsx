@@ -183,8 +183,8 @@ export function ApurarIssPage() {
             </div>
           </div>
 
-          <div className="row align-items-end">
-            <div className="col-md-9">
+          <div className="row">
+            <div className="col-12">
               <FormField
                 label="Prestadores (CNPJ) para sincronizar"
                 help="Um ou mais CNPJs separados por vírgula/espaço; necessário só p/ a sincronização."
@@ -201,21 +201,18 @@ export function ApurarIssPage() {
                 )}
               </FormField>
             </div>
-            <div className="col-md-3">
-              <div className="tg-form-row-acao">
-                <Can permission={PERM_GERENCIAR}>
-                  <Toolbar>
-                    <Button variant="secondary" onClick={sincronizarNfse} loading={sincronizar.isPending}>
-                      <i className="fas fa-cloud-arrow-down" aria-hidden="true" /> Sincronizar NFS-e
-                    </Button>
-                    <Button variant="primary" type="submit" loading={apurar.isPending}>
-                      <i className="fas fa-calculator" aria-hidden="true" /> Apurar
-                    </Button>
-                  </Toolbar>
-                </Can>
-              </div>
-            </div>
           </div>
+
+          <Can permission={PERM_GERENCIAR}>
+            <Toolbar>
+              <Button variant="secondary" onClick={sincronizarNfse} loading={sincronizar.isPending}>
+                <i className="fas fa-cloud-arrow-down" aria-hidden="true" /> Sincronizar NFS-e
+              </Button>
+              <Button variant="primary" type="submit" loading={apurar.isPending}>
+                <i className="fas fa-calculator" aria-hidden="true" /> Apurar
+              </Button>
+            </Toolbar>
+          </Can>
         </form>
       </Card>
 
