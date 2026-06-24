@@ -82,9 +82,13 @@ public sealed class FinancasModule : IModule
         services.AddScoped<IRestoAPagarRepository, RestoAPagarRepository>();
         services.AddScoped<IReceitaArrecadadaRepository, ReceitaArrecadadaRepository>();
 
+        // Tesouraria (caixa-banco): contas, movimentos, transferências, boletim, conciliação manual.
+        services.AddScoped<IContaFinanceiraRepository, ContaFinanceiraRepository>();
+
         // Contabilidade (PCASP/MCASP).
         services.AddScoped<IContaContabilRepository, ContaContabilRepository>();
         services.AddScoped<ILancamentoContabilRepository, LancamentoContabilRepository>();
+        services.AddScoped<ILancamentoContabilConsulta, LancamentoContabilConsulta>();
         services.AddScoped<IEventoContabilRepository, EventoContabilRepository>();
         services.AddScoped<IBalanceteProjection, BalanceteProjection>();
         services.AddScoped<IMscGeradaStore, MscGeradaStore>();

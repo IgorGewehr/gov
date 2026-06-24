@@ -141,6 +141,15 @@ public sealed class CargoRepository(RecursosHumanosDbContext context) : ICargoRe
             .OrderBy(cargo => cargo.Denominacao)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Cargo>> ListarAtivosAsync(TipoCargo? tipo, CancellationToken cancellationToken)
+        => await context.Cargos
+            .Where(cargo => cargo.Situacao != SituacaoCargo.Extinto
+                && (tipo == null || cargo.Tipo == tipo))
+            .OrderBy(cargo => cargo.Denominacao)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }
 
 /// <summary>Implementacao EF Core do repositorio do agregado <see cref="FolhaDePagamento"/>.</summary>

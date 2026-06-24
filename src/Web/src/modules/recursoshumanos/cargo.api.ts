@@ -64,6 +64,20 @@ export interface ExtinguirCargoInput {
   leiExtincao: string;
 }
 
+/** Entrada do reajuste salarial em lote (percentual linear sobre os cargos ativos). */
+export interface AplicarReajusteEmLoteInput {
+  /** Percentual de reajuste (ex.: 5.5 = +5,5%); em (0, 100]. */
+  percentual: number;
+  /** Restringe a um tipo de cargo (1=Efetivo, 2=Comissionado, 3=Temporário); ausente = todos. */
+  tipo?: number | null;
+}
+
+/** Resultado consolidado de um reajuste em lote. */
+export interface ReajusteEmLoteResultado {
+  cargosReajustados: number;
+  percentual: number;
+}
+
 // ---------------------------------------------------------------------------
 // Acesso HTTP
 // ---------------------------------------------------------------------------
@@ -100,6 +114,10 @@ function alterarVencimento(cargoId: string, input: AlterarVencimentoInput): Prom
 
 function extinguirCargo(cargoId: string, input: ExtinguirCargoInput): Promise<void> {
   return http.post<void>(`/recursoshumanos/cargos/${cargoId}/extincao`, input);
+}
+
+function aplicarReajusteEmLote(input: AplicarReajusteEmLoteInput): Promise<ReajusteEmLoteResultado> {
+  return http.post<ReajusteEmLoteResultado>('/recursoshumanos/cargos/reajuste-lote', input);
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +190,17 @@ export function useExtinguirCargo(cargoId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: ExtinguirCargoInput) => extinguirCargo(cargoId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: rhKeys.cargos() });
+    },
+  });
+}
+
+/** Aplica um reajuste salarial em lote (revisão geral) e invalida as consultas de cargo. */
+export function useAplicarReajusteEmLote() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: aplicarReajusteEmLote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: rhKeys.cargos() });
     },

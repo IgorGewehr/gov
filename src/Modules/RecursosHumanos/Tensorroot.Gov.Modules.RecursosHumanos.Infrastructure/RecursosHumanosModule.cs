@@ -64,6 +64,12 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IServidorRepository, ServidorRepository>();
         services.AddScoped<ICargoRepository, CargoRepository>();
 
+        // PARIDADE-PoC Trilha A (SW-A7/A8): PORTARIAS / atos de pessoal (numeracao sequencial por
+        // exercicio/tenant) e PASEP (apuracao da base = folha bruta; transmissao = M10). Reajuste
+        // salarial em lote reusa o ICargoRepository e o Cargo.AlterarVencimento (sem repositorio novo).
+        services.AddScoped<IPortariaRepository, PortariaRepository>();
+        services.AddScoped<IApuracaoPasepRepository, ApuracaoPasepRepository>();
+
         // AUTOSSERVICO ("Minha Folha"): repositorio do vinculo usuario<->servidor + a ancora que
         // resolve o servidor do PROPRIO usuario autenticado (ABAC dado-proprio a prova de bala).
         services.AddScoped<IVinculoServidorUsuarioRepository, VinculoServidorUsuarioRepository>();

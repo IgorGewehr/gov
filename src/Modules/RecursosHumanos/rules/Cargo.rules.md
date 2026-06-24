@@ -418,7 +418,7 @@ Cada cenário vira teste de integração.
 | 1.0.0 | 2026-06-21 | Versão inicial — derivada do README do módulo RecursosHumanos (estrutura de cargos: tipo efetivo/comissionado/temporário, derivação de regime RPPS/RGPS, vencimento/lotação, quantitativo de vagas, provimento/vacância/extinção; coerência com S-1005/S-1010/S-1020 e teto remuneratório). |
 
 <!-- manifest
-commands: CriarCargo, ProverCargo, VagarCargo, AlterarVencimento, ExtinguirCargo
+commands: CriarCargo, ProverCargo, VagarCargo, AlterarVencimento, ExtinguirCargo, AplicarReajusteEmLote
 queries: ObterCargoPorId, ListarCargosComVagas
 domainEvents: CargoCriado, CargoProvido, CargoVago, VencimentoAlterado, CargoExtinto
 integrationEventsPublished: 

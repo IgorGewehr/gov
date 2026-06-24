@@ -6,7 +6,9 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Pasep;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Portarias;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
@@ -80,6 +82,12 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Percentuais de margem consignavel parametrizaveis por tenant/vigencia (35%+5%+5% default legal).</summary>
     public DbSet<ParametrosMargemVigente> ParametrosMargem => Set<ParametrosMargemVigente>();
+
+    /// <summary>Portarias / atos de pessoal (numeracao sequencial por exercicio/tenant).</summary>
+    public DbSet<Portaria> Portarias => Set<Portaria>();
+
+    /// <summary>Apuracoes do PASEP por competencia (base = folha bruta; transmissao = M10).</summary>
+    public DbSet<ApuracaoPasep> ApuracoesPasep => Set<ApuracaoPasep>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

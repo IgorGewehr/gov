@@ -29,6 +29,7 @@ internal static partial class RecursosHumanosEndpoints
 
         MapearServidores(grupo);
         MapearCargos(grupo);
+        MapearPessoal(grupo);
         MapearRubricas(grupo);
         MapearTabelasLegais(grupo);
         MapearFolha(grupo);

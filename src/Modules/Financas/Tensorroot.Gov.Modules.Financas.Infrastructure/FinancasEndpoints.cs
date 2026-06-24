@@ -14,6 +14,8 @@ using Tensorroot.Gov.Modules.Financas.Application.Fiscal;
 using Tensorroot.Gov.Modules.Financas.Application.Liquidacoes;
 using Tensorroot.Gov.Modules.Financas.Application.Pagamentos;
 using Tensorroot.Gov.Modules.Financas.Application.RestosAPagar;
+using Tensorroot.Gov.Modules.Financas.Application.Tesouraria;
+using Tensorroot.Gov.Modules.Financas.Domain.Tesouraria;
 
 namespace Tensorroot.Gov.Modules.Financas.Infrastructure;
 
@@ -33,9 +35,66 @@ internal static class FinancasEndpoints
         MapearLiquidacoes(grupo);
         MapearPagamentos(grupo);
         MapearRestosAPagar(grupo);
+        MapearTesouraria(grupo);
         MapearContabilidade(grupo);
         MapearFiscal(grupo);
         FinancasPlanejamentoEndpoints.Map(grupo);
+    }
+
+    private static void MapearTesouraria(RouteGroupBuilder grupo)
+    {
+        // Abertura de conta (bancária/caixa) com saldo inicial.
+        grupo.MapPost("/tesouraria/contas", async (
+            AbrirContaFinanceiraCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Lista de contas com saldo corrente.
+        grupo.MapGet("/tesouraria/contas", async (ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarContasFinanceirasQuery(), cancellationToken)))
+            .RequirePermission("financas.ver");
+
+        // Extrato de uma conta (filtro opcional por intervalo de datas).
+        grupo.MapGet("/tesouraria/contas/{contaId:guid}/extrato", async (
+            Guid contaId, DateOnly? de, DateOnly? ate, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ConsultarExtratoContaQuery(contaId, de, ate), cancellationToken)))
+            .RequirePermission("financas.ver");
+
+        // Recebimento (entrada).
+        grupo.MapPost("/tesouraria/contas/{contaId:guid}/recebimentos", async (
+            Guid contaId, MovimentoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new RegistrarRecebimentoCommand(contaId, payload.Data, payload.Valor, payload.Historico, payload.Documento), cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Pagamento (saída de caixa-banco).
+        grupo.MapPost("/tesouraria/contas/{contaId:guid}/pagamentos", async (
+            Guid contaId, MovimentoPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(
+                new RegistrarPagamentoCaixaCommand(contaId, payload.Data, payload.Valor, payload.Historico, payload.Documento), cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Transferência entre contas (operação auditada, atômica).
+        grupo.MapPost("/tesouraria/transferencias", async (
+            TransferirEntreContasCommand comando, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(comando, cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
+
+        // Conciliação manual de um movimento (casamento com o extrato; import OFX = M10).
+        grupo.MapPost("/tesouraria/contas/{contaId:guid}/movimentos/{movimentoId:guid}/conciliar", async (
+            Guid contaId, Guid movimentoId, ConciliarPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ConciliarMovimentoCommand(contaId, movimentoId, payload.DataConciliacao), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
+
+        // Boletim de Caixa/Banco (fechamento diário de receita/despesa por conta).
+        grupo.MapGet("/tesouraria/boletim", async (
+            DateOnly data, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new GerarBoletimCaixaBancoQuery(data), cancellationToken)))
+            .RequirePermission("financas.ver");
     }
 
     private static void MapearFiscal(RouteGroupBuilder grupo)
@@ -76,6 +135,18 @@ internal static class FinancasEndpoints
         grupo.MapGet("/contabilidade/contas/{contaId:guid}/razao", async (
             Guid contaId, int exercicio, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ConsultarRazaoQuery(contaId, exercicio), cancellationToken)))
+            .RequirePermission("financas.ver");
+
+        // Razão ANALÍTICO: extrato lançamento-a-lançamento da conta (com saldo acumulado) — TCE.
+        grupo.MapGet("/contabilidade/contas/{contaId:guid}/razao-analitico", async (
+            Guid contaId, int exercicio, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ConsultarRazaoAnaliticoQuery(contaId, exercicio), cancellationToken)))
+            .RequirePermission("financas.ver");
+
+        // Livro DIÁRIO: lançamentos em ordem cronológica num intervalo — exigência TCE.
+        grupo.MapGet("/contabilidade/diario", async (
+            int exercicio, DateOnly? de, DateOnly? ate, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ConsultarDiarioQuery(exercicio, de, ate), cancellationToken)))
             .RequirePermission("financas.ver");
 
         MapearMscEDemonstracoes(grupo);
@@ -304,4 +375,8 @@ internal static class FinancasEndpoints
     private sealed record GerarMscEncerramentoPayload(int Exercicio, string? PoderOrgao);
 
     private sealed record RegistrarRclPayload(int Exercicio, int MesReferencia, decimal ValorRcl);
+
+    private sealed record MovimentoPayload(DateOnly Data, decimal Valor, string Historico, string? Documento);
+
+    private sealed record ConciliarPayload(DateOnly DataConciliacao);
 }

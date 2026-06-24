@@ -9,9 +9,12 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/financas/liquidacoes', label: 'Liquidações' },
   { to: '/financas/pagamentos', label: 'Pagamentos' },
   { to: '/financas/restos-a-pagar', label: 'Restos a Pagar' },
+  { to: '/financas/tesouraria/contas', label: 'Tesouraria' },
+  { to: '/financas/tesouraria/boletim', label: 'Boletim Caixa/Banco' },
   { to: '/financas/contabilidade/plano-de-contas', label: 'Plano de Contas' },
   { to: '/financas/contabilidade/balancete', label: 'Balancete' },
   { to: '/financas/contabilidade/lancamentos', label: 'Lançamentos' },
+  { to: '/financas/contabilidade/diario', label: 'Diário' },
   { to: '/financas/contabilidade/demonstracoes', label: 'Demonstrações' },
   { to: '/financas/contabilidade/msc', label: 'MSC' },
 ];

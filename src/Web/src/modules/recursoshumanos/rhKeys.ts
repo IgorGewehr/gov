@@ -72,6 +72,19 @@ export const rhKeys = {
   relDemonstrativoTce: (ano: number, mes: number) =>
     [...rhKeys.relatorios(), 'demonstrativo-tce', ano, mes] as const,
 
+  portarias: () => [...rhKeys.all, 'portarias'] as const,
+  portariasBusca: (
+    tipo: string,
+    situacao: string,
+    exercicio: string,
+    servidorId: string,
+    pagina: number,
+  ) => [...rhKeys.portarias(), 'busca', tipo, situacao, exercicio, servidorId, pagina] as const,
+  portaria: (id: string) => [...rhKeys.portarias(), 'detalhe', id] as const,
+
+  pasep: () => [...rhKeys.all, 'pasep'] as const,
+  pasepPorAno: (ano: number) => [...rhKeys.pasep(), 'ano', ano] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

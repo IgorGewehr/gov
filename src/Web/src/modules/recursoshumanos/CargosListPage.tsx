@@ -21,6 +21,7 @@ import { useCargosComVagas } from './api';
 import type { CargoResumo, TipoCargo } from './api';
 import { PERM_RH_GERENCIAR, TIPOS_CARGO } from './recursosHumanos.helpers';
 import { CriarCargoFormModal } from './CriarCargoFormModal';
+import { ReajusteEmLoteModal } from './ReajusteEmLoteModal';
 import { RhSubNav } from './RhSubNav';
 
 const ROTULO_TIPO: Record<string, TipoCargo> = {
@@ -32,6 +33,7 @@ const ROTULO_TIPO: Record<string, TipoCargo> = {
 export function CargosListPage() {
   const [filtroTipo, setFiltroTipo] = useState('');
   const [formAberto, setFormAberto] = useState(false);
+  const [reajusteAberto, setReajusteAberto] = useState(false);
 
   const tipo = filtroTipo ? ROTULO_TIPO[filtroTipo] : null;
   const query = useCargosComVagas(tipo);
@@ -78,6 +80,9 @@ export function CargosListPage() {
         actions={
           <Can permission={PERM_RH_GERENCIAR}>
             <Toolbar>
+              <Button variant="secondary" onClick={() => setReajusteAberto(true)}>
+                <i className="fas fa-percent" aria-hidden="true" /> Reajuste em lote
+              </Button>
               <Button variant="primary" onClick={() => setFormAberto(true)}>
                 <i className="fas fa-plus" aria-hidden="true" /> Criar cargo
               </Button>
@@ -130,6 +135,7 @@ export function CargosListPage() {
       />
 
       <CriarCargoFormModal open={formAberto} onClose={() => setFormAberto(false)} />
+      <ReajusteEmLoteModal open={reajusteAberto} onClose={() => setReajusteAberto(false)} />
     </>
   );
 }

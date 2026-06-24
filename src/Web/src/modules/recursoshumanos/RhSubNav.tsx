@@ -8,10 +8,12 @@ import { PERM_RH_AUTOSSERVICO } from './recursosHumanos.helpers';
 const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/recursoshumanos', label: 'Servidores', end: true },
   { to: '/recursoshumanos/cargos', label: 'Cargos' },
+  { to: '/recursoshumanos/portarias', label: 'Portarias' },
   { to: '/recursoshumanos/rubricas', label: 'Rubricas' },
   { to: '/recursoshumanos/tabelas-legais', label: 'Tabelas Legais' },
   { to: '/recursoshumanos/folhas', label: 'Folha de Pagamento' },
   { to: '/recursoshumanos/ciclo-anual', label: 'Ciclo Anual' },
+  { to: '/recursoshumanos/pasep', label: 'PASEP' },
   { to: '/recursoshumanos/ponto', label: 'Ponto' },
   { to: '/recursoshumanos/esocial', label: 'eSocial' },
   { to: '/recursoshumanos/relatorios', label: 'Relatórios' },

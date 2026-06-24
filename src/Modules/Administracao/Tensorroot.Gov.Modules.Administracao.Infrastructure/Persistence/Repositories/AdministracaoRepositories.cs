@@ -1,8 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
+using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
+using Tensorroot.Gov.Modules.Administracao.Domain.Pca;
+using Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos;
 using Tensorroot.Gov.SharedKernel.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Repositories;
@@ -117,4 +120,124 @@ public sealed class FornecedorRepository(AdministracaoDbContext context) : IForn
             .OrderBy(fornecedor => fornecedor.RazaoSocial)
             .ToList();
     }
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="ItemCatalogo"/>.</summary>
+public sealed class CatalogoRepository(AdministracaoDbContext context) : ICatalogoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(ItemCatalogo item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        context.CatalogoItens.Add(item);
+    }
+
+    /// <inheritdoc />
+    public Task<ItemCatalogo?> ObterPorIdAsync(ItemCatalogoId id, CancellationToken cancellationToken)
+        => context.CatalogoItens.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExistePorCodigoAsync(string codigo, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        return context.CatalogoItens.AnyAsync(item => item.Codigo == codigo, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ItemCatalogo>> ListarAsync(
+        NaturezaItem? natureza,
+        string? termo,
+        bool apenasAtivos,
+        CancellationToken cancellationToken)
+    {
+        var consulta = context.CatalogoItens.AsQueryable();
+        if (natureza is { } n)
+        {
+            consulta = consulta.Where(item => item.Natureza == n);
+        }
+
+        if (apenasAtivos)
+        {
+            consulta = consulta.Where(item => item.Situacao == SituacaoItemCatalogo.Ativo);
+        }
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            var t = termo.Trim();
+            consulta = consulta.Where(item => EF.Functions.Like(item.Codigo, $"%{t}%")
+                || EF.Functions.Like(item.Descricao, $"%{t}%"));
+        }
+
+        return await consulta
+            .OrderBy(item => item.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="Ata"/> (ARP).</summary>
+public sealed class AtaRepository(AdministracaoDbContext context) : IAtaRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(Ata ata)
+    {
+        ArgumentNullException.ThrowIfNull(ata);
+        context.Atas.Add(ata);
+    }
+
+    /// <inheritdoc />
+    public Task<Ata?> ObterPorIdAsync(AtaId id, CancellationToken cancellationToken)
+        => context.Atas
+            .Include(ata => ata.Itens)
+            .Include(ata => ata.Adesoes)
+            .FirstOrDefaultAsync(ata => ata.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExistePorNumeroAsync(string numero, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(numero);
+        return context.Atas.AnyAsync(ata => ata.Numero == numero, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Ata>> ListarAsync(SituacaoAta? situacao, CancellationToken cancellationToken)
+    {
+        var consulta = context.Atas.Include(ata => ata.Itens).AsQueryable();
+        if (situacao is { } s)
+        {
+            consulta = consulta.Where(ata => ata.Situacao == s);
+        }
+
+        return await consulta
+            .OrderByDescending(ata => ata.VigenciaInicio)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="PlanoContratacoes"/> (PCA).</summary>
+public sealed class PcaRepository(AdministracaoDbContext context) : IPcaRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(PlanoContratacoes plano)
+    {
+        ArgumentNullException.ThrowIfNull(plano);
+        context.PlanosContratacoes.Add(plano);
+    }
+
+    /// <inheritdoc />
+    public Task<PlanoContratacoes?> ObterPorIdAsync(PlanoContratacoesId id, CancellationToken cancellationToken)
+        => context.PlanosContratacoes
+            .Include(plano => plano.Itens)
+            .FirstOrDefaultAsync(plano => plano.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<PlanoContratacoes?> ObterPorExercicioAsync(int exercicio, CancellationToken cancellationToken)
+        => context.PlanosContratacoes
+            .Include(plano => plano.Itens)
+            .FirstOrDefaultAsync(plano => plano.Exercicio == exercicio, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> ExistePorExercicioAsync(int exercicio, CancellationToken cancellationToken)
+        => context.PlanosContratacoes.AnyAsync(plano => plano.Exercicio == exercicio, cancellationToken);
 }

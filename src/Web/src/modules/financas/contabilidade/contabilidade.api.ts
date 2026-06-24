@@ -69,6 +69,34 @@ export interface LancamentoManualInput {
   linhas: LinhaManual[];
 }
 
+/** Linha analítica do razão (LinhaRazaoAnaliticoDto). */
+export interface LinhaRazaoAnalitico {
+  lancamentoId: string;
+  data: string;
+  historico: string;
+  origem: string;
+  lado: string;
+  debito: number;
+  credito: number;
+  saldoAcumulado: number;
+}
+
+/** Partida de um lançamento no Diário (PartidaDiarioDto). */
+export interface PartidaDiario {
+  codigoConta: string;
+  lado: string;
+  valor: number;
+}
+
+/** Linha cronológica do Livro Diário (LinhaDiarioDto). */
+export interface LinhaDiario {
+  lancamentoId: string;
+  data: string;
+  historico: string;
+  origem: string;
+  partidas: PartidaDiario[];
+}
+
 // ---------------------------------------------------------------------------
 // Query keys
 // ---------------------------------------------------------------------------
@@ -80,6 +108,10 @@ export const contabilidadeKeys = {
     [...contabilidadeKeys.all, 'balancete', exercicio, mes] as const,
   razao: (contaId: string, exercicio: number) =>
     [...contabilidadeKeys.all, 'razao', contaId, exercicio] as const,
+  razaoAnalitico: (contaId: string, exercicio: number) =>
+    [...contabilidadeKeys.all, 'razao-analitico', contaId, exercicio] as const,
+  diario: (exercicio: number, de?: string, ate?: string) =>
+    [...contabilidadeKeys.all, 'diario', exercicio, de ?? '', ate ?? ''] as const,
   lancamentos: () => [...contabilidadeKeys.all, 'lancamentos'] as const,
 };
 
@@ -119,6 +151,29 @@ function consultarRazao(
 
 function registrarLancamentoManual(input: LancamentoManualInput): Promise<string> {
   return http.post<string>('/financas/contabilidade/lancamentos', input);
+}
+
+function consultarRazaoAnalitico(
+  contaId: string,
+  exercicio: number,
+  signal?: AbortSignal,
+): Promise<LinhaRazaoAnalitico[]> {
+  return http.get<LinhaRazaoAnalitico[]>(
+    `/financas/contabilidade/contas/${contaId}/razao-analitico`,
+    { query: { exercicio }, signal },
+  );
+}
+
+function consultarDiario(
+  exercicio: number,
+  de?: string,
+  ate?: string,
+  signal?: AbortSignal,
+): Promise<LinhaDiario[]> {
+  return http.get<LinhaDiario[]>('/financas/contabilidade/diario', {
+    query: { exercicio, de: de || undefined, ate: ate || undefined },
+    signal,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -166,6 +221,24 @@ export function useRazaoConta(contaId: string, exercicio: number, enabled = true
     queryKey: contabilidadeKeys.razao(contaId, exercicio),
     queryFn: ({ signal }) => consultarRazao(contaId, exercicio, signal),
     enabled: enabled && contaId !== '' && Number.isInteger(exercicio) && exercicio >= 2000,
+  });
+}
+
+/** Consulta o razão ANALÍTICO (lançamento-a-lançamento) de uma conta num exercício. */
+export function useRazaoAnalitico(contaId: string, exercicio: number, enabled = true) {
+  return useQuery({
+    queryKey: contabilidadeKeys.razaoAnalitico(contaId, exercicio),
+    queryFn: ({ signal }) => consultarRazaoAnalitico(contaId, exercicio, signal),
+    enabled: enabled && contaId !== '' && Number.isInteger(exercicio) && exercicio >= 2000,
+  });
+}
+
+/** Consulta o Livro Diário (cronológico) de um exercício, opcionalmente por intervalo. */
+export function useDiario(exercicio: number, de?: string, ate?: string, enabled = true) {
+  return useQuery({
+    queryKey: contabilidadeKeys.diario(exercicio, de, ate),
+    queryFn: ({ signal }) => consultarDiario(exercicio, de, ate, signal),
+    enabled: enabled && Number.isInteger(exercicio) && exercicio >= 2000,
   });
 }
 

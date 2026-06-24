@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
+using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Contracts;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
+using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.PortalCidadao;
 
@@ -18,7 +22,12 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.PortalCidadao;
 /// contribuinte do documento) — anti-IDOR; um id de outro contribuinte retorna <c>null</c>.
 /// </para>
 /// </summary>
-public sealed class ConsultaTributariaCidadao(TributosDbContext context) : IConsultaTributariaCidadao
+public sealed class ConsultaTributariaCidadao(
+    TributosDbContext context,
+    ISituacaoFiscalConsulta situacaoFiscal,
+    ICertidaoRegularidadeFiscalRepository certidoes,
+    ITenantContext tenant,
+    IDataHojeTenant dataHoje) : IConsultaTributariaCidadao
 {
     /// <inheritdoc />
     public async Task<IReadOnlyList<MeuLancamentoDto>> ObterMeusLancamentosEmAbertoAsync(
@@ -115,6 +124,61 @@ public sealed class ConsultaTributariaCidadao(TributosDbContext context) : ICons
             .ToList();
 
         return new MeuDamDto(dam.Id.Value, dam.LancamentoId.Value, dam.ValorTotal.Valor, dam.Quitado, parcelas);
+    }
+
+    /// <inheritdoc />
+    public async Task<MinhaCertidaoRegularidadeDto?> EmitirMinhaCertidaoRegularidadeAsync(
+        string documento,
+        string fundamentoLegal,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fundamentoLegal);
+
+        // Resolve o contribuinte do tenant pelo documento (server-side). Sem vinculo => sem certidao.
+        var contribuinte = await situacaoFiscal
+            .ResolverContribuintePorDocumentoAsync(documento, cancellationToken)
+            .ConfigureAwait(false);
+        if (contribuinte is null)
+        {
+            return null;
+        }
+
+        var hoje = dataHoje.Hoje();
+        var situacao = await situacaoFiscal.ApurarAsync(contribuinte.Id, hoje, cancellationToken).ConfigureAwait(false);
+        var tipo = CertidaoRegularidadeFiscal.DecidirTipo(
+            situacao.LancamentosVencidosEmAberto,
+            situacao.DividasAtivasExigiveis,
+            situacao.DividasAtivasSuspensas);
+        var observacao = situacao.DividasAtivasSuspensas > 0 && tipo == TipoCertidaoRegularidade.PositivaComEfeitoNegativa
+            ? $"Existem {situacao.DividasAtivasSuspensas} inscricao(oes) em divida ativa com exigibilidade suspensa (parcelamento)."
+            : null;
+
+        var sequencial = await certidoes.ObterProximoSequencialAsync(hoje.Year, cancellationToken).ConfigureAwait(false);
+
+        var certidao = CertidaoRegularidadeFiscal.Emitir(
+            tenant.TenantId,
+            contribuinte.Id,
+            contribuinte.Documento,
+            contribuinte.Nome,
+            contribuinte.InscricaoMunicipal,
+            tipo,
+            hoje,
+            sequencial,
+            fundamentoLegal,
+            CertidaoRegularidadeFiscal.DiasValidadePadrao,
+            observacao);
+
+        certidoes.Adicionar(certidao);
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return new MinhaCertidaoRegularidadeDto(
+            certidao.Numero,
+            certidao.Tipo.ToString(),
+            certidao.AtestaRegularidade,
+            certidao.DataEmissao,
+            certidao.DataValidade,
+            certidao.CodigoAutenticacao,
+            certidao.Observacao);
     }
 
     /// <summary>

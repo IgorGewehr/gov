@@ -1,5 +1,6 @@
 using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
+using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
@@ -90,6 +91,86 @@ public interface IDividaAtivaRepository
 /// <param name="SaldoAjuizado">Parcela do estoque em execução fiscal.</param>
 /// <param name="RecuperadoNoExercicio">Valor de dívida ativa quitado no exercício.</param>
 public readonly record struct PosicaoDividaAtivaProjecao(decimal SaldoInscrito, decimal SaldoAjuizado, decimal RecuperadoNoExercicio);
+
+/// <summary>
+/// Apuração da situação fiscal de um contribuinte para fins de CND/CPEN (CTN arts. 205/206): conta os
+/// débitos próprios vencidos em aberto e a dívida ativa, separando os EXIGÍVEIS dos com exigibilidade
+/// SUSPENSA (parcelados). Read model interno do Tributos (não vaza o domínio para fora do módulo).
+/// </summary>
+/// <param name="LancamentosVencidosEmAberto">Qtde de lançamentos próprios vencidos e em aberto (exigíveis) na data-base.</param>
+/// <param name="DividasAtivasExigiveis">Qtde de inscrições em dívida ativa exigíveis (não suspensas/quitadas/canceladas).</param>
+/// <param name="DividasAtivasSuspensas">Qtde de inscrições com exigibilidade suspensa (parceladas).</param>
+public readonly record struct SituacaoFiscalContribuinte(
+    int LancamentosVencidosEmAberto,
+    int DividasAtivasExigiveis,
+    int DividasAtivasSuspensas);
+
+/// <summary>Apuração da situação fiscal de um contribuinte (insumo da CND/CPEN — SW-A3).</summary>
+public interface ISituacaoFiscalConsulta
+{
+    /// <summary>
+    /// Apura a situação fiscal do contribuinte na DATA-BASE informada (data do fato): débitos próprios
+    /// vencidos em aberto e dívida ativa, separando exigíveis de suspensos. Respeita o Global Query
+    /// Filter por tenant.
+    /// </summary>
+    /// <param name="contribuinteId">Contribuinte a apurar.</param>
+    /// <param name="dataBase">Data-base de referência (afere o vencimento e a prescrição).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A situação fiscal apurada.</returns>
+    Task<SituacaoFiscalContribuinte> ApurarAsync(ContribuinteId contribuinteId, DateOnly dataBase, CancellationToken cancellationToken);
+
+    /// <summary>Resolve o contribuinte do tenant pelo documento (CPF/CNPJ — somente dígitos), ou <c>null</c>.</summary>
+    /// <param name="documento">Documento sem máscara.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O contribuinte, ou <c>null</c> se inexistente no tenant.</returns>
+    Task<Contribuinte?> ResolverContribuintePorDocumentoAsync(string documento, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="CertidaoRegularidadeFiscal"/> (CND/CPEN — CTN 205/206).</summary>
+public interface ICertidaoRegularidadeFiscalRepository
+{
+    /// <summary>Marca uma nova certidão para inserção.</summary>
+    /// <param name="certidao">Certidão a adicionar.</param>
+    void Adicionar(CertidaoRegularidadeFiscal certidao);
+
+    /// <summary>
+    /// Obtém o próximo número sequencial de certidão do tenant no exercício (deriva do total emitido no
+    /// ano + 1). // TODO(validar-oficial): sequência oficial conforme o CTM.
+    /// </summary>
+    /// <param name="exercicio">Exercício (ano) de emissão.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Próximo sequencial (&gt;= 1).</returns>
+    Task<long> ObterProximoSequencialAsync(int exercicio, CancellationToken cancellationToken);
+
+    /// <summary>Obtém uma certidão pelo número, ou <c>null</c> (para conferência de autenticidade).</summary>
+    /// <param name="numero">Número da certidão.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A certidão, ou <c>null</c>.</returns>
+    Task<CertidaoRegularidadeFiscal?> ObterPorNumeroAsync(string numero, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="DeclaracaoGiaIss"/> (GIA mensal de ISS — SW-A10).</summary>
+public interface IDeclaracaoGiaIssRepository
+{
+    /// <summary>Marca uma nova declaração para inserção.</summary>
+    /// <param name="declaracao">Declaração a adicionar.</param>
+    void Adicionar(DeclaracaoGiaIss declaracao);
+
+    /// <summary>Obtém uma declaração por identificador (com itens), ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A declaração, ou <c>null</c>.</returns>
+    Task<DeclaracaoGiaIss?> ObterPorIdAsync(DeclaracaoGiaIssId id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Obtém a GIA VIGENTE (não substituída) de um contribuinte numa competência (com itens), ou <c>null</c>.
+    /// </summary>
+    /// <param name="contribuinteId">Contribuinte declarante.</param>
+    /// <param name="competencia">Competência.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A declaração vigente, ou <c>null</c>.</returns>
+    Task<DeclaracaoGiaIss?> ObterVigentePorContribuinteCompetenciaAsync(ContribuinteId contribuinteId, Competencia competencia, CancellationToken cancellationToken);
+}
 
 /// <summary>Repositório do agregado <see cref="Imovel"/> (cadastro imobiliário).</summary>
 public interface IImovelRepository

@@ -1,9 +1,9 @@
 # Regras — ISS (apuração sobre NFS-e ingeridas do ADN)
 
 <!-- manifest
-commands: ConfigurarTabelaAliquotaIss, ApurarIssMensal
+commands: ConfigurarTabelaAliquotaIss, ApurarIssMensal, EntregarGiaIss
 queries: 
-domainEvents: TabelaAliquotaIssCriada, TabelaAliquotaIssPublicada, ApuracaoIssEncerrada
+domainEvents: TabelaAliquotaIssCriada, TabelaAliquotaIssPublicada, ApuracaoIssEncerrada, DeclaracaoGiaIssEntregue
 integrationEventsPublished: 
 integrationEventsConsumed: 
 -->

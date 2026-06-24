@@ -64,6 +64,13 @@ const MinhaFolhaPage = lazy(() =>
 const RelatoriosPage = lazy(() =>
   import('./RelatoriosPage').then((m) => ({ default: m.RelatoriosPage })),
 );
+const PortariasListPage = lazy(() =>
+  import('./PortariasListPage').then((m) => ({ default: m.PortariasListPage })),
+);
+const PortariaDetailPage = lazy(() =>
+  import('./PortariaDetailPage').then((m) => ({ default: m.PortariaDetailPage })),
+);
+const PasepPage = lazy(() => import('./PasepPage').then((m) => ({ default: m.PasepPage })));
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -83,6 +90,9 @@ const MODULE: ModuleDefinition = {
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },
+        { path: 'portarias', element: <PortariasListPage /> },
+        { path: 'portarias/:portariaId', element: <PortariaDetailPage /> },
+        { path: 'pasep', element: <PasepPage /> },
         { path: 'rubricas', element: <RubricasListPage /> },
         { path: 'tabelas-legais', element: <TabelasLegaisPage /> },
         { path: 'folhas', element: <FolhaListPage /> },

@@ -163,3 +163,49 @@ Trocar gateways simulados por reais (RNDS/SISAB/SISREG/CADSUS/CNES/HÓRUS/SI-PNI
 - **Onda 1 é o gargalo real de usabilidade** (Educação é o módulo mais bloqueado — Aluno+Turma são pré-requisito de tudo). Priorizar Educação aqui.
 - **Onda 2 é o que ganha a PoC com avaliador** — Transparência (portal público) é o item de maior risco reputacional se ficar de fora, porque o nome promete o que o módulo não entrega.
 - **Tudo das Ondas 0–3 é construível sem nenhuma credencial oficial** — a operação local roda sobre dados próprios e eventos internos. Não há motivo para esperar o M10 para começar.
+
+---
+
+## 7. PARIDADE COMPETITIVA vs SAPI (incumbente) — gaps a incorporar
+
+> Fonte: `docs/estudo/GAP-VS-SYSTEM-SAPI.md` + `docs/estudo/PARIDADE-POC.md`. Estas auditorias de completude cobrem **largura operacional intra-módulo**; a gap-analysis vs SAPI adiciona o eixo **paridade competitiva** (uso diário + obrigação TCE-RS) que o incumbente entrega. 1 linha por item. Tudo da Trilha A é construível sem credencial; Trilha B defere M10.
+
+### 7.1 Financas / Tesouraria (cluster mais distante de paridade)
+- **Tesouraria Caixa-Banco** (G, sem cred): agregado Conta/Caixa + Movimento + Transferência entre contas + Boletim de Caixa — o maior buraco; inexiste hoje.
+- **Razão analítico + Diário cronológico** (M, sem cred): hoje só saldos mensais agregados (`BalanceteProjection.cs:82`); cobrança direta do TCE.
+- **Retenção IRRF + ciclo extra-orçamentário** (M→G, sem cred): `Liquidacao.cs` sem retenção; obrigação de recolhimento.
+- **Cadastro de Credores + Extrato do Credor** (M, sem cred): hoje `Credor` é só VO embutido no empenho.
+- **Pagamento em meio magnético CNAB240** (M, sem cred): `OrdemDePagamento` não gera remessa bancária.
+- **Conciliação bancária** (G, cred M10): motor construível já; import OFX/extrato depende de banco.
+
+### 7.2 RecursosHumanos (bloco GERAÇÕES é a maior fragilidade)
+- **Portarias / atos de pessoal** (G, sem cred): nomeação/exoneração/concessões diárias; hoje "portaria" é só string.
+- **PASEP** (M, sem cred): folha/recolhimento recorrente do ente; grep=0.
+- **Reajuste de salários em lote** (M, sem cred): revisão geral anual; hoje só `AlterarVencimento` individual.
+- **SICAP (TCE-RS)** (G, cred M10): remessa de pessoal ao Tribunal; obrigação direta; modelar já.
+- **eSocial SST (S-2210/2220/2240) + S-2230 afastamento** (G, cred M10): roster não inclui SST; geradores ausentes.
+- **Conveniados IPERGS / retorno consignação bancária** (M, layout terceiro): geradores construíveis; layout defere.
+
+### 7.3 Tributos / Cidadão
+- **Certidão Negativa de Débitos (CND/CPEN)** (M, sem cred): serviço online de altíssimo uso; temos CDA (cobrança), não CND.
+- **GIA Mensal de ISSQN + importação** (G, sem cred): declaração obrigatória do prestador/substituto; hoje apuração só deriva do ADN.
+- **DEC + DAM avulso/consolidado/por inscrição** (M–G, sem cred): intimação eletrônica e guias de balcão.
+
+### 7.4 Transparência
+- **Demonstrativo LRF (RREO/RGF) apurado/gerado** (G, sem cred): publicação obrigatória; hoje RCL é entrada manual.
+- **Publicar no portal demonstrações/balanços/LOA** (M, sem cred): gerados mas não expostos publicamente.
+
+### 7.5 Administracao (Compras — largura onde o incumbente domina)
+- **Catálogo Produto/Serviço (CATMAT/CATSER)** (G, sem cred): itens hoje são strings.
+- **Dispensa/Inexigibilidade com fluxo próprio** (M, sem cred): hoje só enum, sem fluxo art. 75/74.
+- **Registro de Preços + Ata** (G, sem cred): `AtaRegistro` no grep é falso-positivo de `DataRegistro`.
+- **PCA + limites de licitação** (G, sem cred): Plano de Contratações Anual ausente.
+- **Import CEIS/CNEP** (M, sem cred): consulta a sancionados; dataset aberto.
+- **PNCP real** (M, cred M10) e **LICITACON-TCE/RS** (G, cred M10): trocar stub / modelar remessa.
+
+### 7.6 Patrimonio / Frota / Protocolo (refino de paridade)
+- **Frota: manutenção preventiva + média de consumo + alerta CNH + apólice/reserva/viagem** (M, sem cred): núcleo ok, faltam relatórios/extras.
+- **Protocolo: recebimento explícito + apensamento/juntada** (P, sem cred): `Apensar/Juntar/Receber` ausentes em `Processo.cs`.
+- **MD-e (Manifestação do Destinatário)** (G, cred M10): sem domínio NF-e/DF-e.
+
+> **Encaixe nas ondas:** Tesouraria-Caixa-Banco, Razão/Diário, CND, Portarias e GIA são **uso diário** → entram junto da Onda 2 ("Superfície de alto valor PoC"). RREO/RGF e publicação no portal reforçam o item Transparência da Onda 2. Catálogo/RP/PCA/Dispensa (Compras) e refinos de Frota/Protocolo entram na Onda 3. SICAP/LICITACON/eSocial-SST/PNCP/conciliação são **Onda 4 (M10)** — modelados antes, transmitidos com credencial.

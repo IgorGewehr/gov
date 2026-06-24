@@ -755,6 +755,96 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("PontoReps", "recursoshumanos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Pasep.ApuracaoPasep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Aliquota")
+                        .HasColumnType("decimal(7,4)");
+
+                    b.Property<decimal>("BaseContribuicao")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Competencia")
+                        .HasColumnType("int")
+                        .HasColumnName("Competencia");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Competencia")
+                        .IsUnique();
+
+                    b.ToTable("ApuracoesPasep", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Portarias.Portaria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataAto")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Ementa")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MotivoRevogacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Sequencial")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Exercicio", "Sequencial")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Tipo", "Situacao");
+
+                    b.HasIndex("TenantId", "ServidorId");
+
+                    b.ToTable("Portarias", "recursoshumanos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas.RubricaFolha", b =>
                 {
                     b.Property<Guid>("Id")

@@ -7,6 +7,9 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/administracao/licitacoes', label: 'Licitações' },
   { to: '/administracao/contratos', label: 'Contratos' },
   { to: '/administracao/fornecedores', label: 'Fornecedores' },
+  { to: '/administracao/catalogo', label: 'Catálogo' },
+  { to: '/administracao/atas', label: 'Atas de Preços' },
+  { to: '/administracao/pca', label: 'PCA' },
 ];
 
 export function AdministracaoSubNav() {

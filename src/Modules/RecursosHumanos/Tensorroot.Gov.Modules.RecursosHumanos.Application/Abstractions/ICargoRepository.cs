@@ -23,4 +23,13 @@ public interface ICargoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Cargos com vagas disponiveis no tenant.</returns>
     Task<IReadOnlyList<Cargo>> ListarComVagasDisponiveisAsync(TipoCargo? tipo, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista os cargos ATIVOS (situacao diferente de <see cref="SituacaoCargo.Extinto"/>) do tenant,
+    /// opcionalmente filtrados por tipo. Base do reajuste salarial em lote (revisao geral anual).
+    /// </summary>
+    /// <param name="tipo">Filtro opcional por tipo de cargo.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Cargos ativos do tenant.</returns>
+    Task<IReadOnlyList<Cargo>> ListarAtivosAsync(TipoCargo? tipo, CancellationToken cancellationToken);
 }

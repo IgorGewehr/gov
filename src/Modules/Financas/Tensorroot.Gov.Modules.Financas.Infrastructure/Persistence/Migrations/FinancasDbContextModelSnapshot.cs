@@ -1046,6 +1046,43 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                     b.ToTable("RestosAPagar", "financas");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Tesouraria.ContaFinanceira", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<decimal>("Saldo")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SaldoInicial")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Nome")
+                        .IsUnique();
+
+                    b.ToTable("ContasFinanceiras", "financas");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.InboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1567,6 +1604,107 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PpaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Tesouraria.ContaFinanceira", b =>
+                {
+                    b.OwnsOne("Tensorroot.Gov.Modules.Financas.Domain.ValueObjects.ContaBancaria", "DadosBancarios", b1 =>
+                        {
+                            b1.Property<Guid>("ContaFinanceiraId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Agencia")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Agencia");
+
+                            b1.Property<string>("Banco")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Banco");
+
+                            b1.Property<string>("Conta")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)")
+                                .HasColumnName("ContaNumero");
+
+                            b1.Property<string>("Pix")
+                                .HasMaxLength(140)
+                                .HasColumnType("nvarchar(140)")
+                                .HasColumnName("Pix");
+
+                            b1.HasKey("ContaFinanceiraId");
+
+                            b1.ToTable("ContasFinanceiras", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContaFinanceiraId");
+                        });
+
+                    b.OwnsMany("Tensorroot.Gov.Modules.Financas.Domain.Tesouraria.MovimentoFinanceiro", "Movimentos", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<bool>("Conciliado")
+                                .HasColumnType("bit");
+
+                            b1.Property<Guid>("ContaFinanceiraId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("ContaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid?>("ContraparteContaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Data")
+                                .HasColumnType("date");
+
+                            b1.Property<DateOnly?>("DataConciliacao")
+                                .HasColumnType("date");
+
+                            b1.Property<string>("Documento")
+                                .HasMaxLength(60)
+                                .HasColumnType("nvarchar(60)");
+
+                            b1.Property<string>("Historico")
+                                .IsRequired()
+                                .HasMaxLength(300)
+                                .HasColumnType("nvarchar(300)");
+
+                            b1.Property<Guid?>("OrigemReferenciaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("SaldoApos")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(25)
+                                .HasColumnType("nvarchar(25)");
+
+                            b1.Property<decimal>("Valor")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ContaFinanceiraId");
+
+                            b1.HasIndex("Data");
+
+                            b1.ToTable("MovimentosFinanceiros", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ContaFinanceiraId");
+                        });
+
+                    b.Navigation("DadosBancarios");
+
+                    b.Navigation("Movimentos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ldo.LeiDiretrizes", b =>

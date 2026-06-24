@@ -16,6 +16,7 @@ using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ppa;
 using Tensorroot.Gov.Modules.Financas.Domain.Receitas;
 using Tensorroot.Gov.Modules.Financas.Domain.RestosAPagar;
+using Tensorroot.Gov.Modules.Financas.Domain.Tesouraria;
 
 namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence;
 
@@ -73,6 +74,9 @@ public sealed class FinancasDbContext(DbContextOptions<FinancasDbContext> option
 
     /// <summary>Créditos adicionais (alteram a LOA).</summary>
     public DbSet<CreditoAdicional> CreditosAdicionais => Set<CreditoAdicional>();
+
+    /// <summary>Contas da tesouraria (bancárias/caixa) com saldo e extrato de movimentos.</summary>
+    public DbSet<ContaFinanceira> ContasFinanceiras => Set<ContaFinanceira>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

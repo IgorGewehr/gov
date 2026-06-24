@@ -52,6 +52,21 @@ public interface IConsultaTributariaCidadao
         string documento,
         Guid damId,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// MINHA CERTIDÃO de regularidade fiscal (CND/CPEN — CTN arts. 205/206): apura a situação fiscal do
+    /// PRÓPRIO cidadão (identificado pelo <paramref name="documento"/> resolvido server-side) e EMITE a
+    /// certidão (Negativa / Positiva-com-efeito-Negativa / Positiva), com validade e código de
+    /// autenticação. Read/escrita do dado-próprio (autosserviço de balcão online).
+    /// </summary>
+    /// <param name="documento">CPF/CNPJ (somente dígitos) do próprio cidadão, resolvido server-side.</param>
+    /// <param name="fundamentoLegal">Fundamento legal da certidão (parametrizável por tenant).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A certidão emitida, ou <c>null</c> se não houver contribuinte com o documento no tenant.</returns>
+    Task<MinhaCertidaoRegularidadeDto?> EmitirMinhaCertidaoRegularidadeAsync(
+        string documento,
+        string fundamentoLegal,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>Lancamento tributario proprio (projecao de leitura cidada).</summary>
@@ -96,6 +111,23 @@ public sealed record MinhaDividaAtivaDto(
 /// <param name="Vencimento">Vencimento da parcela.</param>
 /// <param name="Paga">Indica se a parcela ja foi paga.</param>
 public sealed record MinhaParcelaDamDto(int Numero, decimal Valor, DateOnly Vencimento, bool Paga);
+
+/// <summary>Certidao de regularidade fiscal do proprio cidadao (CND/CPEN) — projecao de leitura.</summary>
+/// <param name="Numero">Numero da certidao.</param>
+/// <param name="Tipo">Tipo apurado ("Negativa"/"PositivaComEfeitoNegativa"/"Positiva").</param>
+/// <param name="AtestaRegularidade">Se a certidao produz efeito de regularidade (CND/CPEN).</param>
+/// <param name="DataEmissao">Data de emissao.</param>
+/// <param name="DataValidade">Data-limite de validade.</param>
+/// <param name="CodigoAutenticacao">Codigo de autenticacao para conferencia publica.</param>
+/// <param name="Observacao">Observacao (ex.: debitos suspensos na CPEN), se houver.</param>
+public sealed record MinhaCertidaoRegularidadeDto(
+    string Numero,
+    string Tipo,
+    bool AtestaRegularidade,
+    DateOnly DataEmissao,
+    DateOnly DataValidade,
+    string CodigoAutenticacao,
+    string? Observacao);
 
 /// <summary>2a via de DAM/boleto do proprio cidadao (projecao de leitura).</summary>
 /// <param name="DamId">Identificador do DAM.</param>

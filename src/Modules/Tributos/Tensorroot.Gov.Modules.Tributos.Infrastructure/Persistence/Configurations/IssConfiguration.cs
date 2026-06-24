@@ -122,3 +122,69 @@ public sealed class ItemApuracaoIssConfiguration : IEntityTypeConfiguration<Item
         builder.HasIndex(item => item.ApuracaoIssId);
     }
 }
+
+/// <summary>Mapeamento EF Core do agregado <see cref="DeclaracaoGiaIss"/> (GIA mensal) e suas linhas.</summary>
+public sealed class DeclaracaoGiaIssConfiguration : IEntityTypeConfiguration<DeclaracaoGiaIss>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<DeclaracaoGiaIss> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("DeclaracoesGiaIss");
+        builder.HasKey(declaracao => declaracao.Id);
+        builder.Property(declaracao => declaracao.Id)
+            .HasConversion(id => id.Value, value => new DeclaracaoGiaIssId(value))
+            .ValueGeneratedNever();
+
+        builder.Property(declaracao => declaracao.ContribuinteId)
+            .HasConversion(id => id.Value, value => new ContribuinteId(value));
+
+        builder.Property(declaracao => declaracao.Competencia)
+            .HasConversion(c => (c.Ano * 100) + c.Mes, valor => Competencia.De(valor / 100, valor % 100));
+
+        builder.Property(declaracao => declaracao.FundamentoLegal).HasMaxLength(300).IsRequired();
+        builder.Property(declaracao => declaracao.Situacao).HasConversion<string>().HasMaxLength(30);
+        builder.Property(declaracao => declaracao.DataEntrega);
+
+        builder.Property(declaracao => declaracao.TotalServicos)
+            .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
+        builder.Property(declaracao => declaracao.IssDevido)
+            .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
+
+        builder.HasMany(declaracao => declaracao.Itens).WithOne().HasForeignKey(i => i.DeclaracaoGiaIssId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(declaracao => declaracao.Itens).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasIndex(declaracao => new { declaracao.TenantId, declaracao.ContribuinteId, declaracao.Competencia });
+    }
+}
+
+/// <summary>Mapeamento EF Core da entidade <see cref="ItemGiaIss"/> (linha da GIA).</summary>
+public sealed class ItemGiaIssConfiguration : IEntityTypeConfiguration<ItemGiaIss>
+{
+    /// <inheritdoc />
+    public void Configure(EntityTypeBuilder<ItemGiaIss> builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.ToTable("ItensGiaIss");
+        builder.HasKey(item => item.Id);
+        builder.Property(item => item.Id)
+            .HasConversion(id => id.Value, value => new ItemGiaIssId(value))
+            .ValueGeneratedNever();
+
+        builder.Property(item => item.DeclaracaoGiaIssId)
+            .HasConversion(id => id.Value, value => new DeclaracaoGiaIssId(value));
+
+        builder.Property(item => item.ItemListaServico).HasMaxLength(10).IsRequired();
+        builder.Property(item => item.Descricao).HasMaxLength(300).IsRequired();
+        builder.Property(item => item.BaseCalculo)
+            .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
+        builder.Property(item => item.AliquotaPercentual).HasColumnType("decimal(9,4)");
+        builder.Property(item => item.RetidoNaFonte);
+        builder.Property(item => item.IssApurado)
+            .HasConversion(v => v.Valor, v => ValorMonetario.De(v)).HasColumnType("decimal(18,2)");
+
+        builder.HasIndex(item => item.DeclaracaoGiaIssId);
+    }
+}

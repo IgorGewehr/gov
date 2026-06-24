@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
+using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
@@ -57,6 +58,12 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>Apurações mensais do ISS (livro/escrituração eletrônica) por contribuinte/competência.</summary>
     public DbSet<ApuracaoIss> ApuracoesIss => Set<ApuracaoIss>();
+
+    /// <summary>Declarações mensais de ISS (GIA do prestador) por contribuinte/competência.</summary>
+    public DbSet<DeclaracaoGiaIss> DeclaracoesGiaIss => Set<DeclaracaoGiaIss>();
+
+    /// <summary>Certidões de regularidade fiscal emitidas (CND/CPEN — CTN 205/206).</summary>
+    public DbSet<CertidaoRegularidadeFiscal> CertidoesRegularidadeFiscal => Set<CertidaoRegularidadeFiscal>();
 
     /// <summary>Alíquotas do ITBI por exercício (lei municipal).</summary>
     public DbSet<AliquotaItbi> AliquotasItbi => Set<AliquotaItbi>();

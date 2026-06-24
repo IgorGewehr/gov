@@ -19,3 +19,5 @@ export * from './esocial.api';
 export * from './minhaFolha.api';
 export * from './consignacao.api';
 export * from './relatorio.api';
+export * from './portaria.api';
+export * from './pasep.api';

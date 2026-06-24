@@ -65,7 +65,10 @@ public sealed class TributosModule : IModule
         services.AddScoped<IDamRepository, DamRepository>();
         services.AddScoped<ITabelaAliquotaIssRepository, TabelaAliquotaIssRepository>();
         services.AddScoped<IApuracaoIssRepository, ApuracaoIssRepository>();
+        services.AddScoped<IDeclaracaoGiaIssRepository, DeclaracaoGiaIssRepository>();
         services.AddScoped<INotaFiscalServicoConsulta, NotaFiscalServicoConsulta>();
+        services.AddScoped<ICertidaoRegularidadeFiscalRepository, CertidaoRegularidadeFiscalRepository>();
+        services.AddScoped<ISituacaoFiscalConsulta, SituacaoFiscalConsulta>();
         services.AddScoped<IAliquotaItbiRepository, AliquotaItbiRepository>();
         services.AddScoped<ITransmissaoImobiliariaRepository, TransmissaoImobiliariaRepository>();
         services.AddScoped<IProcessoArbitramentoItbiRepository, ProcessoArbitramentoItbiRepository>();
@@ -119,6 +122,7 @@ public sealed class TributosModule : IModule
         IptuEndpoints.Map(endpoints);
         IssItbiEndpoints.Map(endpoints);
         TaxasCosipAlvaraMelhoriaEndpoints.Map(endpoints);
+        CertidaoEndpoints.Map(endpoints);
     }
 
     /// <inheritdoc />

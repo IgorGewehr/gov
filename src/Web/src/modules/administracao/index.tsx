@@ -34,6 +34,13 @@ const FornecedorDetailPage = lazy(() =>
   import('./fornecedor/FornecedorDetailPage').then((m) => ({ default: m.FornecedorDetailPage })),
 );
 
+const CatalogoListPage = lazy(() =>
+  import('./catalogo/CatalogoListPage').then((m) => ({ default: m.CatalogoListPage })),
+);
+const AtaListPage = lazy(() => import('./ata/AtaListPage').then((m) => ({ default: m.AtaListPage })));
+const AtaDetailPage = lazy(() => import('./ata/AtaDetailPage').then((m) => ({ default: m.AtaDetailPage })));
+const PcaPage = lazy(() => import('./pca/PcaPage').then((m) => ({ default: m.PcaPage })));
+
 const MODULE: ModuleDefinition = {
   id: 'administracao',
   nav: {
@@ -52,6 +59,10 @@ const MODULE: ModuleDefinition = {
         { path: 'contratos/:id', element: <ContratoDetailPage /> },
         { path: 'fornecedores', element: <FornecedorListPage /> },
         { path: 'fornecedores/:id', element: <FornecedorDetailPage /> },
+        { path: 'catalogo', element: <CatalogoListPage /> },
+        { path: 'atas', element: <AtaListPage /> },
+        { path: 'atas/:id', element: <AtaDetailPage /> },
+        { path: 'pca', element: <PcaPage /> },
       ],
     },
   ],

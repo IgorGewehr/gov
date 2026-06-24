@@ -41,6 +41,17 @@ internal static class IssItbiEndpoints
                 cancellationToken)))
             .RequirePermission("tributos.gerenciar");
 
+        // ISS — GIA mensal: declaração do PRÓPRIO prestador (serviços prestados, base, ISS devido). Cobre
+        // serviços SEM NFS-e nacional, que a apuração derivada do ADN não alcança (PARIDADE-PoC SW-A10).
+        // Constitui o crédito do ISS próprio (CTN art. 150 — lançamento por homologação).
+        grupo.MapPost("/iss/contribuintes/{contribuinteId:guid}/gia", async (
+            Guid contribuinteId, EntregarGiaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(
+                new EntregarGiaIssCommand(
+                    contribuinteId, payload.Ano, payload.Mes, payload.FundamentoLegal, payload.VencimentoIssDevido, payload.Servicos),
+                cancellationToken)))
+            .RequirePermission("tributos.gerenciar");
+
         // ITBI — alíquota por exercício (lei municipal parametrizável).
         grupo.MapPost("/itbi/aliquotas", async (
             ConfigurarAliquotaItbiCommand comando, ISender sender, CancellationToken cancellationToken)
@@ -116,6 +127,13 @@ internal static class IssItbiEndpoints
     private sealed record CancelarArbitramentoPayload(DateOnly DataCancelamento);
 
     private sealed record ApurarIssPayload(int Ano, int Mes, DateOnly VencimentoIssProprio);
+
+    private sealed record EntregarGiaPayload(
+        int Ano,
+        int Mes,
+        string FundamentoLegal,
+        DateOnly VencimentoIssDevido,
+        IReadOnlyList<ServicoGiaInput> Servicos);
 
     private sealed record SincronizarNfsePayload(IReadOnlyList<string> Prestadores, DateOnly Desde);
 }

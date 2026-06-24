@@ -154,6 +154,26 @@ export const NATUREZAS_RUBRICA: SelectOption[] = [
   { value: '4', label: 'Informativa dedutora' },
 ];
 
+/** Opções de natureza (tipo) de portaria / ato de pessoal (rótulo → enum numérico do backend). */
+export const TIPOS_PORTARIA: SelectOption[] = [
+  { value: '1', label: 'Nomeação' },
+  { value: '2', label: 'Exoneração' },
+  { value: '3', label: 'Designação' },
+  { value: '4', label: 'Concessão' },
+  { value: '5', label: 'Outro' },
+];
+
+/** Opções de situação de portaria (rótulo → enum numérico do backend). */
+export const SITUACOES_PORTARIA: SelectOption[] = [
+  { value: '1', label: 'Emitida' },
+  { value: '2', label: 'Revogada' },
+];
+
+/** Mapeia a situação da portaria para a variante semântica da Tag. */
+export function situacaoPortariaTagVariant(situacao: string): TagVariant {
+  return situacao === 'Revogada' ? 'danger' : 'success';
+}
+
 /** Mapeia a natureza da rubrica para a variante semântica da Tag. */
 export function naturezaRubricaTagVariant(natureza: string): TagVariant {
   switch (natureza) {

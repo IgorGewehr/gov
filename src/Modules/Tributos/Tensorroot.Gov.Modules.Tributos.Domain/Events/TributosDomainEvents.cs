@@ -1,5 +1,6 @@
 using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
+using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
@@ -299,3 +300,35 @@ public sealed record ObraMelhoriaRateada(ObraContribuicaoMelhoriaId ObraContribu
 /// <param name="ObraContribuicaoMelhoriaId">Identificador da obra.</param>
 /// <param name="TenantId">Tenant dono do registro.</param>
 public sealed record ObraMelhoriaCancelada(ObraContribuicaoMelhoriaId ObraContribuicaoMelhoriaId, Guid TenantId) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// CERTIDÃO DE REGULARIDADE FISCAL — CND / CPEN (CTN arts. 205/206). PARIDADE-PoC SW-A3.
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Certidão de regularidade fiscal (CND/CPEN/Positiva) emitida ao contribuinte.</summary>
+/// <param name="CertidaoRegularidadeFiscalId">Identificador da certidão.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ContribuinteId">Contribuinte a quem se refere.</param>
+/// <param name="Tipo">Resultado apurado (Negativa/CPEN/Positiva).</param>
+/// <param name="Numero">Número da certidão.</param>
+public sealed record CertidaoRegularidadeEmitida(
+    CertidaoRegularidadeFiscalId CertidaoRegularidadeFiscalId,
+    Guid TenantId,
+    ContribuinteId ContribuinteId,
+    TipoCertidaoRegularidade Tipo,
+    string Numero) : IDomainEvent;
+
+// ---------------------------------------------------------------------------------------------------
+// GIA MENSAL DE ISS — declaração mensal do prestador (PARIDADE-PoC SW-A10).
+// ---------------------------------------------------------------------------------------------------
+
+/// <summary>Declaração mensal de ISS (GIA) entregue pelo contribuinte (prestador).</summary>
+/// <param name="DeclaracaoGiaIssId">Identificador da declaração.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="ContribuinteId">Contribuinte declarante (prestador).</param>
+/// <param name="IssDevido">ISS próprio devido declarado (R$).</param>
+public sealed record DeclaracaoGiaIssEntregue(
+    Tensorroot.Gov.Modules.Tributos.Domain.Iss.DeclaracaoGiaIssId DeclaracaoGiaIssId,
+    Guid TenantId,
+    ContribuinteId ContribuinteId,
+    decimal IssDevido) : IDomainEvent;

@@ -91,4 +91,10 @@ public sealed class ParametrosFolha
 
     /// <summary>Codigo da rubrica de desconto da pensao alimenticia (retida do servidor). Padrao: PENSAO-ALIM.</summary>
     public string CodigoRubricaPensaoAlimenticia { get; init; } = "PENSAO-ALIM";
+
+    /// <summary>
+    /// Aliquota do PASEP (contribuicao do ente sobre a folha — LC 8/1970) em PERCENTUAL. Padrao: 1,00 (1%),
+    /// parametrizavel por tenant (nunca <em>hardcoded</em> no calculo — CLAUDE.md S7).
+    /// </summary>
+    public decimal AliquotaPasep { get; init; } = 1.00m;
 }

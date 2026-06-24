@@ -120,6 +120,14 @@ internal static class CidadaoEndpoints
             return dam is null ? Results.NotFound() : Results.Ok(dam);
         });
 
+        // MINHA CERTIDAO DE REGULARIDADE (CND/CPEN): emite em autosservico a certidao do proprio cidadao
+        // (CTN arts. 205/206). Retorna 404 se nao ha contribuinte com o documento no tenant (sem vinculo).
+        meu.MapPost("/minha-certidao-regularidade", async (ISender sender, CancellationToken cancellationToken) =>
+        {
+            var certidao = await sender.Send(new EmitirMinhaCertidaoRegularidadeCommand(), cancellationToken);
+            return certidao is null ? Results.NotFound() : Results.Ok(certidao);
+        });
+
         // MEUS PROCESSOS: processos publicos de que o cidadao e interessado.
         meu.MapGet("/meus-processos", async (ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ObterMeusProcessosQuery(), cancellationToken)));

@@ -214,7 +214,7 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         await using var ctxTrib2 = CriarTributos(TenantA);
         var handler = new ObterMeusDebitosHandler(
             Resolvedor(ctxCid2, contaA),
-            new ConsultaCidadaoEmEscopoDedicadoFake(new ConsultaTributariaCidadao(ctxTrib2)));
+            new ConsultaCidadaoEmEscopoDedicadoFake(CriarConsultaTributaria(ctxTrib2)));
 
         var debitos = await handler.Handle(new ObterMeusDebitosQuery(), default);
 
@@ -249,7 +249,7 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         await using var ctxTrib2 = CriarTributos(TenantA);
         var handler = new ObterMinhaDividaAtivaHandler(
             Resolvedor(ctxCid2, contaA),
-            new ConsultaCidadaoEmEscopoDedicadoFake(new ConsultaTributariaCidadao(ctxTrib2)),
+            new ConsultaCidadaoEmEscopoDedicadoFake(CriarConsultaTributaria(ctxTrib2)),
             new DataHojeTenantFake(TimeProvider.System));
 
         var dividas = await handler.Handle(new ObterMinhaDividaAtivaQuery(new DateOnly(2026, 1, 10)), default);
@@ -295,7 +295,7 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         await using var ctxTrib2 = CriarTributos(TenantA);
         var handler = new ObterSegundaViaDamHandler(
             Resolvedor(ctxCid2, contaA),
-            new ConsultaCidadaoEmEscopoDedicadoFake(new ConsultaTributariaCidadao(ctxTrib2)));
+            new ConsultaCidadaoEmEscopoDedicadoFake(CriarConsultaTributaria(ctxTrib2)));
 
         var meu = await handler.Handle(new ObterSegundaViaDamQuery(meuDam), default);
         var forjado = await handler.Handle(new ObterSegundaViaDamQuery(damDeOutro), default);

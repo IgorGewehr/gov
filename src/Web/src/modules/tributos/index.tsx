@@ -34,6 +34,12 @@ const IptuParametrosPage = lazy(() =>
 const ApurarIssPage = lazy(() =>
   import('./ApurarIssPage').then((m) => ({ default: m.ApurarIssPage })),
 );
+const GiaIssPage = lazy(() =>
+  import('./GiaIssPage').then((m) => ({ default: m.GiaIssPage })),
+);
+const CertidoesPage = lazy(() =>
+  import('./CertidoesPage').then((m) => ({ default: m.CertidoesPage })),
+);
 const TransmitirItbiPage = lazy(() =>
   import('./TransmitirItbiPage').then((m) => ({ default: m.TransmitirItbiPage })),
 );
@@ -66,6 +72,8 @@ const MODULE: ModuleDefinition = {
         { path: 'imoveis/:id/iptu', element: <ApurarIptuPage /> },
         { path: 'iptu/parametros', element: <IptuParametrosPage /> },
         { path: 'iss', element: <ApurarIssPage /> },
+        { path: 'gia', element: <GiaIssPage /> },
+        { path: 'certidoes', element: <CertidoesPage /> },
         { path: 'itbi', element: <TransmitirItbiPage /> },
         { path: 'taxas', element: <LancarTaxaPage /> },
         { path: 'cosip', element: <ApurarCosipPage /> },

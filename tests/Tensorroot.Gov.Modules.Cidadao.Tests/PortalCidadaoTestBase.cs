@@ -6,6 +6,8 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.Modules.Cidadao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
+using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Repositories;
+using Tensorroot.Gov.Modules.Tributos.Infrastructure.PortalCidadao;
 
 namespace Tensorroot.Gov.Modules.Cidadao.Tests;
 
@@ -65,6 +67,19 @@ public abstract class PortalCidadaoTestBase : IDisposable
         contexto.Database.EnsureCreated();
         return contexto;
     }
+
+    /// <summary>
+    /// Cria a porta de leitura cidada do Tributos (<see cref="ConsultaTributariaCidadao"/>) wirada ao
+    /// contexto informado, com as dependencias da CND/CPEN (situacao fiscal + repositorio de certidoes +
+    /// data do tenant) usando as implementacoes reais sobre o mesmo contexto. Exercita a cadeia real.
+    /// </summary>
+    protected static ConsultaTributariaCidadao CriarConsultaTributaria(TributosDbContext contexto) =>
+        new(
+            contexto,
+            new SituacaoFiscalConsulta(contexto),
+            new CertidaoRegularidadeFiscalRepository(contexto),
+            new TenantContextFake(contexto.CurrentTenantId),
+            new DataHojeTenantFake(TimeProvider.System));
 
     /// <summary>Cria o <see cref="ProtocoloDbContext"/> no escopo do tenant informado.</summary>
     protected ProtocoloDbContext CriarProtocolo(Guid tenantId)

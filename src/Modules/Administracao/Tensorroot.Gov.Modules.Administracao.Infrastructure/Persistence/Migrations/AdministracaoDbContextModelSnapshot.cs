@@ -85,6 +85,53 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                     b.ToTable("AuditTrail", "administracao");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.Catalogo.ItemCatalogo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Classe")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Natureza")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UnidadeFornecimento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Codigo")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Natureza", "Situacao");
+
+                    b.ToTable("CatalogoItens", "administracao");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.Contratos.Contrato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -246,6 +293,71 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                     b.HasIndex("TenantId", "Situacao");
 
                     b.ToTable("Licitacoes", "administracao");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.Pca.PlanoContratacoes", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NumeroPncp")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Exercicio")
+                        .IsUnique();
+
+                    b.ToTable("PlanosContratacoes", "administracao");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos.Ata", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("LicitacaoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("VigenciaFim")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("VigenciaInicio")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Numero")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Situacao");
+
+                    b.ToTable("Atas", "administracao");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.InboxMessage", b =>
@@ -632,6 +744,117 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                     b.Navigation("Propostas");
 
                     b.Navigation("Recursos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.Pca.PlanoContratacoes", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Administracao.Domain.Pca.ItemPca", "Itens", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("ItemCatalogoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Justificativa")
+                                .HasMaxLength(2000)
+                                .HasColumnType("nvarchar(2000)");
+
+                            b1.Property<Guid>("PlanoContratacoesId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Quantidade")
+                                .HasColumnType("decimal(18,4)");
+
+                            b1.Property<int>("TrimestreDesejado")
+                                .HasColumnType("int");
+
+                            b1.Property<decimal>("ValorEstimado")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("PlanoContratacoesId");
+
+                            b1.ToTable("PlanosContratacoesItens", "administracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PlanoContratacoesId");
+                        });
+
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos.Ata", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos.Adesao", "Adesoes", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("AtaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Data")
+                                .HasColumnType("date");
+
+                            b1.Property<Guid>("ItemCatalogoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("OrgaoAderente")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<decimal>("Quantidade")
+                                .HasColumnType("decimal(18,4)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("AtaId");
+
+                            b1.ToTable("AtasAdesoes", "administracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AtaId");
+                        });
+
+                    b.OwnsMany("Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos.ItemAta", "Itens", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("AtaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("FornecedorBeneficiarioId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("ItemCatalogoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("PrecoRegistrado")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<decimal>("QuantidadeContratada")
+                                .HasColumnType("decimal(18,4)");
+
+                            b1.Property<decimal>("QuantidadeRegistrada")
+                                .HasColumnType("decimal(18,4)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("AtaId");
+
+                            b1.ToTable("AtasItens", "administracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AtaId");
+                        });
+
+                    b.Navigation("Adesoes");
+
+                    b.Navigation("Itens");
                 });
 #pragma warning restore 612, 618
         }

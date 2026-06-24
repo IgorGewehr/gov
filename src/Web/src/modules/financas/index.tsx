@@ -51,6 +51,21 @@ const LancamentosPage = lazy(() =>
 const RazaoContaPage = lazy(() =>
   import('./contabilidade/RazaoContaPage').then((m) => ({ default: m.RazaoContaPage })),
 );
+const RazaoAnaliticoPage = lazy(() =>
+  import('./contabilidade/RazaoAnaliticoPage').then((m) => ({ default: m.RazaoAnaliticoPage })),
+);
+const DiarioPage = lazy(() =>
+  import('./contabilidade/DiarioPage').then((m) => ({ default: m.DiarioPage })),
+);
+const ContasFinanceirasPage = lazy(() =>
+  import('./tesouraria/ContasFinanceirasPage').then((m) => ({ default: m.ContasFinanceirasPage })),
+);
+const ExtratoContaPage = lazy(() =>
+  import('./tesouraria/ExtratoContaPage').then((m) => ({ default: m.ExtratoContaPage })),
+);
+const BoletimCaixaBancoPage = lazy(() =>
+  import('./tesouraria/BoletimCaixaBancoPage').then((m) => ({ default: m.BoletimCaixaBancoPage })),
+);
 const DemonstracoesPage = lazy(() =>
   import('./contabilidade/DemonstracoesPage').then((m) => ({ default: m.DemonstracoesPage })),
 );
@@ -74,10 +89,15 @@ const MODULE: ModuleDefinition = {
         { path: 'pagamentos', element: <PagamentoListPage /> },
         { path: 'pagamentos/:id', element: <PagamentoDetailPage /> },
         { path: 'restos-a-pagar', element: <RestosAPagarListPage /> },
+        { path: 'tesouraria/contas', element: <ContasFinanceirasPage /> },
+        { path: 'tesouraria/contas/:contaId', element: <ExtratoContaPage /> },
+        { path: 'tesouraria/boletim', element: <BoletimCaixaBancoPage /> },
         { path: 'contabilidade/plano-de-contas', element: <PlanoDeContasPage /> },
         { path: 'contabilidade/balancete', element: <BalancetePage /> },
         { path: 'contabilidade/lancamentos', element: <LancamentosPage /> },
         { path: 'contabilidade/contas/:contaId/razao', element: <RazaoContaPage /> },
+        { path: 'contabilidade/contas/:contaId/razao-analitico', element: <RazaoAnaliticoPage /> },
+        { path: 'contabilidade/diario', element: <DiarioPage /> },
         { path: 'contabilidade/demonstracoes', element: <DemonstracoesPage /> },
         { path: 'contabilidade/msc', element: <MscPage /> },
       ],
