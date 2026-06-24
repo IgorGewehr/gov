@@ -15,6 +15,7 @@ public sealed class IndicadorMunicipioRepository(PainelGestorDbContext context) 
     public Task<IndicadorMunicipioSnapshot?> ObterPorExercicioAsync(int exercicio, CancellationToken cancellationToken)
         => context.Indicadores
             .Include(indicador => indicador.Minimos)
+            .Include(indicador => indicador.DespesasPessoalMensais)
             .FirstOrDefaultAsync(indicador => indicador.Exercicio == exercicio, cancellationToken);
 
     /// <inheritdoc />

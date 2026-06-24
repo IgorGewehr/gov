@@ -219,17 +219,32 @@ internal static class TransparenciaPublicaEndpoints
         return Encoding.UTF8.GetBytes(builder.ToString());
     }
 
+    // Caracteres que, no INICIO de uma celula, fazem o Excel/LibreOffice/Sheets interpretar
+    // o conteudo como FORMULA (OWASP CSV Injection). Campos publicos vem de dado externo
+    // nao confiavel (Fornecedor, contrato Objeto, CredorNomeOuRazao) → neutralizar sempre.
+    private static readonly char[] GatilhosFormulaCsv = ['=', '+', '-', '@', '\t', '\r'];
+
     private static string EscaparCsv(string campo)
     {
-        if (campo.Contains(';', StringComparison.Ordinal)
-            || campo.Contains('"', StringComparison.Ordinal)
-            || campo.Contains('\n', StringComparison.Ordinal))
+        var conteudo = NeutralizarFormulaCsv(campo);
+
+        if (conteudo.Contains(';', StringComparison.Ordinal)
+            || conteudo.Contains('"', StringComparison.Ordinal)
+            || conteudo.Contains('\n', StringComparison.Ordinal)
+            || conteudo.Contains('\r', StringComparison.Ordinal))
         {
-            return string.Create(CultureInfo.InvariantCulture, $"\"{campo.Replace("\"", "\"\"", StringComparison.Ordinal)}\"");
+            return string.Create(CultureInfo.InvariantCulture, $"\"{conteudo.Replace("\"", "\"\"", StringComparison.Ordinal)}\"");
         }
 
-        return campo;
+        return conteudo;
     }
+
+    // Prefixa aspa simples quando a celula inicia por caractere-gatilho de formula, impedindo a
+    // execucao ao abrir no aplicativo de planilha. O prefixo eh exibido como dado textual.
+    private static string NeutralizarFormulaCsv(string campo)
+        => campo.Length > 0 && Array.IndexOf(GatilhosFormulaCsv, campo[0]) >= 0
+            ? "'" + campo
+            : campo;
 
     /// <summary>Payload publico de abertura de pedido e-SIC.</summary>
     private sealed record AbrirPedidoSicPublicoPayload(

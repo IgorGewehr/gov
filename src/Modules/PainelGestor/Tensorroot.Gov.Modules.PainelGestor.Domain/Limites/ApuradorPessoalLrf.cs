@@ -15,10 +15,12 @@ public readonly record struct ApuracaoPessoalLrf(
 
 /// <summary>
 /// Função de domínio pura que apura o indicador de Despesa com Pessoal da LRF: % da RCL comprometido e
-/// o semáforo frente aos limites legal/prudencial/alerta. Determinística e sem relógio (a janela temporal
-/// é decidida por quem alimenta a despesa e a RCL — o apurador só divide e classifica). Quando a RCL
-/// ainda não foi publicada (0 ou negativa), o percentual é 0 e a situação fica <c>Indeterminado</c> —
-/// nunca divide por zero nem inventa um número.
+/// o semáforo frente aos limites legal/prudencial/alerta. Determinística e sem relógio. O numerador
+/// (<c>despesaPessoal</c>) é a <b>Despesa Total com Pessoal por janela móvel de 12 meses</b>
+/// (LRF art. 18 §2º) — composta a montante pelo <see cref="DespesaPessoalDozeMesesCalculator"/> — e o
+/// denominador é a RCL de 12 meses; o apurador só divide e classifica. Quando a RCL ainda não foi publicada
+/// (0 ou negativa), o percentual é 0 e a situação fica <c>Indeterminado</c> — nunca divide por zero nem
+/// inventa um número.
 /// </summary>
 public static class ApuradorPessoalLrf
 {

@@ -11,7 +11,9 @@ namespace Tensorroot.Gov.Modules.Cidadao.Application.Autenticacao;
 /// Cadastro SELF-SERVICE da conta-cidadao (CPF/CNPJ + senha) no tenant (municipio) corrente. Valida o
 /// documento pelo VO do SharedKernel, faz o hash da senha (a senha em claro nunca toca o dominio/banco)
 /// e cria a <see cref="CidadaoConta"/> com <see cref="OrigemConta.CadastroLocal"/>. O par
-/// (TenantId, Documento) e UNICO — duplicidade e recusada (sem vazar timing de existencia).
+/// (TenantId, Documento) e UNICO — duplicidade e recusada NO BANCO, mas NUNCA sinalizada na resposta
+/// (anti-enumeracao): documento ja cadastrado retorna o MESMO resultado de um cadastro novo, sem criar
+/// duplicata e sem vazar a existencia da conta (status/mensagem/corpo identicos).
 /// </summary>
 /// <param name="Documento">CPF ou CNPJ (com ou sem mascara).</param>
 /// <param name="Nome">Nome/razao social.</param>
@@ -23,7 +25,7 @@ public sealed record RegistrarCidadaoCommand(
     string Nome,
     string Senha,
     string? Email = null,
-    string? Telefone = null) : ICommand<Guid>;
+    string? Telefone = null) : ICommand;
 
 /// <summary>Regras de validacao do cadastro de cidadao.</summary>
 public sealed class RegistrarCidadaoValidator : AbstractValidator<RegistrarCidadaoCommand>
@@ -43,26 +45,16 @@ public sealed class RegistrarCidadaoValidator : AbstractValidator<RegistrarCidad
     }
 }
 
-/// <summary>Erro de unicidade: ja existe conta-cidadao para o documento no tenant.</summary>
-public sealed class CidadaoJaCadastradoException : Exception
-{
-    /// <summary>Cria a excecao com a mensagem padrao.</summary>
-    public CidadaoJaCadastradoException()
-        : base("Ja existe uma conta para este documento neste municipio.")
-    {
-    }
-}
-
 /// <summary>Handler do cadastro de cidadao.</summary>
 public sealed class RegistrarCidadaoHandler(
     ICidadaoContaRepository contas,
     ISenhaHasherCidadao hasher,
     IUnitOfWork unitOfWork,
     ITenantContext tenant)
-    : ICommandHandler<RegistrarCidadaoCommand, Guid>
+    : ICommandHandler<RegistrarCidadaoCommand>
 {
     /// <inheritdoc />
-    public async Task<Guid> Handle(RegistrarCidadaoCommand request, CancellationToken cancellationToken)
+    public async Task Handle(RegistrarCidadaoCommand request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -71,18 +63,27 @@ public sealed class RegistrarCidadaoHandler(
             ? cpf.Digitos
             : Cnpj.Create(request.Documento).Digitos;
 
+        // ANTI-ENUMERACAO: documento ja cadastrado NAO cria duplicata e NAO sinaliza a existencia da
+        // conta. O endpoint responde de forma IDENTICA (mesmo status/corpo) ao cadastro novo, de modo
+        // que um atacante anonimo iterando CPFs/CNPJs nao consiga distinguir "ja existe" de "novo".
+        // A unicidade real do par (TenantId, Documento) continua garantida no banco (indice unico):
+        // se ainda assim houver colisao concorrente, o SaveChanges falha e a borda responde uniforme.
+        // Sempre executamos o hash da senha (custo BCrypt) mesmo no caminho "ja existe" para nao abrir
+        // um canal lateral de timing que recrie o oraculo de enumeracao.
+        var senhaHash = hasher.Hash(request.Senha);
+
         if (await contas.DocumentoJaCadastradoAsync(documento, cancellationToken).ConfigureAwait(false))
         {
-            throw new CidadaoJaCadastradoException();
+            // // TODO(M10-creds): para o titular legitimo, disparar e-mail "ja existe conta / recuperar
+            // acesso" pelo canal lateral (Outbox) — confirmacao SEM distinguir na resposta HTTP.
+            return;
         }
 
-        var senhaHash = hasher.Hash(request.Senha);
         var conta = CidadaoConta.CriarLocal(tenant.TenantId, documento, request.Nome, senhaHash, request.Email, request.Telefone);
 
         contas.Adicionar(conta);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // // TODO(M10-creds): disparar confirmacao de e-mail (Outbox) e, para atos "prata", 2FA.
-        return conta.Id.Value;
     }
 }

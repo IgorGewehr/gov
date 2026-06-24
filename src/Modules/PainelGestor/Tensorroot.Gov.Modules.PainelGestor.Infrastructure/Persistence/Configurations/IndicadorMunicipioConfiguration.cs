@@ -45,6 +45,25 @@ public sealed class IndicadorMunicipioConfiguration : IEntityTypeConfiguration<I
 
         builder.OwnsMany(indicador => indicador.Minimos, MapearMinimos);
         builder.Navigation(indicador => indicador.Minimos).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.OwnsMany(indicador => indicador.DespesasPessoalMensais, MapearDespesasPessoalMensais);
+        builder.Navigation(indicador => indicador.DespesasPessoalMensais).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+
+    private static void MapearDespesasPessoalMensais(
+        OwnedNavigationBuilder<IndicadorMunicipioSnapshot, DespesaPessoalMensalSnapshot> despesas)
+    {
+        despesas.ToTable("IndicadoresMunicipioDespesaPessoalMensal");
+        despesas.WithOwner().HasForeignKey("IndicadorMunicipioId");
+        despesas.HasKey(item => item.Id);
+        despesas.Property(item => item.Id)
+            .HasConversion(id => id.Value, value => new DespesaPessoalMensalSnapshotId(value))
+            .ValueGeneratedNever();
+        despesas.Property(item => item.Ano);
+        despesas.Property(item => item.Mes);
+        despesas.Property(item => item.Valor).HasPrecision(18, 2);
+        // Uma linha por competência mensal dentro do consolidado do exercício.
+        despesas.HasIndex("IndicadorMunicipioId", nameof(DespesaPessoalMensalSnapshot.Mes)).IsUnique();
     }
 
     private static void MapearMinimos(OwnedNavigationBuilder<IndicadorMunicipioSnapshot, MinimoSetorialSnapshot> minimos)

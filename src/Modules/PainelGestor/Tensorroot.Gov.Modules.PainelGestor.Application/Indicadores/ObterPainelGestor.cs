@@ -38,12 +38,18 @@ public sealed class ObterPainelGestorHandler(
             return PainelVazio(request.Exercicio, limites);
         }
 
+        // A janela móvel de 12 meses da DTP (LRF art. 18 §2º) pode cruzar o exercício anterior — carrega-se
+        // o snapshot do ano anterior para compor as competências do início da janela (sem inventar zeros).
+        var snapshotAnterior = await repositorio
+            .ObterPorExercicioAsync(request.Exercicio - 1, cancellationToken)
+            .ConfigureAwait(false);
+
         return new PainelGestorDto(
             snapshot.Exercicio,
             ProjetarExecucao(snapshot),
             ProjetarMinimos(snapshot),
             ProjetarArrecadacao(snapshot),
-            ProjetarPessoal(snapshot, limites),
+            ProjetarPessoal(snapshot, snapshotAnterior, limites),
             ProjetarPrestacaoContas(snapshot));
     }
 
@@ -66,9 +72,24 @@ public sealed class ObterPainelGestorHandler(
     private static ArrecadacaoDto ProjetarArrecadacao(IndicadorMunicipioSnapshot s)
         => new(s.ArrecadacaoTributaria, s.DividaAtivaSaldoInscrito, s.DividaAtivaSaldoAjuizado, s.DividaAtivaRecuperada);
 
-    private static DespesaPessoalLrfDto ProjetarPessoal(IndicadorMunicipioSnapshot s, LimitesPessoalLrf limites)
+    private static DespesaPessoalLrfDto ProjetarPessoal(
+        IndicadorMunicipioSnapshot s,
+        IndicadorMunicipioSnapshot? anterior,
+        LimitesPessoalLrf limites)
     {
-        var apuracao = ApuradorPessoalLrf.Apurar(s.DespesaPessoal, s.ReceitaCorrenteLiquida, limites);
+        // Numerador da LRF = Despesa Total com Pessoal pela JANELA MÓVEL de 12 meses (art. 18 §2º): mês de
+        // referência (competência mais recente) + 11 anteriores — pode cruzar o exercício anterior. Nunca o
+        // acumulado do exercício-calendário (que zeraria em janeiro e geraria indicador falso-verde).
+        var competencias = s.ObterCompetenciasPessoal();
+        if (anterior is not null)
+        {
+            competencias = competencias.Concat(anterior.ObterCompetenciasPessoal());
+        }
+
+        var janela = DespesaPessoalDozeMesesCalculator.Apurar(competencias);
+
+        // Denominador (RCL) já é valor de 12 meses publicado por Finanças (substituível pelo mês mais recente).
+        var apuracao = ApuradorPessoalLrf.Apurar(janela.DespesaTotalPessoal, s.ReceitaCorrenteLiquida, limites);
         return new DespesaPessoalLrfDto(
             apuracao.DespesaPessoal,
             apuracao.Rcl,

@@ -43,10 +43,16 @@ internal static class CidadaoEndpoints
             tenantOverride.TenantId = payload.TenantId;
             try
             {
-                var id = await sender.Send(
+                await sender.Send(
                     new RegistrarCidadaoCommand(payload.Documento, payload.Nome, payload.Senha, payload.Email, payload.Telefone),
                     cancellationToken);
-                return Results.Ok(new { id });
+
+                // ANTI-ENUMERACAO: resposta GENERICA e UNIFORME — IDENTICA para documento novo e para
+                // documento ja cadastrado. Nao retornamos o id da conta (que so existiria no caminho
+                // "novo") nem qualquer sinal de existencia; a confirmacao real segue por canal lateral
+                // (e-mail). Assim, atacante anonimo iterando CPFs/CNPJs NAO distingue conta existente de
+                // nova. A unicidade real permanece no banco. // TODO(M10-creds): confirmacao por e-mail.
+                return Results.Accepted(value: new { mensagem = "Se os dados forem elegiveis, enviaremos a confirmacao do cadastro." });
             }
             catch (DbException)
             {

@@ -135,6 +135,71 @@ public sealed class IngestaoIndicadoresTests : PainelGestorTestBase
     }
 
     [Fact]
+    public async Task Dtp_usa_janela_movel_de_12_meses_cruzando_o_exercicio_anterior_sem_falso_verde()
+    {
+        // PG-1: a DTP da LRF é por janela móvel de 12 meses (art. 18 §2º), NÃO pelo acumulado do exercício.
+        // Histórico: mar-dez/2025 a 50k/mês (=500k) no snapshot de 2025; jan-fev/2026 a 60k/mês (=120k) em 2026.
+        // Em fevereiro/2026 o acumulado do exercício-calendário daria só 120k (falso-verde); a janela de 12
+        // meses dá 500k + 120k = 620k → contra RCL de 1.000.000 = 62% → EXCEDIDO (acima do teto legal de 54%).
+        for (var mes = 3; mes <= 12; mes++)
+        {
+            await using var ctx = CriarContexto(TenantA);
+            await new ReceberDespesaPessoalHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new DespesaPessoalApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, 2025, mes, "Mensal", 50_000m), default);
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberDespesaPessoalHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new DespesaPessoalApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 1, "Mensal", 60_000m), default);
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberDespesaPessoalHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new DespesaPessoalApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 2, "Mensal", 60_000m), default);
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberRclApuradaHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new ReceitaCorrenteLiquidaApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 2, 1_000_000m), default);
+        }
+
+        var painel = await ConsultarAsync(TenantA);
+
+        painel.PessoalLrf.DespesaPessoal.Should().Be(620_000m); // janela de 12 meses, NÃO 120k do acumulado do ano.
+        painel.PessoalLrf.PercentualDaRcl.Should().Be(0.62m);
+        painel.PessoalLrf.Situacao.Should().Be(SituacaoLimite.Excedido); // alerta no momento certo, não falso-verde.
+    }
+
+    [Fact]
+    public async Task Multiplas_folhas_da_mesma_competencia_somam_no_mes()
+    {
+        // Mensal + 13º na mesma competência (mês 12) compõem a mesma base de pessoal do mês.
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberDespesaPessoalHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new DespesaPessoalApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 12, "Mensal", 100_000m), default);
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberDespesaPessoalHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new DespesaPessoalApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 12, "DecimoTerceiro", 80_000m), default);
+        }
+
+        await using (var ctx = CriarContexto(TenantA))
+        {
+            await new ReceberRclApuradaHandler(Materializador(ctx), Idem(ctx), ctx).Handle(
+                new ReceitaCorrenteLiquidaApuradaIntegrationEvent(Guid.NewGuid(), DateTime.UtcNow, TenantA, Exercicio, 12, 1_000_000m), default);
+        }
+
+        var painel = await ConsultarAsync(TenantA);
+        painel.PessoalLrf.DespesaPessoal.Should().Be(180_000m); // 100k + 80k na competência de dezembro.
+    }
+
+    [Fact]
     public async Task Reentrega_do_mesmo_evento_e_idempotente_nao_conta_duas_vezes()
     {
         var evento = new DespesaEmpenhadaIntegrationEvent(

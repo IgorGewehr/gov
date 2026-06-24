@@ -1,3 +1,4 @@
+using Tensorroot.Gov.Modules.PainelGestor.Domain.Limites;
 using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
 
@@ -19,6 +20,7 @@ namespace Tensorroot.Gov.Modules.PainelGestor.Domain.Indicadores;
 public sealed class IndicadorMunicipioSnapshot : AggregateRoot<IndicadorMunicipioId>, IMustHaveTenant
 {
     private readonly List<MinimoSetorialSnapshot> _minimos = [];
+    private readonly List<DespesaPessoalMensalSnapshot> _despesasPessoalMensais = [];
 
     private IndicadorMunicipioSnapshot()
     {
@@ -67,8 +69,19 @@ public sealed class IndicadorMunicipioSnapshot : AggregateRoot<IndicadorMunicipi
 
     // --- (d) Custo de pessoal + RCL (RH + Finanças) ---
 
-    /// <summary>Despesa total com pessoal (base LRF) acumulada no exercício (acumulador).</summary>
+    /// <summary>
+    /// Despesa com pessoal (base LRF) ACUMULADA do exercício-calendário (jan-dez). Mantida para auditoria/
+    /// rastro contábil do ano, mas <b>NÃO</b> é o numerador do limite da LRF — a Despesa Total com Pessoal
+    /// (DTP) do limite é por <b>janela móvel de 12 meses</b> (art. 18 §2º), composta a partir de
+    /// <see cref="DespesasPessoalMensais"/> pelo <c>DespesaPessoalDozeMesesCalculator</c>.
+    /// </summary>
     public decimal DespesaPessoal { get; private set; }
+
+    /// <summary>
+    /// Série mensal da despesa com pessoal (base LRF) deste exercício, por competência <c>(Ano, Mes)</c> —
+    /// matéria-prima da janela móvel de 12 meses da DTP (LRF art. 18 §2º).
+    /// </summary>
+    public IReadOnlyCollection<DespesaPessoalMensalSnapshot> DespesasPessoalMensais => _despesasPessoalMensais;
 
     /// <summary>Receita Corrente Líquida (12 meses) mais recente do exercício — substituível.</summary>
     public decimal ReceitaCorrenteLiquida { get; private set; }
@@ -162,13 +175,41 @@ public sealed class IndicadorMunicipioSnapshot : AggregateRoot<IndicadorMunicipi
         DividaAtivaRecuperada = recuperado;
     }
 
-    /// <summary>Acumula despesa com pessoal (base LRF) no exercício.</summary>
+    /// <summary>
+    /// Registra a despesa com pessoal (base LRF) de uma COMPETÊNCIA mensal deste exercício. Mantém a série
+    /// mensal (matéria-prima da janela móvel de 12 meses — LRF art. 18 §2º) e o acumulado do exercício
+    /// (auditoria do ano). Várias folhas do mesmo mês (mensal + 13º + férias + rescisão) somam na mesma
+    /// competência — todas compõem a base de pessoal daquele mês.
+    /// </summary>
+    /// <param name="mes">Mês da competência (1-12) — deve pertencer a este exercício.</param>
     /// <param name="valor">Despesa de pessoal bruta da competência (&gt;= 0).</param>
-    public void AcumularDespesaPessoal(decimal valor)
+    public void AcumularDespesaPessoal(int mes, decimal valor)
     {
         GarantirNaoNegativo(valor);
+        if (mes is < 1 or > 12)
+        {
+            throw new ArgumentOutOfRangeException(nameof(mes), "Mês de referência deve estar entre 1 e 12.");
+        }
+
+        var competencia = _despesasPessoalMensais.SingleOrDefault(c => c.Mes == mes);
+        if (competencia is null)
+        {
+            _despesasPessoalMensais.Add(DespesaPessoalMensalSnapshot.Criar(Exercicio, mes, valor));
+        }
+        else
+        {
+            competencia.Acumular(valor);
+        }
+
         DespesaPessoal += valor;
     }
+
+    /// <summary>
+    /// Projeta a série mensal deste exercício como competências para o cálculo da janela móvel de 12 meses.
+    /// </summary>
+    /// <returns>Competências <c>(Ano, Mes, Valor)</c> deste exercício.</returns>
+    public IEnumerable<CompetenciaPessoal> ObterCompetenciasPessoal()
+        => _despesasPessoalMensais.Select(c => new CompetenciaPessoal(c.Ano, c.Mes, c.Valor));
 
     /// <summary>
     /// Substitui a RCL vigente do exercício SE o mês de referência informado for mais recente que o já

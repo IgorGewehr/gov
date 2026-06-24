@@ -27,7 +27,7 @@ public sealed class ReceberDespesaPessoalHandler(
         }
 
         var snapshot = await materializador.ObterOuCriarAsync(notification.TenantId, notification.Exercicio, cancellationToken).ConfigureAwait(false);
-        snapshot.AcumularDespesaPessoal(notification.DespesaPessoalBruta);
+        snapshot.AcumularDespesaPessoal(notification.MesReferencia, notification.DespesaPessoalBruta);
         idempotencia.Registrar(notification.EventId, notification.TenantId, nameof(DespesaPessoalApuradaIntegrationEvent));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

@@ -67,8 +67,23 @@ public sealed class GeradorMscCsv : IGeradorMsc
         return construtor.ToString();
     }
 
+    // Caracteres que, no INICIO de uma celula, fazem o Excel/LibreOffice/Sheets interpretar
+    // o conteudo como FORMULA (OWASP CSV Injection). Conta/informacao complementar podem
+    // carregar texto de origem externa → neutralizar antes de escapar.
+    private static readonly char[] GatilhosFormulaCsv = ['=', '+', '-', '@', '\t', '\r'];
+
     private static string Escapar(string valor)
-        => valor.Contains(';', StringComparison.Ordinal) || valor.Contains('"', StringComparison.Ordinal)
-            ? "\"" + valor.Replace("\"", "\"\"", StringComparison.Ordinal) + "\""
+    {
+        var conteudo = valor.Length > 0 && Array.IndexOf(GatilhosFormulaCsv, valor[0]) >= 0
+            ? "'" + valor
             : valor;
+
+        // RFC 4180 §2.6: campo com delimitador, aspas, LF ou CR isolado deve ser citado.
+        return conteudo.Contains(';', StringComparison.Ordinal)
+            || conteudo.Contains('"', StringComparison.Ordinal)
+            || conteudo.Contains('\n', StringComparison.Ordinal)
+            || conteudo.Contains('\r', StringComparison.Ordinal)
+                ? "\"" + conteudo.Replace("\"", "\"\"", StringComparison.Ordinal) + "\""
+                : conteudo;
+    }
 }

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Cidadao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Cidadao.Application.Autenticacao;
 using Tensorroot.Gov.Modules.Cidadao.Application.Internal;
@@ -47,7 +48,11 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         var hasher = new SenhaHasherCidadao(workFactor: 4);
 
         var registrar = new RegistrarCidadaoHandler(contas, hasher, ctx, new TenantContextFake(TenantA));
-        var contaId = await registrar.Handle(new RegistrarCidadaoCommand("529.982.247-25", "Fulano", "senha-forte-1"), default);
+        await registrar.Handle(new RegistrarCidadaoCommand("529.982.247-25", "Fulano", "senha-forte-1"), default);
+
+        // O documento e normalizado para digitos no cadastro; a conta nasce com esse documento.
+        var conta = await contas.ObterPorDocumentoAsync(CpfA, default);
+        var contaId = conta!.Id.Value;
 
         var emissor = new EmissorTokenCidadao(
             Microsoft.Extensions.Options.Options.Create(new JwtCidadaoOptions
@@ -78,8 +83,11 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         await acao.Should().ThrowAsync<AutenticacaoCidadaoFalhouException>();
     }
 
-    [Fact] // Documento ja cadastrado no tenant e recusado (unicidade (TenantId, Documento)).
-    public async Task Cadastro_duplicado_e_recusado()
+    [Fact] // ANTI-ENUMERACAO: documento ja cadastrado NAO vaza a existencia (sem excecao/sinal) e NAO
+           // cria duplicata. A unicidade real do par (TenantId, Documento) permanece — a 2a tentativa e
+           // absorvida silenciosamente, com o MESMO resultado de um cadastro novo, e a conta original e
+           // PRESERVADA intacta (nome/senha nao sao sobrescritos por um atacante).
+    public async Task Cadastro_duplicado_nao_vaza_existencia_e_nao_duplica()
     {
         await using var ctx = CriarCidadao(TenantA);
         var contas = new CidadaoContaRepository(ctx);
@@ -87,9 +95,18 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         var registrar = new RegistrarCidadaoHandler(contas, hasher, ctx, new TenantContextFake(TenantA));
 
         await registrar.Handle(new RegistrarCidadaoCommand(CpfA, "Fulano", "senha-forte-1"), default);
-        var acao = async () => await registrar.Handle(new RegistrarCidadaoCommand(CpfA, "Fulano de novo", "outra-senha-9"), default);
+        var original = await contas.ObterPorDocumentoAsync(CpfA, default);
 
-        await acao.Should().ThrowAsync<CidadaoJaCadastradoException>();
+        // 2a tentativa para o MESMO documento: NAO lanca (resposta uniforme, sem oraculo de enumeracao).
+        var acao = async () => await registrar.Handle(new RegistrarCidadaoCommand(CpfA, "Fulano de novo", "outra-senha-9"), default);
+        await acao.Should().NotThrowAsync();
+
+        // Nao cria duplicata e nao sobrescreve a conta existente (mesma identidade e mesmo nome original).
+        var contagem = await ctx.Contas.CountAsync(c => c.Documento == CpfA);
+        contagem.Should().Be(1);
+        var depois = await contas.ObterPorDocumentoAsync(CpfA, default);
+        depois!.Id.Should().Be(original!.Id);
+        depois.Nome.Should().Be(original.Nome);
     }
 
     // ---------- Dado-proprio: resolvedor ----------
