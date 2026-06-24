@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Cofre.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Cofre.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Cofre.Infrastructure.Migrations
 {
     [DbContext(typeof(CofreDbContext))]
-    partial class CofreDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624002624_P0AuditHashChainSync")]
+    partial class P0AuditHashChainSync
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

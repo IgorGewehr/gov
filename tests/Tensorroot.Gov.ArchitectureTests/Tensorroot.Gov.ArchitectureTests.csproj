@@ -15,6 +15,9 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- SqlServer: provedor de PROD; a fitness PendingModelChangesFitness compara modelo × snapshot
+         no MESMO provedor que gerou as migrations (tipos de coluna provider-específicos). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
   <ItemGroup>

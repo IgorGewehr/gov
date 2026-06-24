@@ -3,21 +3,24 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Tensorroot.Gov.Modules.Cofre.Infrastructure.Persistence;
+using Tensorroot.Gov.Modules.Cidadao.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace Tensorroot.Gov.Modules.Cofre.Infrastructure.Migrations
+namespace Tensorroot.Gov.Modules.Cidadao.Infrastructure.Migrations
 {
-    [DbContext(typeof(CofreDbContext))]
-    partial class CofreDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(CidadaoDbContext))]
+    [Migration("20260624002633_P0AuditHashChainSync")]
+    partial class P0AuditHashChainSync
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("cofre")
+                .HasDefaultSchema("cidadao")
                 .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -82,150 +85,61 @@ namespace Tensorroot.Gov.Modules.Cofre.Infrastructure.Migrations
 
                     b.HasIndex("TenantId", "TimestampUtc");
 
-                    b.ToTable("AuditTrail", "cofre");
+                    b.ToTable("AuditTrail", "cidadao");
                 });
 
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Cofre.Domain.AssinaturaAuditLog", b =>
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Cidadao.Domain.Contas.CidadaoConta", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("CorrelationId")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("Destino")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("HashArtefatoSha256")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("IpAddress")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("Motivo")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<bool>("Sucesso")
+                    b.Property<bool>("Ativo")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Thumbprint")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<DateTime>("TimestampUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Titular")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("UserId")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "TimestampUtc");
-
-                    b.ToTable("AssinaturaAuditLog", "cofre");
-                });
-
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Cofre.Domain.CertificadoA1Cofre", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CertificadoAnteriorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CnpjTitular")
+                    b.Property<string>("Documento")
                         .IsRequired()
                         .HasMaxLength(14)
                         .HasColumnType("nvarchar(14)");
 
-                    b.Property<byte[]>("DekWrapped")
+                    b.Property<string>("Email")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("EmailConfirmado")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Nome")
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("KekKeyId")
+                    b.Property<string>("Origem")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateTime>("NotAfterUtc")
-                        .HasColumnType("datetime2");
+                    b.Property<string>("SeloGovBr")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
-                    b.Property<DateTime>("NotBeforeUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<byte[]>("PfxCipher")
+                    b.Property<string>("SenhaHash")
                         .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<byte[]>("PfxNonce")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("varbinary(12)");
-
-                    b.Property<byte[]>("PfxTag")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("varbinary(16)");
-
-                    b.Property<byte[]>("SenhaCipher")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<byte[]>("SenhaNonce")
-                        .IsRequired()
-                        .HasMaxLength(12)
-                        .HasColumnType("varbinary(12)");
-
-                    b.Property<byte[]>("SenhaTag")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("varbinary(16)");
-
-                    b.Property<string>("Serie")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("nvarchar(8)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
+                    b.Property<string>("Telefone")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Thumbprint")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<string>("Titular")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Status");
-
-                    b.HasIndex("TenantId", "Thumbprint")
+                    b.HasIndex("TenantId", "Documento")
                         .IsUnique();
 
-                    b.ToTable("CertificadosA1", "cofre");
+                    b.ToTable("Contas", "cidadao");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
@@ -268,7 +182,7 @@ namespace Tensorroot.Gov.Modules.Cofre.Infrastructure.Migrations
 
                     b.HasIndex("ProcessedOnUtc", "DeadLetteredOnUtc", "NextAttemptUtc");
 
-                    b.ToTable("OutboxMessages", "cofre");
+                    b.ToTable("OutboxMessages", "cidadao");
                 });
 #pragma warning restore 612, 618
         }

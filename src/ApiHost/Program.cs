@@ -132,7 +132,18 @@ builder.Services
 
 // RBAC: provedor de políticas dinâmicas por permissão (claims "perm") + handler.
 builder.Services.AddRbacPermissoes();
-builder.Services.AddAuthorization();
+
+// === Deny-by-default GLOBAL (trava, não convenção): FallbackPolicy = RequireAuthenticatedUser ===
+// Todo endpoint SEM metadado de autorização explícito (sem [Authorize]/RequirePermission/RequireAuthorization)
+// passa a EXIGIR usuário autenticado. Assim, esquecer a anotação num endpoint novo FALHA FECHADO (401),
+// em vez de expô-lo anonimamente. As superfícies legitimamente ANÔNIMAS (health, raiz, login/cadastro do
+// cidadão e da identidade, portal público de transparência/e-SIC, e o Swagger só em Development) são
+// marcadas com AllowAnonymous() — que tem precedência sobre a FallbackPolicy. Esta política só atua quando
+// NENHUMA outra (Authorize/AllowAnonymous) está presente no endpoint.
+builder.Services.AddAuthorizationBuilder()
+    .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build());
 
 // === Rate limiting (proteção contra abuso) ===
 builder.Services.AddRateLimiter(options =>
@@ -281,7 +292,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.MapHealthChecks("/health");
+// Health check: ANÔNIMO (probes de liveness/readiness não têm token). AllowAnonymous tem precedência
+// sobre a FallbackPolicy deny-by-default.
+app.MapHealthChecks("/health").AllowAnonymous();
 
 // Endpoint administrativo: provisiona um tenant (catálogo + migração do banco dedicado).
 // AÇÃO DE OPERADOR DA PLATAFORMA (Tensorroot), NÃO de administrador de tenant (MODELO §7): exige a
@@ -307,12 +320,14 @@ foreach (var module in modules)
     module.MapEndpoints(app);
 }
 
+// Raiz: cartão de visita público (produto + módulos ativos). ANÔNIMO — AllowAnonymous tem precedência
+// sobre a FallbackPolicy deny-by-default.
 app.MapGet("/", () => Results.Ok(new
 {
     produto = "Tensorroot.Gov",
     fase = 2,
     modulosAtivos = modules.Select(module => module.Name),
-}));
+})).AllowAnonymous();
 
 // Garante o banco de CONTROLE (plataforma) criado/migrado no startup.
 // P0-5: a EVOLUÇÃO de schema do banco de controle DEVE passar por migrations — `EnsureCreatedAsync`
