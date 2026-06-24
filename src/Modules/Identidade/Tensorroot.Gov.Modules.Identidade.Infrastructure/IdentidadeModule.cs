@@ -86,6 +86,10 @@ public sealed class IdentidadeModule : IModule
         // AA-5/D3: politica de (sub)delegacao por tenant (teto de profundidade) — parametrizavel.
         services.AddScoped<IPoliticaDelegacaoProvider, PoliticaDelegacaoProvider>();
 
+        // W10.6 ID-1/ID-2: guarda de escopo/I4 dos comandos administrativos sobre a CONTA do usuario
+        // (reset de senha, edicao de e-mail, ativar/desativar). Reusada pelos quatro handlers.
+        services.AddScoped<AutorizacaoAdminUsuario>();
+
         // Seguranca: hash BCrypt e emissao de JWT HS256.
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SecaoConfiguracao));
         var workFactor = configuration.GetValue<int?>("Seguranca:BCryptWorkFactor") ?? SenhaHasher.WorkFactorPadrao;

@@ -103,6 +103,27 @@ internal sealed class ServicoAssinaturaDigital(
             certificado = await repositorio.ObterAtivoAsync(cancellationToken).ConfigureAwait(false)
                 ?? throw new CertificadoInvalidoException("Nenhum certificado A1 ativo no cofre do tenant.");
 
+            // GATE DE VALIDADE NO USO (CF-1, A1-DESIGN §1.14): fail-closed — NUNCA assinar com cert
+            // fora da janela de validade. A validade so era checada no cadastro; um A1 vencido apos
+            // o cadastro permanecia Ativo e continuava assinando. Aqui, no instante do uso:
+            //   - VENCIDO (NotAfter <= agora): transiciona Ativo->Expirado (liga MarcarExpirado, sem
+            //     chamadores ate aqui) e RECUSA. A transicao e persistida pelo SalvarAsync do catch,
+            //     entao o cert nao volta a ser resolvido como ativo nas proximas assinaturas.
+            //   - AINDA NAO VALIDO (NotBefore > agora): apenas RECUSA, sem mudar status (pode tornar-se
+            //     valido depois; relogio adiantado nao deve expirar o cert).
+            if (certificado.NotAfterUtc <= agora)
+            {
+                certificado.MarcarExpirado();
+                throw new CertificadoInvalidoException(
+                    "Certificado A1 ativo esta VENCIDO (NotAfter no passado) — assinatura recusada (fail-closed).");
+            }
+
+            if (certificado.NotBeforeUtc > agora)
+            {
+                throw new CertificadoInvalidoException(
+                    "Certificado A1 ativo ainda NAO entrou em vigor (NotBefore no futuro) — assinatura recusada (fail-closed).");
+            }
+
             var resultado = await operacao(certificado).ConfigureAwait(false);
 
             repositorio.RegistrarUso(AssinaturaAuditLog.Sucedido(

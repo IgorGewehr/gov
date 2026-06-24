@@ -2,6 +2,7 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Identidade.Application.Abstractions;
+using Tensorroot.Gov.Modules.Identidade.Application.Internal;
 using Tensorroot.Gov.Modules.Identidade.Domain.Usuarios;
 using Tensorroot.Gov.Modules.Identidade.Domain.ValueObjects;
 
@@ -29,10 +30,16 @@ public sealed class EditarUsuarioValidator : AbstractValidator<EditarUsuarioComm
     }
 }
 
-/// <summary>Handler da edicao de usuario.</summary>
+/// <summary>
+/// Handler da edicao de usuario. SEGURANCA (W10.6 ID-2): a edicao troca o E-MAIL DE LOGIN (vetor
+/// adjacente de tomada de conta + indice central) — exige escopo administrativo sobre a UO do alvo e
+/// anti-escalacao I4 (<see cref="AutorizacaoAdminUsuario"/>) antes de mutar. Um admin de sub-UO nao
+/// edita o admin-raiz nem usuario fora do seu escopo.
+/// </summary>
 public sealed class EditarUsuarioHandler(
     IUsuarioRepository usuarios,
     IRegistroLoginCentral registroLoginCentral,
+    AutorizacaoAdminUsuario autorizacao,
     IUnitOfWork unitOfWork,
     ITenantContext tenant)
     : ICommandHandler<EditarUsuarioCommand>
@@ -44,6 +51,9 @@ public sealed class EditarUsuarioHandler(
 
         var usuario = await usuarios.ObterPorIdAsync(new UsuarioId(request.UsuarioId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Usuario nao encontrado.");
+
+        // Deny-by-default: escopo/I4 antes de qualquer mutacao (inclui troca do e-mail de login).
+        await autorizacao.GarantirPodeAgirSobreAsync(usuario, "EditarUsuario", cancellationToken).ConfigureAwait(false);
 
         var email = Email.De(request.Email);
         var emailAntigo = usuario.Email;

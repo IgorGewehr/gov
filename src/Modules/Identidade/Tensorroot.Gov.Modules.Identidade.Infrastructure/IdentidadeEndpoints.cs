@@ -84,15 +84,35 @@ internal static class IdentidadeEndpoints
         admin.MapPut("/usuarios/{usuarioId:guid}", async (
             Guid usuarioId, EditarUsuarioPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new EditarUsuarioCommand(usuarioId, payload.Nome, payload.Email), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new EditarUsuarioCommand(usuarioId, payload.Nome, payload.Email), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // W10.6 ID-2: escopo/I4 reprovou a edicao (alvo fora do escopo ou mais poderoso) → 403.
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         admin.MapPut("/usuarios/{usuarioId:guid}/senha", async (
             Guid usuarioId, AlterarSenhaPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new AlterarSenhaCommand(usuarioId, payload.NovaSenha), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new AlterarSenhaCommand(usuarioId, payload.NovaSenha), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // W10.6 ID-1 (P0): escopo/I4 reprovou o reset (anti-tomada de conta) → 403 auditado.
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         admin.MapPut("/usuarios/{usuarioId:guid}/papeis", async (
@@ -157,15 +177,35 @@ internal static class IdentidadeEndpoints
         admin.MapPost("/usuarios/{usuarioId:guid}/ativar", async (
             Guid usuarioId, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new AtivarUsuarioCommand(usuarioId), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new AtivarUsuarioCommand(usuarioId), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // W10.6 ID-2: escopo/I4 reprovou a reativacao fora do escopo → 403 auditado.
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         admin.MapPost("/usuarios/{usuarioId:guid}/desativar", async (
             Guid usuarioId, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new DesativarUsuarioCommand(usuarioId), cancellationToken);
-            return Results.NoContent();
+            try
+            {
+                await sender.Send(new DesativarUsuarioCommand(usuarioId), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // W10.6 ID-2: escopo/I4 reprovou a desativacao (ex.: do admin-raiz) → 403 auditado.
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
         });
 
         // --- Papeis ---

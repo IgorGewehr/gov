@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Assinatura;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
@@ -54,7 +55,34 @@ public sealed class CofreModule : IModule
         // Opcoes do cofre + provedor de KEK (envelope encryption — A1-DESIGN §1).
         services.Configure<CofreOptions>(configuration.GetSection(CofreOptions.Secao));
         var provedorKek = configuration[$"{CofreOptions.Secao}:ProvedorKek"] ?? "Config";
-        if (string.Equals(provedorKek, "KeyVault", StringComparison.OrdinalIgnoreCase))
+
+        // FAIL-FAST DE PRODUCAO (CF-2, CLAUDE.md §6 "segredos so no Key Vault"): em PROD a KEK
+        // (chave-mestra que embrulha TODAS as DEKs de TODOS os tenants) so pode vir do Key Vault/HSM.
+        // Sem esta trava o sistema subia silenciosamente com a KEK de DEV (provedor "Config", KEK AES
+        // de config/env) — dump de config/env expoe a KEK e vaza o A1 de todos os tenants. Espelha o
+        // fail-fast de Database:Provider (Program.cs): em ambiente nao-Development, exigir KeyVault.
+        //
+        // O ambiente do Host chega na configuracao SOB A CHAVE CANONICA HostDefaults.EnvironmentKey
+        // ("environment") — populada tanto por UseEnvironment(...) (programatico) quanto pelas variaveis
+        // ASPNETCORE_/DOTNET_ENVIRONMENT (a CreateBuilder normaliza ambas nessa chave). Lemos "environment"
+        // PRIMEIRO (assim respeitamos UseEnvironment, como o app.Environment.IsDevelopment() do Program.cs)
+        // e so depois caimos nas variaveis cruas. Ausencia total => PRODUCAO (deny-by-default).
+        var ambiente = configuration[HostDefaults.EnvironmentKey]
+            ?? configuration["ASPNETCORE_ENVIRONMENT"]
+            ?? configuration["DOTNET_ENVIRONMENT"]
+            ?? Environments.Production;
+        var ehDesenvolvimento = string.Equals(ambiente, Environments.Development, StringComparison.OrdinalIgnoreCase);
+        var ehKeyVault = string.Equals(provedorKek, "KeyVault", StringComparison.OrdinalIgnoreCase);
+        if (!ehDesenvolvimento && !ehKeyVault)
+        {
+            throw new InvalidOperationException(
+                $"Cofre:ProvedorKek invalido em ambiente '{ambiente}': '{provedorKek}'. " +
+                "PRODUCAO exige Cofre:ProvedorKek=KeyVault (KEK no Key Vault/HSM; a chave-mestra nunca " +
+                "sai do HSM). O provedor 'Config' (KEK AES de config/env) e EXCLUSIVO de DESENVOLVIMENTO " +
+                "— subir com ele em producao colocaria a chave-mestra de todos os tenants fora do HSM.");
+        }
+
+        if (ehKeyVault)
         {
             // PRODUCAO: KEK no Key Vault/HSM (wrap/unwrap; a chave nunca sai do HSM).
             services.AddSingleton<IProvedorKek, ProvedorKekKeyVault>();

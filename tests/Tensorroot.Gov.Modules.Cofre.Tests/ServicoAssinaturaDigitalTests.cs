@@ -84,6 +84,80 @@ public sealed class ServicoAssinaturaDigitalTests : IDisposable
         await acao.Should().ThrowAsync<CertificadoInvalidoException>();
     }
 
+    // --- W10.6 CF-1 (P0): gate de validade NO USO. Um A1 cadastrado valido por 1 ano permanecia
+    // Status=Ativo apos vencer (nada o flipava) e ObterAtivoAsync continuava o resolvendo — assinando
+    // com cert expirado. O relogio fake colocado APOS o NotAfter prova o cenario "vencido depois do
+    // cadastro": o cert ainda esta Ativo no banco, mas a assinatura deve ser RECUSADA (fail-closed). ---
+
+    [Fact]
+    public async Task Recusa_assinar_com_cert_VENCIDO_e_audita_falha()
+    {
+        // Cert cadastrado valido (NotAfter = agora_real + 1 ano), porem o relogio de assinatura esta
+        // 2 anos no futuro: o cert ja venceu, mas continua Status=Ativo no banco (vetor do CF-1).
+        await CadastrarCertAtivoAsync(TenantA);
+        var futuro = new TimeProviderFake(DateTimeOffset.UtcNow.AddYears(2));
+
+        await using var contexto = CriarContexto(TenantA);
+        var servico = CriarServico(contexto, TenantA, futuro);
+
+        var acao = async () => await servico.AssinarXmlAsync(
+            Encoding.UTF8.GetBytes("<doc/>"), new OpcoesAssinaturaXml(DestinoAssinatura.ESocial), default);
+
+        var excecao = await acao.Should().ThrowAsync<CertificadoInvalidoException>();
+        excecao.Which.Message.Should().Contain("VENCIDO");
+
+        // Tentativa auditada como FALHA (A1-DESIGN §6) — nenhum artefato assinado foi produzido.
+        var auditoria = await contexto.AssinaturaAuditLogs.SingleAsync();
+        auditoria.Sucesso.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Cert_vencido_e_flipado_para_Expirado_e_nao_volta_a_ser_resolvido_como_ativo()
+    {
+        await CadastrarCertAtivoAsync(TenantA);
+        var futuro = new TimeProviderFake(DateTimeOffset.UtcNow.AddYears(2));
+
+        await using var contexto = CriarContexto(TenantA);
+        var servico = CriarServico(contexto, TenantA, futuro);
+
+        // 1a tentativa: vencido -> recusa e transiciona Ativo->Expirado (persistido pelo SalvarAsync).
+        var primeira = async () => await servico.AssinarXmlAsync(
+            Encoding.UTF8.GetBytes("<doc/>"), new OpcoesAssinaturaXml(DestinoAssinatura.ESocial), default);
+        await primeira.Should().ThrowAsync<CertificadoInvalidoException>();
+
+        // O cert deixou de ser Ativo: nao volta a ser resolvido (mensagem de "nenhum cert ativo").
+        await using var contexto2 = CriarContexto(TenantA);
+        var repo = new CofreCertificadoRepository(contexto2);
+        (await repo.ObterAtivoAsync(default)).Should().BeNull();
+
+        // Confirma o status persistido = Expirado.
+        var cert = await contexto2.Certificados.IgnoreQueryFilters().SingleAsync();
+        cert.Status.Should().Be(CertificadoStatus.Expirado);
+    }
+
+    [Fact]
+    public async Task Recusa_assinar_com_cert_AINDA_NAO_vigente()
+    {
+        // Cert cadastrado agora (NotBefore = agora_real - 5min), porem o relogio de assinatura esta no
+        // passado distante: o cert ainda nao entrou em vigor. Deve recusar SEM expirar (relogio adiantado).
+        await CadastrarCertAtivoAsync(TenantA);
+        var passado = new TimeProviderFake(DateTimeOffset.UtcNow.AddYears(-2));
+
+        await using var contexto = CriarContexto(TenantA);
+        var servico = CriarServico(contexto, TenantA, passado);
+
+        var acao = async () => await servico.AssinarXmlAsync(
+            Encoding.UTF8.GetBytes("<doc/>"), new OpcoesAssinaturaXml(DestinoAssinatura.ESocial), default);
+
+        var excecao = await acao.Should().ThrowAsync<CertificadoInvalidoException>();
+        excecao.Which.Message.Should().Contain("vigor");
+
+        // Nao vigente NAO expira o cert (pode tornar-se valido depois): segue Ativo.
+        await using var contexto2 = CriarContexto(TenantA);
+        var cert = await contexto2.Certificados.IgnoreQueryFilters().SingleAsync();
+        cert.Status.Should().Be(CertificadoStatus.Ativo);
+    }
+
     private async Task CadastrarCertAtivoAsync(Guid tenant)
     {
         await using var contexto = CriarContexto(tenant);
@@ -94,13 +168,13 @@ public sealed class ServicoAssinaturaDigitalTests : IDisposable
         await custodia.CadastrarOuRotacionarAsync("11222333000181", CofreTestHelpers.GerarPfx(), CofreTestHelpers.SenhaPfx, default);
     }
 
-    private ServicoAssinaturaDigital CriarServico(CofreDbContext contexto, Guid tenant)
+    private ServicoAssinaturaDigital CriarServico(CofreDbContext contexto, Guid tenant, TimeProvider? clock = null)
         => new(
             new CofreCertificadoRepository(contexto),
             new CofreCripto(_kek),
             new TenantContextFake(tenant),
             new CurrentUserFake(),
-            TimeProvider.System,
+            clock ?? TimeProvider.System,
             NullLogger<ServicoAssinaturaDigital>.Instance);
 
     private CofreDbContext CriarContexto(Guid tenant)
@@ -138,5 +212,12 @@ public sealed class ServicoAssinaturaDigitalTests : IDisposable
         public string? UserName => "Usuario de Teste";
 
         public string? IpAddress => "127.0.0.1";
+    }
+
+    /// <summary>TimeProvider fixo no instante informado — desloca o relogio de assinatura para
+    /// alem/aquem da janela de validade do A1 cadastrado, provando o gate de validade no uso (CF-1).</summary>
+    private sealed class TimeProviderFake(DateTimeOffset agora) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => agora;
     }
 }

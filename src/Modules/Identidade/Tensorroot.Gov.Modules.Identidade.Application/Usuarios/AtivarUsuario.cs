@@ -2,6 +2,7 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Identidade.Application.Abstractions;
+using Tensorroot.Gov.Modules.Identidade.Application.Internal;
 using Tensorroot.Gov.Modules.Identidade.Domain.Usuarios;
 
 namespace Tensorroot.Gov.Modules.Identidade.Application.Usuarios;
@@ -17,8 +18,15 @@ public sealed class AtivarUsuarioValidator : AbstractValidator<AtivarUsuarioComm
     public AtivarUsuarioValidator() => RuleFor(comando => comando.UsuarioId).NotEmpty();
 }
 
-/// <summary>Handler da ativacao de usuario.</summary>
-public sealed class AtivarUsuarioHandler(IUsuarioRepository usuarios, IUnitOfWork unitOfWork)
+/// <summary>
+/// Handler da ativacao de usuario. SEGURANCA (W10.6 ID-2): exige escopo administrativo sobre a UO do
+/// alvo e anti-escalacao I4 (<see cref="AutorizacaoAdminUsuario"/>) — um admin de sub-UO nao reativa
+/// usuario fora do seu escopo.
+/// </summary>
+public sealed class AtivarUsuarioHandler(
+    IUsuarioRepository usuarios,
+    AutorizacaoAdminUsuario autorizacao,
+    IUnitOfWork unitOfWork)
     : ICommandHandler<AtivarUsuarioCommand>
 {
     /// <inheritdoc />
@@ -28,6 +36,9 @@ public sealed class AtivarUsuarioHandler(IUsuarioRepository usuarios, IUnitOfWor
 
         var usuario = await usuarios.ObterPorIdAsync(new UsuarioId(request.UsuarioId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Usuario nao encontrado.");
+
+        // Deny-by-default: escopo/I4 antes de mutar o estado de ativacao do alvo.
+        await autorizacao.GarantirPodeAgirSobreAsync(usuario, "AtivarUsuario", cancellationToken).ConfigureAwait(false);
 
         usuario.Ativar();
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
