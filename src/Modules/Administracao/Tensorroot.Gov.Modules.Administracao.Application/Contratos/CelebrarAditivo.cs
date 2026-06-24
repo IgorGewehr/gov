@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 
@@ -50,6 +51,7 @@ public sealed class CelebrarAditivoHandler(
     IUnitOfWork unitOfWork,
     IPublisher publisher,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<CelebrarAditivoCommand, Guid>
 {
@@ -66,7 +68,8 @@ public sealed class CelebrarAditivoHandler(
             ValorMonetario.De(request.ValorDelta),
             request.NovaVigenciaFim,
             request.Justificativa,
-            DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime),
+            // Data de celebracao do aditivo (data de lancamento → prazo PNCP) no FUSO do tenant (UTC-3).
+            dataHoje.Hoje(),
             request.EhReforma);
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

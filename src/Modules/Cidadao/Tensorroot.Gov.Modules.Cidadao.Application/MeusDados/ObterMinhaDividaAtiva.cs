@@ -2,6 +2,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Cidadao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Contracts;
 using Tensorroot.Gov.SharedKernel;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Cidadao.Application.MeusDados;
 
@@ -31,7 +32,7 @@ public sealed record ObterMinhaDividaAtivaQuery(DateOnly? DataBase = null)
 public sealed class ObterMinhaDividaAtivaHandler(
     IResolvedorPessoaDoCidadaoAutenticado resolvedor,
     IConsultaCidadaoEmEscopoDedicado consultaDedicada,
-    TimeProvider clock)
+    IDataHojeTenant dataHoje)
     : IQueryHandler<ObterMinhaDividaAtivaQuery, IReadOnlyList<MinhaDividaAtivaDto>>
 {
     /// <inheritdoc />
@@ -40,7 +41,9 @@ public sealed class ObterMinhaDividaAtivaHandler(
         ArgumentNullException.ThrowIfNull(request);
 
         var pessoa = await resolvedor.ResolverPessoaAtualAsync(cancellationToken).ConfigureAwait(false);
-        var dataBase = request.DataBase ?? DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime);
+        // Prescricao (CTN art. 174) corre por dia civil: a data-base default e' HOJE no FUSO do tenant
+        // (UTC-3), nao o UTC — perto da meia-noite o UTC ja virou o dia seguinte e anteciparia a prescricao.
+        var dataBase = request.DataBase ?? dataHoje.Hoje();
 
         // Consulta ao Tributos em ESCOPO DEDICADO (guarda H5); documento ja resolvido server-side.
         return await consultaDedicada

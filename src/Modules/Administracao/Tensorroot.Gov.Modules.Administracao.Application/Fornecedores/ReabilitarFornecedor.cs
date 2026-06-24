@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Fornecedores;
 
@@ -24,7 +25,7 @@ public sealed class ReabilitarFornecedorValidator : AbstractValidator<Reabilitar
 public sealed class ReabilitarFornecedorHandler(
     IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<ReabilitarFornecedorCommand>
 {
     /// <inheritdoc />
@@ -35,7 +36,8 @@ public sealed class ReabilitarFornecedorHandler(
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Fornecedor nao encontrado.");
 
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Data da reabilitacao (encerra a janela de impedimento) no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         fornecedor.Reabilitar(hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

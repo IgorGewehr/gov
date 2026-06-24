@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.RecursosHumanos.Application.Abstractions;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 
@@ -27,7 +28,7 @@ public sealed class CalcularFolhaHandler(
     IFolhaDePagamentoRepository folhas,
     IParametrosFolhaProvider parametros,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<CalcularFolhaCommand>
 {
     /// <inheritdoc />
@@ -39,7 +40,9 @@ public sealed class CalcularFolhaHandler(
             ?? throw new InvalidOperationException("Folha nao encontrada.");
 
         var config = await parametros.ObterAsync(cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Marco do calculo (abate-teto / competencia) → HOJE no FUSO do tenant (UTC-3): perto da
+        // meia-noite o UTC ja virou o dia seguinte e poderia jogar o calculo para a competencia errada.
+        var hoje = dataHoje.Hoje();
 
         // I-5/I-6: o agregado consolida totais e reaplica o abate-teto.
         folha.Calcular(config.TetoRemuneratorio, hoje, config.CodigoRubricaAbateTeto);

@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Alvaras;
 using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Alvaras;
 
@@ -59,7 +60,7 @@ public sealed class RenovarAlvaraHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<RenovarAlvaraCommand, ResultadoRenovacaoAlvara>
 {
     /// <inheritdoc />
@@ -80,7 +81,7 @@ public sealed class RenovarAlvaraHandler(
         // Fato gerador da TLL no exercício informado; data da constituição = "hoje" administrativo
         // (sem relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
         var dataFatoGerador = new DateOnly(request.Exercicio, request.VencimentoTll.Month, 1);
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,

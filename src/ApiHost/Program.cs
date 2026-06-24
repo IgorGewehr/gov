@@ -82,10 +82,13 @@ builder.Services.AddMediatR(configuration =>
     configuration.RegisterServicesFromAssembly(typeof(ApplicationBuildingBlocks).Assembly));
 builder.Services.AddApplicationPipeline();
 
-// === Servico transversal de DIAS UTEIS / PRAZOS LEGAIS (registro CENTRAL e UNICO — W9.1) ===
-// ICalendarioDiasUteis + IFeriadosTenantProvider, Scoped (seguem o TenantContext). Consumido por
-// Administracao (PNCP/art. 94), Transparencia (e-SIC) e futuras ondas (Obras §3, Convenios). Os
-// modulos CONSOMEM por DI — nao recriam.
+// === Servico transversal de DIAS UTEIS / PRAZOS LEGAIS + "HOJE" NO FUSO DO TENANT (registro CENTRAL
+// e UNICO — W9.1 / fix de fuso) ===
+// ICalendarioDiasUteis + IFeriadosTenantProvider + IDataHojeTenant, Scoped (seguem o TenantContext).
+// IDataHojeTenant e' a UNICA porta autorizada a derivar a data civil de DOMINIO do relogio no fuso do
+// tenant (default America/Sao_Paulo); auditoria/hash-chain/Outbox permanecem UTC. Consumido por
+// Tributos (decadencia/prescricao), Administracao (PNCP/art. 94), Convenios, Obras (art. 94 §3), RH
+// (competencia de folha) e demais. Os modulos CONSOMEM por DI — nao recriam.
 builder.Services.AddCalendarioDiasUteis();
 
 // === Plataforma multi-tenant: catálogo de licenças de módulo por tenant ===

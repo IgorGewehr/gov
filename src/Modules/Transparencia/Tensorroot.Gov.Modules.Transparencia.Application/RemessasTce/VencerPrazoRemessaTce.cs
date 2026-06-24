@@ -38,6 +38,7 @@ public sealed class VencerPrazoRemessaTceHandler(
         var remessa = await remessas.ObterPorIdAsync(new RemessaTceId(request.RemessaTceId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Remessa não encontrada.");
 
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         remessa.VencerPrazo(hoje);
 

@@ -46,7 +46,7 @@ public sealed record RegistrarLiberacaoParcelaConvenioCommand(Guid ConvenioId, i
 
 /// <summary>Handler da liberacao de parcela.</summary>
 public sealed class RegistrarLiberacaoParcelaConvenioHandler(
-    IConvenioRecebidoRepository convenios, IUnitOfWork unitOfWork, TimeProvider relogio)
+    IConvenioRecebidoRepository convenios, IUnitOfWork unitOfWork, IDataHojeTenant dataHoje)
     : ICommandHandler<RegistrarLiberacaoParcelaConvenioCommand>
 {
     /// <inheritdoc />
@@ -54,7 +54,8 @@ public sealed class RegistrarLiberacaoParcelaConvenioHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var convenio = await ConvenioLookup.ObterOuFalharAsync(convenios, request.ConvenioId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Data da liberacao da parcela (data de lancamento) → HOJE no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         convenio.RegistrarLiberacaoParcela(request.NumeroOrdem, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -126,7 +127,7 @@ public sealed record AbrirPrestacaoFinalConvenioCommand(Guid ConvenioId, string 
 
 /// <summary>Handler da abertura de PC final.</summary>
 public sealed class AbrirPrestacaoFinalConvenioHandler(
-    IConvenioRecebidoRepository convenios, IUnitOfWork unitOfWork, TimeProvider relogio)
+    IConvenioRecebidoRepository convenios, IUnitOfWork unitOfWork, IDataHojeTenant dataHoje)
     : ICommandHandler<AbrirPrestacaoFinalConvenioCommand, Guid>
 {
     /// <inheritdoc />
@@ -134,7 +135,8 @@ public sealed class AbrirPrestacaoFinalConvenioHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var convenio = await ConvenioLookup.ObterOuFalharAsync(convenios, request.ConvenioId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Encerramento de vigencia/abertura de PC final: HOJE no FUSO do tenant (UTC-3), nao o UTC cru.
+        var hoje = dataHoje.Hoje();
         var pc = convenio.EncerrarVigenciaAbrirPrestacaoFinal(hoje, request.CompetenciaRef);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return pc.Id;
@@ -154,6 +156,7 @@ public sealed class SubmeterPrestacaoConvenioHandler(
     IIntegrationEventWriter integrationEvents,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider relogio)
     : ICommandHandler<SubmeterPrestacaoConvenioCommand>
 {
@@ -162,7 +165,9 @@ public sealed class SubmeterPrestacaoConvenioHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var convenio = await ConvenioLookup.ObterOuFalharAsync(convenios, request.ConvenioId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Prazo de analise (A-INV-8) corre por dia civil → HOJE no FUSO do tenant. O timestamp do evento
+        // abaixo permanece UTC (instante absoluto da trilha/Outbox).
+        var hoje = dataHoje.Hoje();
 
         var prazoParcial = parametros.PrazoAnalisePcParcial(tenant.TenantId);
         var prazoFinal = parametros.PrazoAnalisePcFinal(tenant.TenantId);
@@ -213,7 +218,7 @@ public sealed class AbrirSaneamentoConvenioHandler(
     ICalendarioDiasUteis calendario,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider relogio)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<AbrirSaneamentoConvenioCommand>
 {
     /// <inheritdoc />
@@ -221,7 +226,8 @@ public sealed class AbrirSaneamentoConvenioHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var convenio = await ConvenioLookup.ObterOuFalharAsync(convenios, request.ConvenioId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Prazo de saneamento (A-INV-9) corre por dia civil → HOJE no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         var prazoSaneamento = parametros.PrazoSaneamento(tenant.TenantId);
         convenio.AbrirSaneamentoPrestacao(request.PrestacaoId, hoje, prazoSaneamento, calendario);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

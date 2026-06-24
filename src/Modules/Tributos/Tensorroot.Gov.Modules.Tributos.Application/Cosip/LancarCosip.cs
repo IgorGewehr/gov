@@ -8,6 +8,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Cosip;
 
@@ -61,7 +62,7 @@ public sealed class LancarCosipHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<LancarCosipCommand, ResultadoLancamentoCosip>
 {
     /// <inheritdoc />
@@ -80,7 +81,7 @@ public sealed class LancarCosipHandler(
         // Fato gerador na competência informada; data da constituição = "hoje" administrativo (sem
         // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
         var dataFatoGerador = new DateOnly(request.Ano, request.Mes, DateTime.DaysInMonth(request.Ano, request.Mes));
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,

@@ -25,6 +25,7 @@ public sealed class ConcederEstabilidadeHandler(
         var servidor = await servidores.ObterPorIdAsync(new ServidorId(request.ServidorId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Servidor nao encontrado.");
 
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         servidor.ConcederEstabilidade(hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

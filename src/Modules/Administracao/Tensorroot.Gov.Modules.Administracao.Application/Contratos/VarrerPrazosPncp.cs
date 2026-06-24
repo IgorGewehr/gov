@@ -17,10 +17,13 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 public sealed record VarrerPrazosPncpCommand : ICommand<int>;
 
 /// <summary>
-/// Handler do varredor de prazos PNCP. Reproduzivel: o <c>hoje</c> vem do <see cref="TimeProvider"/>
-/// (nunca do relogio interno do dominio); a janela de antecedencia vem dos parametros do tenant (sem
-/// numero magico — §16). Os alertas viajam pelo OUTBOX (consistencia transacional; entrega cross-module
-/// em escopo dedicado por modulo na drenagem). Idempotencia do alerta = por <c>EventId</c> no consumidor.
+/// Handler do varredor de prazos PNCP. Reproduzivel: o <c>hoje</c> (prazo legal art. 94) vem no FUSO do
+/// tenant via <see cref="IDataHojeTenant"/> (nunca do relogio interno do dominio nem do UTC cru — perto da
+/// meia-noite UTC-3 o "hoje" UTC ja virou o dia seguinte e venceria o prazo um dia antes); a janela de
+/// antecedencia vem dos parametros do tenant (sem numero magico — §16). O timestamp do Integration Event
+/// (<c>agoraUtc</c>) permanece UTC — e' instante absoluto da TRILHA/Outbox, ordenavel globalmente. Os
+/// alertas viajam pelo OUTBOX (consistencia transacional; entrega cross-module em escopo dedicado por
+/// modulo na drenagem). Idempotencia do alerta = por <c>EventId</c> no consumidor.
 /// </summary>
 public sealed class VarrerPrazosPncpHandler(
     IContratoRepository contratos,
@@ -29,6 +32,7 @@ public sealed class VarrerPrazosPncpHandler(
     ITenantContext tenant,
     IPncpParametros pncpParametros,
     ICalendarioDiasUteis calendario,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider) : ICommandHandler<VarrerPrazosPncpCommand, int>
 {
     /// <inheritdoc />
@@ -36,7 +40,8 @@ public sealed class VarrerPrazosPncpHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Prazo legal (art. 94) corre por dia civil → FUSO do tenant. Timestamp do evento → UTC (Outbox).
+        var hoje = dataHoje.Hoje();
         var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
         var antecedencia = pncpParametros.AntecedenciaAlertaDiasUteis();
 

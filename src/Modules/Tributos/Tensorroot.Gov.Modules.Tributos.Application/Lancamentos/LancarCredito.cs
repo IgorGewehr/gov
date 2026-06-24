@@ -5,6 +5,7 @@ using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Lancamentos;
 
@@ -43,7 +44,7 @@ public sealed class LancarCreditoHandler(
     ILancamentoRepository lancamentos,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<LancarCreditoCommand, Guid>
 {
     /// <inheritdoc />
@@ -58,7 +59,9 @@ public sealed class LancarCreditoHandler(
         // Fato gerador na competência informada; data da constituição = "hoje" administrativo (sem
         // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
         var dataFatoGerador = new DateOnly(request.Ano, request.Mes, DateTime.DaysInMonth(request.Ano, request.Mes));
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Data da constituicao = HOJE no FUSO do tenant (UTC-3) — termo inicial da decadencia (CTN art. 173);
+        // perto da meia-noite o UTC ja virou o dia seguinte e antecederia a contagem em um dia.
+        var hoje = dataHoje.Hoje();
 
         var lancamento = Lancamento.Lancar(
             tenant.TenantId,

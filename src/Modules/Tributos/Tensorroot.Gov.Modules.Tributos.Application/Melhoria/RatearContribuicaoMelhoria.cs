@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Melhoria;
 
@@ -55,7 +56,7 @@ public sealed class RatearContribuicaoMelhoriaHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<RatearContribuicaoMelhoriaCommand, ResultadoRateioMelhoria>
 {
     /// <inheritdoc />
@@ -75,7 +76,7 @@ public sealed class RatearContribuicaoMelhoriaHandler(
         // lançamento. Data da constituição = "hoje" administrativo (sem relógio no domínio —
         // CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
         var dataFatoGerador = new DateOnly(competencia.Ano, 1, 1);
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         var lancamentosGerados = new List<LancamentoMelhoriaPorImovel>();
         foreach (var imovel in obra.Imoveis)

@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Calculo;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Iptu;
 
@@ -58,7 +59,7 @@ public sealed class LancarIptuAnualHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<LancarIptuAnualCommand, ResultadoLancamentoIptu>
 {
     /// <inheritdoc />
@@ -81,7 +82,7 @@ public sealed class LancarIptuAnualHandler(
 
         // Data da constituição do crédito ("hoje" administrativo) — confrontada com a decadência
         // (CTN art. 173, I) dentro do agregado. Sem relógio no domínio (CLAUDE.md §16).
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         var lancamento = Lancamento.LancarIptu(
             tenant.TenantId,

@@ -140,6 +140,7 @@ public sealed class CelebrarParceriaHandler(
     IIntegrationEventWriter integrationEvents,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider relogio)
     : ICommandHandler<CelebrarParceriaCommand>
 {
@@ -148,7 +149,9 @@ public sealed class CelebrarParceriaHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var parceria = await ParceriaLookup.ObterOuFalharAsync(parcerias, request.ParceriaId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Data de celebracao (data de lancamento) → HOJE no FUSO do tenant. O timestamp dos eventos
+        // abaixo permanece UTC (instante absoluto da trilha/Outbox).
+        var hoje = dataHoje.Hoje();
 
         var vigencia = Vigencia.Criar(request.VigenciaInicio, request.VigenciaFim);
         parceria.Celebrar(vigencia, request.GestorParceriaId, request.ComissaoMonitoramentoId, hoje);
@@ -213,7 +216,7 @@ public sealed record LiberarRepasseParceriaCommand(Guid ParceriaId, int NumeroOr
 
 /// <summary>Handler da liberacao de repasse.</summary>
 public sealed class LiberarRepasseParceriaHandler(
-    IParceriaOscRepository parcerias, IUnitOfWork unitOfWork, TimeProvider relogio)
+    IParceriaOscRepository parcerias, IUnitOfWork unitOfWork, IDataHojeTenant dataHoje)
     : ICommandHandler<LiberarRepasseParceriaCommand>
 {
     /// <inheritdoc />
@@ -221,7 +224,8 @@ public sealed class LiberarRepasseParceriaHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var parceria = await ParceriaLookup.ObterOuFalharAsync(parcerias, request.ParceriaId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Data da liberacao do repasse (data de lancamento) → HOJE no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         parceria.LiberarRepasse(request.NumeroOrdem, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -286,7 +290,7 @@ public sealed class ReceberPrestacaoOscHandler(
     ICalendarioDiasUteis calendario,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider relogio)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<ReceberPrestacaoOscCommand>
 {
     /// <inheritdoc />
@@ -294,7 +298,8 @@ public sealed class ReceberPrestacaoOscHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var parceria = await ParceriaLookup.ObterOuFalharAsync(parcerias, request.ParceriaId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Prazo de analise (B-INV-7) corre por dia civil → HOJE no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         var prazoAnalise = parametros.PrazoAnalisePcOsc(tenant.TenantId);
         parceria.ReceberPrestacaoOsc(hoje, prazoAnalise, calendario);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -330,7 +335,7 @@ public sealed class AbrirSaneamentoParceriaHandler(
     ICalendarioDiasUteis calendario,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider relogio)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<AbrirSaneamentoParceriaCommand>
 {
     /// <inheritdoc />
@@ -338,7 +343,8 @@ public sealed class AbrirSaneamentoParceriaHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var parceria = await ParceriaLookup.ObterOuFalharAsync(parcerias, request.ParceriaId, cancellationToken).ConfigureAwait(false);
-        var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
+        // Prazo de saneamento (B-INV-8) corre por dia civil → HOJE no FUSO do tenant (UTC-3).
+        var hoje = dataHoje.Hoje();
         var prazoSaneamento = parametros.PrazoSaneamento(tenant.TenantId);
         parceria.AbrirSaneamentoPrestacao(hoje, prazoSaneamento, calendario);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

@@ -51,6 +51,7 @@ public sealed class AbrirPedidoSicHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         var sequencial = await pedidos.ProximoSequencialAsync(hoje.Year, cancellationToken).ConfigureAwait(false);
         var protocolo = ProtocoloSic.Gerar(hoje.Year, sequencial);

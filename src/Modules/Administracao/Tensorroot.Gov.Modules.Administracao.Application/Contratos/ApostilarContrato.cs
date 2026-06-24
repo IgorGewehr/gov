@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 
@@ -25,7 +26,7 @@ public sealed class ApostilarContratoValidator : AbstractValidator<ApostilarCont
 }
 
 /// <summary>Handler do apostilamento.</summary>
-public sealed class ApostilarContratoHandler(IContratoRepository contratos, IUnitOfWork unitOfWork, TimeProvider timeProvider)
+public sealed class ApostilarContratoHandler(IContratoRepository contratos, IUnitOfWork unitOfWork, IDataHojeTenant dataHoje)
     : ICommandHandler<ApostilarContratoCommand, Guid>
 {
     /// <inheritdoc />
@@ -39,7 +40,8 @@ public sealed class ApostilarContratoHandler(IContratoRepository contratos, IUni
         var apostilamento = contrato.Apostilar(
             request.Tipo,
             request.Descricao,
-            DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime));
+            // Data do apostilamento (data de lancamento) no FUSO do tenant (UTC-3).
+            dataHoje.Hoje());
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return apostilamento.Id.Value;

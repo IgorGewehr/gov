@@ -72,6 +72,7 @@ public sealed class FecharFolhaRemessaTceBridgeTests : RecursosHumanosTestBase
                 new RubricaFolhaRepository(ctx),
                 ctx,
                 writer,
+                new DataHojeTenantFake(TimeProvider.System),
                 TimeProvider.System);
 
             await handler.Handle(new FecharFolhaCommand(folhaId), default);

@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Fornecedores;
 
@@ -56,6 +57,7 @@ public sealed class AplicarSancaoHandler(
     IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<AplicarSancaoCommand, Guid>
 {
@@ -67,7 +69,9 @@ public sealed class AplicarSancaoHandler(
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Fornecedor nao encontrado.");
 
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Marco de validade da sancao (janela de impedimento) no FUSO do tenant (UTC-3). O timestamp do
+        // evento abaixo permanece UTC (instante absoluto da trilha/Outbox).
+        var hoje = dataHoje.Hoje();
         var valorMulta = request.ValorMulta is { } valor ? ValorMonetario.De(valor) : null;
 
         var sancaoId = fornecedor.AplicarSancao(

@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Iss;
 
@@ -62,7 +63,7 @@ public sealed class ApurarIssMensalHandler(
     ILancamentoRepository lancamentos,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<ApurarIssMensalCommand, ResultadoApuracaoIss>
 {
     /// <inheritdoc />
@@ -106,7 +107,7 @@ public sealed class ApurarIssMensalHandler(
             // último dia do mês da competência. Data da constituição = "hoje" administrativo
             // (sem relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
             var dataFatoGerador = new DateOnly(competencia.Ano, competencia.Mes, DateTime.DaysInMonth(competencia.Ano, competencia.Mes));
-            var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+            var hoje = dataHoje.Hoje();
 
             var lancamento = Lancamento.Lancar(
                 tenant.TenantId,

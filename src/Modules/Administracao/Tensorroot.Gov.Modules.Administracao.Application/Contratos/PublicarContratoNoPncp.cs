@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 
@@ -54,6 +55,7 @@ public sealed class PublicarContratoNoPncpHandler(
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<PublicarContratoNoPncpCommand>
 {
@@ -94,7 +96,9 @@ public sealed class PublicarContratoNoPncpHandler(
                 $"Falha ao divulgar contrato no PNCP ({resultado.CodigoErro}): {resultado.MensagemErro}");
         }
 
-        var dataPublicacao = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Data de publicacao no PNCP (cumprimento do prazo art. 94) → dia civil no FUSO do tenant (UTC-3),
+        // nao o UTC cru. O timestamp do evento abaixo permanece UTC (instante absoluto da trilha/Outbox).
+        var dataPublicacao = dataHoje.Hoje();
         contrato.PublicarContratoPncp(resultado.NumeroControlePncp, dataPublicacao);
 
         var evento = new ContratoPublicadoPncpIntegrationEvent(

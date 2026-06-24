@@ -25,6 +25,11 @@ public static class TempoServiceCollectionExtensions
         services.AddMemoryCache();
         services.AddScoped<IFeriadosTenantProvider, FeriadosTenantProvider>();
         services.AddScoped<ICalendarioDiasUteis, CalendarioDiasUteis>();
+
+        // "Hoje" no FUSO do tenant (W9 — fix do WARN sistemico de fuso). Scoped: segue o TenantContext.
+        // E' a UNICA porta autorizada a derivar a data civil de DOMINIO do relogio; auditoria/Outbox
+        // permanecem UTC e NAO consomem esta porta.
+        services.AddScoped<IDataHojeTenant, DataHojeTenant>();
         return services;
     }
 }

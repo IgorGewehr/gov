@@ -74,6 +74,7 @@ public sealed class CelebrarContratoHandler(
     ITenantContext tenant,
     IPncpParametros pncpParametros,
     ICalendarioDiasUteis calendario,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<CelebrarContratoCommand, Guid>
 {
@@ -91,7 +92,9 @@ public sealed class CelebrarContratoHandler(
         // BUG-A1: aferir a aptidao do fornecedor (sancao impeditiva vigente) no limite de agregado e passa-la
         // ao agregado Contrato, que recusa fail-closed a celebracao com impedido — em qualquer origem, inclusive
         // contratacoes diretas (art. 14 e art. 156, III/IV da Lei 14.133/2021).
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // "Hoje" no FUSO do tenant (UTC-3): serve de data de assinatura default (→ prazo PNCP art. 94) e
+        // de marco do impedimento. Perto da meia-noite o UTC ja virou o dia seguinte e erraria o prazo.
+        var hoje = dataHoje.Hoje();
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false);
         var fornecedorImpedido = fornecedor is not null && fornecedor.EstaImpedido(hoje);
 

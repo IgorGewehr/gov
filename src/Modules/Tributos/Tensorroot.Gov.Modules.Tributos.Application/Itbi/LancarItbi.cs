@@ -10,6 +10,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi.Arbitramento;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Itbi;
 
@@ -88,7 +89,7 @@ public sealed class LancarItbiHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<LancarItbiCommand, ResultadoLancamentoItbi>
 {
     /// <inheritdoc />
@@ -132,7 +133,7 @@ public sealed class LancarItbiHandler(
         // constituição = "hoje" administrativo (sem relógio no domínio — CLAUDE.md §16). A decadência
         // (CTN art. 173, I) é aferida no agregado a partir do exercício do fato gerador.
         var dataFatoGerador = new DateOnly(request.Exercicio, request.Vencimento.Month, 1);
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         // Contribuinte do ITBI = adquirente (CTN art. 42; usual). Lançamento avulso por transação.
         var lancamento = Lancamento.Lancar(

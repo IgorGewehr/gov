@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Dividas;
 
@@ -55,7 +56,7 @@ public sealed class InscreverEmDividaAtivaHandler(
     IDividaAtivaRepository dividas,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<InscreverEmDividaAtivaCommand, Guid>
 {
     /// <inheritdoc />
@@ -66,9 +67,11 @@ public sealed class InscreverEmDividaAtivaHandler(
         var lancamento = await lancamentos.ObterPorIdAsync(new LancamentoId(request.LancamentoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Lançamento não encontrado.");
 
-        // Marco para a transição de estado do lançamento (verificação "vencido"): usa o relógio APENAS
-        // para a transição administrativa, NÃO para a contagem de prescrição (essa usa datas do fato).
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Marco para a transição de estado do lançamento (verificação "vencido"): HOJE no FUSO do tenant
+        // (UTC-3) — perto da meia-noite o UTC já virou o dia seguinte e a comparação "vencido" erraria por
+        // um dia. Usa o relógio APENAS para a transição administrativa, NÃO para a contagem de prescrição
+        // (essa usa datas do fato).
+        var hoje = dataHoje.Hoje();
 
         // Regra de domínio: só inscreve se em aberto e vencido.
         lancamento.InscreverEmDividaAtiva(hoje);

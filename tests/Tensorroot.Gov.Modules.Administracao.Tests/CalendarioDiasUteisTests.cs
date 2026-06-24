@@ -329,4 +329,72 @@ public sealed class CalendarioDiasUteisTests
         feriados.Should().Contain(new DateOnly(2026, 6, 13));     // do proprio tenant.
         feriados.Should().NotContain(new DateOnly(2026, 8, 15));  // raiz nao vaza quando ha sub-secao.
     }
+
+    // ---------- 10) "Hoje" no FUSO do tenant (fix sistemico de fuso — W9) ----------
+
+    /// <summary>
+    /// <see cref="TimeProvider"/> fixo num instante UTC arbitrario (sem dependencia de pacote de teste).
+    /// O <see cref="DataHojeTenant"/> consome SOMENTE <c>GetUtcNow()</c>, entao isto basta para provar a
+    /// conversao de fuso de forma deterministica.
+    /// </summary>
+    private sealed class TimeProviderFixo(DateTimeOffset agoraUtc) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => agoraUtc;
+    }
+
+    [Fact]
+    public void DataHojeTenant_as_23h30_BRT_retorna_o_dia_BRT_e_nao_o_dia_UTC_seguinte()
+    {
+        // Cenario do WARN: 20/06/2026 23:30 no horario de Brasilia (UTC-3) == 21/06/2026 02:30 UTC.
+        // Derivar "hoje" do UtcDateTime cru daria 21/06 (dia ERRADO); a porta de fuso deve dar 20/06.
+        var instanteUtc = new DateTimeOffset(2026, 6, 21, 2, 30, 0, TimeSpan.Zero); // 02:30 UTC = 23:30 BRT do dia anterior.
+        var tempo = new TimeProviderFixo(instanteUtc);
+        // Sem config de fuso -> default de fabrica America/Sao_Paulo (UTC-3).
+        var dataHoje = new DataHojeTenant(tempo, ConfigComFeriados(), new TenantFixo(Guid.NewGuid()));
+
+        // Sanidade: o UTC cru cairia no dia 21 (a armadilha que o fix corrige).
+        DateOnly.FromDateTime(instanteUtc.UtcDateTime).Should().Be(new DateOnly(2026, 6, 21));
+
+        // O contrato: "hoje" no fuso do tenant e' 20/06 (dia civil BRT correto).
+        dataHoje.Hoje().Should().Be(new DateOnly(2026, 6, 20));
+        dataHoje.Agora().Hour.Should().Be(23);                  // 23:30 BRT.
+        dataHoje.Agora().Offset.Should().Be(TimeSpan.FromHours(-3)); // UTC-3 no inverno BR (sem horario de verao).
+    }
+
+    [Fact]
+    public void DataHojeTenant_respeita_fuso_do_tenant_da_config_Manaus_UTC_menos_4()
+    {
+        // Mesmo instante 02:30 UTC: em America/Manaus (UTC-4) == 22:30 do dia 20/06 -> "hoje" = 20/06.
+        var tenant = Guid.NewGuid();
+        var instanteUtc = new DateTimeOffset(2026, 6, 21, 2, 30, 0, TimeSpan.Zero);
+        var tempo = new TimeProviderFixo(instanteUtc);
+        var config = ConfigComFeriados(($"Tempo:Fuso:Tenants:{tenant:D}:TimeZoneId", "America/Manaus"));
+        var dataHoje = new DataHojeTenant(tempo, config, new TenantFixo(tenant));
+
+        dataHoje.Hoje().Should().Be(new DateOnly(2026, 6, 20));
+        dataHoje.Agora().Offset.Should().Be(TimeSpan.FromHours(-4)); // Amazonas em UTC-4.
+    }
+
+    [Fact]
+    public void DataHojeTenant_isola_fuso_por_tenant_na_mesma_configuracao()
+    {
+        // Producao: um unico IConfiguration. Mesmo instante, tenants em fusos distintos -> resultados distintos.
+        var tenantManaus = Guid.NewGuid();
+        var tenantNoronha = Guid.NewGuid();
+        // 21/06 23:30 UTC: Manaus (UTC-4) = 19:30 do dia 21; Fernando de Noronha (UTC-2) = 21:30 do dia 21.
+        // Escolhe-se um instante que separa o DIA entre os fusos: 21/06 01:30 UTC.
+        var instanteUtc = new DateTimeOffset(2026, 6, 21, 1, 30, 0, TimeSpan.Zero);
+        var tempo = new TimeProviderFixo(instanteUtc);
+        var config = ConfigComFeriados(
+            ($"Tempo:Fuso:Tenants:{tenantManaus:D}:TimeZoneId", "America/Manaus"),            // UTC-4 -> 20/06 21:30.
+            ($"Tempo:Fuso:Tenants:{tenantNoronha:D}:TimeZoneId", "America/Noronha"));         // UTC-2 -> 20/06 23:30.
+
+        var hojeManaus = new DataHojeTenant(tempo, config, new TenantFixo(tenantManaus)).Hoje();
+        var hojeNoronha = new DataHojeTenant(tempo, config, new TenantFixo(tenantNoronha)).Hoje();
+
+        hojeManaus.Should().Be(new DateOnly(2026, 6, 20));
+        hojeNoronha.Should().Be(new DateOnly(2026, 6, 20));
+        // E ambos diferem do dia UTC cru (21/06) — prova de que NAO usam o relogio UTC para a data civil.
+        DateOnly.FromDateTime(instanteUtc.UtcDateTime).Should().Be(new DateOnly(2026, 6, 21));
+    }
 }

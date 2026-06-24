@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
 using Tensorroot.Gov.Modules.Financas.Domain.RestosAPagar;
 using Tensorroot.Gov.Modules.Financas.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Financas.Application.RestosAPagar;
 
@@ -53,7 +54,7 @@ public sealed class CancelarRestoAPagarHandler(
     IRestoAPagarRepository restos,
     IUnitOfWork unitOfWork,
     OpcoesRestosAPagar opcoes,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<CancelarRestoAPagarCommand>
 {
     /// <inheritdoc />
@@ -68,7 +69,9 @@ public sealed class CancelarRestoAPagarHandler(
         var politicaPrazo = PoliticaPrazoRestoAPagar.De(
             opcoes.ValidadeExerciciosNaoProcessado,
             opcoes.ValidadeExerciciosProcessado);
-        var dataReferencia = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Data de referencia da decadencia (Decreto 93.872/86) → dia civil no FUSO do tenant (UTC-3): perto
+        // da meia-noite o UTC ja virou o dia seguinte e antecederia o cancelamento por decadencia em um dia.
+        var dataReferencia = dataHoje.Hoje();
 
         resto.Cancelar(ValorMonetario.De(request.Valor), dataReferencia, politicaPrazo);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

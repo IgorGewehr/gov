@@ -78,6 +78,7 @@ public sealed class GerarRemessaTceHandler(
             .ConfigureAwait(false);
 
         var dataLimite = await leiauteCatalogo.ObterDataLimiteAsync(periodo, cancellationToken).ConfigureAwait(false);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
 
         var arquivos = MontarArquivos(leiauteSiapc, identificacao, hoje, linhas);

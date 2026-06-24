@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Tributos.Application.Abstractions;
 using Tensorroot.Gov.Modules.Tributos.Contracts;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Dividas;
 
@@ -22,6 +23,7 @@ public sealed class QuitarDividaHandler(
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<QuitarDividaCommand>
 {
@@ -35,7 +37,11 @@ public sealed class QuitarDividaHandler(
 
         divida.Quitar();
 
+        // Timestamp dos eventos/Outbox → UTC (instante absoluto). A DATA de arrecadação (competencia/
+        // exercicio da receita) → dia civil no FUSO do tenant (UTC-3): perto da meia-noite o UTC ja virou
+        // o dia seguinte e poderia jogar a arrecadacao para o exercicio errado.
         var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var dataArrecadacao = dataHoje.Hoje();
         var exercicio = divida.DataInscricao.Year;
 
         // 1) Receita arrecadada (dado aberto + KPI de arrecadação). Enfileirado no Outbox na transação.
@@ -45,7 +51,7 @@ public sealed class QuitarDividaHandler(
             tenant.TenantId,
             request.DividaAtivaId,
             divida.ValorOriginario.Valor,
-            DateOnly.FromDateTime(agoraUtc)));
+            dataArrecadacao));
 
         // 2) Posição consolidada da dívida ativa do exercício APÓS a quitação (a quitação já está no change
         // tracker; a projeção lê o estado vigente). Substitui no consumidor por (Tenant, Exercicio).

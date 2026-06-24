@@ -23,6 +23,7 @@ public sealed class VarrerPrazosArt94Handler(
     IIntegrationEventWriter integrationEvents,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<VarrerPrazosArt94Command, int>
 {
@@ -31,7 +32,9 @@ public sealed class VarrerPrazosArt94Handler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        // Prazo legal (art. 94 §3) corre por dia civil → HOJE no FUSO do tenant (UTC-3), nao o UTC cru.
+        // O timestamp do Integration Event abaixo permanece UTC (instante absoluto da trilha/Outbox).
+        var hoje = dataHoje.Hoje();
         var antecedencia = parametros.AntecedenciaAlertaDiasUteis();
         var paramAssinatura = parametros.PrazoAposAssinatura();
 

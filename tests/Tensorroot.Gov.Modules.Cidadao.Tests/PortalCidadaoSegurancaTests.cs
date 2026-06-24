@@ -250,7 +250,7 @@ public sealed class PortalCidadaoSegurancaTests : PortalCidadaoTestBase
         var handler = new ObterMinhaDividaAtivaHandler(
             Resolvedor(ctxCid2, contaA),
             new ConsultaCidadaoEmEscopoDedicadoFake(new ConsultaTributariaCidadao(ctxTrib2)),
-            TimeProvider.System);
+            new DataHojeTenantFake(TimeProvider.System));
 
         var dividas = await handler.Handle(new ObterMinhaDividaAtivaQuery(new DateOnly(2026, 1, 10)), default);
 

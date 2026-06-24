@@ -8,6 +8,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.Folha;
 
@@ -46,6 +47,7 @@ public sealed class FecharFolhaHandler(
     IRubricaFolhaRepository rubricas,
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<FecharFolhaCommand>
 {
@@ -57,11 +59,14 @@ public sealed class FecharFolhaHandler(
         var folha = await folhas.ObterPorIdAsync(new FolhaDePagamentoId(request.FolhaDePagamentoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Folha nao encontrada.");
 
+        // Timestamp absoluto dos Integration Events / Outbox → UTC (instante ordenavel globalmente).
         var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
 
         // I-7: o agregado garante que so fecha a partir de Calculada. P0-5: se houver liquido insuficiente,
-        // exige confirmacao explicita do operador (revisao feita) — nunca fecha em silencio.
-        folha.Fechar(DateOnly.FromDateTime(agoraUtc), request.ConfirmarLiquidoInsuficiente);
+        // exige confirmacao explicita do operador (revisao feita) — nunca fecha em silencio. A DATA de
+        // fechamento (competencia/civil) sai no FUSO do tenant (UTC-3), nao do UTC cru: perto da meia-noite
+        // o UTC ja virou o dia seguinte e carimbaria o fechamento na competencia errada.
+        folha.Fechar(dataHoje.Hoje(), request.ConfirmarLiquidoInsuficiente);
 
         // Ponte RH -> Transparencia: snapshot da folha para a REMESSA TCE-RS (Res. 1099 / SIAPC Vol. V),
         // enfileirado no Outbox na MESMA transacao do fechamento (consistencia transacional — como a MSC

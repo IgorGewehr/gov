@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Tributos.Application.Taxas;
 
@@ -59,7 +60,7 @@ public sealed class LancarTaxaHandler(
     IDamRepository dams,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
-    TimeProvider timeProvider)
+    IDataHojeTenant dataHoje)
     : ICommandHandler<LancarTaxaCommand, ResultadoLancamentoTaxa>
 {
     /// <inheritdoc />
@@ -78,7 +79,7 @@ public sealed class LancarTaxaHandler(
         // Fato gerador no exercício informado; data da constituição = "hoje" administrativo (sem
         // relógio no domínio — CLAUDE.md §16). A decadência (CTN art. 173, I) é aferida no agregado.
         var dataFatoGerador = new DateOnly(request.Exercicio, request.Vencimento.Month, 1);
-        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var hoje = dataHoje.Hoje();
 
         var lancamento = Lancamento.LancarComImovel(
             tenant.TenantId,

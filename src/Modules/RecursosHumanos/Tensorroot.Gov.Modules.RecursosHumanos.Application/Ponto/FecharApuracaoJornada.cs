@@ -36,6 +36,7 @@ public sealed class FecharApuracaoJornadaHandler(
         var apuracao = await apuracoes.ObterPorIdAsync(new ApuracaoPontoId(request.ApuracaoPontoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Apuracao de ponto nao encontrada.");
 
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         apuracao.Fechar(DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

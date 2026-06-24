@@ -35,6 +35,7 @@ public sealed class ListarPedidosSicHandler(IPedidoSicRepository pedidos, TimePr
     public async Task<IReadOnlyList<PedidoSicResumoDto>> Handle(ListarPedidosSicQuery request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         var lista = await pedidos.ListarAsync(request.Ano, request.Situacao, cancellationToken).ConfigureAwait(false);
 

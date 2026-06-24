@@ -58,6 +58,7 @@ public sealed class ResponderPedidoSicHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var pedido = await PedidoSicLookup.ObterOuFalharAsync(pedidos, request.PedidoId, cancellationToken).ConfigureAwait(false);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         pedido.Responder(RespostaSic.Criar(request.Texto, hoje, request.ReferenciaAnexo));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -86,6 +87,7 @@ public sealed class ProrrogarPedidoSicHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var pedido = await PedidoSicLookup.ObterOuFalharAsync(pedidos, request.PedidoId, cancellationToken).ConfigureAwait(false);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         pedido.Prorrogar(request.Motivo, hoje, calendario);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -114,6 +116,7 @@ public sealed class IndeferirPedidoSicHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var pedido = await PedidoSicLookup.ObterOuFalharAsync(pedidos, request.PedidoId, cancellationToken).ConfigureAwait(false);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         pedido.Indeferir(request.FundamentoLegal, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -151,6 +154,7 @@ public sealed class InterporRecursoSicHandler(
         ArgumentNullException.ThrowIfNull(request);
         var pedido = await pedidos.ObterPorProtocoloAsync(request.Protocolo, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException($"Pedido e-SIC {request.Protocolo} nao encontrado.");
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         pedido.InterporRecurso(request.Instancia, request.Fundamento, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -180,6 +184,7 @@ public sealed class DecidirRecursoSicHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var pedido = await PedidoSicLookup.ObterOuFalharAsync(pedidos, request.PedidoId, cancellationToken).ConfigureAwait(false);
+        // TODO(fuso): trocar por IDataHojeTenant.Hoje() (prazo/data de dominio no fuso do tenant; ver W9 fix de fuso).
         var hoje = DateOnly.FromDateTime(relogio.GetUtcNow().UtcDateTime);
         pedido.DecidirRecurso(request.Resultado, request.Decisao, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
