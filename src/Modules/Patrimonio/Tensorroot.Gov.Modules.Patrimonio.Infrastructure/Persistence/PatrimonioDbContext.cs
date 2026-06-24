@@ -5,6 +5,7 @@ using Tensorroot.Gov.Modules.Patrimonio.Domain.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Estoque;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Frota;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Inventarios;
+using Tensorroot.Gov.Modules.Patrimonio.Domain.Obras;
 using Tensorroot.Gov.Modules.Patrimonio.Domain.Requisicoes;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence;
@@ -33,6 +34,9 @@ public sealed class PatrimonioDbContext(DbContextOptions<PatrimonioDbContext> op
 
     /// <summary>Pedidos de requisição de almoxarifado self-service (Solicitado→Aprovado→Atendido).</summary>
     public DbSet<PedidoRequisicao> PedidosRequisicao => Set<PedidoRequisicao>();
+
+    /// <summary>Obras públicas / serviços de engenharia (bens patrimoniais em formação — Lei 14.133/2021).</summary>
+    public DbSet<Obra> Obras => Set<Obra>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

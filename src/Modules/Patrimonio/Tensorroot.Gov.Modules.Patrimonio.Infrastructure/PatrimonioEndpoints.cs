@@ -16,7 +16,7 @@ using Tensorroot.Gov.Modules.Patrimonio.Domain.Requisicoes;
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure;
 
 /// <summary>Endpoints HTTP (Minimal API) do módulo Patrimonio.</summary>
-internal static class PatrimonioEndpoints
+internal static partial class PatrimonioEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -27,6 +27,7 @@ internal static class PatrimonioEndpoints
         MapearEstoque(grupo);
         MapearInventarios(grupo);
         MapearRequisicoes(grupo);
+        MapearObras(grupo);
     }
 
     // REQUISICAO DE ALMOXARIFADO self-service (Onda 3b): pedido multi-item por setor/UO -> aprovacao ->
@@ -468,4 +469,5 @@ internal static class PatrimonioEndpoints
     private sealed record AtenderPedidoPayload(DateOnly Data);
 
     private sealed record CancelarPedidoPayload(string Motivo);
+
 }

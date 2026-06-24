@@ -9,9 +9,11 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
+using Tensorroot.Gov.Modules.Patrimonio.Application;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Abstractions;
 using Tensorroot.Gov.Modules.Patrimonio.Application.Bens;
 using Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence;
+using Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Providers;
 using Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Repositories;
 
 namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure;
@@ -56,6 +58,11 @@ public sealed class PatrimonioModule : IModule
         services.AddScoped<IItemEstoqueRepository, ItemEstoqueRepository>();
         services.AddScoped<IInventarioRepository, InventarioRepository>();
         services.AddScoped<IPedidoRequisicaoRepository, PedidoRequisicaoRepository>();
+        services.AddScoped<IObraRepository, ObraRepository>();
+
+        // Parametros do art. 94 §3 (Obras) por tenant — sem numero magico (CLAUDE.md §7/§16).
+        services.Configure<ObraOptions>(configuration.GetSection(ObraOptions.SecaoConfig));
+        services.AddScoped<IParametrosObraProvider, ParametrosObraProvider>();
 
         var applicationAssembly = typeof(IncorporarBemCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));
