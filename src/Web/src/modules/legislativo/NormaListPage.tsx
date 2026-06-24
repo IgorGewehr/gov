@@ -16,12 +16,13 @@ import {
   Select,
   Tag,
   Toolbar,
+  useToast,
 } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import { errorMessage } from '../../components/ui';
 import { formatarData } from '../../i18n/format';
 import { Can } from '../../auth/Can';
-import { TIPOS_NORMA, useBuscaNormas } from './api';
+import { TIPOS_NORMA, baixarLexml, nomeArquivoLexml, useBuscaNormas } from './api';
 import type { BuscaNormasFiltro, NormaResumo } from './api';
 import { situacaoNormaTagVariant } from './legislativo.helpers';
 import { LegislativoSecoesNav } from './LegislativoSecoesNav';
@@ -30,13 +31,26 @@ import { NormaFormModal } from './NormaFormModal';
 const FILTRO_INICIAL: BuscaNormasFiltro = { termo: '', tipo: '', ano: '', pagina: 1 };
 
 export function NormaListPage() {
+  const toast = useToast();
   const [termo, setTermo] = useState('');
   const [tipo, setTipo] = useState('');
   const [ano, setAno] = useState('');
   const [filtro, setFiltro] = useState<BuscaNormasFiltro>(FILTRO_INICIAL);
   const [formAberto, setFormAberto] = useState(false);
+  const [baixandoId, setBaixandoId] = useState<string | null>(null);
 
   const query = useBuscaNormas(filtro);
+
+  async function baixar(norma: NormaResumo): Promise<void> {
+    setBaixandoId(norma.id);
+    try {
+      await baixarLexml(norma.id, nomeArquivoLexml(norma));
+    } catch (erro) {
+      toast.error(errorMessage(erro), 'Falha ao baixar o LexML');
+    } finally {
+      setBaixandoId(null);
+    }
+  }
   const totalPaginas = query.data ? Math.max(1, Math.ceil(query.data.total / query.data.tamanho)) : 1;
 
   function buscar(event: FormEvent): void {
@@ -73,9 +87,20 @@ export function NormaListPage() {
       key: 'acoes',
       header: 'Ações',
       render: (n) => (
-        <Link className="br-button tertiary small" to={`/legislativo/normas/${n.id}`}>
-          Detalhes
-        </Link>
+        <div className="d-flex flex-wrap" style={{ gap: '0.25rem' }}>
+          <Link className="br-button tertiary small" to={`/legislativo/normas/${n.id}`}>
+            Detalhes
+          </Link>
+          <Button
+            variant="tertiary"
+            size="sm"
+            loading={baixandoId === n.id}
+            onClick={() => void baixar(n)}
+            title="Baixar o XML LexML-BR desta norma"
+          >
+            <i className="fas fa-download" aria-hidden="true" /> Baixar LexML
+          </Button>
+        </div>
       ),
     },
   ];

@@ -11,6 +11,7 @@ const SECOES: ReadonlyArray<SubNavItem> = [
   { to: '/legislativo/vereadores', label: 'Vereadores', icon: 'fas fa-users' },
   { to: '/legislativo/comissoes', label: 'Comissões', icon: 'fas fa-people-group' },
   { to: '/legislativo/normas', label: 'Normas', icon: 'fas fa-scale-balanced' },
+  { to: '/legislativo/limite-camara', label: 'Limite (art. 29-A)', icon: 'fas fa-gauge-high' },
   { to: '/legislativo/diario', label: 'Diário Oficial', icon: 'fas fa-newspaper' },
   { to: '/legislativo/tribuna', label: 'Tribuna', icon: 'fas fa-microphone' },
   { to: '/legislativo/ata', label: 'Ata', icon: 'fas fa-file-lines' },

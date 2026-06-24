@@ -15,3 +15,4 @@ export * from './normas.api';
 export * from './diario.api';
 export * from './tribuna.api';
 export * from './comissoes.api';
+export * from './limiteCamara.api';

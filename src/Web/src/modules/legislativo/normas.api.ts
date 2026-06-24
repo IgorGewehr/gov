@@ -3,6 +3,8 @@
 // paginada (termo/tipo/ano), detalhe, cadastro e acoes de revogacao/alteracao.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../api/http';
+import { getAccessToken } from '../../api/authToken';
+import { ApiError } from '../../api/problemDetails';
 import {
   legislativoKeys,
   type CriacaoResponse,
@@ -121,6 +123,52 @@ function revogarNorma(id: string, input: RevogarNormaInput): Promise<void> {
 
 function alterarNorma(id: string, input: AlterarNormaInput): Promise<void> {
   return http.post<void>(`/legislativo/normas/${id}/alteracao`, input);
+}
+
+/** Extrai o filename de um header Content-Disposition (RFC 6266), se presente. */
+function nomeArquivoDoHeader(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  if (utf8?.[1]) return decodeURIComponent(utf8[1]);
+  const simples = /filename="?([^";]+)"?/i.exec(disposition);
+  return simples?.[1] ?? null;
+}
+
+/**
+ * Baixa o XML LexML-BR (URN + articulado) da norma e dispara o download no
+ * navegador (GET /legislativo/normas/{id}/lexml -> application/xml). Usa fetch
+ * direto porque o http client tipado e JSON-only. Export LOCAL (W9.5); a
+ * transmissao oficial a base LexML/dados abertos e M10.
+ */
+export async function baixarLexml(id: string, nomeSugerido: string): Promise<void> {
+  const token = getAccessToken();
+  const resp = await fetch(`/api/legislativo/normas/${id}/lexml`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!resp.ok) {
+    throw new ApiError(`Não foi possível baixar o LexML (HTTP ${resp.status}).`, resp.status);
+  }
+  const blob = await resp.blob();
+  const nome = nomeArquivoDoHeader(resp.headers.get('content-disposition')) ?? nomeSugerido;
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = nome;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+/** Nome de arquivo LexML sugerido (espelha o backend: tipo-numero-ano.xml). */
+export function nomeArquivoLexml(norma: { tipo: string; numero: number; ano: number }): string {
+  const slug = norma.tipo
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return `${slug || 'norma'}-${norma.numero}-${norma.ano}.xml`;
 }
 
 // ---------------------------------------------------------------------------

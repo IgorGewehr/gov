@@ -54,6 +54,9 @@ const ComissaoListPage = lazy(() =>
 const ComissaoDetailPage = lazy(() =>
   import('./ComissaoDetailPage').then((m) => ({ default: m.ComissaoDetailPage })),
 );
+const LimiteCamaraPage = lazy(() =>
+  import('./LimiteCamaraPage').then((m) => ({ default: m.LimiteCamaraPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'legislativo',
@@ -73,6 +76,7 @@ const MODULE: ModuleDefinition = {
         { path: 'ata', element: <AtaView /> },
         { path: 'normas', element: <NormaListPage /> },
         { path: 'normas/:id', element: <NormaDetailPage /> },
+        { path: 'limite-camara', element: <LimiteCamaraPage /> },
         { path: 'diario', element: <DiarioListPage /> },
         { path: 'diario/:id', element: <EdicaoDetailPage /> },
         { path: 'tribuna', element: <TribunaPage /> },

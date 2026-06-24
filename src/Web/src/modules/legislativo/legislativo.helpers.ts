@@ -95,6 +95,37 @@ export function situacaoNormaTagVariant(situacao: string): TagVariant {
   }
 }
 
+/**
+ * Mapeia o semaforo do art. 29-A (SemaforoLimite: Adequado/Atencao/Excedido)
+ * para a variante semantica da Tag (verde/amarelo/vermelho).
+ */
+export function semaforoArt29ATagVariant(semaforo: string): TagVariant {
+  switch (semaforo) {
+    case 'Adequado':
+      return 'success';
+    case 'Atencao':
+      return 'warning';
+    case 'Excedido':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+/** Rotulo legivel do semaforo do art. 29-A. */
+export function semaforoArt29ALabel(semaforo: string): string {
+  switch (semaforo) {
+    case 'Adequado':
+      return 'Adequado';
+    case 'Atencao':
+      return 'Atenção';
+    case 'Excedido':
+      return 'Excedido';
+    default:
+      return semaforo;
+  }
+}
+
 /** Mapeia a situacao de uma edicao do Diario para a variante semantica da Tag. */
 export function situacaoEdicaoTagVariant(situacao: string): TagVariant {
   switch (situacao) {

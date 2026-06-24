@@ -143,6 +143,20 @@ export const SITUACOES_INSCRICAO = [
   { value: 4, label: 'Cancelado' },
 ] as const;
 
+/** Natureza da despesa da Camara no art. 29-A (NaturezaDespesaCamara — backend). */
+export const NATUREZAS_DESPESA_CAMARA = [
+  { value: 1, label: 'Pessoal ativo (vereadores + servidores)' },
+  { value: 2, label: 'Inativos e pensionistas (EC 109/2021)' },
+  { value: 3, label: 'Outras despesas (custeio e capital)' },
+] as const;
+
+/** Rotulo legivel de uma natureza de despesa (chave = Enum.ToString() do backend). */
+export const NATUREZA_DESPESA_CAMARA_LABEL: Record<string, string> = {
+  PessoalAtivo: 'Pessoal ativo',
+  InativosPensionistas: 'Inativos e pensionistas',
+  OutrasDespesas: 'Outras despesas',
+};
+
 // ---------------------------------------------------------------------------
 // Query keys (fonte unica para invalidacao)
 // ---------------------------------------------------------------------------
@@ -179,6 +193,9 @@ export const legislativoKeys = {
   tribuna: (sessaoId: string) => [...legislativoKeys.all, 'tribuna', sessaoId] as const,
   comissoes: () => [...legislativoKeys.all, 'comissoes'] as const,
   comissao: (id: string) => [...legislativoKeys.comissoes(), 'detalhe', id] as const,
+  limiteCamara: () => [...legislativoKeys.all, 'limite-camara'] as const,
+  limiteCamaraDemonstrativo: (exercicio: number) =>
+    [...legislativoKeys.limiteCamara(), 'demonstrativo', exercicio] as const,
 };
 
 /** Pagina de resultados de uma busca paginada (envelope padrao do backend). */

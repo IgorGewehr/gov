@@ -3,11 +3,21 @@
 // barra de acoes (revogar/alterar) gated por `legislativo.normas.gerenciar`.
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Button, Card, DataTable, EmptyState, PageHeader, QueryState, Tag } from '../../components/ui';
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  PageHeader,
+  QueryState,
+  Tag,
+  useToast,
+} from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { errorMessage } from '../../components/ui';
 import { formatarData } from '../../i18n/format';
 import { Can } from '../../auth/Can';
-import { useNorma } from './normas.api';
+import { baixarLexml, nomeArquivoLexml, useNorma } from './normas.api';
 import type { EventoVigencia, NormaDetalhe } from './normas.api';
 import { situacaoNormaTagVariant } from './legislativo.helpers';
 import { NormaAcaoModal } from './NormaAcaoModal';
@@ -43,8 +53,21 @@ type AcaoAtiva = null | 'revogar' | 'alterar';
 
 export function NormaDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
+  const toast = useToast();
   const query = useNorma(id);
   const [acao, setAcao] = useState<AcaoAtiva>(null);
+  const [baixando, setBaixando] = useState(false);
+
+  async function baixar(norma: NormaDetalhe): Promise<void> {
+    setBaixando(true);
+    try {
+      await baixarLexml(norma.id, nomeArquivoLexml(norma));
+    } catch (erro) {
+      toast.error(errorMessage(erro), 'Falha ao baixar o LexML');
+    } finally {
+      setBaixando(false);
+    }
+  }
 
   return (
     <>
@@ -83,6 +106,12 @@ export function NormaDetailPage() {
                 </div>
               </dl>
             </Card>
+
+            <div className="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Dados abertos da norma">
+              <Button variant="secondary" loading={baixando} onClick={() => void baixar(norma)}>
+                <i className="fas fa-download" aria-hidden="true" /> Baixar LexML
+              </Button>
+            </div>
 
             <Can permission="legislativo.normas.gerenciar">
               <div className="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Ações da norma">
