@@ -5,6 +5,7 @@ import { SubNav, type SubNavItem } from '../../components/ui';
 
 const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/patrimonio', label: 'Bens patrimoniais', end: true },
+  { to: '/patrimonio/obras', label: 'Obras' },
   { to: '/patrimonio/frota', label: 'Frota', end: true },
   { to: '/patrimonio/frota/painel', label: 'Painel de frota' },
   { to: '/patrimonio/estoque', label: 'Almoxarifado' },

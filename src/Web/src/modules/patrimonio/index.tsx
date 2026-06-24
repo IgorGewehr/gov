@@ -62,6 +62,15 @@ const RequisicaoDetailPage = lazy(() =>
   import('./requisicao/RequisicaoDetailPage').then((m) => ({ default: m.RequisicaoDetailPage })),
 );
 
+// Obras e serviços de engenharia (W9.3, Lei 14.133/2021) — cronograma físico-financeiro,
+// RDO/medição, fiscalização e prazos do art. 94 §3
+const ObraListPage = lazy(() =>
+  import('./obra/ObraListPage').then((m) => ({ default: m.ObraListPage })),
+);
+const ObraDetailPage = lazy(() =>
+  import('./obra/ObraDetailPage').then((m) => ({ default: m.ObraDetailPage })),
+);
+
 const MODULE: ModuleDefinition = {
   id: 'patrimonio',
   nav: {
@@ -89,6 +98,9 @@ const MODULE: ModuleDefinition = {
         // Requisições de almoxarifado — fila + fluxo de aprovação/atendimento
         { path: 'requisicoes', element: <RequisicaoListPage /> },
         { path: 'requisicoes/:id', element: <RequisicaoDetailPage /> },
+        // Obras e serviços de engenharia — lista + ficha (cronograma/medição/RDO/fiscalização)
+        { path: 'obras', element: <ObraListPage /> },
+        { path: 'obras/:id', element: <ObraDetailPage /> },
       ],
     },
   ],
