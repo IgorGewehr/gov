@@ -73,6 +73,9 @@ public abstract class ModuleDbContext : DbContext
     /// <summary>Mensagens de Outbox pendentes de publicação.</summary>
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    /// <summary>Registros de Inbox (deduplicação de consumo idempotente por evento+handler+tenant).</summary>
+    public DbSet<InboxMessage> InboxMessages => Set<InboxMessage>();
+
     /// <summary>Trilha de auditoria imutável do módulo.</summary>
     public DbSet<AuditTrail> AuditTrail => Set<AuditTrail>();
 

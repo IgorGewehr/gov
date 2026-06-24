@@ -37,17 +37,24 @@ builder.Services.AddSerilog(configuration => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
-// === Observabilidade: OpenTelemetry (traces + metrics) ===
-// Instrumentação completa wired. O exportador OTLP/backend (Azure Monitor) será
-// configurado na FASE 5, com versão sem vulnerabilidade conhecida (NU1902).
+// === Observabilidade: OpenTelemetry (traces + metrics) — ENRICHERS multi-tenant (W9.7) ===
+// Instrumentação completa wired + enriquecimento por tenant.id/CorrelationId nos 3 sinais. O
+// EnriquecedorTenantSpanProcessor propaga as dimensões do Baggage (semeado do JWT pelo
+// ContextoCorrelacaoMiddleware) para TODO span — inclusive HttpClient às integrações governamentais.
+// A métrica de requisição do AspNetCore recebe a dimensão tenant.id via IHttpMetricsTagsFeature (no
+// ContextoCorrelacaoMiddleware). O Meter do Outbox/DLQ é registrado abaixo (AddMeter).
+// // TODO(M10): exportador OTLP → Azure Monitor (infra/credenciais de produção) — só os enrichers no M9.
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource.AddService("Tensorroot.Gov.ApiHost"))
     .WithTracing(tracing => tracing
         .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation())
+        .AddHttpClientInstrumentation()
+        .AddProcessor<Tensorroot.Gov.ApiHost.Observabilidade.EnriquecedorTenantSpanProcessor>())
     .WithMetrics(metrics => metrics
         .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation());
+        .AddHttpClientInstrumentation()
+        // Métricas Outbox/DLQ (W9.7): pendentes/publicadas/dead-lettered por tenant.
+        .AddMeter(Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox.OutboxMetrics.MeterName));
 
 // === Contexto de requisição (tenant / usuário) ===
 builder.Services.AddHttpContextAccessor();
@@ -262,6 +269,13 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// === Enrichers de observabilidade multi-tenant (W9.7) ===
+// APÓS a autenticação (tenant já resolvido do JWT): injeta tenant.id + CorrelationId nos 3 sinais
+// (logs via LogContext, traces via Activity/Baggage propagado pelo span processor, métricas via
+// IHttpMetricsTagsFeature) e ecoa o CorrelationId na resposta. Antes do aquecimento/gating para que
+// QUALQUER log/trace subsequente da requisição já carregue a identidade do tenant.
+app.UseMiddleware<Tensorroot.Gov.ApiHost.Observabilidade.ContextoCorrelacaoMiddleware>();
+
 // === P0-2: AQUECIMENTO ASSÍNCRONO do cache de conexão do tenant (anti thread-pool starvation) ===
 // Roda APÓS a autenticação (tenant já resolvido do JWT) e ANTES de qualquer factory de DbContext de
 // módulo. Decifra a connection string protegida (Key Vault em PROD) com `await`, FORA do factory
@@ -373,6 +387,25 @@ await using (var escopoStartup = app.Services.CreateAsyncScope())
     {
         // DEV-only (SQLite): sem pipeline de migrations do banco de controle.
         await plataforma.Database.EnsureCreatedAsync();
+    }
+}
+
+// === FAN-OUT de migração dos tenants existentes (database-per-tenant — W9.7) ===
+// Após migrar o banco de CONTROLE, leva as evoluções de schema por MÓDULO (ex.: a tabela InboxMessages
+// do Inbox idempotente) a TODOS os bancos dedicados já provisionados. Idempotente (MigrateAsync aplica só
+// pendentes; SchemaProvisioner é idempotente). Em DEV (SQLite) roda igualmente — o tenant demo abaixo já
+// nasce com o schema novo, mas tenants criados em execuções ANTERIORES recebem o Inbox aqui. Resiliente:
+// um banco indisponível não pode travar o boot da aplicação inteira.
+await using (var escopoFanOut = app.Services.CreateAsyncScope())
+{
+    try
+    {
+        await escopoFanOut.ServiceProvider.GetRequiredService<TenantProvisioner>()
+            .MigrarTenantsExistentesAsync(CancellationToken.None);
+    }
+    catch (Exception excecao)
+    {
+        app.Logger.LogError(excecao, "Falha no fan-out de migração dos tenants existentes (boot prossegue).");
     }
 }
 

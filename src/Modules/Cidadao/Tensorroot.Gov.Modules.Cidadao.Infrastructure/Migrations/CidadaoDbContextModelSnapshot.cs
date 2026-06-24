@@ -139,6 +139,38 @@ namespace Tensorroot.Gov.Modules.Cidadao.Infrastructure.Migrations
                     b.ToTable("Contas", "cidadao");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.SharedKernel.InboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EventType")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Handler")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("ProcessedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventId", "Handler", "TenantId")
+                        .IsUnique();
+
+                    b.ToTable("InboxMessages", "cidadao");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")

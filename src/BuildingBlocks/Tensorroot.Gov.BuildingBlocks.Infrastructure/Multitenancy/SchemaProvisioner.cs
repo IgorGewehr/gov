@@ -28,6 +28,11 @@ public static class SchemaProvisioner
             // Imutabilidade WORM da trilha: trigger INSTEAD OF UPDATE/DELETE (A2). Idempotente —
             // só SqlServer; no SQLite (dev) a detecção fica a cargo da cadeia de hash + verificador.
             await GarantirTriggerImutabilidadeAuditTrailAsync(contexto, cancellationToken).ConfigureAwait(false);
+            // INBOX (W9.7): rede de segurança ADITIVA e idempotente. As migrations por módulo já criam a
+            // tabela InboxMessages; esta garantia cobre bancos de tenant SqlServer já provisionados ANTES
+            // da migration chegar — a fundação NUNCA pode travar por tabela ausente. No-op quando a tabela
+            // já existe (criada pela migration).
+            await GarantirTabelaInboxSqlServerAsync(contexto, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -86,6 +91,41 @@ public static class SchemaProvisioner
                         SET NOCOUNT ON;
                         THROW 51002, ''AuditTrail e imutavel (WORM): DELETE bloqueado.'', 1;
                     END');
+            END;
+            """;
+
+        await contexto.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Cria (idempotente) a tabela <c>InboxMessages</c> e o índice ÚNICO (EventId, Handler, TenantId) no
+    /// schema do módulo, em SqlServer. Rede de segurança ADITIVA para bancos de tenant já provisionados
+    /// antes da migration de Inbox: o consumo de Integration Events depende desta tabela, e a fundação não
+    /// pode falhar com "Invalid object name". No-op quando a tabela já existe (criada por migration).
+    /// </summary>
+    private static async Task GarantirTabelaInboxSqlServerAsync(DbContext contexto, CancellationToken cancellationToken)
+    {
+        var schema = (contexto as ModuleDbContext)?.Schema ?? "dbo";
+
+        // schema é literal controlado (vem do código do módulo). QUOTENAME protege a montagem do DDL.
+        var sql = $"""
+            IF OBJECT_ID(N'[{schema}].[InboxMessages]', N'U') IS NULL
+            BEGIN
+                CREATE TABLE [{schema}].[InboxMessages] (
+                    [Id] UNIQUEIDENTIFIER NOT NULL CONSTRAINT [PK_InboxMessages] PRIMARY KEY,
+                    [TenantId] UNIQUEIDENTIFIER NOT NULL,
+                    [EventId] UNIQUEIDENTIFIER NOT NULL,
+                    [Handler] NVARCHAR(500) NOT NULL,
+                    [EventType] NVARCHAR(500) NULL,
+                    [ProcessedOnUtc] DATETIME2 NOT NULL
+                );
+            END;
+
+            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_InboxMessages_EventId_Handler_TenantId'
+                AND object_id = OBJECT_ID(N'[{schema}].[InboxMessages]'))
+            BEGIN
+                CREATE UNIQUE INDEX [IX_InboxMessages_EventId_Handler_TenantId]
+                    ON [{schema}].[InboxMessages] ([EventId], [Handler], [TenantId]);
             END;
             """;
 

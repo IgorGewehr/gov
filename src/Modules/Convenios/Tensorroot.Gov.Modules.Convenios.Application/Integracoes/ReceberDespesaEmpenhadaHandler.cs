@@ -11,7 +11,11 @@ namespace Tensorroot.Gov.Modules.Convenios.Application.Integracoes;
 /// <item>Fluxo A — empenho da CONTRAPARTIDA do convenio recebido (satisfaz A-INV-5, liberando a execucao).</item>
 /// <item>Fluxo B — empenho de um REPASSE a OSC (1o estagio do espelho empenho-&gt;liquidacao-&gt;pagamento, B-INV-5).</item>
 /// </list>
-/// Idempotente por <c>EventId</c> (deduplicacao no Inbox por handler+tenant).
+/// Idempotente por <c>EventId</c>: a deduplicacao de consumo e provida pelo INBOX system-wide da fundacao
+/// (W9.7) — chave (EventId, Handler, TenantId) selada pelo despachante de Outbox em torno de cada handler,
+/// no banco do tenant. Como este handler so REGISTRA (nao toca o ConveniosDbContext), o efeito ja e idempotente;
+/// quando passar a mutar estado (apos o enriquecimento do contrato de Financas — TODO M10 abaixo), o selo do
+/// Inbox confirmara JUNTO com a mutacao, tornando o consumo exactly-once.
 /// <para>
 /// // TODO(M10): a CORRELACAO empenho -&gt; convenio/parceria depende de Financas ECOAR o ConvenioId/ParceriaId
 /// no evento (hoje o contrato de Financas nao os carrega — ver ContrapartidaConvenioAEmpenhar /

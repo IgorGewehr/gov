@@ -85,7 +85,7 @@ public static class ModelBuilderExtensions
         .Single(method => method.Name == nameof(Enumerable.Contains) && method.GetParameters().Length == 2)
         .MakeGenericMethod(typeof(Guid));
 
-    /// <summary>Configura o mapeamento das entidades de infraestrutura (Outbox e Audit Trail).</summary>
+    /// <summary>Configura o mapeamento das entidades de infraestrutura (Outbox, Inbox e Audit Trail).</summary>
     /// <param name="modelBuilder">Construtor do modelo.</param>
     public static void ApplyOutboxAndAuditMappings(this ModelBuilder modelBuilder)
     {
@@ -99,6 +99,23 @@ public static class ModelBuilderExtensions
             // Índice de drenagem: filtra mensagens elegíveis (não processadas, não dead-letter, com
             // NextAttemptUtc vencido) e ordena por OccurredOnUtc sem varrer a tabela inteira.
             builder.HasIndex(message => new { message.ProcessedOnUtc, message.DeadLetteredOnUtc, message.NextAttemptUtc });
+        });
+
+        // INBOX (W9.7) — deduplicação de CONSUMO system-wide. Mapeado em TODO ModuleDbContext (como o
+        // Outbox), no schema do módulo: cada consumidor sela aqui o que já processou, no banco do tenant.
+        modelBuilder.Entity<InboxMessage>(builder =>
+        {
+            builder.ToTable("InboxMessages");
+            builder.HasKey(message => message.Id);
+            builder.Property(message => message.Handler).HasMaxLength(500);
+            builder.Property(message => message.EventType).HasMaxLength(500);
+            // Chave de idempotência (EventId, Handler, TenantId): UNIQUE → a 2ª entrega do mesmo evento ao
+            // mesmo handler/tenant viola a unicidade (detectável) em vez de aplicar o efeito de novo. O
+            // TenantId entra na chave porque o banco é compartilhado entre módulos no SQLite de dev e, em
+            // produção, mantém a semântica explícita da trinca mesmo no banco dedicado.
+            builder
+                .HasIndex(message => new { message.EventId, message.Handler, message.TenantId })
+                .IsUnique();
         });
 
         modelBuilder.Entity<AuditTrail>(builder =>

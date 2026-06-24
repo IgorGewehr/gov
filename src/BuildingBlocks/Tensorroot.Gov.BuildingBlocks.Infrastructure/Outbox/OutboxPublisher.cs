@@ -29,7 +29,10 @@ public interface IOutboxPublisher
 /// OrigemReferenciaId), então um reprocessamento após falha parcial é seguro.
 /// </para>
 /// </summary>
-public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimeProvider timeProvider) : IOutboxPublisher
+public sealed class OutboxPublisher(
+    IOutboxMessageDispatcher dispatcher,
+    TimeProvider timeProvider,
+    OutboxMetrics? metrics = null) : IOutboxPublisher
 {
     /// <inheritdoc />
     [SuppressMessage(
@@ -57,6 +60,8 @@ public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimePro
             .ConfigureAwait(false);
 
         var processadas = 0;
+        var deadLetteredNesteLote = 0;
+        var tenantDoLote = pendentes.Count > 0 ? pendentes[0].TenantId : Guid.Empty;
         foreach (var mensagem in pendentes)
         {
             try
@@ -80,13 +85,34 @@ public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimePro
             }
             catch (Exception excecao)
             {
-                RegistrarFalha(mensagem, excecao, timeProvider.GetUtcNow().UtcDateTime);
+                if (RegistrarFalha(mensagem, excecao, timeProvider.GetUtcNow().UtcDateTime))
+                {
+                    deadLetteredNesteLote++;
+                }
             }
         }
 
         if (pendentes.Count > 0)
         {
             await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        if (metrics is not null && tenantDoLote != Guid.Empty)
+        {
+            metrics.RegistrarPublicadas(processadas, tenantDoLote);
+            for (var i = 0; i < deadLetteredNesteLote; i++)
+            {
+                metrics.RegistrarDeadLetter(tenantDoLote);
+            }
+
+            // Snapshot do backlog após o lote: pendentes restantes (qualquer NextAttempt) e estoque de DLQ.
+            var pendentesRestantes = await context.Set<OutboxMessage>()
+                .CountAsync(m => m.ProcessedOnUtc == null && m.DeadLetteredOnUtc == null, cancellationToken)
+                .ConfigureAwait(false);
+            var deadLetteredTotal = await context.Set<OutboxMessage>()
+                .CountAsync(m => m.DeadLetteredOnUtc != null, cancellationToken)
+                .ConfigureAwait(false);
+            metrics.RegistrarSnapshot(pendentesRestantes, deadLetteredTotal, tenantDoLote);
         }
 
         return processadas;
@@ -96,7 +122,8 @@ public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimePro
     /// Contabiliza uma falha de processamento: incrementa o contador, registra o erro e ou agenda
     /// a próxima tentativa com backoff exponencial, ou — atingido o teto — envia para dead-letter.
     /// </summary>
-    private static void RegistrarFalha(OutboxMessage mensagem, Exception excecao, DateTime agora)
+    /// <returns><c>true</c> se esta falha levou a mensagem ao dead-letter (transição para DLQ).</returns>
+    private static bool RegistrarFalha(OutboxMessage mensagem, Exception excecao, DateTime agora)
     {
         mensagem.AttemptCount++;
         mensagem.Error = excecao.Message;
@@ -106,10 +133,11 @@ public sealed class OutboxPublisher(IOutboxMessageDispatcher dispatcher, TimePro
             // Veneno permanente: não reprocessa mais. Fica registrada com o erro para inspeção/alerta.
             mensagem.DeadLetteredOnUtc = agora;
             mensagem.NextAttemptUtc = null;
-            return;
+            return true;
         }
 
         mensagem.NextAttemptUtc = agora + CalcularBackoff(mensagem.AttemptCount);
+        return false;
     }
 
     // Backoff exponencial com teto: 30s, 1min, 2min, 4min, ... (cap em ~15min) a partir da Nª falha.

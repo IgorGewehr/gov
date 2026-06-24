@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Inbox;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
 
@@ -16,6 +17,10 @@ public static class InfrastructureBuildingBlocks
     {
         ArgumentNullException.ThrowIfNull(services);
         services.AddSingleton(TimeProvider.System);
+
+        // Métricas Outbox/DLQ (W9.7): Meter singleton (BCL) captado pelo OpenTelemetry. O OutboxPublisher
+        // recebe-o por DI (opcional) e registra publicadas/dead-lettered/backlog por tenant a cada drenagem.
+        services.AddSingleton<Outbox.OutboxMetrics>();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddScoped<TenantSaveChangesInterceptor>();
         services.AddScoped<ConvertDomainEventsToOutboxInterceptor>();
@@ -30,6 +35,13 @@ public static class InfrastructureBuildingBlocks
         // o lote publicaria todos os handlers no mesmo escopo e acionaria a guarda H5. Mantido aqui para
         // hosts simples/testes e para preservar o layering (BuildingBlocks não conhece ApiHost).
         services.AddScoped<IOutboxMessageDispatcher, CurrentScopeOutboxMessageDispatcher>();
+
+        // INBOX idempotente system-wide (W9.7): deduplica o CONSUMO de Integration Events por
+        // (EventId, Handler, TenantId) no banco do tenant, no schema do módulo do consumidor. O
+        // despachante de Outbox (ScopedOutboxMessageDispatcher) o consulta antes e o sela depois de
+        // cada handler — tornando a entrega at-least-once em consumo efetivamente exactly-once em TODO
+        // o sistema (não só no Convênios). Scoped: segue o ModuleDbContext ativo do escopo.
+        services.AddScoped<IInboxGuard, InboxGuard>();
 
         // Unidade de trabalho COMPARTILHADA: o DbContext de módulo ativo no escopo se registra no
         // holder ao ser construído; o ModuleUnitOfWork confirma esse contexto. Evita a colisão de
