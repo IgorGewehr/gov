@@ -71,4 +71,13 @@
     <PackageVersion Include="FluentAssertions" Version="6.12.2" />
   </ItemGroup>
 
+  <ItemGroup Label="Testes de Integracao / E2E (W9.8)">
+    <!-- WebApplicationFactory (TestServer in-memory): sobe o ApiHost no MESMO processo do teste,
+         sem socket/porta real (NAO toca a :5080). Versao alinhada ao stack AspNetCore 8.0.11. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.11" />
+    <!-- WireMock.Net IN-PROCESS (stub HTTP de PNCP/eSocial/TCE): ambiente SEM Docker.
+         Testcontainers fica como melhoria de CI (// TODO M10/CI), nao dependemos de Docker. -->
+    <PackageVersion Include="WireMock.Net" Version="1.6.7" />
+  </ItemGroup>
+
 </Project>

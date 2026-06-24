@@ -1,0 +1,65 @@
+<!--
+  Tensorroot.Gov.IntegrationTests (M9 W9.8) — rede de protecao E2E HTTP.
+
+  SDK Web (Microsoft.NET.Sdk.Web): obrigatorio para o WebApplicationFactory<Program> localizar o
+  content root do ApiHost e os assemblies do host. Sobe o ApiHost in-memory (TestServer), SEM porta
+  TCP real — NAO colide com o ApiHost de desenvolvimento da :5080.
+
+  Ambiente SEM Docker (decisao de plataforma): persistencia em SQLite (banco dedicado por TESTE) +
+  WireMock.Net IN-PROCESS para os externos (PNCP/eSocial/TCE). Testcontainers fica como melhoria de
+  CI (// TODO M10/CI) — NUNCA dependemos de Docker neste projeto.
+-->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!--
+      ALVO net10.0 (ESPECIFICO deste projeto; o resto da solucao permanece net8.0).
+
+      Motivo: este ambiente so tem o runtime/shared-framework .NET 10 instalado. Com DOTNET_ROLL_FORWARD=Major,
+      o app net8.0 EXECUTA sobre o runtime .NET 10 — mas o TestServer/`ResponseBodyPipeWriter` empacotado pelo
+      `Microsoft.AspNetCore.Mvc.Testing` 8.0.11 NAO implementa `PipeWriter.UnflushedBytes`, membro que o
+      `System.Text.Json` do runtime .NET 10 EXIGE ao serializar respostas (ProblemDetails 401/403, results JSON
+      de minimal API). Isso quebrava todo cenario que escreve JSON. Alinhando o TFM e o pacote de teste (Mvc.Testing
+      10.0.9) ao shared-framework que de fato executa, o TestHost passa a expor o membro esperado.
+      O ApiHost e os modulos referenciados continuam net8.0 (net10 consome net8 sem problema).
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Testes: rigor relaxado para nomes BDD com underscore e Asserts assincronos do xUnit. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1707;xUnit1004;CA1861;CA2007;CA1515;CA1303;CA1062</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <!-- 10.0.9: alinhado ao shared-framework .NET 10 que executa os testes (ver TFM acima). -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" VersionOverride="10.0.9" />
+    <PackageReference Include="WireMock.Net" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- O sistema sob teste: o ApiHost (Composition Root real) com TODOS os modulos. -->
+    <ProjectReference Include="../../src/ApiHost/Tensorroot.Gov.ApiHost.csproj" />
+
+    <!-- Plataforma: PoderTenant, TenantConnectionResolver, TenantOverride (seed/provisionamento nos testes). -->
+    <ProjectReference Include="../../src/Platform/Tensorroot.Gov.Platform/Tensorroot.Gov.Platform.csproj" />
+    <ProjectReference Include="../../src/BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
+
+    <!-- Administracao: semeadura do ciclo da despesa (proposta + habilitacao do agregado Licitacao,
+         que NAO tem endpoint HTTP de registro de proposta hoje — ver TODO no teste). -->
+    <ProjectReference Include="../../src/Modules/Administracao/Tensorroot.Gov.Modules.Administracao.Application/Tensorroot.Gov.Modules.Administracao.Application.csproj" />
+    <ProjectReference Include="../../src/Modules/Administracao/Tensorroot.Gov.Modules.Administracao.Domain/Tensorroot.Gov.Modules.Administracao.Domain.csproj" />
+
+    <!-- Identidade.Domain: catalogo de permissoes (Permissoes.Todas) para emitir tokens de teste. -->
+    <ProjectReference Include="../../src/Modules/Identidade/Tensorroot.Gov.Modules.Identidade.Domain/Tensorroot.Gov.Modules.Identidade.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

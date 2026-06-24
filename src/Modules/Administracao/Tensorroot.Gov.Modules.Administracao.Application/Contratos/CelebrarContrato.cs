@@ -65,7 +65,7 @@ public sealed class CelebrarContratoValidator : AbstractValidator<CelebrarContra
 public sealed class CelebrarContratoHandler(
     IContratoRepository contratos,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
     TimeProvider timeProvider)
     : ICommandHandler<CelebrarContratoCommand, Guid>
@@ -93,8 +93,12 @@ public sealed class CelebrarContratoHandler(
             empenhoRef);
 
         contratos.Adicionar(contrato);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
+        // Integration event via OUTBOX (CLAUDE.md §2/§10), NUNCA via IPublisher in-scope: (a) garante a
+        // consistencia transacional (a mensagem grava na MESMA UoW que o contrato) e (b) evita resolver o
+        // DbContext de outro modulo (ex.: TransparenciaDbContext, que consome este evento) no MESMO escopo
+        // da requisicao — o que dispararia a guarda H5 de multiplos ModuleDbContext por escopo. A entrega
+        // efetiva aos consumidores cross-module ocorre na drenagem do Outbox, em escopo dedicado por modulo.
         var evento = new ContratoAssinadoIntegrationEvent(
             Guid.NewGuid(),
             timeProvider.GetUtcNow().UtcDateTime,
@@ -104,7 +108,9 @@ public sealed class CelebrarContratoHandler(
             request.Valor,
             contrato.LicitacaoId);
 
-        await publisher.Publish(evento, cancellationToken).ConfigureAwait(false);
+        integrationEvents.Enfileirar(evento);
+
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         return contrato.Id.Value;
     }
