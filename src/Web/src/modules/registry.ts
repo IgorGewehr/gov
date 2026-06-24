@@ -21,6 +21,7 @@ import transparencia from './transparencia';
 import protocolo from './protocolo';
 import patrimonio from './patrimonio';
 import assistenciasocial from './assistenciasocial';
+import convenios from './convenios';
 import admin from './admin';
 
 /** Ordem reflete a navegação na Sidebar. */
@@ -36,6 +37,7 @@ export const modules: ModuleDefinition[] = [
   saude,
   educacao,
   assistenciasocial,
+  convenios,
   protocolo,
   legislativo,
   transparencia,
