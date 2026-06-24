@@ -122,9 +122,22 @@ export interface CelebrarContratoInput {
   justificativaContratacaoDireta?: string | null;
 }
 
-/** PublicarContratoNoPncpCommand (payload do endpoint). */
+/**
+ * Payload do endpoint POST /contratos/{id}/contrato-pncp (PublicarContratoPncpPayload).
+ * W9.1: o número de controle PNCP NÃO vem mais do cliente — a ACL (IPncpGateway) transmite ao
+ * PNCP e devolve o número oficial, que o backend grava no contrato. O front envia apenas os dados
+ * de identificação da transmissão (órgão/unidade/contrato interno/fornecedor).
+ */
 export interface PublicarContratoNoPncpInput {
-  numeroContratoPncp: string;
+  cnpjOrgao: string;
+  codigoUnidade: string;
+  numeroContratoInterno: string;
+  documentoFornecedor: string;
+}
+
+/** Resposta da varredura de prazos PNCP (POST /contratos/prazos-pncp/varrer). */
+export interface VarrerPrazosPncpResultado {
+  alertas: number;
 }
 
 /** CelebrarAditivoCommand. */
@@ -194,6 +207,10 @@ function celebrarContrato(input: CelebrarContratoInput): Promise<IdResponse> {
 
 function publicarNoPncp(contratoId: string, input: PublicarContratoNoPncpInput): Promise<void> {
   return http.post<void>(`/administracao/contratos/${contratoId}/contrato-pncp`, input);
+}
+
+function varrerPrazosPncp(): Promise<VarrerPrazosPncpResultado> {
+  return http.post<VarrerPrazosPncpResultado>('/administracao/contratos/prazos-pncp/varrer');
 }
 
 function iniciarExecucao(contratoId: string): Promise<void> {
@@ -268,13 +285,30 @@ export function useCelebrarContrato() {
   });
 }
 
-/** Publica o contrato no PNCP (condição de eficácia — art. 174). */
+/**
+ * Divulga o contrato no PNCP — condição de EFICÁCIA (Lei 14.133/2021, art. 94). O backend transmite
+ * via ACL e grava o número de controle PNCP; o detalhe é reconsultado para refletir o número devolvido.
+ */
 export function usePublicarNoPncp(contratoId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: PublicarContratoNoPncpInput) => publicarNoPncp(contratoId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contratoKeys.detalhe(contratoId) });
+      queryClient.invalidateQueries({ queryKey: contratoKeys.all });
+    },
+  });
+}
+
+/**
+ * Varre os prazos de divulgação no PNCP (art. 94) e enfileira alertas (a vencer/vencido) ao Portal do
+ * Gestor. Idempotente; retorna a quantidade de alertas emitidos. Invalida as listas afetadas.
+ */
+export function useVarrerPrazosPncp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: varrerPrazosPncp,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contratoKeys.all });
     },
   });

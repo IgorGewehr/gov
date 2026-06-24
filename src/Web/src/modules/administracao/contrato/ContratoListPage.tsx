@@ -18,15 +18,18 @@ import {
   Select,
   Tag,
   Toolbar,
+  useToast,
 } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
 import { errorMessage } from '../../../components/ui';
+import { ApiError } from '../../../api/problemDetails';
 import { Can } from '../../../auth/Can';
 import { formatarData, formatarMoeda } from '../../../i18n/format';
 import {
   SITUACAO_ROTULO,
   useContratosPorFornecedor,
   useContratosVigentes,
+  useVarrerPrazosPncp,
 } from './contrato.api';
 import type { ContratoResumo } from './contrato.api';
 import { situacaoTagVariant } from './contrato.helpers';
@@ -40,6 +43,8 @@ function hoje(): string {
 }
 
 export function ContratoListPage() {
+  const toast = useToast();
+  const varrerMutation = useVarrerPrazosPncp();
   const [criterio, setCriterio] = useState<Criterio>('vigentes');
   const [referencia, setReferencia] = useState(hoje());
   const [fornecedorId, setFornecedorId] = useState('');
@@ -56,6 +61,20 @@ export function ContratoListPage() {
   );
 
   const query = consulta?.criterio === 'fornecedor' ? fornecedorQuery : vigentesQuery;
+
+  function varrerPrazos(): void {
+    varrerMutation.mutate(undefined, {
+      onSuccess: (r) =>
+        toast.success(
+          r.alertas > 0
+            ? `Varredura concluída: ${r.alertas} alerta(s) de prazo PNCP (art. 94) enviados ao Portal do Gestor.`
+            : 'Varredura concluída: nenhum prazo PNCP a vencer ou vencido no momento.',
+          'PNCP',
+        ),
+      onError: (error) =>
+        toast.error(error instanceof ApiError ? error.userMessage : 'Não foi possível varrer os prazos PNCP.'),
+    });
+  }
 
   function consultar(event: FormEvent): void {
     event.preventDefault();
@@ -117,6 +136,14 @@ export function ContratoListPage() {
         actions={
           <Can permission="administracao.gerenciar">
             <Toolbar>
+              <Button
+                variant="secondary"
+                onClick={varrerPrazos}
+                loading={varrerMutation.isPending}
+                title="Varrer prazos de divulgação no PNCP (art. 94) e alertar a gestão"
+              >
+                <i className="fas fa-stopwatch" aria-hidden="true" /> Varrer prazos PNCP
+              </Button>
               <Button variant="primary" onClick={() => setFormAberto(true)}>
                 <i className="fas fa-plus" aria-hidden="true" /> Celebrar contrato
               </Button>

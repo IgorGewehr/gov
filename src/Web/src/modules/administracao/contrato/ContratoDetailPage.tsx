@@ -39,7 +39,7 @@ import type {
   GarantiaResumo,
   SituacaoContrato,
 } from './contrato.api';
-import { situacaoTagVariant } from './contrato.helpers';
+import { pncpStatus, situacaoTagVariant } from './contrato.helpers';
 import {
   ApostilarModal,
   CelebrarAditivoModal,
@@ -59,6 +59,62 @@ function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode
       <dt className="text-gray-60 text-down-01">{rotulo}</dt>
       <dd className="mb-0 text-semi-bold">{children}</dd>
     </div>
+  );
+}
+
+// Card de EFICÁCIA pela divulgação no PNCP (Lei 14.133/2021, art. 94): badge de status (Publicado com
+// nº de controle PNCP × Pendente), o prazo legal e a INVARIANTE DE BLOQUEIO do empenho (só empenha após
+// divulgado). O detalhe não expõe a data-limite do art. 94 — quem alerta prazos a vencer/vencidos é a
+// varredura (/contratos/prazos-pncp/varrer) que enfileira avisos ao Portal do Gestor.
+function renderEficaciaPncp(contrato: ContratoDetalhe) {
+  const pncp = pncpStatus(contrato);
+  return (
+    <Card
+      className="mb-4"
+      header={
+        <div className="d-flex justify-content-between align-items-center">
+          <strong>Eficácia — PNCP (art. 94)</strong>
+          <Tag variant={pncp.variant}>{pncp.rotulo}</Tag>
+        </div>
+      }
+    >
+      <dl className="row mb-0">
+        <Campo rotulo="Divulgação no PNCP">
+          {pncp.publicado ? (
+            <Tag variant="success">Publicado</Tag>
+          ) : (
+            <Tag variant="warning">Pendente de divulgação</Tag>
+          )}
+        </Campo>
+        <Campo rotulo="Número de controle PNCP">
+          {pncp.numeroControle ? (
+            <span className="text-mono text-down-01">{pncp.numeroControle}</span>
+          ) : (
+            '— (atribuído pelo PNCP na divulgação)'
+          )}
+        </Campo>
+      </dl>
+
+      {pncp.publicado ? (
+        <Alert variant="success">
+          Contrato divulgado no PNCP: <strong>eficácia obtida</strong> (art. 94). Apto a sustentar empenho de
+          despesa.
+        </Alert>
+      ) : (
+        <>
+          <Alert variant="warning">
+            Prazo de divulgação no PNCP (art. 94): a divulgação é condição de <strong>eficácia</strong> e deve
+            ocorrer a partir da assinatura. A varredura de prazos do módulo emite alertas de prazo a vencer /
+            vencido ao Portal do Gestor.
+          </Alert>
+          <Alert variant="danger">
+            <strong>Bloqueio de empenho:</strong> enquanto o contrato não for divulgado no PNCP (sem número de
+            controle), <strong>não é possível empenhar</strong> despesa contra ele — despesa de contrato
+            ineficaz fica sem cobertura legal (invariante de bloqueio).
+          </Alert>
+        </>
+      )}
+    </Card>
   );
 }
 
@@ -190,18 +246,13 @@ export function ContratoDetailPage() {
                   <Campo rotulo="Vigência">
                     {formatarData(contrato.vigenciaInicio)} a {formatarData(contrato.vigenciaFim)}
                   </Campo>
-                  <Campo rotulo="Publicado no PNCP">
-                    {contrato.publicadoNoPncp ? (
-                      <Tag variant="success">Sim{contrato.numeroContratoPncp ? ` (${contrato.numeroContratoPncp})` : ''}</Tag>
-                    ) : (
-                      <Tag variant="warning">Não</Tag>
-                    )}
-                  </Campo>
                   <Campo rotulo="Dotação confirmada">
                     {contrato.dotacaoConfirmada ? <Tag variant="success">Sim</Tag> : <Tag variant="warning">Não</Tag>}
                   </Campo>
                 </dl>
               </Card>
+
+              {renderEficaciaPncp(contrato)}
 
               {/* Ações — gated por "administracao.gerenciar" (§6) + máquina de estados */}
               <Can permission="administracao.gerenciar">
