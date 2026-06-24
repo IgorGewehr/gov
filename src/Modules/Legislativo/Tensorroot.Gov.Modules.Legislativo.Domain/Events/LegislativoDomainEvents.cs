@@ -31,7 +31,17 @@ public sealed record EmendaApresentada(ProposicaoId ProposicaoId, EmendaId Emend
 /// <param name="Favoravel">Sentido do parecer (favoravel/contrario).</param>
 public sealed record ParecerEmitido(ProposicaoId ProposicaoId, string Comissao, bool Favoravel) : IDomainEvent;
 
-/// <summary>Proposicao aprovada em Plenario.</summary>
+/// <summary>
+/// Um turno de votacao de materia de rito qualificado (Emenda a LOM) foi aprovado, mas a materia
+/// AINDA NAO esta aprovada — faltam turnos. Distingue-se de <see cref="ProposicaoAprovada"/>, que so
+/// e emitido quando TODOS os turnos exigidos sao concluidos.
+/// </summary>
+/// <param name="ProposicaoId">Identificador da proposicao.</param>
+/// <param name="Turno">Numero do turno aprovado (1 ou 2).</param>
+/// <param name="TurnosExigidos">Total de turnos exigidos pelo tipo da materia.</param>
+public sealed record TurnoAprovado(ProposicaoId ProposicaoId, int Turno, int TurnosExigidos) : IDomainEvent;
+
+/// <summary>Proposicao aprovada em Plenario (todos os turnos exigidos concluidos).</summary>
 /// <param name="ProposicaoId">Identificador da proposicao.</param>
 public sealed record ProposicaoAprovada(ProposicaoId ProposicaoId) : IDomainEvent;
 

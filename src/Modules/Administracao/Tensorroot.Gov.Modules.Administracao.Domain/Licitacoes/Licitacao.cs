@@ -279,13 +279,27 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
     /// <param name="resultado">Resultado da habilitacao.</param>
     /// <param name="motivo">Motivo (opcional).</param>
     /// <param name="dataVerificacao">Momento da verificacao (relogio externo via handler; BUG-A4).</param>
-    /// <exception cref="InvalidOperationException">Se o certame nao estiver Aberto ou EmJulgamento.</exception>
-    public void HabilitarLicitante(Guid fornecedorId, ResultadoHabilitacao resultado, string? motivo, DateTimeOffset dataVerificacao)
+    /// <param name="fornecedorImpedido">
+    /// Indica se o fornecedor tem sancao impeditiva (impedimento/inidoneidade) vigente na data de verificacao
+    /// — aferido pelo handler sobre o agregado <c>Fornecedor</c> (limite de agregado). Fonte unica da aptidao
+    /// no momento da escrita (BUG-A1).
+    /// </param>
+    /// <exception cref="InvalidOperationException">Se o certame nao estiver Aberto ou EmJulgamento (I-7), ou se houver tentativa de habilitar fornecedor impedido (BUG-A1; art. 14/156 Lei 14.133).</exception>
+    public void HabilitarLicitante(Guid fornecedorId, ResultadoHabilitacao resultado, string? motivo, DateTimeOffset dataVerificacao, bool fornecedorImpedido)
     {
         // I-7: so sobre certame Aberta ou EmJulgamento.
         if (Situacao is not (SituacaoLicitacao.Aberta or SituacaoLicitacao.EmJulgamento))
         {
             throw new InvalidOperationException($"A habilitacao exige certame Aberto ou EmJulgamento. Situacao atual: {Situacao}.");
+        }
+
+        // BUG-A1: fail-closed. Fornecedor com sancao impeditiva vigente nao pode ser declarado Habilitado
+        // (art. 14 e art. 156, III/IV da Lei 14.133/2021). Registrar como Inabilitado e licito (documenta a recusa);
+        // declara-lo Habilitado e ato nulo — recusar.
+        if (fornecedorImpedido && resultado == ResultadoHabilitacao.Habilitado)
+        {
+            throw new InvalidOperationException(
+                "Fornecedor com sancao impeditiva vigente (impedimento/inidoneidade) nao pode ser habilitado (art. 14/156 Lei 14.133/2021).");
         }
 
         var sequencia = _habilitacoes.Count == 0 ? 1L : _habilitacoes.Max(h => h.Sequencia) + 1L;
@@ -304,9 +318,14 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
 
     /// <summary>
     /// Homologa o resultado (I-8/I-9): exige EmJulgamento, proposta vencedora definida e vencedor Habilitado.
+    /// Fail-closed: vencedor com sancao impeditiva vigente nao pode ser homologado (BUG-A1; art. 14/156).
     /// </summary>
-    /// <exception cref="InvalidOperationException">I-8: situacao diferente de EmJulgamento, sem vencedor ou vencedor nao habilitado.</exception>
-    public void Homologar()
+    /// <param name="fornecedorVencedorImpedido">
+    /// Indica se o fornecedor da proposta vencedora tem sancao impeditiva vigente na data da homologacao
+    /// — aferido pelo handler sobre o agregado <c>Fornecedor</c> (limite de agregado; BUG-A1).
+    /// </param>
+    /// <exception cref="InvalidOperationException">I-8: situacao diferente de EmJulgamento, sem vencedor, vencedor nao habilitado ou vencedor impedido (BUG-A1).</exception>
+    public void Homologar(bool fornecedorVencedorImpedido)
     {
         // I-8
         if (Situacao != SituacaoLicitacao.EmJulgamento)
@@ -330,6 +349,15 @@ public sealed class Licitacao : AggregateRoot<LicitacaoId>, IMustHaveTenant
         if (habilitado is null || habilitado.Resultado != ResultadoHabilitacao.Habilitado)
         {
             throw new InvalidOperationException("A homologacao exige vencedor Habilitado.");
+        }
+
+        // BUG-A1: fail-closed. Sancao impeditiva pode ter sobrevindo entre a habilitacao e a homologacao
+        // (ou ter escapado da borda de habilitacao); rechecar no ato da adjudicacao/homologacao
+        // (art. 14 e art. 156, III/IV da Lei 14.133/2021).
+        if (fornecedorVencedorImpedido)
+        {
+            throw new InvalidOperationException(
+                "Vencedor com sancao impeditiva vigente (impedimento/inidoneidade) nao pode ser homologado (art. 14/156 Lei 14.133/2021).");
         }
 
         // I-9

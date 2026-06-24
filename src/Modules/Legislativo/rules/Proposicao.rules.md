@@ -140,7 +140,8 @@ Lista NUMERADA. Cada item `I-n` vira `[Fact] Invariante_n_*`.
 - **I-5.** O registro de `Parecer` (via `Tramitacao`) so ocorre enquanto em tramitacao; emite `ParecerEmitido`. A trilha de pareceres e **imutavel** (append-only).
 - **I-6.** A inclusao em Ordem do Dia (`IncluirEmOrdemDoDia`) exige **pareceres obrigatorios** presentes: parecer da `Ccj` (constitucionalidade) **e** parecer de `FinancasOrcamento`. Ausencia de qualquer um **vicia a tramitacao** e a inclusao e rejeitada (`InvalidOperationException` — vicio de tramitacao).
 - **I-7.** A inclusao em Ordem do Dia exige situacao `Distribuida` (instruida); passa a `EmOrdemDoDia`.
-- **I-8.** A aprovacao (`Aprovar`) exige situacao `EmOrdemDoDia` e resultado deliberativo conforme a **maioria exigida pelo tipo** (simples p/ PLO; absoluta p/ PLC, Regimento e derrubada de veto; 2/3 em dois turnos p/ EmendaALOM); passa a `Aprovada` e emite `ProposicaoAprovada`.
+- **I-8.** A aprovacao (`Aprovar`) exige situacao `EmOrdemDoDia` e resultado deliberativo conforme a **maioria exigida pelo tipo** (simples p/ PLO; absoluta p/ PLC, Regimento e derrubada de veto; 2/3 p/ EmendaALOM); passa a `Aprovada` e emite `ProposicaoAprovada`.
+- **I-8.1 (L-1).** Materia de rito qualificado (`EmendaALOM`) so se aprova apos **DOIS turnos** favoraveis (CF/88 art. 29, *caput*; simetria do art. 60 §2º), cada qual com a **maioria qualificada (2/3)**, em **datas/sessoes distintas** e respeitado o **intersticio minimo** entre eles (parametrizavel por tenant — Regimento Interno). O `turno` (1 ou 2) e consumido por `Aprovar` e materializado em `AprovacoesTurno`; o 2o turno fora de sequencia, sem o 1o, ou abaixo do intersticio e recusado. Concluido o 1o turno (sem o 2o) a materia **permanece em `EmOrdemDoDia`** e emite `TurnoAprovado`; so o ultimo turno exigido transita a `Aprovada` e emite `ProposicaoAprovada`. Materias de turno unico aprovam no 1o (e unico) turno.
 - **I-9.** A rejeicao (`Rejeitar`) exige situacao `EmOrdemDoDia`; passa a `Rejeitada` (terminal) e emite `ProposicaoRejeitada`.
 - **I-10.** A geracao de autografo (`GerarAutografo`) exige situacao `Aprovada` e `numeroAutografo` nao vazio; grava `NumeroAutografo`, passa a `AutografoEnviado` e emite `AutografoEnviado`. O autografo e assinado por ICP-Brasil (efeito de integracao).
 - **I-11.** O arquivamento (`Arquivar`) e permitido sobre proposicao **nao terminal**; ocorre ao fim da legislatura (salvo excecoes regimentais); passa a `Arquivada` e emite `ProposicaoArquivada`.
@@ -235,11 +236,11 @@ Tabela: Estado origem → comando/metodo → Estado destino | guarda | evento em
 
 - **Command:** `AprovarProposicaoCommand(Guid ProposicaoId, Guid VotacaoId) : ICommand`.
 - **Entrada (DTO):** `ProposicaoId`, `VotacaoId` (votacao cujo `Resultado` aprova).
-- **Dependencias do handler:** `IProposicaoRepository`, `IUnitOfWork`.
-- **Pre-condicoes:** `request` nao nulo; proposicao existe; situacao == `EmOrdemDoDia`; resultado da votacao satisfaz a **maioria exigida pelo `Tipo`** (I-8).
-- **Efeito:** `proposicao.Aprovar(resultado)`; `SaveChangesAsync`.
-- **Pos-condicoes:** situacao `Aprovada`.
-- **Excecoes:** `ArgumentNullException`; `InvalidOperationException` (nao encontrada, situacao ≠ `EmOrdemDoDia`, ou maioria nao atingida).
+- **Dependencias do handler:** `IProposicaoRepository`, `IVotacaoRepository`, `IUnitOfWork`, `ILegislativoParametros` (intersticio entre turnos, parametrizavel por tenant), `TimeProvider`.
+- **Pre-condicoes:** `request` nao nulo; proposicao e votacao existem; votacao pertence a esta proposicao, esta `Encerrada` e `Aprovada`; situacao == `EmOrdemDoDia`; resultado satisfaz a **maioria exigida pelo `Tipo`** em **cada turno** (I-8/I-8.1).
+- **Efeito:** `proposicao.Aprovar(resultado, votacao.Turno, intersticio, hoje)`; `SaveChangesAsync`. Para `EmendaALOM`, so o 2o turno transita a `Aprovada`; o 1o emite `TurnoAprovado` e mantem `EmOrdemDoDia`.
+- **Pos-condicoes:** situacao `Aprovada` (apos todos os turnos exigidos) ou `EmOrdemDoDia` (apos 1o turno de rito qualificado).
+- **Excecoes:** `ArgumentNullException`; `ArgumentOutOfRangeException` (turno ≠ 1\|2); `InvalidOperationException` (nao encontrada, vinculo votacao→proposicao, situacao ≠ `EmOrdemDoDia`, maioria nao atingida, turno fora de sequencia, turno alem do exigido, ou intersticio nao observado).
 - **Evento de dominio:** `ProposicaoAprovada(Id)`.
 
 ### 5.7 RejeitarProposicao
@@ -319,7 +320,8 @@ Tabela: Estado origem → comando/metodo → Estado destino | guarda | evento em
 | `ProposicaoDistribuida` | `(ProposicaoId)` | `Proposicao.Distribuir` |
 | `EmendaApresentada` | `(ProposicaoId, EmendaId)` | `Proposicao.ApresentarEmenda` / `ApresentarSubstitutivo` |
 | `ParecerEmitido` | `(ProposicaoId, string comissao, bool favoravel)` | `Proposicao.RegistrarParecer` |
-| `ProposicaoAprovada` | `(ProposicaoId)` | `Proposicao.Aprovar` |
+| `TurnoAprovado` | `(ProposicaoId, int Turno, int TurnosExigidos)` | `Proposicao.Aprovar` (turno intermediario de rito qualificado; materia ainda nao aprovada) |
+| `ProposicaoAprovada` | `(ProposicaoId)` | `Proposicao.Aprovar` (apos todos os turnos exigidos) |
 | `ProposicaoRejeitada` | `(ProposicaoId)` | `Proposicao.Rejeitar` |
 | `ProposicaoArquivada` | `(ProposicaoId)` | `Proposicao.Arquivar` |
 | `AutografoEnviado` | `(ProposicaoId, string numeroAutografo)` | `Proposicao.GerarAutografo` |
@@ -543,7 +545,7 @@ Cada cenario vira teste de integracao.
 <!-- manifest
 commands: ApresentarProposicao, DistribuirProposicao, ApresentarEmenda, RegistrarParecer, IncluirEmOrdemDoDia, AprovarProposicao, RejeitarProposicao, GerarAutografo, ArquivarProposicao
 queries: ObterProposicaoPorId, ListarProposicoesPorSituacao, ObterTramitacaoDaProposicao
-domainEvents: ProposicaoApresentada, ProposicaoDistribuida, EmendaApresentada, ParecerEmitido, ProposicaoAprovada, ProposicaoRejeitada, ProposicaoArquivada, AutografoEnviado
+domainEvents: ProposicaoApresentada, ProposicaoDistribuida, EmendaApresentada, ParecerEmitido, TurnoAprovado, ProposicaoAprovada, ProposicaoRejeitada, ProposicaoArquivada, AutografoEnviado
 integrationEventsPublished: AutografoEnviadoIntegrationEvent
 integrationEventsConsumed: SancaoIntegrationEvent, VetoIntegrationEvent
 -->

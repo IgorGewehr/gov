@@ -23,7 +23,8 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
             "Servicos de limpeza",
             ValorMonetario.De(valor),
             new DateOnly(2026, 1, 1),
-            new DateOnly(2026, 12, 31));
+            new DateOnly(2026, 12, 31),
+            fornecedorImpedido: false);
 
     private static Contrato ContratoEficaz(decimal valor = 100000m)
     {
@@ -51,7 +52,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Licitacao, "  ",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1));
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
 
         acao.Should().Throw<ArgumentException>();
     }
@@ -61,7 +62,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Licitacao, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 5, 1), new DateOnly(2026, 1, 1));
+            ValorMonetario.De(1m), new DateOnly(2026, 5, 1), new DateOnly(2026, 1, 1), fornecedorImpedido: false);
 
         acao.Should().Throw<ArgumentException>();
     }
@@ -71,7 +72,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, null, Guid.NewGuid(), OrigemContratacao.Licitacao, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1));
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
 
         acao.Should().Throw<InvalidOperationException>();
     }
@@ -81,7 +82,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Dispensa, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1));
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
 
         acao.Should().Throw<InvalidOperationException>();
     }
@@ -91,7 +92,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var contrato = Contrato.Celebrar(
             TenantA, null, Guid.NewGuid(), OrigemContratacao.Dispensa, "Compra direta",
-            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1));
+            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1), fornecedorImpedido: false);
 
         contrato.Situacao.Should().Be(SituacaoContrato.Assinado);
         contrato.LicitacaoId.Should().BeNull();

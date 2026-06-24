@@ -28,6 +28,7 @@ public sealed class AprovarProposicaoHandler(
     IProposicaoRepository proposicoes,
     IVotacaoRepository votacoes,
     IUnitOfWork unitOfWork,
+    ILegislativoParametros parametros,
     TimeProvider timeProvider)
     : ICommandHandler<AprovarProposicaoCommand>
 {
@@ -70,7 +71,13 @@ public sealed class AprovarProposicaoHandler(
 
         var resultado = ResultadoDeliberacao.Aprovada(MapearMaioria(maioriaAtingida));
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-        proposicao.Aprovar(resultado, hoje);
+
+        // L-1: o TURNO da votacao deixa de ser dado morto — e consumido na aprovacao. Para a Emenda a LOM
+        // (CF/88 art. 29, caput) a materia so se aprova apos DOIS turnos favoraveis, com a maioria exigida
+        // em cada e observado o intersticio minimo (parametrizavel por tenant) entre eles. O agregado
+        // enforca a sequencia, a maioria por turno e o intervalo; aqui apenas fornecemos os parametros.
+        var intersticio = parametros.IntersticioEntreTurnos();
+        proposicao.Aprovar(resultado, votacao.Turno, intersticio, hoje);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 

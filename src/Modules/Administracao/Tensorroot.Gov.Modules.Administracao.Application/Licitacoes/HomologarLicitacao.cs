@@ -4,6 +4,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
+using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Licitacoes;
@@ -28,6 +29,7 @@ public sealed class HomologarLicitacaoValidator : AbstractValidator<HomologarLic
 /// <summary>Handler da homologacao de licitacao.</summary>
 public sealed class HomologarLicitacaoHandler(
     ILicitacaoRepository licitacoes,
+    IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
     ITenantContext tenant,
@@ -42,10 +44,18 @@ public sealed class HomologarLicitacaoHandler(
         var licitacao = await licitacoes.ObterPorIdAsync(new LicitacaoId(request.LicitacaoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Licitacao nao encontrada.");
 
-        licitacao.Homologar();
+        var agora = timeProvider.GetUtcNow().UtcDateTime;
+
+        // BUG-A1: rechecar a aptidao do vencedor no ato da homologacao (sancao impeditiva pode ter sobrevindo
+        // entre habilitacao e homologacao). Limite de agregado: consulta o Fornecedor e passa a aptidao ao
+        // agregado Licitacao, que recusa fail-closed (art. 14/156 Lei 14.133/2021).
+        var vencedorId = licitacao.FornecedorVencedorId();
+        var vencedorImpedido = vencedorId is { } vid
+            && await EstaImpedidoAsync(vid, agora, cancellationToken).ConfigureAwait(false);
+
+        licitacao.Homologar(vencedorImpedido);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        var agora = timeProvider.GetUtcNow().UtcDateTime;
         var fornecedorVencedorId = licitacao.FornecedorVencedorId() ?? Guid.Empty;
         var valorAdjudicado = licitacao.ValorAdjudicado();
 
@@ -69,5 +79,11 @@ public sealed class HomologarLicitacaoHandler(
                 licitacao.Objeto,
                 valorAdjudicado),
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<bool> EstaImpedidoAsync(Guid fornecedorId, DateTime referencia, CancellationToken cancellationToken)
+    {
+        var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(fornecedorId), cancellationToken).ConfigureAwait(false);
+        return fornecedor is not null && fornecedor.EstaImpedido(DateOnly.FromDateTime(referencia));
     }
 }

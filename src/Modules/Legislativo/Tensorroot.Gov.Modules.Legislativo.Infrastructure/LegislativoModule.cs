@@ -9,6 +9,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
+using Tensorroot.Gov.Modules.Legislativo.Application;
 using Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence;
@@ -50,6 +51,11 @@ public sealed class LegislativoModule : IModule
             // ModuleInterceptorRegistration: a trilha le o TenantId JA carimbado (W0.2).
             options.AddModuleSaveChangesInterceptors(serviceProvider);
         });
+
+        // Parametros do processo legislativo configuraveis por tenant (Regimento Interno) — ex.: o
+        // intersticio minimo entre os dois turnos da Emenda a LOM (L-1). Parametrizavel, nunca hardcoded.
+        services.Configure<LegislativoOptions>(configuration.GetSection(LegislativoOptions.SecaoConfiguracao));
+        services.AddSingleton<ILegislativoParametros, LegislativoParametros>();
 
         services.AddScoped<IProposicaoRepository, ProposicaoRepository>();
         services.AddScoped<ISessaoRepository, SessaoRepository>();

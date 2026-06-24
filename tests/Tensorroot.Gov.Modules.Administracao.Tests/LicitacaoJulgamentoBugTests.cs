@@ -96,10 +96,10 @@ public sealed class LicitacaoJulgamentoBugTests : AdministracaoTestBase
         var prop = lic.RegistrarProposta(fornecedor, lote, ValorMonetario.De(90000m));
         lic.JulgarPropostas(prop.Value);
 
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc pendente", T0);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, "Recurso provido", T0.AddHours(1));
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc pendente", T0, fornecedorImpedido: false);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, "Recurso provido", T0.AddHours(1), fornecedorImpedido: false);
 
-        lic.Homologar();
+        lic.Homologar(fornecedorVencedorImpedido: false);
         lic.Situacao.Should().Be(SituacaoLicitacao.Homologada);
     }
 
@@ -112,10 +112,10 @@ public sealed class LicitacaoJulgamentoBugTests : AdministracaoTestBase
         var prop = lic.RegistrarProposta(fornecedor, lote, ValorMonetario.De(90000m));
         lic.JulgarPropostas(prop.Value);
 
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, T0);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", T0.AddHours(1));
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, T0, fornecedorImpedido: false);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", T0.AddHours(1), fornecedorImpedido: false);
 
-        ((Action)lic.Homologar).Should().Throw<InvalidOperationException>();
+        ((Action)(() => lic.Homologar(fornecedorVencedorImpedido: false))).Should().Throw<InvalidOperationException>();
         lic.Situacao.Should().Be(SituacaoLicitacao.EmJulgamento);
     }
 
@@ -132,8 +132,8 @@ public sealed class LicitacaoJulgamentoBugTests : AdministracaoTestBase
             var prop = lic.RegistrarProposta(fornecedor, lote, ValorMonetario.De(90000m));
             lic.JulgarPropostas(prop.Value);
             // Ordem de insercao: Habilitado e depois Inabilitado (mais recente) — deve prevalecer Inabilitado.
-            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, T0);
-            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", T0.AddHours(1));
+            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, T0, fornecedorImpedido: false);
+            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", T0.AddHours(1), fornecedorImpedido: false);
             id = lic.Id;
             contexto.Licitacoes.Add(lic);
             await contexto.SaveChangesAsync();
@@ -144,7 +144,7 @@ public sealed class LicitacaoJulgamentoBugTests : AdministracaoTestBase
             var lic = await contexto.Licitacoes.SingleAsync(l => l.Id == id);
 
             // Apos reidratacao do EF Core, a habilitacao vigente continua sendo Inabilitado -> bloqueia.
-            ((Action)lic.Homologar).Should().Throw<InvalidOperationException>();
+            ((Action)(() => lic.Homologar(fornecedorVencedorImpedido: false))).Should().Throw<InvalidOperationException>();
             lic.Habilitacoes.Should().HaveCount(2);
         }
     }

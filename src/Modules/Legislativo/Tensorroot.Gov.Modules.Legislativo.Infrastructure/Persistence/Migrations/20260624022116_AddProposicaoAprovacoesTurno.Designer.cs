@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Legislativo.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(LegislativoDbContext))]
-    partial class LegislativoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624022116_AddProposicaoAprovacoesTurno")]
+    partial class AddProposicaoAprovacoesTurno
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

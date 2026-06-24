@@ -4,31 +4,6 @@ using Tensorroot.Gov.SharedKernel.Primitives;
 
 namespace Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 
-/// <summary>Identificador forte do agregado <see cref="Proposicao"/>.</summary>
-/// <param name="Value">Valor GUID subjacente.</param>
-public readonly record struct ProposicaoId(Guid Value)
-{
-    /// <summary>Gera um novo identificador.</summary>
-    /// <returns>Novo <see cref="ProposicaoId"/>.</returns>
-    public static ProposicaoId New() => new(Guid.NewGuid());
-
-    /// <inheritdoc />
-    public override string ToString() => Value.ToString();
-}
-
-/// <summary>Maioria exigida pela especie da materia (CF/88 art. 29) — derivada do <see cref="TipoProposicao"/>.</summary>
-public enum MaioriaProposicao
-{
-    /// <summary>Maioria simples: maior que 50% dos presentes (lei ordinaria).</summary>
-    Simples = 1,
-
-    /// <summary>Maioria absoluta: maior que 50% dos membros (LC, Regimento, derrubada de veto).</summary>
-    Absoluta = 2,
-
-    /// <summary>Maioria qualificada: 2/3 em dois turnos (Emenda a LOM).</summary>
-    Qualificada = 3,
-}
-
 /// <summary>
 /// Materia submetida a apreciacao do Plenario da Camara Municipal (PLO, PLC, Emenda a LOM, PDL, PR,
 /// Requerimento, Indicacao, Mocao). Raiz de agregado que percorre o ciclo de protocolo, distribuicao,
@@ -42,6 +17,7 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
     private readonly List<Emenda> _emendas = [];
     private readonly List<Substitutivo> _substitutivos = [];
     private readonly List<Tramitacao> _tramitacoes = [];
+    private readonly List<AprovacaoTurno> _aprovacoesTurno = [];
 
     private Proposicao()
     {
@@ -112,6 +88,9 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
     /// <summary>Fases de tramitacao (trilha imutavel, incluindo pareceres referenciados).</summary>
     public IReadOnlyList<Tramitacao> Tramitacoes => _tramitacoes;
 
+    /// <summary>Aprovacoes de turno registradas (rito qualificado — Emenda a LOM), trilha imutavel.</summary>
+    public IReadOnlyList<AprovacaoTurno> AprovacoesTurno => _aprovacoesTurno;
+
     /// <summary>Maioria exigida na deliberacao, derivada do <see cref="Tipo"/> (CF/88 art. 29).</summary>
     public MaioriaProposicao MaioriaExigida => Tipo switch
     {
@@ -120,6 +99,23 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
         TipoProposicao.EmendaALOM => MaioriaProposicao.Qualificada,
         _ => MaioriaProposicao.Simples,
     };
+
+    /// <summary>
+    /// Numero de turnos de votacao exigidos pela especie da materia. A Emenda a Lei Organica Municipal
+    /// exige DOIS turnos (CF/88 art. 29, caput, e LOM — simetria do art. 60 §2º); as demais materias se
+    /// deliberam em turno unico. Derivado do <see cref="Tipo"/> — fonte unica da regra de rito.
+    /// </summary>
+    public int TurnosExigidos => Tipo switch
+    {
+        TipoProposicao.EmendaALOM => DoisTurnos,
+        _ => TurnoUnico,
+    };
+
+    /// <summary>Indica se a materia exige mais de um turno de votacao (rito qualificado).</summary>
+    public bool ExigeDoisTurnos => TurnosExigidos > TurnoUnico;
+
+    /// <summary>Quantidade de turnos ja aprovados (cada um com a maioria exigida, em datas distintas).</summary>
+    public int TurnosAprovados => _aprovacoesTurno.Count;
 
     /// <summary>Indica se a proposicao esta em tramitacao (nao terminal e nao <see cref="SituacaoProposicao.AutografoEnviado"/>).</summary>
     public bool EmTramitacao
@@ -263,23 +259,82 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
         _tramitacoes.Add(Tramitacao.RegistrarFase(Id, FaseTramitacao.OrdemDoDia, data));
     }
 
-    /// <summary>Aprova a proposicao conforme a maioria exigida pelo <see cref="Tipo"/> (I-8).</summary>
+    /// <summary>
+    /// Aprova um TURNO de votacao da proposicao conforme a maioria exigida pelo <see cref="Tipo"/> (I-8).
+    /// Materias de turno unico sao aprovadas no primeiro (e unico) turno favoravel. Materias de rito
+    /// qualificado (Emenda a LOM) so transitam para <see cref="SituacaoProposicao.Aprovada"/> apos DOIS
+    /// turnos favoraveis, cada qual com a maioria exigida, observado o <paramref name="intersticio"/>
+    /// minimo entre eles (CF/88 art. 29, caput; simetria do art. 60 §2º). O <paramref name="turno"/> deixa
+    /// de ser dado morto: e consumido e materializado em <see cref="AprovacoesTurno"/>. Ate concluir todos
+    /// os turnos, a proposicao permanece em Ordem do Dia aguardando o turno seguinte.
+    /// </summary>
     /// <param name="resultado">Resultado da deliberacao (maioria efetivamente atingida).</param>
+    /// <param name="turno">Numero do turno deliberado (1 ou 2), proveniente da votacao apurada.</param>
+    /// <param name="intersticio">Intervalo minimo (parametrizavel por tenant) exigido entre turnos.</param>
     /// <param name="data">Data da deliberacao.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Se o <paramref name="turno"/> nao for 1 ou 2.</exception>
     /// <exception cref="InvalidOperationException">
-    /// Se a situacao nao for <see cref="SituacaoProposicao.EmOrdemDoDia"/> ou a maioria exigida nao for atingida.
+    /// Se a situacao nao for <see cref="SituacaoProposicao.EmOrdemDoDia"/>; se a maioria exigida nao for
+    /// atingida; se o turno violar a sequencia (turno fora de ordem, turno repetido, turno alem do exigido);
+    /// ou se o intersticio minimo nao for observado entre o turno anterior e este.
     /// </exception>
-    public void Aprovar(ResultadoDeliberacao resultado, DateOnly data)
+    public void Aprovar(ResultadoDeliberacao resultado, int turno, Interstico intersticio, DateOnly data)
     {
         if (Situacao != SituacaoProposicao.EmOrdemDoDia)
         {
             throw new InvalidOperationException($"A aprovacao exige situacao EmOrdemDoDia. Situacao atual: {Situacao}.");
         }
 
+        if (turno is not (PrimeiroTurno or SegundoTurno))
+        {
+            throw new ArgumentOutOfRangeException(nameof(turno), turno, "Turno deve ser 1 ou 2.");
+        }
+
+        // A maioria exigida pelo tipo tem de ser atingida em CADA turno (nao basta no turno final).
         if (!resultado.Satisfaz(MaioriaExigida))
         {
             throw new InvalidOperationException(
-                $"Maioria exigida ({MaioriaExigida}) nao atingida para o tipo {Tipo}.");
+                $"Maioria exigida ({MaioriaExigida}) nao atingida no turno {turno} para o tipo {Tipo}.");
+        }
+
+        // O turno informado nao pode exceder o numero de turnos exigidos pela especie (ex.: turno 2 num
+        // PLO de turno unico e estado impossivel de rito).
+        if (turno > TurnosExigidos)
+        {
+            throw new InvalidOperationException(
+                $"O tipo {Tipo} exige {TurnosExigidos} turno(s); turno {turno} nao se aplica.");
+        }
+
+        // L-1: o turno tem de ser o IMEDIATAMENTE seguinte ao ultimo aprovado (turno 2 sem o 1, ou um turno
+        // ja vencido reaberto, fabricaria o rito).
+        var turnoEsperado = TurnosAprovados + 1;
+        if (turno != turnoEsperado)
+        {
+            throw new InvalidOperationException(
+                $"Turno fora de sequencia: esperado turno {turnoEsperado}, recebido turno {turno}.");
+        }
+
+        // L-1: entre turnos deve transcorrer o intersticio minimo do Regimento (parametrizavel); aprovar os
+        // dois turnos no mesmo dia (ou abaixo do intervalo) e vicio de rito.
+        if (TurnosAprovados > 0)
+        {
+            var dataTurnoAnterior = _aprovacoesTurno[^1].Data;
+            if (!intersticio.Respeitado(dataTurnoAnterior, data))
+            {
+                throw new InvalidOperationException(
+                    $"Intersticio minimo de {intersticio.Dias} dia(s) entre turnos nao observado "
+                    + $"(turno anterior em {dataTurnoAnterior:yyyy-MM-dd}, turno atual em {data:yyyy-MM-dd}).");
+            }
+        }
+
+        _aprovacoesTurno.Add(AprovacaoTurno.Registrar(Id, turno, resultado.MaioriaAtingida, data));
+
+        // So apos concluir TODOS os turnos exigidos a materia esta efetivamente aprovada. Antes disso,
+        // permanece em Ordem do Dia aguardando o turno seguinte (sinalizado por TurnoAprovado).
+        if (TurnosAprovados < TurnosExigidos)
+        {
+            RaiseDomainEvent(new TurnoAprovado(Id, turno, TurnosExigidos));
+            return;
         }
 
         Situacao = SituacaoProposicao.Aprovada;
@@ -425,46 +480,15 @@ public sealed class Proposicao : AggregateRoot<ProposicaoId>, IMustHaveTenant
         }
     }
 
+    // Turnos de votacao: materias comuns em turno unico; Emenda a LOM em dois turnos (CF/88 art. 29, caput).
+    private const int TurnoUnico = 1;
+    private const int DoisTurnos = 2;
+    private const int PrimeiroTurno = 1;
+    private const int SegundoTurno = 2;
+
     /// <summary>Identificador da Comissao de Constituicao e Justica (parecer de constitucionalidade obrigatorio).</summary>
     public const string ComissaoCcj = "Ccj";
 
     /// <summary>Identificador da Comissao de Financas e Orcamento (parecer financeiro/orcamentario obrigatorio).</summary>
     public const string ComissaoFinancasOrcamento = "FinancasOrcamento";
-}
-
-/// <summary>
-/// Resultado de uma deliberacao plenaria: indica se a materia foi aprovada e qual a maior
-/// maioria efetivamente alcancada na votacao. Alimenta <see cref="Proposicao.Aprovar"/>,
-/// que confronta a maioria atingida com a exigida pelo tipo (I-8).
-/// </summary>
-public readonly record struct ResultadoDeliberacao
-{
-    private ResultadoDeliberacao(bool aprovado, MaioriaProposicao maioriaAtingida)
-    {
-        Aprovado = aprovado;
-        MaioriaAtingida = maioriaAtingida;
-    }
-
-    /// <summary>Indica se a deliberacao aprovou a materia.</summary>
-    public bool Aprovado { get; }
-
-    /// <summary>Maior maioria efetivamente atingida na votacao.</summary>
-    public MaioriaProposicao MaioriaAtingida { get; }
-
-    /// <summary>Cria um resultado aprovado com a maioria efetivamente atingida.</summary>
-    /// <param name="maioriaAtingida">Maioria alcancada na votacao.</param>
-    /// <returns>Resultado aprovado.</returns>
-    public static ResultadoDeliberacao Aprovada(MaioriaProposicao maioriaAtingida)
-        => new(aprovado: true, maioriaAtingida);
-
-    /// <summary>Cria um resultado rejeitado (maioria nao alcancada).</summary>
-    /// <returns>Resultado rejeitado.</returns>
-    public static ResultadoDeliberacao Rejeitada()
-        => new(aprovado: false, MaioriaProposicao.Simples);
-
-    /// <summary>Verifica se o resultado satisfaz a maioria exigida pelo tipo da proposicao.</summary>
-    /// <param name="exigida">Maioria exigida.</param>
-    /// <returns><c>true</c> se aprovado e a maioria atingida for igual ou superior a exigida.</returns>
-    public bool Satisfaz(MaioriaProposicao exigida)
-        => Aprovado && MaioriaAtingida >= exigida;
 }

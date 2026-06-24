@@ -36,14 +36,19 @@ public sealed class ProposicaoConfiguration : IEntityTypeConfiguration<Proposica
         // Propriedades calculadas (sem coluna).
         builder.Ignore(proposicao => proposicao.MaioriaExigida);
         builder.Ignore(proposicao => proposicao.EmTramitacao);
+        builder.Ignore(proposicao => proposicao.TurnosExigidos);
+        builder.Ignore(proposicao => proposicao.ExigeDoisTurnos);
+        builder.Ignore(proposicao => proposicao.TurnosAprovados);
 
         builder.OwnsMany(proposicao => proposicao.Emendas, MapearEmendas);
         builder.OwnsMany(proposicao => proposicao.Substitutivos, MapearSubstitutivos);
         builder.OwnsMany(proposicao => proposicao.Tramitacoes, MapearTramitacoes);
+        builder.OwnsMany(proposicao => proposicao.AprovacoesTurno, MapearAprovacoesTurno);
 
         builder.Navigation(proposicao => proposicao.Emendas).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(proposicao => proposicao.Substitutivos).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(proposicao => proposicao.Tramitacoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(proposicao => proposicao.AprovacoesTurno).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasIndex(proposicao => new { proposicao.TenantId, proposicao.Situacao });
         builder.HasIndex(proposicao => new { proposicao.TenantId, proposicao.Protocolo }).IsUnique();
@@ -79,6 +84,21 @@ public sealed class ProposicaoConfiguration : IEntityTypeConfiguration<Proposica
         substitutivos.Property(substitutivo => substitutivo.Autoria)
             .HasConversion(autoria => autoria.Valor, valor => Autoria.De(valor))
             .HasMaxLength(Autoria.ComprimentoMaximo);
+    }
+
+    private static void MapearAprovacoesTurno(OwnedNavigationBuilder<Proposicao, AprovacaoTurno> aprovacoes)
+    {
+        aprovacoes.ToTable("ProposicoesAprovacoesTurno");
+        aprovacoes.WithOwner().HasForeignKey("ProposicaoOwnerId");
+        aprovacoes.HasKey(aprovacao => aprovacao.Id);
+        aprovacoes.Property(aprovacao => aprovacao.Id)
+            .HasConversion(id => id.Value, value => new AprovacaoTurnoId(value))
+            .ValueGeneratedNever();
+        aprovacoes.Property(aprovacao => aprovacao.ProposicaoId)
+            .HasConversion(id => id.Value, value => new ProposicaoId(value));
+        aprovacoes.Property(aprovacao => aprovacao.MaioriaAtingida).HasConversion<string>().HasMaxLength(20);
+        // Um turno por numero por proposicao: a trilha nao admite o "mesmo turno" registrado duas vezes.
+        aprovacoes.HasIndex("ProposicaoOwnerId", nameof(AprovacaoTurno.Numero)).IsUnique();
     }
 
     private static void MapearTramitacoes(OwnedNavigationBuilder<Proposicao, Tramitacao> tramitacoes)

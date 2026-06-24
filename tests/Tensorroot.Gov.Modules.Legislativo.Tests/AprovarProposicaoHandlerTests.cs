@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Tensorroot.Gov.Modules.Legislativo.Application.Abstractions;
 using Tensorroot.Gov.Modules.Legislativo.Application.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Proposicoes;
 using Tensorroot.Gov.Modules.Legislativo.Domain.Sessoes;
@@ -59,7 +60,16 @@ public sealed class AprovarProposicaoHandlerTests : LegislativoTestBase
     }
 
     private static AprovarProposicaoHandler Handler(LegislativoDbContext ctx)
-        => new(new ProposicaoRepository(ctx), new VotacaoRepository(ctx), ctx, new FixedTimeProvider(Quando));
+        => new(new ProposicaoRepository(ctx), new VotacaoRepository(ctx), ctx, ParametrosFixos, new FixedTimeProvider(Quando));
+
+    // Intersticio de 1 dia (parametrizavel por tenant): suficiente para as materias de turno unico
+    // destes testes; o rito de 2 turnos da Emenda a LOM e coberto em ProposicaoFluxoTests.
+    private static readonly ILegislativoParametros ParametrosFixos = new ParametrosTeste(Interstico.DeDias(1));
+
+    private sealed class ParametrosTeste(Interstico intersticio) : ILegislativoParametros
+    {
+        public Interstico IntersticioEntreTurnos() => intersticio;
+    }
 
     [Fact] // Item 9 (o teste mais importante): aprovar com votacao de OUTRA proposicao falha (BUG-1).
     public async Task Aprovar_com_votacao_de_outra_proposicao_falha()

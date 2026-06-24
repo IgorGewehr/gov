@@ -128,10 +128,14 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
     /// <param name="vigenciaInicio">Inicio da vigencia.</param>
     /// <param name="vigenciaFim">Fim da vigencia (nao anterior ao inicio) — I-3.</param>
     /// <param name="empenhoRef">Referencia ao empenho, quando ja informada na celebracao.</param>
+    /// <param name="fornecedorImpedido">
+    /// Indica se o fornecedor tem sancao impeditiva (impedimento/inidoneidade) vigente na data da celebracao
+    /// — aferido pelo handler sobre o agregado <c>Fornecedor</c> (limite de agregado). Fail-closed (BUG-A1).
+    /// </param>
     /// <returns>Novo <see cref="Contrato"/> em <see cref="SituacaoContrato.Assinado"/>.</returns>
     /// <exception cref="ArgumentException">Se o objeto for vazio (I-1) ou a vigencia for invalida (I-3).</exception>
     /// <exception cref="ArgumentNullException">Se o valor contratado for nulo (I-2).</exception>
-    /// <exception cref="InvalidOperationException">Se o enquadramento origem x licitacao for incoerente (I-4).</exception>
+    /// <exception cref="InvalidOperationException">Se o enquadramento origem x licitacao for incoerente (I-4) ou o fornecedor estiver impedido (BUG-A1; art. 14/156).</exception>
     public static Contrato Celebrar(
         Guid tenantId,
         Guid? licitacaoId,
@@ -141,12 +145,21 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
         ValorMonetario valorContratado,
         DateOnly vigenciaInicio,
         DateOnly vigenciaFim,
+        bool fornecedorImpedido,
         EmpenhoRef? empenhoRef = null)
     {
         // I-1: objeto obrigatorio.
         ArgumentException.ThrowIfNullOrWhiteSpace(objeto);
         // I-2: valor obrigatorio.
         ArgumentNullException.ThrowIfNull(valorContratado);
+
+        // BUG-A1: fail-closed. Fornecedor com sancao impeditiva vigente nao pode celebrar contrato
+        // (art. 14 e art. 156, III/IV da Lei 14.133/2021), em qualquer origem (licitacao ou direta).
+        if (fornecedorImpedido)
+        {
+            throw new InvalidOperationException(
+                "Fornecedor com sancao impeditiva vigente (impedimento/inidoneidade) nao pode celebrar contrato (art. 14/156 Lei 14.133/2021).");
+        }
 
         // I-3: vigencia coerente.
         if (vigenciaFim < vigenciaInicio)

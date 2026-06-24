@@ -23,7 +23,8 @@ public sealed class ContratoAditivoBugTests : AdministracaoTestBase
             "Servicos de limpeza",
             ValorMonetario.De(valor),
             new DateOnly(2026, 1, 1),
-            new DateOnly(2026, 12, 31));
+            new DateOnly(2026, 12, 31),
+            fornecedorImpedido: false);
         contrato.PublicarContratoPncp("PNCP-CT-0001");
         contrato.ConfirmarDotacao(EmpenhoRef.De(Guid.NewGuid(), "2026NE000001"));
         return contrato;

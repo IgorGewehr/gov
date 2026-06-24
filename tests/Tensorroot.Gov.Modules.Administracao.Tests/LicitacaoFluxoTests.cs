@@ -116,9 +116,9 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var fornecedor = Guid.NewGuid();
         var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
         lic.JulgarPropostas(propId.Value);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", Verificacao);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc vencido", Verificacao, fornecedorImpedido: false);
 
-        ((Action)lic.Homologar).Should().Throw<InvalidOperationException>();
+        ((Action)(() => lic.Homologar(fornecedorVencedorImpedido: false))).Should().Throw<InvalidOperationException>();
         lic.Situacao.Should().Be(SituacaoLicitacao.EmJulgamento);
     }
 
@@ -127,7 +127,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
     {
         var lic = NovoPregao();
 
-        ((Action)lic.Homologar).Should().Throw<InvalidOperationException>();
+        ((Action)(() => lic.Homologar(fornecedorVencedorImpedido: false))).Should().Throw<InvalidOperationException>();
     }
 
     [Fact] // B-7 + Cenario 6: declarar deserta com proposta recebida falha.
@@ -220,9 +220,9 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var fornecedor = Guid.NewGuid();
         var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
         lic.JulgarPropostas(propId.Value);
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao, fornecedorImpedido: false);
 
-        lic.Homologar();
+        lic.Homologar(fornecedorVencedorImpedido: false);
 
         lic.Situacao.Should().Be(SituacaoLicitacao.Homologada);
         var evento = lic.DomainEvents.OfType<LicitacaoHomologada>().Should().ContainSingle().Which;
@@ -250,7 +250,7 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
         var loteId = lic.AdicionarLote(1, "Lote 1", ValorMonetario.De(100000m));
         var fornecedor = Guid.NewGuid();
         lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
-        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc", Verificacao);
+        lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Inabilitado, "Doc", Verificacao, fornecedorImpedido: false);
 
         lic.DeclararFracassada("Sem habilitados");
 
@@ -306,12 +306,12 @@ public sealed class LicitacaoFluxoTests : AdministracaoTestBase
             var fornecedor = Guid.NewGuid();
             var propId = lic.RegistrarProposta(fornecedor, loteId, ValorMonetario.De(90000m));
             lic.JulgarPropostas(propId.Value);
-            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao);
+            lic.HabilitarLicitante(fornecedor, ResultadoHabilitacao.Habilitado, null, Verificacao, fornecedorImpedido: false);
             id = lic.Id;
             contexto.Licitacoes.Add(lic);
             await contexto.SaveChangesAsync();
 
-            lic.Homologar();
+            lic.Homologar(fornecedorVencedorImpedido: false);
             await contexto.SaveChangesAsync();
         }
 

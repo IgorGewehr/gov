@@ -162,7 +162,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     {
         var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.ProjetoDeLeiOrdinaria);
 
-        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Rejeitada(), Hoje)))
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Rejeitada(), turno: 1, Interstico.DeDias(1), Hoje)))
             .Should().Throw<InvalidOperationException>();
         proposicao.Situacao.Should().Be(SituacaoProposicao.EmOrdemDoDia);
     }
@@ -172,7 +172,88 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     {
         var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
 
-        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje)))
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje)))
+            .Should().Throw<InvalidOperationException>();
+    }
+
+    // ---------- L-1: Emenda a LOM exige DOIS turnos (CF/88 art. 29, caput) ----------
+
+    [Fact] // L-1: a especie EmendaALOM exige 2 turnos; as demais, turno unico.
+    public void L1_emenda_lom_exige_dois_turnos_demais_turno_unico()
+    {
+        NovaProposicao(TipoProposicao.EmendaALOM).TurnosExigidos.Should().Be(2);
+        NovaProposicao(TipoProposicao.EmendaALOM).ExigeDoisTurnos.Should().BeTrue();
+        NovaProposicao(TipoProposicao.ProjetoDeLeiOrdinaria).TurnosExigidos.Should().Be(1);
+        NovaProposicao(TipoProposicao.ProjetoDeLeiComplementar).ExigeDoisTurnos.Should().BeFalse();
+    }
+
+    [Fact] // L-1 (NUCLEO): EmendaALOM NAO se aprova em turno unico — apos o 1o turno fica em Ordem do Dia.
+    public void L1_emenda_lom_nao_aprova_em_turno_unico()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
+
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 1, Interstico.DeDias(1), Hoje);
+
+        proposicao.Situacao.Should().Be(SituacaoProposicao.EmOrdemDoDia);
+        proposicao.TurnosAprovados.Should().Be(1);
+        proposicao.DomainEvents.OfType<ProposicaoAprovada>().Should().BeEmpty();
+        proposicao.DomainEvents.OfType<TurnoAprovado>().Should().ContainSingle();
+    }
+
+    [Fact] // L-1: dois turnos qualificados com intersticio observado => Aprovada (e so entao ProposicaoAprovada).
+    public void L1_emenda_lom_aprova_apos_dois_turnos_com_intersticio()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
+        var intersticio = Interstico.DeDias(1);
+
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 1, intersticio, Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 2, intersticio, Hoje.AddDays(1));
+
+        proposicao.Situacao.Should().Be(SituacaoProposicao.Aprovada);
+        proposicao.TurnosAprovados.Should().Be(2);
+        proposicao.DomainEvents.OfType<ProposicaoAprovada>().Should().ContainSingle();
+    }
+
+    [Fact] // L-1: os dois turnos no MESMO dia violam o intersticio minimo (datas/sessoes distintas).
+    public void L1_emenda_lom_dois_turnos_no_mesmo_dia_viola_intersticio()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
+        var intersticio = Interstico.DeDias(1);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 1, intersticio, Hoje);
+
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 2, intersticio, Hoje)))
+            .Should().Throw<InvalidOperationException>();
+        proposicao.Situacao.Should().Be(SituacaoProposicao.EmOrdemDoDia);
+        proposicao.TurnosAprovados.Should().Be(1);
+    }
+
+    [Fact] // L-1: o 2o turno fora de sequencia (sem o 1o) e recusado.
+    public void L1_segundo_turno_sem_o_primeiro_e_recusado()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
+
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 2, Interstico.DeDias(1), Hoje)))
+            .Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact] // L-1: cada turno exige a maioria qualificada; 2o turno sem 2/3 nao aprova a materia.
+    public void L1_segundo_turno_sem_maioria_qualificada_nao_aprova()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.EmendaALOM);
+        var intersticio = Interstico.DeDias(1);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Qualificada), turno: 1, intersticio, Hoje);
+
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Absoluta), turno: 2, intersticio, Hoje.AddDays(1))))
+            .Should().Throw<InvalidOperationException>();
+        proposicao.Situacao.Should().Be(SituacaoProposicao.EmOrdemDoDia);
+    }
+
+    [Fact] // L-1: materia de turno unico nao admite turno 2.
+    public void L1_materia_turno_unico_nao_admite_turno_dois()
+    {
+        var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.ProjetoDeLeiOrdinaria);
+
+        ((Action)(() => proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 2, Interstico.DeDias(1), Hoje)))
             .Should().Throw<InvalidOperationException>();
     }
 
@@ -191,7 +272,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     public void Invariante_10_autografo_sem_numero_e_rejeitado()
     {
         var proposicao = ProposicaoEmOrdemDoDia();
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
 
         ((Action)(() => proposicao.GerarAutografo("   ", Hoje))).Should().Throw<ArgumentException>();
     }
@@ -217,7 +298,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     public void Invariante_12_autografo_enviado_nao_admite_transicoes()
     {
         var proposicao = ProposicaoEmOrdemDoDia();
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
         proposicao.GerarAutografo("AUT-2026-0001", Hoje);
 
         proposicao.Situacao.Should().Be(SituacaoProposicao.AutografoEnviado);
@@ -234,7 +315,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
         emTramitacao.RegistrarVeto(Hoje).Should().BeFalse();
 
         var enviado = ProposicaoEmOrdemDoDia();
-        enviado.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        enviado.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
         enviado.GerarAutografo("AUT-2026-0002", Hoje);
         enviado.RegistrarSancao(Hoje).Should().BeTrue();
     }
@@ -243,7 +324,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     public void Invariante_14_cada_transicao_registra_tramitacao()
     {
         var proposicao = ProposicaoEmOrdemDoDia();
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
         proposicao.GerarAutografo("AUT-2026-0003", Hoje);
 
         proposicao.Tramitacoes.Select(t => t.Fase).Should().Contain(new[]
@@ -282,7 +363,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     {
         var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.ProjetoDeLeiOrdinaria);
 
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
 
         proposicao.Situacao.Should().Be(SituacaoProposicao.Aprovada);
         proposicao.DomainEvents.OfType<ProposicaoAprovada>().Should().ContainSingle();
@@ -293,7 +374,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     {
         var proposicao = ProposicaoEmOrdemDoDia(TipoProposicao.ProjetoDeLeiComplementar);
 
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Absoluta), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Absoluta), turno: 1, Interstico.DeDias(1), Hoje);
 
         proposicao.Situacao.Should().Be(SituacaoProposicao.Aprovada);
     }
@@ -302,7 +383,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
     public void Transicao_gerar_autografo_de_aprovada()
     {
         var proposicao = ProposicaoEmOrdemDoDia();
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
 
         proposicao.GerarAutografo("AUT-2026-0001", Hoje);
 
@@ -336,7 +417,7 @@ public sealed class ProposicaoFluxoTests : LegislativoTestBase
             contexto.Proposicoes.Add(proposicao);
             await contexto.SaveChangesAsync();
 
-            proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+            proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
             proposicao.GerarAutografo("AUT-2026-9999", Hoje);
             await contexto.SaveChangesAsync();
         }

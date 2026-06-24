@@ -74,7 +74,13 @@ public sealed partial class Contrato
 
         if (ehQuantitativo)
         {
-            var limite = ehReforma ? LimiteAditivoReforma : LimiteAditivoQuantitativo;
+            // BUG-A2: o teto ampliado de reforma (50%) e EXCLUSIVO dos ACRESCIMOS (art. 125 §1º — "exclusivamente
+            // para os seus acrescimos"). A supressao unilateral permanece em 25% (art. 125 caput) ainda que o
+            // contrato seja reforma; supressao acima de 25% so por acordo entre as partes (§2º, caminho distinto
+            // nao coberto por este aditivo unilateral). Aplicar o limite ampliado por TIPO, nunca por contrato.
+            var limite = (tipo == TipoAditivo.Acrescimo && ehReforma)
+                ? LimiteAditivoReforma
+                : LimiteAditivoQuantitativo;
             var acumuladoDoTipo = tipo == TipoAditivo.Acrescimo
                 ? PercentualAcrescimoAcumulado + percentual
                 : PercentualSupressaoAcumulado + percentual;

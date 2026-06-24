@@ -114,7 +114,7 @@ public sealed class BordasProposicaoNormaTests : LegislativoTestBase
         proposicao.RegistrarParecer(Proposicao.ComissaoCcj, favoravel: true, Hoje);
         proposicao.RegistrarParecer(Proposicao.ComissaoFinancasOrcamento, favoravel: true, Hoje);
         proposicao.IncluirEmOrdemDoDia(Hoje);
-        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), Hoje);
+        proposicao.Aprovar(ResultadoDeliberacao.Aprovada(MaioriaProposicao.Simples), turno: 1, Interstico.DeDias(1), Hoje);
         proposicao.GerarAutografo("AUT-2026-0001", Hoje);
         return proposicao;
     }

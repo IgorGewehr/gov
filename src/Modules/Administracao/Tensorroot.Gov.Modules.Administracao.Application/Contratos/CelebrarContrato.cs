@@ -5,6 +5,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
@@ -64,6 +65,7 @@ public sealed class CelebrarContratoValidator : AbstractValidator<CelebrarContra
 /// <summary>Handler da celebracao de contrato (publica <see cref="ContratoAssinadoIntegrationEvent"/> para Financas).</summary>
 public sealed class CelebrarContratoHandler(
     IContratoRepository contratos,
+    IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
@@ -81,6 +83,13 @@ public sealed class CelebrarContratoHandler(
             empenhoRef = EmpenhoRef.De(empenhoId, request.NumeroEmpenho);
         }
 
+        // BUG-A1: aferir a aptidao do fornecedor (sancao impeditiva vigente) no limite de agregado e passa-la
+        // ao agregado Contrato, que recusa fail-closed a celebracao com impedido — em qualquer origem, inclusive
+        // contratacoes diretas (art. 14 e art. 156, III/IV da Lei 14.133/2021).
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false);
+        var fornecedorImpedido = fornecedor is not null && fornecedor.EstaImpedido(hoje);
+
         var contrato = Contrato.Celebrar(
             tenant.TenantId,
             request.LicitacaoId,
@@ -90,6 +99,7 @@ public sealed class CelebrarContratoHandler(
             ValorMonetario.De(request.Valor),
             request.VigenciaInicio,
             request.VigenciaFim,
+            fornecedorImpedido,
             empenhoRef);
 
         contratos.Adicionar(contrato);
