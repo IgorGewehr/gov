@@ -1,6 +1,9 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
+using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Regulacao;
+using Tensorroot.Gov.SharedKernel;
+using PacienteRaiz = Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Paciente;
 
 namespace Tensorroot.Gov.Modules.Saude.Application.Regulacao;
 
@@ -25,10 +28,27 @@ public sealed record SolicitacaoRegulacaoDetalhe(
     DateOnly? DataAutorizacao,
     string? ProtocoloSisreg);
 
-/// <summary>Obtem uma solicitacao de regulacao por identificador (sempre tenant-scoped).</summary>
+/// <summary>
+/// Obtem uma solicitacao de regulacao por identificador (sempre tenant-scoped). Expoe o procedimento
+/// (SIGTAP) vinculado ao paciente — dado sensivel de saude (LGPD art. 11); por implementar
+/// <see cref="ISensivelLgpd"/>, GERA TRILHA DE ACESSO (LG-2). Base legal: tutela da saude (art. 11, II, "f").
+/// </summary>
 /// <param name="SolicitacaoRegulacaoId">Solicitacao a consultar.</param>
 public sealed record ObterSolicitacaoRegulacaoPorIdQuery(Guid SolicitacaoRegulacaoId)
-    : IQuery<SolicitacaoRegulacaoDetalhe?>;
+    : IQuery<SolicitacaoRegulacaoDetalhe?>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(PacienteRaiz);
+
+    /// <inheritdoc />
+    public string? EntidadeId => SolicitacaoRegulacaoId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisSaude.Aplicaveis;
+}
 
 /// <summary>Handler da consulta de solicitacao de regulacao por identificador.</summary>
 public sealed class ObterSolicitacaoRegulacaoPorIdHandler(ISolicitacaoRegulacaoRepository solicitacoes)

@@ -6,6 +6,7 @@ using AtendimentoRaiz = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.Atendime
 using AtendimentoId = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.AtendimentoId;
 using AtendimentoPacienteId = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.PacienteId;
 using PacienteId = Tensorroot.Gov.Modules.Saude.Domain.Pacientes.PacienteId;
+using PrescricaoId = Tensorroot.Gov.Modules.Saude.Domain.Atendimento.PrescricaoId;
 
 namespace Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Repositories;
 
@@ -118,6 +119,17 @@ public sealed class AtendimentoRepository(SaudeDbContext context) : IAtendimento
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
+
+    /// <inheritdoc />
+    public Task<bool> PrescricaoPertenceAoPacienteAsync(
+        PrescricaoId prescricaoId,
+        AtendimentoPacienteId pacienteId,
+        CancellationToken cancellationToken)
+        => context.Atendimentos
+            .Where(atendimento => atendimento.PacienteId == pacienteId)
+            .AnyAsync(
+                atendimento => atendimento.Prescricoes.Any(prescricao => prescricao.Id == prescricaoId),
+                cancellationToken);
 }
 
 /// <summary>Implementacao EF Core do repositorio de solicitacoes de regulacao.</summary>

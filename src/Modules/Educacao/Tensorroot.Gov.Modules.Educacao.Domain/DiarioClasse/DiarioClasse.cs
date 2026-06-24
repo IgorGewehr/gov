@@ -135,9 +135,11 @@ public sealed class DiarioClasse : AggregateRoot<DiarioClasseId>, IMustHaveTenan
     /// <summary>
     /// Apura o resultado anual (I-4/I-5): calcula a frequencia e as medias por componente e fecha
     /// o diario em <see cref="SituacaoDiario.Apurado"/>, emitindo <see cref="ResultadoApurado"/>.
-    /// Frequencia menor que 75% leva a <see cref="ResultadoAluno.ReprovadoPorFrequencia"/> (I-2);
-    /// caso contrario, <see cref="ResultadoAluno.Aprovado"/> se as medias forem suficientes, senao
-    /// <see cref="ResultadoAluno.Reprovado"/>.
+    /// Frequencia menor que 75% leva a <see cref="ResultadoAluno.ReprovadoPorFrequencia"/> (I-2 —
+    /// resultado negativo objetivo, independe de nota). Com frequencia suficiente: sem nenhuma nota
+    /// lancada o resultado e <see cref="ResultadoAluno.Cursando"/> (fail-closed — nunca aprova de
+    /// forma vacua, I-13); havendo rendimento, <see cref="ResultadoAluno.Aprovado"/> se as medias
+    /// forem suficientes em todos os componentes, senao <see cref="ResultadoAluno.Reprovado"/>.
     /// </summary>
     /// <returns>O resultado apurado.</returns>
     /// <exception cref="InvalidOperationException">Se o diario nao estiver Aberto (I-4/I-6).</exception>
@@ -148,7 +150,14 @@ public sealed class DiarioClasse : AggregateRoot<DiarioClasseId>, IMustHaveTenan
         ResultadoAluno resultado;
         if (PercentualFrequencia < FrequenciaMinimaAprovacao)
         {
+            // Reprovacao por frequencia e fato objetivo (LDB); independe de nota lancada.
             resultado = ResultadoAluno.ReprovadoPorFrequencia;
+        }
+        else if (!PossuiRendimentoLancado)
+        {
+            // Frequencia suficiente, mas sem qualquer nota: nao ha base avaliativa para concluir.
+            // Fail-closed (I-13): jamais aprovar de forma vacua (.All sobre colecao vazia = true).
+            resultado = ResultadoAluno.Cursando;
         }
         else
         {
@@ -161,11 +170,22 @@ public sealed class DiarioClasse : AggregateRoot<DiarioClasseId>, IMustHaveTenan
         return resultado;
     }
 
+    /// <summary>
+    /// Indica se ha ao menos um registro de rendimento (nota) lancado. Pre-condicao para qualquer
+    /// apuracao por nota (Aprovado/Reprovado); sem rendimento o diario fica <c>Cursando</c> (I-13).
+    /// </summary>
+    public bool PossuiRendimentoLancado => _notas.Count > 0;
+
     /// <summary>Indica se o calendario cumpriu o minimo de 200 dias letivos (I-9).</summary>
     /// <returns><c>true</c> se houver ao menos <see cref="DiasLetivosMinimos"/> dias letivos registrados.</returns>
     public bool CumpriuCalendario() => DiasLetivosRegistrados >= DiasLetivosMinimos;
 
-    /// <summary>Media suficiente exige media maior ou igual a 6,0 em cada componente lancado.</summary>
+    /// <summary>
+    /// Media suficiente exige media maior ou igual a 6,0 em cada componente lancado. Pressupoe
+    /// rendimento lancado (chamado apenas quando <see cref="PossuiRendimentoLancado"/>); o caso de
+    /// colecao vazia (que tornaria <c>All</c> vacuamente verdadeiro) e barrado a montante em
+    /// <see cref="ApurarResultado"/> via estado <see cref="ResultadoAluno.Cursando"/>.
+    /// </summary>
     private bool MediasSuficientes()
         => _notas
             .GroupBy(n => n.Componente)

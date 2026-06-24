@@ -85,9 +85,10 @@ Identificadores entre parenteses sao **VINCULANTES** (sem acento, PT-BR no domin
 
 | Valor | Numerico | Descricao |
 |---|---|---|
-| `Aprovado` | 1 | Frequencia >= 75% e medias suficientes. |
+| `Aprovado` | 1 | Frequencia >= 75% e medias suficientes (exige >= 1 nota lancada). |
 | `Reprovado` | 2 | Reprovado por nota/medias insuficientes. |
 | `ReprovadoPorFrequencia` | 3 | Frequencia < 75% da carga horaria. |
+| `Cursando` | 4 | Frequencia >= 75% porem **sem rendimento lancado** (nenhuma nota). Fail-closed (I-13): nunca aprova de forma vacua; pendencia que exige lancamento de notas antes da apuracao definitiva. Nao alimenta "Aprovado" na Situacao do Aluno (Censo/INEP). |
 
 > **Conjuntos de referencia usados nas guardas:**
 > - **Aberto** = { `Aberto` } (admite lancamentos).
@@ -111,6 +112,7 @@ Lista NUMERADA. Cada item `I-n` vira `[Fact] Invariante_n_*`.
 - **I-10.** O resultado apurado alimenta a Situacao do Aluno (2a etapa do Censo) da `Matricula` vinculada.
 - **I-11.** Lancamentos de frequencia/nota sao **auditaveis de forma imutavel** (autor, timestamp, valor anterior) e o diario e versionado.
 - **I-12.** O professor so lanca na **propria turma** (escopo RBAC aplicado na operacao).
+- **I-13.** **Fail-closed na apuracao:** aprovacao (`Aprovado`) exige **pelo menos uma nota lancada** (rendimento registrado). Com frequencia >= 75% e **zero** notas, o resultado e `Cursando` (pendencia), **nunca** `Aprovado` — veda a aprovacao vacua (`All` sobre colecao vazia). `ReprovadoPorFrequencia` (frequencia < 75%) e fato objetivo e **precede** a regra de `Cursando` (independe de nota).
 
 ---
 
@@ -128,7 +130,7 @@ Tabela: Estado origem -> comando/metodo -> Estado destino | guarda | evento emit
 
 > Observacoes:
 > - `RegistrarFrequencia`, `LancarNota` e `RegistrarAula` nao alteram a situacao; apenas adicionam registros-filhos e (frequencia/nota) emitem evento.
-> - `ApurarResultado` calcula `Resultado` (`Aprovado`/`Reprovado`/`ReprovadoPorFrequencia`) e fecha o diario em `Apurado`.
+> - `ApurarResultado` calcula `Resultado` (`Aprovado`/`Reprovado`/`ReprovadoPorFrequencia`/`Cursando`) e fecha o diario em `Apurado`. Ordem das guardas: (1) frequencia < 75% -> `ReprovadoPorFrequencia`; (2) sem nota lancada -> `Cursando` (I-13); (3) medias suficientes -> `Aprovado`, senao `Reprovado`.
 
 ---
 

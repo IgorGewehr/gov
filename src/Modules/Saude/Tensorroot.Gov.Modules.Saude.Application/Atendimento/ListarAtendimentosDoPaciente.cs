@@ -1,6 +1,9 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
+using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
+using Tensorroot.Gov.SharedKernel;
+using PacienteRaiz = Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Paciente;
 
 namespace Tensorroot.Gov.Modules.Saude.Application.Atendimento;
 
@@ -19,14 +22,31 @@ public sealed record AtendimentoResumo(
     string? Cid,
     string? Ciap);
 
-/// <summary>Lista os atendimentos de um paciente (tenant-scoped; dado sensivel — LGPD art. 11).</summary>
+/// <summary>
+/// Lista os atendimentos de um paciente (tenant-scoped; dado sensivel — LGPD art. 11). A linha do tempo
+/// expoe diagnostico (CID-10/CIAP-2); por implementar <see cref="ISensivelLgpd"/>, GERA TRILHA DE ACESSO
+/// (LG-2). Base legal: tutela da saude (LGPD art. 11, II, "f").
+/// </summary>
 /// <param name="PacienteId">Paciente.</param>
 /// <param name="De">Data inicial (opcional).</param>
 /// <param name="Ate">Data final (opcional).</param>
 public sealed record ListarAtendimentosDoPacienteQuery(
     Guid PacienteId,
     DateOnly? De,
-    DateOnly? Ate) : IQuery<IReadOnlyList<AtendimentoResumo>>;
+    DateOnly? Ate) : IQuery<IReadOnlyList<AtendimentoResumo>>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(PacienteRaiz);
+
+    /// <inheritdoc />
+    public string? EntidadeId => PacienteId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisSaude.Aplicaveis;
+}
 
 /// <summary>Handler da consulta de atendimentos do paciente.</summary>
 public sealed class ListarAtendimentosDoPacienteHandler(IAtendimentoRepository atendimentos)

@@ -27,4 +27,18 @@ public interface IAtendimentoRepository
         DateOnly? de,
         DateOnly? ate,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Verifica se a prescricao informada EXISTE no tenant e PERTENCE ao paciente indicado (a prescricao
+    /// e entidade do agregado <see cref="AtendimentoRaiz"/>). Usado para validar — fail-closed — a
+    /// retencao de receita na dispensacao de medicamento controlado (Portaria 344/1998 / SNGPC).
+    /// </summary>
+    /// <param name="prescricaoId">Prescricao de origem a validar.</param>
+    /// <param name="pacienteId">Paciente que retira o medicamento.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns><c>true</c> se a prescricao existe e e do paciente; caso contrario <c>false</c>.</returns>
+    Task<bool> PrescricaoPertenceAoPacienteAsync(
+        PrescricaoId prescricaoId,
+        PacienteId pacienteId,
+        CancellationToken cancellationToken);
 }

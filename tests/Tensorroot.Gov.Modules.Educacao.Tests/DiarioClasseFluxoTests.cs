@@ -167,18 +167,46 @@ public sealed class DiarioClasseFluxoTests : EducacaoTestBase
         diario.CumpriuCalendario().Should().BeFalse();
     }
 
-    [Fact] // B-3: frequencia exatamente em 75% => aprova por frequencia (limite inclusivo).
+    [Fact] // B-3: frequencia exatamente em 75% => atinge o piso de frequencia (limite inclusivo).
     public void Borda_3_frequencia_em_75_porcento_e_inclusiva()
     {
         var diario = NovoDiario(cargaHorariaTotal: 1000);
         diario.RegistrarFrequencia(DataBase, presente: true, cargaHorariaAula: 750);
         diario.RegistrarFrequencia(DataBase.AddDays(1), presente: false, cargaHorariaAula: 250);
+        var componente = ComponenteCurricularId.New();
+        diario.LancarNota(componente, "1Bim", 7m);
+        diario.LancarNota(componente, "2Bim", 8m);
 
         diario.PercentualFrequencia.Should().Be(0.75m);
         var resultado = diario.ApurarResultado();
 
-        // Sem notas lancadas, MediasSuficientes e true (All sobre conjunto vazio) => Aprovado.
+        // 75% e inclusivo (>= 0.75) e, com rendimento suficiente, aprova.
         resultado.Should().Be(ResultadoAluno.Aprovado);
+    }
+
+    [Fact] // ED-1 (W10.6): frequencia suficiente mas ZERO notas => Cursando (nunca Aprovado vacuo).
+    public void Frequencia_suficiente_sem_notas_nao_aprova_fica_Cursando()
+    {
+        var diario = NovoDiario(cargaHorariaTotal: 1000);
+        diario.RegistrarFrequencia(DataBase, presente: true, cargaHorariaAula: 800); // 80% >= 75%.
+
+        diario.PossuiRendimentoLancado.Should().BeFalse();
+        var resultado = diario.ApurarResultado();
+
+        // Fail-closed: sem rendimento lancado nao ha base avaliativa para concluir aprovacao.
+        resultado.Should().Be(ResultadoAluno.Cursando);
+        resultado.Should().NotBe(ResultadoAluno.Aprovado);
+    }
+
+    [Fact] // ED-1 (W10.6): frequencia insuficiente e ZERO notas => ReprovadoPorFrequencia (fato objetivo).
+    public void Frequencia_insuficiente_sem_notas_reprova_por_frequencia()
+    {
+        var diario = NovoDiario(cargaHorariaTotal: 1000);
+        diario.RegistrarFrequencia(DataBase, presente: true, cargaHorariaAula: 700); // 70% < 75%.
+        diario.RegistrarFrequencia(DataBase.AddDays(1), presente: false, cargaHorariaAula: 300);
+
+        // Reprovacao por frequencia independe de nota: precede a regra de Cursando.
+        diario.ApurarResultado().Should().Be(ResultadoAluno.ReprovadoPorFrequencia);
     }
 
     [Fact] // B-1: carga horaria total <= 0 em Abrir e rejeitada.

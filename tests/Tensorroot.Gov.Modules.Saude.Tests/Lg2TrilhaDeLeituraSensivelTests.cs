@@ -7,7 +7,9 @@ using Tensorroot.Gov.BuildingBlocks.Application.Behaviors;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
+using Tensorroot.Gov.Modules.Saude.Application.Atendimento;
 using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
+using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
 using Tensorroot.Gov.Modules.Saude.Domain.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Saude.Infrastructure.Persistence.Repositories;
@@ -70,6 +72,55 @@ public sealed class Lg2TrilhaDeLeituraSensivelTests : IDisposable
             acesso.IpAddress.Should().Be("203.0.113.7");
             acesso.NewValues.Should().Contain("TutelaDaSaude"); // base legal estruturada (LG-A2)
             acesso.Sequencia.Should().BeGreaterThan(0);
+            acesso.HashAtual.Should().NotBeNullOrEmpty();
+        }
+    }
+
+    [Fact] // SA-2 (W10.6): a leitura do detalhe de um atendimento (prontuario SOAP) sela acesso na trilha.
+    public async Task Leitura_de_atendimento_sela_acesso_na_trilha()
+    {
+        Guid atendimentoId;
+        await using (var seed = CriarContexto(out _))
+        {
+            var atendimento = Atendimento.Registrar(
+                TenantA,
+                Tensorroot.Gov.Modules.Saude.Domain.Atendimento.PacienteId.New(),
+                EstabelecimentoId.New(),
+                Tensorroot.Gov.Modules.Saude.Domain.Atendimento.ProfissionalId.New(),
+                new DateTimeOffset(2026, 6, 23, 9, 0, 0, TimeSpan.Zero),
+                Competencia.De(new DateTimeOffset(2026, 6, 23, 9, 0, 0, TimeSpan.Zero)),
+                ModalidadeAtendimento.Presencial);
+            atendimento.AdicionarEvolucaoSOAP(
+                "Cefaleia", "PA 120x80", "Cefaleia tensional", "Analgesico",
+                new DateTimeOffset(2026, 6, 23, 9, 0, 0, TimeSpan.Zero));
+            atendimentoId = atendimento.Id.Value;
+            seed.Atendimentos.Add(atendimento);
+            await seed.SaveChangesAsync();
+        }
+
+        await using (var contexto = CriarContexto(out var holder))
+        {
+            var query = new ObterAtendimentoPorIdQuery(atendimentoId);
+            var handler = new ObterAtendimentoPorIdHandler(new AtendimentoRepository(contexto));
+            var registro = new RegistroAcessoSensivel(
+                holder, new CurrentUserFixo(PrincipalSub.ToString()), new TenantContextFake(TenantA), TimeProvider.System);
+            var behavior = new TrilhaAcessoSensivelBehavior<ObterAtendimentoPorIdQuery, AtendimentoDetalhe?>(
+                registro, NullLogger<TrilhaAcessoSensivelBehavior<ObterAtendimentoPorIdQuery, AtendimentoDetalhe?>>.Instance);
+
+            var detalhe = await behavior.Handle(
+                query, () => handler.Handle(query, CancellationToken.None), CancellationToken.None);
+            detalhe!.Id.Should().Be(atendimentoId);
+
+            var acessos = await contexto.AuditTrail
+                .Where(t => t.Action == RegistroAcessoSensivel.AcaoLeitura)
+                .ToListAsync();
+
+            acessos.Should().ContainSingle();
+            var acesso = acessos.Single();
+            acesso.EntityName.Should().Be("PacienteRaiz"); // a entidade sensivel da query e o Paciente (EntidadeSensivel)
+            acesso.EntityId.Should().Be(atendimentoId.ToString());
+            acesso.UserId.Should().Be(PrincipalSub.ToString());
+            acesso.NewValues.Should().Contain("TutelaDaSaude"); // base legal estruturada (LG-A2)
             acesso.HashAtual.Should().NotBeNullOrEmpty();
         }
     }

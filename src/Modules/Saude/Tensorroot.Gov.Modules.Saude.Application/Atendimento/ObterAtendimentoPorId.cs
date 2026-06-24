@@ -1,6 +1,9 @@
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Saude.Application.Abstractions;
+using Tensorroot.Gov.Modules.Saude.Application.Pacientes;
 using Tensorroot.Gov.Modules.Saude.Domain.Atendimento;
+using Tensorroot.Gov.SharedKernel;
+using PacienteRaiz = Tensorroot.Gov.Modules.Saude.Domain.Pacientes.Paciente;
 
 namespace Tensorroot.Gov.Modules.Saude.Application.Atendimento;
 
@@ -66,9 +69,29 @@ public sealed record AtendimentoDetalhe(
     IReadOnlyList<PrescricaoDto> Prescricoes,
     IReadOnlyList<SolicitacaoExameDto> Exames);
 
-/// <summary>Obtem o detalhe de um atendimento (tenant-scoped; dado sensivel — LGPD art. 11).</summary>
+/// <summary>
+/// Obtem o detalhe de um atendimento (tenant-scoped; dado sensivel — LGPD art. 11). Retorna o prontuario
+/// completo (SOAP, prescricoes, justificativas de exame); por implementar <see cref="ISensivelLgpd"/>,
+/// GERA TRILHA DE ACESSO (LG-2). Base legal: tutela da saude (LGPD art. 11, II, "f"). A entidade sensivel
+/// e o Paciente; o AtendimentoId identifica o recurso lido (resolvido para o paciente no handler nao e
+/// necessario aqui — a trilha sela quem leu qual atendimento, sob qual base legal, quando, de qual IP).
+/// </summary>
 /// <param name="AtendimentoId">Atendimento a consultar.</param>
-public sealed record ObterAtendimentoPorIdQuery(Guid AtendimentoId) : IQuery<AtendimentoDetalhe?>;
+public sealed record ObterAtendimentoPorIdQuery(Guid AtendimentoId)
+    : IQuery<AtendimentoDetalhe?>, ISensivelLgpd
+{
+    /// <inheritdoc />
+    public string EntidadeSensivel => nameof(PacienteRaiz);
+
+    /// <inheritdoc />
+    public string? EntidadeId => AtendimentoId.ToString();
+
+    /// <inheritdoc />
+    public BaseLegalLgpd BaseLegal => BaseLegalLgpd.TutelaDaSaude;
+
+    /// <inheritdoc />
+    public IReadOnlySet<BaseLegalLgpd> BasesLegaisAplicaveis => BasesLegaisSaude.Aplicaveis;
+}
 
 /// <summary>Handler da consulta de detalhe do atendimento.</summary>
 public sealed class ObterAtendimentoPorIdHandler(IAtendimentoRepository atendimentos)

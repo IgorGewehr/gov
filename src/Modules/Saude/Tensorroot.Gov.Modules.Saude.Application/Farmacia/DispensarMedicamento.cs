@@ -14,7 +14,13 @@ namespace Tensorroot.Gov.Modules.Saude.Application.Farmacia;
 /// ativo, baixa cada item do estoque por FEFO (lote nao vencido, primeiro a vencer) e registra a entrega
 /// vinculada (opcionalmente) a uma prescricao do PEP — tudo na MESMA transacao (consistencia estoque +
 /// dispensacao). Dado pessoal SENSIVEL de saude (LGPD): a entrega fica no historico do paciente, lido sob
-/// trilha de acesso. // TODO(M10): escrituracao SNGPC e integracao HORUS para itens controlados.
+/// trilha de acesso.
+///
+/// CONTROLE ESPECIAL (Portaria SVS/MS 344/1998 — base do SNGPC): para item cujo
+/// <see cref="Tensorroot.Gov.Modules.Saude.Domain.Farmacia.Medicamento.ExigeReceitaControlada"/> e
+/// verdadeiro (entorpecente/psicotropico, listas A/B etc.), a dispensacao exige — FAIL-CLOSED — uma
+/// <c>PrescricaoId</c> de origem que EXISTA no tenant e PERTENCA ao mesmo paciente (retencao de receita
+/// com rastro). Sem isso, a dispensacao e barrada. // TODO(M10): escrituracao SNGPC e integracao HORUS.
 /// </summary>
 /// <param name="PacienteId">Paciente que retira.</param>
 /// <param name="EstabelecimentoId">Estabelecimento/farmacia.</param>
@@ -51,8 +57,10 @@ public sealed class DispensarMedicamentoValidator : AbstractValidator<DispensarM
 public sealed class DispensarMedicamentoHandler(
     IPacienteRepository pacientes,
     IEstabelecimentoRepository estabelecimentos,
+    IMedicamentoRepository medicamentos,
     IEstoqueMedicamentoRepository estoques,
     IDispensacaoRepository dispensacoes,
+    IAtendimentoRepository atendimentos,
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
     TimeProvider timeProvider)
@@ -89,6 +97,20 @@ public sealed class DispensarMedicamentoHandler(
 
         var prescricaoId = request.PrescricaoId is { } p ? new PrescricaoId(p) : (PrescricaoId?)null;
 
+        // Controle especial (Portaria 344/1998): a prescricao de origem so legitima a dispensacao de
+        // controlado se EXISTIR no tenant e PERTENCER ao mesmo paciente. Resolvido uma vez (vale para
+        // todos os itens da entrega) e SO quando ha PrescricaoId — evita consulta desnecessaria.
+        var prescricaoValidaParaPaciente = false;
+        if (prescricaoId is { } prescricao)
+        {
+            prescricaoValidaParaPaciente = await atendimentos
+                .PrescricaoPertenceAoPacienteAsync(
+                    prescricao,
+                    new Tensorroot.Gov.Modules.Saude.Domain.Atendimento.PacienteId(request.PacienteId),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var dispensacao = Dispensacao.Iniciar(
             tenant.TenantId,
             new DomainPacienteId(request.PacienteId),
@@ -100,6 +122,25 @@ public sealed class DispensarMedicamentoHandler(
         foreach (var item in request.Itens)
         {
             var medicamentoId = new MedicamentoId(item.MedicamentoId);
+
+            // Carrega o agregado de controle. Medicamento inexistente/inativo no catalogo nao dispensa.
+            var medicamento = await medicamentos
+                .ObterPorIdAsync(medicamentoId, cancellationToken)
+                .ConfigureAwait(false)
+                ?? throw new InvalidOperationException("Medicamento nao encontrado no catalogo (REMUME).");
+            if (!medicamento.Ativo)
+            {
+                throw new InvalidOperationException("Medicamento inativo no catalogo (REMUME) — dispensacao vedada.");
+            }
+
+            // FAIL-CLOSED (Portaria 344/1998 / SNGPC): controlado exige receita/prescricao valida com rastro.
+            if (medicamento.ExigeReceitaControlada && !prescricaoValidaParaPaciente)
+            {
+                throw new InvalidOperationException(
+                    "Dispensacao de medicamento sob controle especial (Portaria 344/1998) exige prescricao "
+                    + "valida do paciente (retencao de receita / rastro SNGPC).");
+            }
+
             var estoque = await estoques
                 .ObterPorEstabelecimentoEMedicamentoAsync(estabelecimentoId, medicamentoId, cancellationToken)
                 .ConfigureAwait(false)

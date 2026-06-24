@@ -21,4 +21,12 @@ public enum ResultadoAluno
 
     /// <summary>Frequencia menor que 75% da carga horaria (LDB).</summary>
     ReprovadoPorFrequencia = 3,
+
+    /// <summary>
+    /// Cursando/pendente: frequencia suficiente, porem sem registro de rendimento (nenhuma nota
+    /// lancada). Nao ha base avaliativa para concluir aprovacao/reprovacao por nota — fail-closed:
+    /// nunca aprova de forma vacua. Estado de pendencia que exige lancamento de notas antes da
+    /// apuracao definitiva (nao alimenta "Aprovado" na Situacao do Aluno do Censo/INEP).
+    /// </summary>
+    Cursando = 4,
 }
