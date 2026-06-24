@@ -109,12 +109,52 @@ public sealed class ConvenioRecebidoTests
     }
 
     [Fact]
+    public void Liberacao_da_parcela_2_exige_PC_parcial_da_etapa_1_submetida_por_NUMERO_estruturado_A_INV_4()
+    {
+        var convenio = CelebradoEmExecucao();
+
+        // PC parcial da etapa 1 com competencia em texto livre que NAO contem o digito "1" (ex.: falso-negativo
+        // do bug antigo por substring). Com vinculo estruturado, a etapa 1 e reconhecida e a parcela 2 libera.
+        var pc = convenio.AbrirPrestacaoParcial(1, "Primeira competencia");
+        convenio.SubmeterPrestacao(pc.Id, new DateOnly(2026, 2, 10), PrazoParcial, PrazoFinal, Calendario);
+
+        var act = () => convenio.RegistrarLiberacaoParcela(2, new DateOnly(2026, 4, 1));
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Liberacao_da_parcela_2_SEM_PC_da_etapa_1_e_bloqueada_mesmo_com_digito_em_outra_PC_A_INV_4()
+    {
+        var convenio = CelebradoEmExecucao();
+
+        // PC parcial da PROPRIA parcela 2 (texto livre "2026/01" — o digito "1" disparava o falso-positivo do
+        // bug antigo por substring). Como NAO existe PC da etapa 1, a parcela 2 NAO pode ser liberada.
+        var pc = convenio.AbrirPrestacaoParcial(2, "2026/01");
+        convenio.SubmeterPrestacao(pc.Id, new DateOnly(2026, 2, 10), PrazoParcial, PrazoFinal, Calendario);
+
+        var act = () => convenio.RegistrarLiberacaoParcela(2, new DateOnly(2026, 4, 1));
+
+        act.Should().Throw<InvalidConvenioStateException>().WithMessage("*etapa anterior*");
+    }
+
+    [Fact]
+    public void PC_parcial_de_etapa_inexistente_no_cronograma_e_rejeitada()
+    {
+        var convenio = CelebradoEmExecucao();
+
+        var act = () => convenio.AbrirPrestacaoParcial(99, "Etapa 99");
+
+        act.Should().Throw<InvalidConvenioStateException>().WithMessage("*nao prevista no cronograma*");
+    }
+
+    [Fact]
     public void PC_parcial_submetida_tem_prazo_de_analise_calculado_e_fica_VENCIDO_apos_60_dias()
     {
         var convenio = CelebradoEmExecucao();
         var dataSubmissao = new DateOnly(2026, 2, 10);
 
-        var pc = convenio.AbrirPrestacaoParcial("Etapa 1");
+        var pc = convenio.AbrirPrestacaoParcial(1, "Etapa 1");
         convenio.SubmeterPrestacao(pc.Id, dataSubmissao, PrazoParcial, PrazoFinal, Calendario);
 
         // Prazo CALCULADO: 60 dias corridos a partir da submissao.
@@ -125,14 +165,18 @@ public sealed class ConvenioRecebidoTests
         // No dia seguinte ao vencimento, sem decisao, o prazo esta VENCIDO.
         pc.PrazoAnalise.Vencido(vencimentoEsperado.AddDays(1)).Should().BeTrue();
         pc.PrazoAnalise.AVencer(vencimentoEsperado).Should().BeTrue();
-        convenio.Situacao.Should().Be(SituacaoConvenioRecebido.EmAnalise);
+
+        // A PC PARCIAL e um ato CONTINUO da execucao: a analise corre na sub-maquina da PROPRIA PC (Submetida),
+        // mas o AGREGADO permanece EmExecucao — so a PC FINAL encerra a execucao e leva o convenio a EmAnalise.
+        pc.Situacao.Should().Be(SituacaoPrestacaoConvenio.Submetida);
+        convenio.Situacao.Should().Be(SituacaoConvenioRecebido.EmExecucao);
     }
 
     [Fact]
     public void Saneamento_concede_prazo_45_dias_e_habilita_rejeicao_apos_vencimento_A_INV_9()
     {
         var convenio = CelebradoEmExecucao();
-        var pc = convenio.AbrirPrestacaoParcial("Etapa 1");
+        var pc = convenio.AbrirPrestacaoParcial(1, "Etapa 1");
         convenio.SubmeterPrestacao(pc.Id, new DateOnly(2026, 2, 10), PrazoParcial, PrazoFinal, Calendario);
         convenio.IniciarAnalisePrestacao(pc.Id);
 
@@ -156,7 +200,7 @@ public sealed class ConvenioRecebidoTests
     public void Saneamento_so_pode_ser_concedido_uma_vez_A_INV_9()
     {
         var convenio = CelebradoEmExecucao();
-        var pc = convenio.AbrirPrestacaoParcial("Etapa 1");
+        var pc = convenio.AbrirPrestacaoParcial(1, "Etapa 1");
         convenio.SubmeterPrestacao(pc.Id, new DateOnly(2026, 2, 10), PrazoParcial, PrazoFinal, Calendario);
         convenio.IniciarAnalisePrestacao(pc.Id);
         convenio.AbrirSaneamentoPrestacao(pc.Id, new DateOnly(2026, 3, 1), PrazoSaneamento, Calendario);

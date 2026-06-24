@@ -87,16 +87,21 @@ public sealed class RegistrarRendimentoConvenioHandler(IConvenioRecebidoReposito
     }
 }
 
-/// <summary>Abre uma PC parcial (continua) por etapa/competencia.</summary>
+/// <summary>Abre uma PC parcial (continua) vinculada ao numero ESTRUTURADO da etapa/parcela (A-INV-4).</summary>
 /// <param name="ConvenioId">Identificador do convenio.</param>
-/// <param name="CompetenciaRef">Competencia/etapa de referencia.</param>
-public sealed record AbrirPrestacaoParcialConvenioCommand(Guid ConvenioId, string CompetenciaRef) : ICommand<Guid>;
+/// <param name="NumeroEtapa">Numero de ordem da etapa/parcela coberta (correlacao deterministica — A-INV-4).</param>
+/// <param name="CompetenciaRef">Competencia/etapa de referencia (texto livre descritivo).</param>
+public sealed record AbrirPrestacaoParcialConvenioCommand(Guid ConvenioId, int NumeroEtapa, string CompetenciaRef) : ICommand<Guid>;
 
 /// <summary>Validador da PC parcial.</summary>
 public sealed class AbrirPrestacaoParcialConvenioValidator : AbstractValidator<AbrirPrestacaoParcialConvenioCommand>
 {
     /// <summary>Regras.</summary>
-    public AbrirPrestacaoParcialConvenioValidator() => RuleFor(comando => comando.CompetenciaRef).NotEmpty().MaximumLength(60);
+    public AbrirPrestacaoParcialConvenioValidator()
+    {
+        RuleFor(comando => comando.NumeroEtapa).GreaterThan(0);
+        RuleFor(comando => comando.CompetenciaRef).NotEmpty().MaximumLength(60);
+    }
 }
 
 /// <summary>Handler da abertura de PC parcial.</summary>
@@ -108,7 +113,7 @@ public sealed class AbrirPrestacaoParcialConvenioHandler(IConvenioRecebidoReposi
     {
         ArgumentNullException.ThrowIfNull(request);
         var convenio = await ConvenioLookup.ObterOuFalharAsync(convenios, request.ConvenioId, cancellationToken).ConfigureAwait(false);
-        var pc = convenio.AbrirPrestacaoParcial(request.CompetenciaRef);
+        var pc = convenio.AbrirPrestacaoParcial(request.NumeroEtapa, request.CompetenciaRef);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return pc.Id;
     }

@@ -69,8 +69,8 @@ internal static class ConveniosEndpoints
             return Results.NoContent();
         }).RequirePermission("convenios.gerenciar");
 
-        recebidos.MapPost("/{convenioId:guid}/prestacoes/parcial", async (Guid convenioId, CompetenciaPayload payload, ISender sender, CancellationToken ct)
-            => Results.Ok(new { id = await sender.Send(new AbrirPrestacaoParcialConvenioCommand(convenioId, payload.CompetenciaRef), ct) }))
+        recebidos.MapPost("/{convenioId:guid}/prestacoes/parcial", async (Guid convenioId, PrestacaoParcialPayload payload, ISender sender, CancellationToken ct)
+            => Results.Ok(new { id = await sender.Send(new AbrirPrestacaoParcialConvenioCommand(convenioId, payload.NumeroEtapa, payload.CompetenciaRef), ct) }))
             .RequirePermission("convenios.gerenciar");
 
         recebidos.MapPost("/{convenioId:guid}/prestacoes/final", async (Guid convenioId, CompetenciaPayload payload, ISender sender, CancellationToken ct)
@@ -243,9 +243,14 @@ internal sealed record CelebrarConvenioPayload(
 /// <param name="Data">Data do rendimento.</param>
 internal sealed record RendimentoPayload(decimal Valor, DateOnly Data);
 
-/// <summary>Payload de competencia/etapa (abertura de PC).</summary>
+/// <summary>Payload de competencia/etapa (abertura de PC final).</summary>
 /// <param name="CompetenciaRef">Competencia/etapa de referencia.</param>
 internal sealed record CompetenciaPayload(string CompetenciaRef);
+
+/// <summary>Payload de abertura de PC parcial: numero estruturado da etapa (A-INV-4) + competencia descritiva.</summary>
+/// <param name="NumeroEtapa">Numero de ordem da etapa/parcela coberta (correlacao deterministica — A-INV-4).</param>
+/// <param name="CompetenciaRef">Competencia/etapa de referencia (texto livre descritivo).</param>
+internal sealed record PrestacaoParcialPayload(int NumeroEtapa, string CompetenciaRef);
 
 /// <summary>Payload de resultado de analise.</summary>
 /// <param name="Resultado">Resultado (aprovada/ressalva/rejeitada).</param>

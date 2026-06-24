@@ -79,10 +79,12 @@ internal static partial class PatrimonioEndpoints
             .RequirePermission("patrimonio.gerenciar");
 
         // Medicao: aprovar (libera liquidacao em Financas — Lei 4.320 art. 63 / I-1/I-8/I-10).
+        // SEGREGACAO DE FUNCAO (art. 117): o aprovador NAO trafega no corpo — e derivado do subject
+        // do JWT no handler; o agregado so aprova se o usuario autenticado FOR o fiscal designado.
         grupo.MapPost("/obras/{obraId:guid}/medicoes/{medicaoId:guid}/aprovacao", async (
             Guid obraId, Guid medicaoId, AprovarMedicaoPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new AprovarMedicaoCommand(obraId, medicaoId, payload.FiscalId, payload.DataAprovacao), cancellationToken);
+            await sender.Send(new AprovarMedicaoCommand(obraId, medicaoId, payload.DataAprovacao), cancellationToken);
             return Results.NoContent();
         }).RequirePermission("patrimonio.gerenciar");
 
@@ -154,7 +156,9 @@ internal static partial class PatrimonioEndpoints
         DateOnly PeriodoFim,
         IReadOnlyList<AvancoEtapaInput> Avancos);
 
-    private sealed record AprovarMedicaoPayload(Guid FiscalId, DateOnly DataAprovacao);
+    // Sem FiscalId: o aprovador e SEMPRE o subject do JWT (segregacao de funcao — art. 117 / I-10),
+    // nunca um id enviado pelo cliente (evita impersonacao do fiscal designado).
+    private sealed record AprovarMedicaoPayload(DateOnly DataAprovacao);
 
     private sealed record OcorrenciaPayload(DateOnly Data, int Tipo, string Descricao, Guid RegistradaPorId);
 

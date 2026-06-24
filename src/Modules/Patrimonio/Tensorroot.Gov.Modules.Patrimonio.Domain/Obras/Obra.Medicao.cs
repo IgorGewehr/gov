@@ -102,7 +102,12 @@ public sealed partial class Obra
     /// obra em execução (I-11). Emite o Domain Event <see cref="MedicaoAprovada"/>.
     /// </summary>
     /// <param name="medicaoId">Medição a aprovar (em rascunho).</param>
-    /// <param name="fiscalId">Fiscal aprovador (deve ser o designado vigente — I-10).</param>
+    /// <param name="fiscalId">
+    /// Identidade do aprovador. DEVE ser o subject autenticado (JWT "sub"), nunca um id informado pelo
+    /// cliente — a camada de aplicação é responsável por derivá-lo do principal. I-10 confronta este id
+    /// contra <see cref="FiscalDesignadoId"/>: só aprova se o usuário autenticado FOR o fiscal designado
+    /// vigente (segregação de função — art. 117); a trilha registra exatamente quem aprovou.
+    /// </param>
     /// <param name="dataAprovacao">Data da aprovação.</param>
     /// <exception cref="InvalidOperationException">Se qualquer invariante (I-1/I-5/I-8/I-10/I-11) for violada ou a medição não existir/estiver fora de rascunho.</exception>
     public void AprovarMedicao(MedicaoId medicaoId, Guid fiscalId, DateOnly dataAprovacao)

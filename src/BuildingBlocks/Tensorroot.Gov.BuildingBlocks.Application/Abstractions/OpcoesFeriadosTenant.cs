@@ -9,8 +9,29 @@ namespace Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 /// </summary>
 public sealed class OpcoesFeriadosTenant
 {
-    /// <summary>Secao de configuracao por tenant.</summary>
+    /// <summary>
+    /// Secao RAIZ de feriados. Mantida como FALLBACK do ente unico (piloto single-tenant): quando o
+    /// tenant atual NAO possui sub-secao propria, vale o que estiver aqui. NAO deve ser usada como fonte
+    /// direta em producao multi-tenant — preferir <see cref="SecaoConfiguracaoDoTenant"/>.
+    /// </summary>
     public const string SecaoConfiguracao = "Tempo:Feriados";
+
+    /// <summary>
+    /// Sub-secao de feriados POR TENANT. Cada ente tem suas escolhas locais isoladas pelo proprio
+    /// <c>TenantId</c> em <c>Tempo:Feriados:Tenants:{tenantId}</c> — diferentes municipios-tenant nao
+    /// compartilham mais o mesmo conjunto municipal. Evolucao natural (sem mudar o contrato): tabela
+    /// <c>core.CalendarioFeriado</c> por tenant.
+    /// </summary>
+    public const string SubSecaoTenants = "Tenants";
+
+    /// <summary>
+    /// Caminho da sub-secao de configuracao do <paramref name="tenantId"/>
+    /// (<c>Tempo:Feriados:Tenants:{tenantId}</c>). Isola as escolhas municipais/facultativas por tenant.
+    /// </summary>
+    /// <param name="tenantId">Identificador do tenant atual.</param>
+    /// <returns>Caminho ConfigurationSection da sub-secao do tenant.</returns>
+    public static string SecaoConfiguracaoDoTenant(Guid tenantId)
+        => $"{SecaoConfiguracao}:{SubSecaoTenants}:{tenantId:D}";
 
     /// <summary>Se o tenant adota o Carnaval (segunda e terca) como dia nao util. Default: <c>false</c>.</summary>
     public bool AdotaCarnaval { get; init; }

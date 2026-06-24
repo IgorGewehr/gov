@@ -44,10 +44,11 @@ public sealed class PrestacaoContasConvenio : Entity<Guid>
     {
     }
 
-    private PrestacaoContasConvenio(Guid id, TipoPrestacaoConvenio tipo, string competenciaRef)
+    private PrestacaoContasConvenio(Guid id, TipoPrestacaoConvenio tipo, int? numeroEtapa, string competenciaRef)
         : base(id)
     {
         Tipo = tipo;
+        NumeroEtapa = numeroEtapa;
         CompetenciaRef = competenciaRef;
         Situacao = SituacaoPrestacaoConvenio.Pendente;
     }
@@ -55,7 +56,14 @@ public sealed class PrestacaoContasConvenio : Entity<Guid>
     /// <summary>Tipo (parcial/final).</summary>
     public TipoPrestacaoConvenio Tipo { get; private set; }
 
-    /// <summary>Competencia/etapa de referencia (ex.: "2026/06" ou "Etapa 2").</summary>
+    /// <summary>
+    /// Numero ESTRUTURADO da etapa/parcela coberta pela PC parcial (A-INV-4): correlaciona a PC ao numero de
+    /// ordem da parcela do cronograma de forma deterministica, sem depender de substring de <see cref="CompetenciaRef"/>
+    /// (texto livre). Nulo na PC final (que nao cobre uma etapa especifica).
+    /// </summary>
+    public int? NumeroEtapa { get; private set; }
+
+    /// <summary>Competencia/etapa de referencia, texto livre descritivo (ex.: "2026/06" ou "Etapa 2"). NAO usado para correlacao (A-INV-4).</summary>
     public string CompetenciaRef { get; private set; } = default!;
 
     /// <summary>Situacao na sub-maquina de estados da PC.</summary>
@@ -79,22 +87,25 @@ public sealed class PrestacaoContasConvenio : Entity<Guid>
     /// <summary>Valor de saldo a devolver, atualizado pelo indice (preenchido na conclusao da PC final).</summary>
     public Dinheiro? ValorDevolucao { get; private set; }
 
-    /// <summary>Cria uma PC parcial pendente.</summary>
-    /// <param name="competenciaRef">Competencia/etapa de referencia (obrigatoria).</param>
+    /// <summary>Cria uma PC parcial pendente, vinculada DETERMINISTICAMENTE ao numero da etapa/parcela (A-INV-4).</summary>
+    /// <param name="numeroEtapa">Numero estruturado da etapa/parcela coberta (deve ser positivo).</param>
+    /// <param name="competenciaRef">Competencia/etapa de referencia, texto livre descritivo (obrigatorio).</param>
     /// <returns>Nova PC parcial.</returns>
-    public static PrestacaoContasConvenio CriarParcial(string competenciaRef)
+    /// <exception cref="ArgumentOutOfRangeException">Se o numero da etapa nao for positivo.</exception>
+    public static PrestacaoContasConvenio CriarParcial(int numeroEtapa, string competenciaRef)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(numeroEtapa, 1);
         ArgumentException.ThrowIfNullOrWhiteSpace(competenciaRef);
-        return new PrestacaoContasConvenio(Guid.NewGuid(), TipoPrestacaoConvenio.Parcial, competenciaRef.Trim());
+        return new PrestacaoContasConvenio(Guid.NewGuid(), TipoPrestacaoConvenio.Parcial, numeroEtapa, competenciaRef.Trim());
     }
 
-    /// <summary>Cria a PC final pendente.</summary>
+    /// <summary>Cria a PC final pendente (sem etapa: cobre o convenio como um todo apos a vigencia).</summary>
     /// <param name="competenciaRef">Referencia (ex.: "Final").</param>
     /// <returns>Nova PC final.</returns>
     public static PrestacaoContasConvenio CriarFinal(string competenciaRef)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(competenciaRef);
-        return new PrestacaoContasConvenio(Guid.NewGuid(), TipoPrestacaoConvenio.Final, competenciaRef.Trim());
+        return new PrestacaoContasConvenio(Guid.NewGuid(), TipoPrestacaoConvenio.Final, numeroEtapa: null, competenciaRef.Trim());
     }
 
     /// <summary>

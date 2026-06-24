@@ -9,11 +9,14 @@ namespace Tensorroot.Gov.BuildingBlocks.Infrastructure.Tempo;
 /// <summary>
 /// Fonte de feriados POR TENANT em 3 camadas: (i) nacionais FIXOS de lei (constantes nomeadas, nao
 /// magicas), (ii) nacionais/religiosos MOVEIS via <see cref="FeriadosMoveis"/> (Computus, sem hardcode
-/// de ano) e (iii) municipais + pontos facultativos adotados, parametrizados na configuracao do tenant
-/// (secao <see cref="OpcoesFeriadosTenant.SecaoConfiguracao"/>), resolvendo o tenant via
-/// <see cref="ITenantContext"/> (mesma mecanica de <c>RegraAfastamentoProvider</c>). Resultado puro por
+/// de ano) e (iii) municipais + pontos facultativos adotados, parametrizados na sub-secao do PROPRIO
+/// tenant (<see cref="OpcoesFeriadosTenant.SecaoConfiguracaoDoTenant"/>, isto e',
+/// <c>Tempo:Feriados:Tenants:{tenantId}</c>) — com fallback aditivo para a secao raiz
+/// (<see cref="OpcoesFeriadosTenant.SecaoConfiguracao"/>) do ente unico (piloto single-tenant). O tenant
+/// e' resolvido via <see cref="ITenantContext"/> (mesma mecanica de <c>RegraAfastamentoProvider</c>), de
+/// modo que municipios-tenant distintos NAO compartilham mais o conjunto municipal. Resultado puro por
 /// (tenant, ano) → cacheado em <see cref="IMemoryCache"/>. Evolucao natural: trocar a config pela tabela
-/// <c>core.CalendarioFeriado</c> sem alterar o contrato nem o dominio.
+/// <c>core.CalendarioFeriado</c> por tenant sem alterar o contrato nem o dominio.
 /// </summary>
 public sealed class FeriadosTenantProvider(
     IConfiguration configuration,
@@ -50,9 +53,7 @@ public sealed class FeriadosTenantProvider(
 
     private HashSet<DateOnly> Calcular(int ano)
     {
-        var opcoes = configuration
-            .GetSection(OpcoesFeriadosTenant.SecaoConfiguracao)
-            .Get<OpcoesFeriadosTenant>() ?? new OpcoesFeriadosTenant();
+        var opcoes = ResolverOpcoesDoTenant();
 
         var datas = new HashSet<DateOnly>();
 
@@ -99,6 +100,26 @@ public sealed class FeriadosTenantProvider(
         }
 
         return datas;
+    }
+
+    /// <summary>
+    /// Resolve as escolhas municipais/facultativas do PROPRIO tenant atual: le a sub-secao
+    /// <c>Tempo:Feriados:Tenants:{tenantId}</c>; na ausencia dela (ente unico / piloto single-tenant),
+    /// cai aditivamente para a secao raiz <c>Tempo:Feriados</c>. Assim, tenants distintos nao compartilham
+    /// mais o mesmo conjunto municipal, sem quebrar a configuracao single-tenant existente.
+    /// </summary>
+    private OpcoesFeriadosTenant ResolverOpcoesDoTenant()
+    {
+        var secaoTenant = configuration
+            .GetSection(OpcoesFeriadosTenant.SecaoConfiguracaoDoTenant(tenant.TenantId));
+
+        // Existindo a sub-secao do tenant, ela e' a fonte de verdade (isolamento por tenant).
+        // Caso contrario, vale a secao raiz como fallback do ente unico.
+        var secao = secaoTenant.Exists()
+            ? secaoTenant
+            : configuration.GetSection(OpcoesFeriadosTenant.SecaoConfiguracao);
+
+        return secao.Get<OpcoesFeriadosTenant>() ?? new OpcoesFeriadosTenant();
     }
 
     private static bool TryParseMesDia(string mmdd, int ano, out DateOnly data)

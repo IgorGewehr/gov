@@ -134,6 +134,7 @@ public sealed class ConvenioRecebidoConfiguration : IEntityTypeConfiguration<Con
             prestacoes.HasKey(pc => pc.Id);
             prestacoes.Property(pc => pc.Id).ValueGeneratedNever();
             prestacoes.Property(pc => pc.Tipo).HasConversion<string>().HasMaxLength(20);
+            prestacoes.Property(pc => pc.NumeroEtapa);
             prestacoes.Property(pc => pc.CompetenciaRef).HasMaxLength(60).IsRequired();
             prestacoes.Property(pc => pc.Situacao).HasConversion<string>().HasMaxLength(30);
             prestacoes.Property(pc => pc.DataSubmissao);

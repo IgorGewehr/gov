@@ -229,21 +229,33 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
     }
 
     /// <summary>
-    /// Abre uma PC parcial (continua) para a etapa/competencia informada (EmExecucao -&gt; EmPrestacaoContas).
+    /// Abre uma PC parcial (continua) para a etapa/parcela informada. A PC parcial e um ato CONTINUO da execucao:
+    /// o agregado PERMANECE <see cref="SituacaoConvenioRecebido.EmExecucao"/> (so a PC FINAL encerra a execucao —
+    /// A-INV-7). A submissao/analise/saneamento ocorrem na sub-maquina da propria PC. A PC e vinculada
+    /// DETERMINISTICAMENTE ao numero da etapa/parcela (A-INV-4), que deve existir no cronograma de repasses.
     /// </summary>
-    /// <param name="competenciaRef">Competencia/etapa de referencia.</param>
+    /// <param name="numeroEtapa">Numero de ordem da etapa/parcela coberta (deve constar do cronograma).</param>
+    /// <param name="competenciaRef">Competencia/etapa de referencia (texto livre descritivo).</param>
     /// <returns>A PC parcial criada.</returns>
-    /// <exception cref="InvalidConvenioStateException">Se o convenio nao estiver em execucao/PC.</exception>
-    public PrestacaoContasConvenio AbrirPrestacaoParcial(string competenciaRef)
+    /// <exception cref="InvalidConvenioStateException">Se o convenio nao estiver em execucao ou a etapa nao constar do cronograma.</exception>
+    public PrestacaoContasConvenio AbrirPrestacaoParcial(int numeroEtapa, string competenciaRef)
     {
-        if (Situacao is not (SituacaoConvenioRecebido.EmExecucao or SituacaoConvenioRecebido.EmPrestacaoContas))
+        if (Situacao is not SituacaoConvenioRecebido.EmExecucao)
         {
             throw new InvalidConvenioStateException($"PC parcial exige convenio em execucao. Situacao atual: {Situacao}.");
         }
 
-        var pc = PrestacaoContasConvenio.CriarParcial(competenciaRef);
+        // A PC parcial cobre uma etapa/parcela concreta do cronograma — vinculo estruturado, nao texto livre (A-INV-4).
+        if (!_repasses.Exists(r => r.NumeroOrdem == numeroEtapa))
+        {
+            throw new InvalidConvenioStateException($"Etapa {numeroEtapa} nao prevista no cronograma de repasses do convenio.");
+        }
+
+        var pc = PrestacaoContasConvenio.CriarParcial(numeroEtapa, competenciaRef);
         _prestacoes.Add(pc);
-        Situacao = SituacaoConvenioRecebido.EmPrestacaoContas;
+
+        // A PC parcial NAO move o agregado: ele segue EmExecucao (liberacao de parcelas e novas PCs parciais
+        // continuam possiveis). Somente a PC FINAL encerra a execucao.
         return pc;
     }
 
@@ -276,8 +288,9 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
 
     /// <summary>
     /// Submete uma PC (A-INV-8): calcula o prazo de analise via calendario a partir do parametro do tenant
-    /// (parcial/final) e move o convenio para <see cref="SituacaoConvenioRecebido.EmAnalise"/>. Emite
-    /// <see cref="PrestacaoContasConvenioSubmetida"/>.
+    /// (parcial/final). A PC entra em analise na sua PROPRIA sub-maquina. So a PC FINAL leva o AGREGADO a
+    /// <see cref="SituacaoConvenioRecebido.EmAnalise"/> (encerra a execucao); a PC parcial e continua e mantem
+    /// o convenio EmExecucao (liberacoes e novas PCs seguem possiveis). Emite <see cref="PrestacaoContasConvenioSubmetida"/>.
     /// </summary>
     /// <param name="prestacaoId">Identificador da PC.</param>
     /// <param name="dataSubmissao">Data de submissao.</param>
@@ -299,7 +312,13 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
         var prazo = parametro.Resolver(dataSubmissao, calendario);
         pc.Submeter(dataSubmissao, prazo);
 
-        Situacao = SituacaoConvenioRecebido.EmAnalise;
+        // Somente a PC FINAL encerra a execucao e leva o agregado a analise. A PC parcial e continua: o convenio
+        // permanece EmExecucao (a sub-maquina da propria PC carrega Submetida/EmAnalise/Saneamento).
+        if (pc.Tipo == TipoPrestacaoConvenio.Final)
+        {
+            Situacao = SituacaoConvenioRecebido.EmAnalise;
+        }
+
         RaiseDomainEvent(new PrestacaoContasConvenioSubmetida(Id, pc.Tipo, dataSubmissao, prazo.Vencimento));
     }
 
@@ -346,6 +365,7 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
 
         if (pc.Tipo == TipoPrestacaoConvenio.Final)
         {
+            // So a PC FINAL define o estado terminal do agregado (ela levou o convenio a EmAnalise na submissao).
             Situacao = resultado switch
             {
                 ResultadoAnalise.Aprovada => SituacaoConvenioRecebido.Aprovado,
@@ -354,11 +374,9 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
                 _ => Situacao,
             };
         }
-        else if (Situacao == SituacaoConvenioRecebido.EmAnalise)
-        {
-            // PC parcial concluida: volta a execucao para seguir liberando/prestando.
-            Situacao = SituacaoConvenioRecebido.EmExecucao;
-        }
+
+        // PC parcial: o agregado nunca saiu de EmExecucao (a analise corre na sub-maquina da propria PC), entao
+        // nao ha transicao de agregado a fazer — segue EmExecucao para liberar/prestar as proximas etapas.
     }
 
     /// <summary>
@@ -408,11 +426,15 @@ public sealed class ConvenioRecebido : AggregateRoot<ConvenioRecebidoId>, IMustH
         RaiseDomainEvent(new ConvenioRecebidoInadimplente(Id, MotivoInadimplencia));
     }
 
+    // A-INV-4: correlaciona PC<->etapa por NUMERO ESTRUTURADO (pc.NumeroEtapa), de forma deterministica —
+    // jamais por substring de texto livre (CompetenciaRef), que produzia falso-positivo ("2026/01" casava "1")
+    // e falso-negativo ("Primeira etapa" nao casava). A liberacao da parcela N exige a PC parcial da etapa
+    // N-1 submetida (igualdade exata do numero).
     private bool ExistePrestacaoParcialSubmetidaParaEtapa(int numeroEtapa)
         => _prestacoes.Exists(pc =>
             pc.Tipo == TipoPrestacaoConvenio.Parcial
             && pc.FoiSubmetida
-            && pc.CompetenciaRef.Contains(numeroEtapa.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal));
+            && pc.NumeroEtapa == numeroEtapa);
 
     private PrestacaoContasConvenio ObterPrestacao(Guid prestacaoId)
         => _prestacoes.Find(pc => pc.Id == prestacaoId)

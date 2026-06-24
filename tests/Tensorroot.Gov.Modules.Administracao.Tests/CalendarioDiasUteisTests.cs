@@ -272,4 +272,61 @@ public sealed class CalendarioDiasUteisTests
         var provider = new FeriadosTenantProvider(ConfigComFeriados(), new TenantFixo(Guid.NewGuid()), new MemoryCache(new MemoryCacheOptions()));
         provider.FeriadosDoAno(2026).Should().NotContain(FeriadosMoveis.TercaCarnaval(2026));
     }
+
+    // ---------- T-1: isolamento REAL multi-tenant numa MESMA IConfiguration (singleton de producao) ----------
+
+    [Fact]
+    public void FeriadosTenantProvider_isola_municipais_por_tenant_na_mesma_configuracao()
+    {
+        // Cenario de PRODUCAO: um unico IConfiguration (singleton) compartilhado por todos os tenants.
+        // Cada tenant tem sua sub-secao Tempo:Feriados:Tenants:{tenantId} com seu padroeiro/aniversario.
+        var tenantA = Guid.NewGuid();
+        var tenantB = Guid.NewGuid();
+        var config = ConfigComFeriados(
+            ($"Tempo:Feriados:Tenants:{tenantA:D}:MunicipaisFixos:0", "08-15"), // padroeiro do tenant A.
+            ($"Tempo:Feriados:Tenants:{tenantA:D}:AdotaCarnaval", "true"),
+            ($"Tempo:Feriados:Tenants:{tenantB:D}:MunicipaisFixos:0", "06-13")); // padroeiro do tenant B.
+        var cache = new MemoryCache(new MemoryCacheOptions());
+
+        var provA = new FeriadosTenantProvider(config, new TenantFixo(tenantA), cache);
+        var provB = new FeriadosTenantProvider(config, new TenantFixo(tenantB), cache);
+
+        var feriadosA = provA.FeriadosDoAno(2026);
+        var feriadosB = provB.FeriadosDoAno(2026);
+
+        // Municipal e' do tenant dono — nao vaza para o outro.
+        feriadosA.Should().Contain(new DateOnly(2026, 8, 15));
+        feriadosA.Should().NotContain(new DateOnly(2026, 6, 13));
+        feriadosB.Should().Contain(new DateOnly(2026, 6, 13));
+        feriadosB.Should().NotContain(new DateOnly(2026, 8, 15));
+
+        // Facultativo (Carnaval) tambem isolado por tenant.
+        feriadosA.Should().Contain(FeriadosMoveis.TercaCarnaval(2026));
+        feriadosB.Should().NotContain(FeriadosMoveis.TercaCarnaval(2026));
+    }
+
+    [Fact]
+    public void FeriadosTenantProvider_cai_para_secao_raiz_no_ente_unico_sem_subsecao()
+    {
+        // Single-tenant (piloto): sem sub-secao do tenant, vale a secao raiz Tempo:Feriados (compat).
+        var config = ConfigComFeriados(("Tempo:Feriados:MunicipaisFixos:0", "08-15"));
+        var provider = new FeriadosTenantProvider(config, new TenantFixo(Guid.NewGuid()), new MemoryCache(new MemoryCacheOptions()));
+
+        provider.FeriadosDoAno(2026).Should().Contain(new DateOnly(2026, 8, 15));
+    }
+
+    [Fact]
+    public void FeriadosTenantProvider_subsecao_do_tenant_tem_precedencia_sobre_raiz()
+    {
+        // Havendo sub-secao propria, ela e' a fonte de verdade — a raiz nao "vaza" para o tenant.
+        var tenant = Guid.NewGuid();
+        var config = ConfigComFeriados(
+            ("Tempo:Feriados:MunicipaisFixos:0", "08-15"),                         // raiz (ente unico legado).
+            ($"Tempo:Feriados:Tenants:{tenant:D}:MunicipaisFixos:0", "06-13"));    // tenant especifico.
+        var provider = new FeriadosTenantProvider(config, new TenantFixo(tenant), new MemoryCache(new MemoryCacheOptions()));
+
+        var feriados = provider.FeriadosDoAno(2026);
+        feriados.Should().Contain(new DateOnly(2026, 6, 13));     // do proprio tenant.
+        feriados.Should().NotContain(new DateOnly(2026, 8, 15));  // raiz nao vaza quando ha sub-secao.
+    }
 }
