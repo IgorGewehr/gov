@@ -166,6 +166,15 @@ public sealed class Documento : AggregateRoot<DocumentoId>, IMustHaveTenant
         }
 
         GarantirNivelAdequado(Criticidade, tipo);
+        GarantirCarimboCompativel(Criticidade, carimboTempo);
+
+        // I-CT2 (vinculo hash <-> token): quando o carimbo porta um hash atestado (ACT/RFC 3161), ele
+        // DEVE coincidir com o hash deste documento — a prova so e oponivel se atestar este conteudo.
+        if (!carimboTempo.AtestaHash(Hash.Valor))
+        {
+            throw new InvalidOperationException(
+                "Carimbo de tempo atesta um hash diferente do documento (vinculo hash<->token violado).");
+        }
 
         var assinatura = Assinatura.De(tipo, signatarioId, carimboTempo);
         SignatarioId = assinatura.SignatarioId;
@@ -202,6 +211,14 @@ public sealed class Documento : AggregateRoot<DocumentoId>, IMustHaveTenant
     public bool VerificarIntegridade(string hashRecalculado) => Hash.Corresponde(hashRecalculado);
 
     /// <summary>
+    /// Revalida o vinculo entre o carimbo de tempo e este documento (I-CT2): o hash atestado pela ACT
+    /// deve coincidir com o hash do documento — base da oponibilidade ao TCE. Documento sem carimbo
+    /// (ainda nao assinado) e considerado nao-verificavel.
+    /// </summary>
+    /// <returns><c>true</c> se ha carimbo e o hash atestado coincide com o do documento.</returns>
+    public bool VerificarCarimbo() => CarimboTempo is not null && CarimboTempo.AtestaHash(Hash.Valor);
+
+    /// <summary>
     /// Garante que o nivel de assinatura aplicado e maior ou igual ao minimo exigido pela criticidade
     /// (Decreto 10.543/2020 — I-5/I-6). Rejeita nivel inferior.
     /// </summary>
@@ -215,6 +232,25 @@ public sealed class Documento : AggregateRoot<DocumentoId>, IMustHaveTenant
         {
             throw new InvalidOperationException(
                 $"Criticidade {criticidade} exige assinatura minima {minimo}; nivel {tipo} e insuficiente.");
+        }
+    }
+
+    /// <summary>
+    /// Garante que o carimbo de tempo e compativel com a criticidade do ato (I-CT3 / W9.4): ato de
+    /// criticidade <see cref="CriticidadeAto.Alta"/> (assinatura qualificada ICP-Brasil) exige carimbo
+    /// de ACT credenciada (<see cref="OrigemCarimbo.Act"/>); o carimbo do relogio LOCAL (fallback/dev)
+    /// NAO satisfaz a oponibilidade exigida do ato qualificado.
+    /// </summary>
+    /// <param name="criticidade">Criticidade do ato.</param>
+    /// <param name="carimboTempo">Carimbo de tempo aplicado.</param>
+    /// <exception cref="InvalidOperationException">Se a criticidade for Alta e o carimbo for Local.</exception>
+    private static void GarantirCarimboCompativel(CriticidadeAto criticidade, CarimboDeTempo carimboTempo)
+    {
+        if (criticidade == CriticidadeAto.Alta && carimboTempo.Origem != OrigemCarimbo.Act)
+        {
+            throw new InvalidOperationException(
+                "Criticidade Alta (assinatura qualificada ICP-Brasil) exige carimbo de tempo de ACT credenciada; "
+                + "carimbo local nao satisfaz o ato qualificado.");
         }
     }
 }

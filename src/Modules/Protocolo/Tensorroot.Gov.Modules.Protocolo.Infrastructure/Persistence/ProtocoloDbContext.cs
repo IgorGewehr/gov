@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
+using Tensorroot.Gov.Modules.Protocolo.Domain.Arquivistica;
 using Tensorroot.Gov.Modules.Protocolo.Domain.Documentos;
 using Tensorroot.Gov.Modules.Protocolo.Domain.Processos;
 
@@ -21,6 +22,18 @@ public sealed class ProtocoloDbContext(DbContextOptions<ProtocoloDbContext> opti
 
     /// <summary>Documentos (pecas processuais — raiz de agregado).</summary>
     public DbSet<Documento> Documentos => Set<Documento>();
+
+    /// <summary>Contadores atomicos do sequencial do NUP por (TenantId, Ano) — Peca 3 / W9.4.</summary>
+    public DbSet<SequenciaNup> SequenciasNup => Set<SequenciaNup>();
+
+    /// <summary>Planos de classificacao documental por tenant (e-ARQ v2 / CONARQ — Peca 2 / W9.4).</summary>
+    public DbSet<PlanoDeClassificacao> PlanosClassificacao => Set<PlanoDeClassificacao>();
+
+    /// <summary>Tabelas de Temporalidade e Destinacao (TTD) por tenant (Peca 2 / W9.4).</summary>
+    public DbSet<TabelaTemporalidade> TabelasTemporalidade => Set<TabelaTemporalidade>();
+
+    /// <summary>Fichas de destinacao de processos arquivados (Peca 2 / W9.4).</summary>
+    public DbSet<DestinacaoProcesso> DestinacoesProcesso => Set<DestinacaoProcesso>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

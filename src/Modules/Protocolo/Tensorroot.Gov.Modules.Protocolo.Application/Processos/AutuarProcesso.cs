@@ -37,6 +37,7 @@ public sealed class AutuarProcessoValidator : AbstractValidator<AutuarProcessoCo
 /// <summary>Handler da autuacao de processo.</summary>
 public sealed class AutuarProcessoHandler(
     IProcessoRepository processos,
+    IPlanoDeClassificacaoRepository planos,
     INupGenerator nupGenerator,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
@@ -48,6 +49,16 @@ public sealed class AutuarProcessoHandler(
     public async Task<Guid> Handle(AutuarProcessoCommand request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        // I-T5 (W9.4): quando o tenant tem um Plano de Classificacao ATIVO, a classe informada DEVE
+        // existir nele (FK logica multi-tenant). Tenants sem plano configurado mantem o comportamento
+        // atual (sem bloqueio) — a adocao do plano e gradual por tenant.
+        var planoAtivo = await planos.ObterAtivoAsync(cancellationToken).ConfigureAwait(false);
+        if (planoAtivo is not null && !planoAtivo.Contem(request.Classificacao))
+        {
+            throw new InvalidOperationException(
+                $"Classe de classificacao '{request.Classificacao}' ausente do Plano de Classificacao ativo do tenant (I-T5).");
+        }
 
         var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         var nup = await nupGenerator.GerarAsync(cancellationToken).ConfigureAwait(false);

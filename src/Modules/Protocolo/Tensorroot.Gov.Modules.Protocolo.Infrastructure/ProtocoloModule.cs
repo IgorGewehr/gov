@@ -14,6 +14,8 @@ using Tensorroot.Gov.Modules.Protocolo.Application.Processos;
 using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence.Repositories;
 using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Protocolo;
+using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Protocolo.Carimbo;
+using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Protocolo.Temporalidade;
 
 namespace Tensorroot.Gov.Modules.Protocolo.Infrastructure;
 
@@ -56,9 +58,39 @@ public sealed class ProtocoloModule : IModule
         services.AddScoped<IProcessoRepository, ProcessoRepository>();
         services.AddScoped<IDocumentoRepository, DocumentoRepository>();
 
-        // Geração do NUP (sequencial anual por tenant) e carimbo de tempo (ACL — Lei 14.063/2020).
+        // Temporalidade/destinacao CONARQ (Peca 2 / W9.4): repositorios + motor de calculo local.
+        services.AddScoped<IPlanoDeClassificacaoRepository, PlanoDeClassificacaoRepository>();
+        services.AddScoped<ITabelaTemporalidadeRepository, TabelaTemporalidadeRepository>();
+        services.AddScoped<IDestinacaoProcessoRepository, DestinacaoProcessoRepository>();
+        services.AddScoped<IMotorTemporalidade, MotorTemporalidade>();
+
+        // Geração do NUP (sequencial atômico por tenant×ano — Peça 3 / W9.4: contador SequenciaNup
+        // sob UPDLOCK/HOLDLOCK em SqlServer, espelhando o hash-chain).
         services.AddScoped<INupGenerator, NupSequencialGenerator>();
-        services.AddScoped<ICarimboDeTempoService, CarimboDeTempoLocalService>();
+
+        // Carimbo de tempo RFC 3161 (Peça 1 / W9.4): porta ICarimbadorDeTempo atrás de ACL + Polly.
+        // Provider "Act" => adapter de produção com HttpClient resiliente (padrão AdnNfseGateway);
+        // caso contrário => carimbador LOCAL (fallback/dev). O domínio recusa carimbo local em ato
+        // qualificado (criticidade Alta). // TODO(M10): ACT credenciada real + credencial em Key Vault.
+        services.Configure<OpcoesAct>(configuration.GetSection(OpcoesAct.Secao));
+        var actProvider = configuration["Protocolo:Act:Provider"] ?? "Local";
+        if (string.Equals(actProvider, "Act", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<ICarimbadorDeTempo, CarimbadorDeTempoAct>(client =>
+                {
+                    // Endpoint/credencial da ACT vêm do Key Vault (M2), nunca do repositório.
+                    var endpoint = configuration["Protocolo:Act:Endpoint"] ?? "https://act.invalido.local/";
+                    client.BaseAddress = new Uri(endpoint);
+                })
+                .AddStandardResilienceHandler();
+        }
+        else
+        {
+            services.AddScoped<ICarimbadorDeTempo, CarimbadorDeTempoLocalService>();
+        }
+
+        // Contrato LEGADO do carimbo local (mantido como adapter; não recebe hash de entrada).
+        services.AddScoped<ICarimboDeTempoService, CarimbadorDeTempoLocalService>();
 
         // PORTAL DO CIDADAO (M8): porta de LEITURA cidada (Contracts). "Meus processos" por DOCUMENTO do
         // interessado resolvido server-side pelo modulo Cidadao, respeitando o NivelDeAcesso (so publicos).

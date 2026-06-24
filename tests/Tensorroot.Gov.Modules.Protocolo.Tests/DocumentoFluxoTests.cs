@@ -21,6 +21,17 @@ public sealed class DocumentoFluxoTests : ProtocoloTestBase
     private static CarimboDeTempo NovoCarimbo()
         => CarimboDeTempo.De(new DateTime(2026, 6, 21, 12, 0, 0, DateTimeKind.Utc), "AC TEMPO TESTE");
 
+    // W9.4 (Peca 1): carimbo de ACT credenciada (Origem = Act) vinculado ao hash do documento — exigido
+    // pela invariante I-CT3 (criticidade Alta) e revalidado pelo vinculo hash<->token (I-CT2).
+    private static CarimboDeTempo NovoCarimboAct(string hash = HashValido)
+        => CarimboDeTempo.DeToken(
+            new DateTime(2026, 6, 21, 12, 0, 0, DateTimeKind.Utc),
+            "ACT ICP-Brasil TESTE",
+            tokenBase64: "TST-DER-BASE64-STUB",
+            serialToken: "0123456789ABCDEF",
+            politica: "2.16.76.1.6.999",
+            hashCarimbado: hash);
+
     private static Documento NovoDocumento(
         CriticidadeAto criticidade = CriticidadeAto.Baixa,
         NivelDeAcesso nivelAcesso = NivelDeAcesso.Publico,
@@ -190,13 +201,39 @@ public sealed class DocumentoFluxoTests : ProtocoloTestBase
         var documento = DocumentoJuntado(CriticidadeAto.Alta);
         var signatario = Guid.NewGuid();
 
-        documento.Assinar(signatario, TipoAssinatura.AssinaturaQualificada, NovoCarimbo());
+        // I-CT3 (W9.4): ato qualificado (Alta) exige carimbo de ACT credenciada (Origem = Act).
+        documento.Assinar(signatario, TipoAssinatura.AssinaturaQualificada, NovoCarimboAct());
 
         documento.Situacao.Should().Be(SituacaoDocumento.Assinado);
         documento.SignatarioId.Should().Be(signatario);
         documento.TipoAssinatura.Should().Be(TipoAssinatura.AssinaturaQualificada);
         documento.CarimboTempo.Should().NotBeNull();
+        documento.CarimboTempo!.Origem.Should().Be(OrigemCarimbo.Act);
+        documento.VerificarCarimbo().Should().BeTrue();
         documento.DomainEvents.OfType<DocumentoAssinado>().Should().ContainSingle();
+    }
+
+    [Fact] // I-CT3 (W9.4): criticidade Alta com carimbo LOCAL e recusada (ato qualificado exige ACT).
+    public void Invariante_CT3_criticidade_alta_recusa_carimbo_local()
+    {
+        var documento = DocumentoJuntado(CriticidadeAto.Alta);
+
+        var acao = () => documento.Assinar(Guid.NewGuid(), TipoAssinatura.AssinaturaQualificada, NovoCarimbo());
+
+        acao.Should().Throw<InvalidOperationException>();
+        documento.Situacao.Should().Be(SituacaoDocumento.Juntado);
+    }
+
+    [Fact] // I-CT2 (W9.4): carimbo de ACT que atesta hash diferente do documento e recusado.
+    public void Invariante_CT2_carimbo_com_hash_divergente_e_recusado()
+    {
+        var documento = DocumentoJuntado(CriticidadeAto.Alta);
+
+        var acao = () => documento.Assinar(
+            Guid.NewGuid(), TipoAssinatura.AssinaturaQualificada, NovoCarimboAct(HashOutro));
+
+        acao.Should().Throw<InvalidOperationException>();
+        documento.Situacao.Should().Be(SituacaoDocumento.Juntado);
     }
 
     [Fact] // Cenario 7: criticidade Media aceita assinatura avancada.

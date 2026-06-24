@@ -35,7 +35,7 @@ public sealed class AssinarDocumentoValidator : AbstractValidator<AssinarDocumen
 /// <summary>Handler da assinatura de documento por criticidade.</summary>
 public sealed class AssinarDocumentoHandler(
     IDocumentoRepository documentos,
-    ICarimboDeTempoService carimboService,
+    ICarimbadorDeTempo carimbador,
     IUnitOfWork unitOfWork,
     IPublisher publisher,
     ITenantContext tenant,
@@ -50,7 +50,9 @@ public sealed class AssinarDocumentoHandler(
         var documento = await documentos.ObterPorIdAsync(new DocumentoId(request.DocumentoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Documento nao encontrado.");
 
-        var carimbo = await carimboService.GerarAsync(cancellationToken).ConfigureAwait(false);
+        // W9.4 (Peca 1): carimba o HASH do documento (RFC 3161 / ACL + Polly). A ACT atesta o hash,
+        // nunca o conteudo. O carimbo retornado e vinculado a esse hash e validado no dominio (Assinar).
+        var carimbo = await carimbador.CarimbarAsync(documento.Hash, cancellationToken).ConfigureAwait(false);
         documento.Assinar(request.SignatarioId, request.Tipo, carimbo);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

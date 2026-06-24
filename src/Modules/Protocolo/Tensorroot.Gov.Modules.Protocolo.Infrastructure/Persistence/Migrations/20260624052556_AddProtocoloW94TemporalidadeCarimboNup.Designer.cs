@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence;
 
@@ -12,9 +13,11 @@ using Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Protocolo.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ProtocoloDbContext))]
-    partial class ProtocoloDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624052556_AddProtocoloW94TemporalidadeCarimboNup")]
+    partial class AddProtocoloW94TemporalidadeCarimboNup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

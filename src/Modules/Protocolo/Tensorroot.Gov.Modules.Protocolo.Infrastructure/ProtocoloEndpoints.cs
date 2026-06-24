@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
+using Tensorroot.Gov.Modules.Protocolo.Application.Arquivistica;
 using Tensorroot.Gov.Modules.Protocolo.Application.Documentos;
 using Tensorroot.Gov.Modules.Protocolo.Application.Processos;
 
@@ -17,6 +18,45 @@ internal static class ProtocoloEndpoints
 
         MapearProcessos(grupo);
         MapearDocumentos(grupo);
+        MapearTemporalidade(grupo);
+    }
+
+    private static void MapearTemporalidade(RouteGroupBuilder grupo)
+    {
+        // Cadastro do Plano de Classificacao e da TTD por tenant (Peca 2 / W9.4).
+        grupo.MapPost("/planos-classificacao", async (
+            CadastrarPlanoClassificacaoCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("protocolo.gerenciar");
+
+        grupo.MapPost("/tabelas-temporalidade", async (
+            CadastrarTabelaTemporalidadeCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("protocolo.gerenciar");
+
+        // Varredura de aptidao (promove AguardandoPrazo -> AptoEliminar quando o prazo decorreu).
+        grupo.MapPost("/destinacoes/avaliar-aptidao", async (
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { promovidas = await sender.Send(new AvaliarAptidaoDestinacoesCommand(), cancellationToken) }))
+            .RequirePermission("protocolo.gerenciar");
+
+        // Autorizacao de eliminacao por ato humano (RBAC) — I-T1/I-T2 protegem o irreversivel.
+        grupo.MapPost("/destinacoes/{destinacaoId:guid}/autorizacao-eliminacao", async (
+            Guid destinacaoId, AutorizarEliminacaoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AutorizarEliminacaoCommand(destinacaoId, payload.AutorizadoPor), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("protocolo.gerenciar");
+
+        // Registro da eliminacao com termo assinado/carimbado + edital (I-T4 — prova oponivel ao TCE).
+        grupo.MapPost("/destinacoes/{destinacaoId:guid}/eliminacao", async (
+            Guid destinacaoId, RegistrarEliminacaoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(
+                new RegistrarEliminacaoCommand(destinacaoId, payload.TermoEliminacaoHash, payload.EditalEliminacaoRef),
+                cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("protocolo.gerenciar");
     }
 
     private static void MapearProcessos(RouteGroupBuilder grupo)
@@ -110,4 +150,8 @@ internal static class ProtocoloEndpoints
     private sealed record AssinarDocumentoPayload(Guid SignatarioId, Domain.Documentos.TipoAssinatura Tipo);
 
     private sealed record TornarSemEfeitoPayload(string Motivo);
+
+    private sealed record AutorizarEliminacaoPayload(Guid AutorizadoPor);
+
+    private sealed record RegistrarEliminacaoPayload(string TermoEliminacaoHash, string EditalEliminacaoRef);
 }
