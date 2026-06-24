@@ -61,6 +61,17 @@ public sealed class ContratoRepository(AdministracaoDbContext context) : IContra
             .OrderByDescending(contrato => contrato.VigenciaInicio)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Contrato>> ListarPendentesPublicacaoPncpAsync(CancellationToken cancellationToken)
+        => await context.Contratos
+            .Where(contrato =>
+                !contrato.PublicadoNoPncp
+                && contrato.Situacao != SituacaoContrato.Encerrado
+                && contrato.Situacao != SituacaoContrato.Rescindido)
+            .OrderBy(contrato => contrato.DataAssinatura)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 }
 
 /// <summary>Implementacao EF Core do repositorio do agregado <see cref="Fornecedor"/>.</summary>

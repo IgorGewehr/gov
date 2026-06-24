@@ -25,6 +25,7 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Modularity;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Multitenancy;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Outbox;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Tempo;
 using Tensorroot.Gov.Platform;
 using Tensorroot.Gov.Platform.Persistence;
 using Tensorroot.Gov.Platform.Tenancy;
@@ -74,6 +75,12 @@ builder.Services.AddMediatR(configuration =>
     configuration.RegisterServicesFromAssembly(typeof(ApplicationBuildingBlocks).Assembly));
 builder.Services.AddApplicationPipeline();
 
+// === Servico transversal de DIAS UTEIS / PRAZOS LEGAIS (registro CENTRAL e UNICO — W9.1) ===
+// ICalendarioDiasUteis + IFeriadosTenantProvider, Scoped (seguem o TenantContext). Consumido por
+// Administracao (PNCP/art. 94), Transparencia (e-SIC) e futuras ondas (Obras §3, Convenios). Os
+// modulos CONSOMEM por DI — nao recriam.
+builder.Services.AddCalendarioDiasUteis();
+
 // === Plataforma multi-tenant: catálogo de licenças de módulo por tenant ===
 builder.Services.AddPlatform(
     builder.Configuration["Database:Provider"] ?? "Sqlite",
@@ -100,6 +107,12 @@ builder.Services.AddScoped<IAssinaturaEmEscopoDedicado, AssinaturaEmEscopoDedica
 // da guarda H5). Isola a consulta num escopo proprio. Mesma motivacao do AssinaturaEmEscopoDedicado.
 builder.Services.AddScoped<Tensorroot.Gov.Modules.Cidadao.Application.Abstractions.IConsultaCidadaoEmEscopoDedicado,
     Tensorroot.Gov.ApiHost.Cidadao.ConsultaCidadaoEmEscopoDedicado>();
+
+// INVARIANTE DE BLOQUEIO do empenho (W9.1): Financas checa o status PNCP do contrato (Administracao via
+// Contracts) em ESCOPO DEDICADO — o EmpenharHandler ja resolveu o FinancasDbContext; consultar a porta do
+// Administracao no mesmo escopo resolveria o AdministracaoDbContext lado-a-lado (gatilho da guarda H5).
+builder.Services.AddScoped<Tensorroot.Gov.Modules.Financas.Application.Abstractions.IConsultaContratoEmEscopoDedicado,
+    Tensorroot.Gov.ApiHost.Financas.ConsultaContratoEmEscopoDedicado>();
 
 // === Segurança: JWT Bearer (token AUTO-EMITIDO pelo módulo Identidade, HS256) ===
 // Validamos o token assinado com o segredo simétrico de "Jwt:Secret" (Key Vault em produção).

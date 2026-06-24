@@ -1,6 +1,7 @@
 using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
+using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Financas.Application.Abstractions;
 using Tensorroot.Gov.Modules.Financas.Contracts;
 using Tensorroot.Gov.Modules.Financas.Domain.Dotacoes;
@@ -19,6 +20,11 @@ namespace Tensorroot.Gov.Modules.Financas.Application.Empenhos;
 /// <param name="CredorTipo">Tipo de pessoa do credor.</param>
 /// <param name="CredorDocumento">Documento (CPF/CNPJ) do credor.</param>
 /// <param name="Valor">Valor a empenhar.</param>
+/// <param name="ContratoId">
+/// Contrato (Administracao) que origina a despesa, quando o empenho decorre de contrato. Quando informado,
+/// dispara a INVARIANTE DE BLOQUEIO (W9.1): so empenha contrato com numero de controle PNCP (eficaz —
+/// Lei 14.133/2021, art. 94). Nulo em empenhos sem contrato (ex.: folha, despesas legais diretas).
+/// </param>
 public sealed record EmpenharCommand(
     string Numero,
     Guid DotacaoId,
@@ -28,7 +34,8 @@ public sealed record EmpenharCommand(
     string CredorNome,
     TipoPessoa CredorTipo,
     string CredorDocumento,
-    decimal Valor) : ICommand<Guid>;
+    decimal Valor,
+    Guid? ContratoId = null) : ICommand<Guid>;
 
 /// <summary>Regras de validação da emissão de empenho.</summary>
 public sealed class EmpenharValidator : AbstractValidator<EmpenharCommand>
@@ -61,12 +68,34 @@ public sealed class EmpenharHandler(
     IUnitOfWork unitOfWork,
     ITenantContext tenant,
     IIntegrationEventWriter integrationEvents,
+    IConsultaContratoEmEscopoDedicado consultaContrato,
     TimeProvider timeProvider) : ICommandHandler<EmpenharCommand, Guid>
 {
     /// <inheritdoc />
     public async Task<Guid> Handle(EmpenharCommand request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        // INVARIANTE DE BLOQUEIO (W9.1, cross-module via Contracts): quando a despesa decorre de contrato,
+        // so empenha contrato EFICAZ — divulgado no PNCP com numero de controle (Lei 14.133/2021, art. 94).
+        // Fail-closed: contrato sem PNCP/extinto/inexistente NAO empenha. Aferido ANTES de reservar saldo.
+        if (request.ContratoId is { } contratoId && contratoId != Guid.Empty)
+        {
+            var status = await consultaContrato.ConsultarStatusAsync(contratoId, cancellationToken).ConfigureAwait(false);
+            if (status != StatusContratoParaEmpenho.AptoParaEmpenho)
+            {
+                throw new InvalidOperationException(status switch
+                {
+                    StatusContratoParaEmpenho.BloqueadoSemPncp =>
+                        "Empenho bloqueado: o contrato ainda nao foi divulgado no PNCP (sem numero de controle), permanecendo ineficaz (Lei 14.133/2021, art. 94).",
+                    StatusContratoParaEmpenho.BloqueadoContratoExtinto =>
+                        "Empenho bloqueado: o contrato esta encerrado/rescindido (extinto).",
+                    StatusContratoParaEmpenho.NaoEncontrado =>
+                        "Empenho bloqueado: contrato nao encontrado no tenant.",
+                    _ => "Empenho bloqueado: contrato inapto para empenho.",
+                });
+            }
+        }
 
         var dotacao = await dotacoes.ObterPorIdAsync(new DotacaoOrcamentariaId(request.DotacaoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Dotacao nao encontrada.");

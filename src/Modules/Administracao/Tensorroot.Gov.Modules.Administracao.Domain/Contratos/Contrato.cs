@@ -2,6 +2,7 @@ using Tensorroot.Gov.Modules.Administracao.Domain.Events;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
 
@@ -21,9 +22,11 @@ public readonly record struct ContratoId(Guid Value)
 /// Contrato administrativo (Lei 14.133/2021 — NLLC): instrumento que formaliza a relacao entre a
 /// Administracao e o fornecedor vencedor de uma licitacao (ou de contratacao direta por dispensa/
 /// inexigibilidade). Admite aditivos (limite de 25%, ate 50% em reforma — art. 125), apostilamentos
-/// (dispensam termo aditivo — art. 136) e garantia de execucao (ate 5%/10% — art. 96/98). A publicacao
-/// no PNCP e condicao de eficacia (art. 174) e a vigencia depende de credito orcamentario (art. 105-106;
-/// LRF). Raiz de agregado tenant-scoped.
+/// (dispensam termo aditivo — art. 136) e garantia de execucao (ate 5%/10% — art. 96/98). A divulgacao
+/// no PNCP e condicao de eficacia (art. 94 — CORRECAO LEGAL: o art. 174 institui o PNCP, mas a EFICACIA
+/// da publicacao e do art. 94; a gestao do PNCP e regida pelo Dec. 10.764/2021, nao pelo 11.462/2023 que
+/// trata de SRP) e a vigencia depende de credito orcamentario (art. 105-106; LRF). Raiz de agregado
+/// tenant-scoped.
 /// </summary>
 public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenant
 {
@@ -43,6 +46,7 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
         OrigemContratacao origem,
         string objeto,
         ValorMonetario valorContratado,
+        DateOnly dataAssinatura,
         DateOnly vigenciaInicio,
         DateOnly vigenciaFim,
         EmpenhoRef? empenhoRef)
@@ -55,6 +59,7 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
         Objeto = objeto;
         ValorContratado = valorContratado;
         ValorAtual = valorContratado;
+        DataAssinatura = dataAssinatura;
         VigenciaInicio = vigenciaInicio;
         VigenciaFim = vigenciaFim;
         EmpenhoRef = empenhoRef;
@@ -85,6 +90,12 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
     /// <summary>Valor vigente apos aditivos/apostilamentos.</summary>
     public ValorMonetario ValorAtual { get; private set; } = default!;
 
+    /// <summary>
+    /// Data de assinatura do contrato — marco inicial da contagem do prazo de divulgacao no PNCP
+    /// (Lei 14.133/2021, art. 94). Informada na celebracao (relogio externo via handler).
+    /// </summary>
+    public DateOnly DataAssinatura { get; private set; }
+
     /// <summary>Inicio da vigencia.</summary>
     public DateOnly VigenciaInicio { get; private set; }
 
@@ -100,11 +111,24 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
     /// <summary>Situacao atual no ciclo de vida.</summary>
     public SituacaoContrato Situacao { get; private set; }
 
-    /// <summary>Identificador no PNCP, quando publicado.</summary>
+    /// <summary>Numero de CONTROLE PNCP do contrato, quando divulgado (chave do registro no portal).</summary>
     public string? NumeroContratoPncp { get; private set; }
 
-    /// <summary>Eficacia obtida pela publicacao no PNCP (art. 174) — I-7.</summary>
+    /// <summary>Eficacia obtida pela divulgacao no PNCP (art. 94) — I-7.</summary>
     public bool PublicadoNoPncp { get; private set; }
+
+    /// <summary>
+    /// Prazo legal de divulgacao no PNCP (art. 94), resolvido na celebracao a partir da
+    /// <see cref="DataAssinatura"/> e do calendario do tenant. Nulo somente em contratos legados
+    /// (pre-W9.1) sem prazo registrado. Subsidio para os alertas de prazo a vencer/vencido (I-7).
+    /// </summary>
+    public PrazoPncp? PrazoPublicacaoPncp { get; private set; }
+
+    /// <summary>
+    /// Verdadeiro se a divulgacao no PNCP ocorreu FORA do prazo legal (art. 94): o contrato esta
+    /// publicado/eficaz, mas a intempestividade fica registrada para alerta/auditoria do Tribunal de Contas.
+    /// </summary>
+    public bool PublicacaoPncpVencida { get; private set; }
 
     /// <summary>Termos aditivos do contrato.</summary>
     public IReadOnlyCollection<Aditivo> Aditivos => _aditivos;
@@ -125,13 +149,18 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
     /// <param name="origem">Fundamento da contratacao.</param>
     /// <param name="objeto">Descricao do objeto (obrigatoria) — I-1.</param>
     /// <param name="valorContratado">Valor global (obrigatorio) — I-2.</param>
+    /// <param name="dataAssinatura">Data de assinatura (marco inicial do prazo PNCP do art. 94).</param>
     /// <param name="vigenciaInicio">Inicio da vigencia.</param>
     /// <param name="vigenciaFim">Fim da vigencia (nao anterior ao inicio) — I-3.</param>
-    /// <param name="empenhoRef">Referencia ao empenho, quando ja informada na celebracao.</param>
     /// <param name="fornecedorImpedido">
     /// Indica se o fornecedor tem sancao impeditiva (impedimento/inidoneidade) vigente na data da celebracao
     /// — aferido pelo handler sobre o agregado <c>Fornecedor</c> (limite de agregado). Fail-closed (BUG-A1).
     /// </param>
+    /// <param name="prazoDivulgacao">
+    /// Parametro de prazo de divulgacao no PNCP do tenant (quantidade/unidade/norma — sem numero magico).
+    /// </param>
+    /// <param name="calendario">Calendario de dias uteis do tenant (resolve o vencimento do prazo PNCP).</param>
+    /// <param name="empenhoRef">Referencia ao empenho, quando ja informada na celebracao.</param>
     /// <returns>Novo <see cref="Contrato"/> em <see cref="SituacaoContrato.Assinado"/>.</returns>
     /// <exception cref="ArgumentException">Se o objeto for vazio (I-1) ou a vigencia for invalida (I-3).</exception>
     /// <exception cref="ArgumentNullException">Se o valor contratado for nulo (I-2).</exception>
@@ -143,15 +172,20 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
         OrigemContratacao origem,
         string objeto,
         ValorMonetario valorContratado,
+        DateOnly dataAssinatura,
         DateOnly vigenciaInicio,
         DateOnly vigenciaFim,
         bool fornecedorImpedido,
+        PrazoPncpParametro prazoDivulgacao,
+        ICalendarioDiasUteis calendario,
         EmpenhoRef? empenhoRef = null)
     {
         // I-1: objeto obrigatorio.
         ArgumentException.ThrowIfNullOrWhiteSpace(objeto);
         // I-2: valor obrigatorio.
         ArgumentNullException.ThrowIfNull(valorContratado);
+        ArgumentNullException.ThrowIfNull(prazoDivulgacao);
+        ArgumentNullException.ThrowIfNull(calendario);
 
         // BUG-A1: fail-closed. Fornecedor com sancao impeditiva vigente nao pode celebrar contrato
         // (art. 14 e art. 156, III/IV da Lei 14.133/2021), em qualquer origem (licitacao ou direta).
@@ -178,7 +212,7 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
             throw new InvalidOperationException("Licitacao de origem e vedada nas contratacoes diretas (Dispensa/Inexigibilidade).");
         }
 
-        return new Contrato(
+        var contrato = new Contrato(
             ContratoId.New(),
             tenantId,
             origem == OrigemContratacao.Licitacao ? licitacaoId : null,
@@ -186,28 +220,23 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
             origem,
             objeto,
             valorContratado,
+            dataAssinatura,
             vigenciaInicio,
             vigenciaFim,
             empenhoRef);
-    }
 
-    /// <summary>
-    /// Publica o contrato no PNCP, marcando <see cref="PublicadoNoPncp"/> e emitindo
-    /// <see cref="ContratoPublicadoPncp"/> (condicao de eficacia — art. 174). Se a dotacao ja estiver
-    /// confirmada, o contrato transita internamente para <see cref="SituacaoContrato.Eficaz"/>.
-    /// </summary>
-    /// <param name="numeroContratoPncp">Identificador atribuido pelo PNCP (obrigatorio).</param>
-    /// <exception cref="ArgumentException">Se o numero do PNCP for vazio.</exception>
-    /// <exception cref="InvalidOperationException">Se o contrato estiver encerrado (I-14).</exception>
-    public void PublicarContratoPncp(string numeroContratoPncp)
-    {
-        GarantirNaoEncerrado();
-        ArgumentException.ThrowIfNullOrWhiteSpace(numeroContratoPncp);
+        // Resolve o relogio do prazo de divulgacao no PNCP (art. 94) JA na celebracao: a partir daqui
+        // o contrato "sabe" sua data-limite e os alertas a vencer/vencido podem ser apurados sem reler
+        // parametros. Numero/unidade/norma vem dos parametros do tenant (sem numero magico — §16).
+        contrato.PrazoPublicacaoPncp = PrazoPncp.Criar(
+            TipoPrazoPncp.Divulgacao,
+            dataAssinatura,
+            prazoDivulgacao.Quantidade,
+            prazoDivulgacao.Unidade,
+            prazoDivulgacao.NormaFonte,
+            calendario);
 
-        NumeroContratoPncp = numeroContratoPncp;
-        PublicadoNoPncp = true;
-        RaiseDomainEvent(new ContratoPublicadoPncp(Id, numeroContratoPncp));
-        AvaliarEficacia();
+        return contrato;
     }
 
     /// <summary>
@@ -252,7 +281,7 @@ public sealed partial class Contrato : AggregateRoot<ContratoId>, IMustHaveTenan
         // I-7: eficacia exige publicacao no PNCP.
         if (!PublicadoNoPncp)
         {
-            throw new InvalidOperationException("Inicio da execucao exige publicacao no PNCP (art. 174).");
+            throw new InvalidOperationException("Inicio da execucao exige divulgacao no PNCP (art. 94).");
         }
 
         // I-8: vigencia exige credito orcamentario.

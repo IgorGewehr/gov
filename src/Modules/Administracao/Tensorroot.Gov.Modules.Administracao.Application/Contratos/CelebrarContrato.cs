@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 
@@ -16,6 +17,7 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 /// <param name="Origem">Fundamento da contratacao (1 = Licitacao, 2 = Dispensa, 3 = Inexigibilidade).</param>
 /// <param name="Objeto">Descricao do objeto contratado.</param>
 /// <param name="Valor">Valor global original do contrato.</param>
+/// <param name="DataAssinatura">Data de assinatura (marco inicial do prazo PNCP do art. 94); nula = data atual.</param>
 /// <param name="VigenciaInicio">Inicio da vigencia.</param>
 /// <param name="VigenciaFim">Fim da vigencia.</param>
 /// <param name="EmpenhoId">Identificador do empenho (quando informado na celebracao).</param>
@@ -27,6 +29,7 @@ public sealed record CelebrarContratoCommand(
     OrigemContratacao Origem,
     string Objeto,
     decimal Valor,
+    DateOnly? DataAssinatura,
     DateOnly VigenciaInicio,
     DateOnly VigenciaFim,
     Guid? EmpenhoId,
@@ -69,6 +72,8 @@ public sealed class CelebrarContratoHandler(
     IUnitOfWork unitOfWork,
     IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
+    IPncpParametros pncpParametros,
+    ICalendarioDiasUteis calendario,
     TimeProvider timeProvider)
     : ICommandHandler<CelebrarContratoCommand, Guid>
 {
@@ -90,6 +95,14 @@ public sealed class CelebrarContratoHandler(
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false);
         var fornecedorImpedido = fornecedor is not null && fornecedor.EstaImpedido(hoje);
 
+        // Data de assinatura: informada, ou a data corrente (relogio externo — nunca dentro do dominio).
+        var dataAssinatura = request.DataAssinatura ?? hoje;
+
+        // Parametro de prazo de divulgacao no PNCP do tenant (art. 94) — sem numero magico (§16). Mapeia a
+        // triade da Application para o tipo domestico do Domain (preserva a regra de dependencia §2).
+        var divulgacao = pncpParametros.Divulgacao();
+        var prazoDivulgacao = new PrazoPncpParametro(divulgacao.Quantidade, divulgacao.Unidade, divulgacao.NormaFonte);
+
         var contrato = Contrato.Celebrar(
             tenant.TenantId,
             request.LicitacaoId,
@@ -97,9 +110,12 @@ public sealed class CelebrarContratoHandler(
             request.Origem,
             request.Objeto,
             ValorMonetario.De(request.Valor),
+            dataAssinatura,
             request.VigenciaInicio,
             request.VigenciaFim,
             fornecedorImpedido,
+            prazoDivulgacao,
+            calendario,
             empenhoRef);
 
         contratos.Adicionar(contrato);

@@ -29,4 +29,12 @@ public interface IContratoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Contratos do fornecedor no tenant.</returns>
     Task<IReadOnlyList<Contrato>> ListarPorFornecedorAsync(Guid fornecedorId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Lista os contratos do tenant PENDENTES de divulgacao no PNCP (ainda nao publicados, nao extintos e
+    /// com prazo PNCP definido) — base do varredor de prazos a vencer/vencido (W9.1.d).
+    /// </summary>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Contratos aguardando divulgacao no PNCP.</returns>
+    Task<IReadOnlyList<Contrato>> ListarPendentesPublicacaoPncpAsync(CancellationToken cancellationToken);
 }

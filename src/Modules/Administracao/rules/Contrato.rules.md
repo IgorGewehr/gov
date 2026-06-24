@@ -14,9 +14,11 @@ fontes_legais:
   - "Lei 14.133/2021 art. 124 a 136 (alterações contratuais e reequilíbrio)"
   - "Lei 14.133/2021 art. 125 (limites de acréscimo/supressão: 25%; até 50% em reforma)"
   - "Lei 14.133/2021 art. 136 (apostilamento — alteração que dispensa termo aditivo)"
-  - "Lei 14.133/2021 art. 174 (PNCP — publicação como condição de eficácia)"
+  - "Lei 14.133/2021 art. 94 (divulgação no PNCP como CONDIÇÃO DE EFICÁCIA; prazos 20/10 d.u.; §3 obras 25/45 d.u.)"
+  - "Lei 14.133/2021 art. 174 (institui o PNCP — sítio oficial de divulgação)"
+  - "Lei 14.133/2021 art. 110 / art. 224 CPC (vencimento em dia não útil prorroga para o 1º dia útil)"
   - "LC 101/2000 (LRF — vinculação a dotação/crédito orçamentário)"
-  - "Decreto 11.462/2023 (PNCP)"
+  - "Decreto 10.764/2021 (gestão do PNCP; Decreto 11.462/2023 trata de SRP)"
 ---
 
 # Contrato — Regras-as-Code (Rules-as-Code)
@@ -25,9 +27,16 @@ fontes_legais:
 > `Licitacao` (ou de contratação direta por `Dispensa`/`Inexigibilidade`), sob a
 > **Lei 14.133/2021 (NLLC)**. Admite `Aditivo` (alteração quantitativa/qualitativa/de prazo,
 > limitado a **25%** — até **50%** em reforma), `Apostilamento` (reajuste/dotação, sem termo
-> aditivo) e `Garantia` de execução (**≤ 5%**, até **10%** em grande vulto). A **publicação no
-> PNCP é condição de eficácia** do contrato e de seus aditivos (art. 174) e sua **vigência**
-> depende de **crédito orçamentário** (art. 105–106; LRF). Este arquivo é **normativo e
+> aditivo) e `Garantia` de execução (**≤ 5%**, até **10%** em grande vulto). A **divulgação no
+> PNCP é condição de eficácia** do contrato e de seus aditivos (**art. 94** — o art. 174 apenas
+> institui o PNCP) e sua **vigência** depende de **crédito orçamentário** (art. 105–106; LRF).
+> **W9.1 — invariante de bloqueio:** contrato sem **número de controle PNCP** é **ineficaz** e
+> **NÃO sustenta empenho** (`PodeEmpenhar()` é fonte única da regra; o módulo Financas consulta
+> esse estado via `*.Contracts` ANTES de empenhar — fail-closed). A divulgação é transmitida pela
+> ACL `IPncpGateway` (que devolve o número de controle), com **relógio de prazo** do art. 94
+> (`PrazoPncp`/`PrazoLegal`/`ICalendarioDiasUteis`, dias úteis com feriados por tenant —
+> parametrizável, sem número mágico). Publicação fora do prazo é **intempestiva** mas não impede a
+> eficácia (subsídio de auditoria). Este arquivo é **normativo e
 > versionado**; o código de domínio, aplicação, persistência e testes do agregado `Contrato`
 > é **gerado e mantido a partir daqui**. Bug, ajuste ou nova regra ⇒ edita-se **este arquivo**;
 > o código é consequência.
@@ -508,11 +517,22 @@ Cada cenário vira teste de integração.
 | versao | data | mudança |
 |---|---|---|
 | 1.0.0 | 2026-06-21 | Versão inicial — derivada do README do módulo Administracao e da Lei 14.133/2021 (formalização, eficácia via PNCP art. 174, aditivos/apostilamento art. 125/136, garantia art. 96/98, vigência vinculada a crédito art. 105–106) e integração com Financas (empenho). |
+| 1.1.0 | 2026-06-24 | **W9.1 — PNCP bloqueante + calendário.** CORREÇÃO LEGAL: eficácia da divulgação é do **art. 94** (art. 174 apenas institui o PNCP); gestão do PNCP pelo **Dec. 10.764/2021** (o 11.462/2023 trata de SRP). Adicionados: VO `PrazoPncp` + `DataAssinatura` + prazo de divulgação (20 d.u. — `IPncpParametros`, parametrizável por tenant, usando `ICalendarioDiasUteis`); flag `PublicacaoPncpVencida` (tempestividade art. 94). ACL `IPncpGateway` (M9 SIMULADO/WireMock; transmissão real = M10) chamada pelo handler que enfileira no Outbox. **INVARIANTE DE BLOQUEIO**: contrato sem nº de controle PNCP **não empenha** (`Contrato.PodeEmpenhar`); Financas consulta via `IConsultaContratoParaEmpenho` (cross-module via Contracts, escopo dedicado) antes de empenhar — fail-closed. Eventos `PrazoPncpAVencer`/`PrazoPncpVencido` → Portal do Gestor (varredor `VarrerPrazosPncp`). |
+
+### Cenários W9.1 (BDD)
+- **P-1.** Empenho de despesa de contrato **sem** nº de controle PNCP ⇒ **bloqueado** (contrato ineficaz, art. 94). Fail-closed.
+- **P-2.** Empenho de contrato **divulgado** (com nº PNCP) e não extinto ⇒ permitido.
+- **P-3.** Empenho de contrato **encerrado/rescindido** ⇒ bloqueado (extinto).
+- **P-4.** Divulgação no PNCP **após** a data-limite (art. 94) ⇒ `PublicadoNoPncp = true` (eficaz) **e** `PublicacaoPncpVencida = true` (auditável), sem impedir a eficácia.
+- **P-5.** Contrato pendente de divulgação dentro da janela de antecedência ⇒ `PrazoPncpAVencerIntegrationEvent` ao Portal do Gestor (idempotente por `EventId`).
+- **P-6.** Contrato pendente de divulgação com prazo vencido ⇒ `PrazoPncpVencidoIntegrationEvent` ao Portal do Gestor.
 
 <!-- manifest
-commands: CelebrarContrato, PublicarContratoNoPncp, IniciarExecucaoContrato, CelebrarAditivo, ApostilarContrato, PrestarGarantia, EncerrarContrato, RescindirContrato
+commands: CelebrarContrato, PublicarContratoNoPncp, IniciarExecucaoContrato, CelebrarAditivo, ApostilarContrato, PrestarGarantia, EncerrarContrato, RescindirContrato, VarrerPrazosPncp
 queries: ObterContratoPorId, ListarContratosVigentes, ListarContratosPorFornecedor
 domainEvents: ContratoAssinado, ContratoPublicadoPncp, AditivoCelebrado, ContratoEncerrado, ContratoRescindido
-integrationEventsPublished: ContratoAssinadoIntegrationEvent, ContratoPublicadoPncpIntegrationEvent, AditivoCeleradoIntegrationEvent
+integrationEventsPublished: ContratoAssinadoIntegrationEvent, ContratoPublicadoPncpIntegrationEvent, AditivoCeleradoIntegrationEvent, PrazoPncpAVencerIntegrationEvent, PrazoPncpVencidoIntegrationEvent
 integrationEventsConsumed: EmpenhoEmitidoIntegrationEvent, DotacaoIndisponivelIntegrationEvent
+contractsPorts: IConsultaContratoParaEmpenho
+acl: IPncpGateway (M9 simulado/WireMock; transmissão real = M10)
 -->

@@ -43,9 +43,12 @@ public sealed class W106AchadosProcessoTests : AdministracaoTestBase
             "Reforma de edificio publico",
             ValorMonetario.De(valor),
             new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 1),
             new DateOnly(2026, 12, 31),
-            fornecedorImpedido: false);
-        contrato.PublicarContratoPncp("PNCP-CT-9001");
+            fornecedorImpedido: false,
+            PrazoDivulgacaoPadrao,
+            Calendario);
+        contrato.PublicarContratoPncp("PNCP-CT-9001", new DateOnly(2026, 1, 2));
         contrato.ConfirmarDotacao(EmpenhoRef.De(Guid.NewGuid(), "2026NE000099"));
         return contrato;
     }
@@ -97,8 +100,8 @@ public sealed class W106AchadosProcessoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, null, Guid.NewGuid(), OrigemContratacao.Dispensa, "Compra direta",
-            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1),
-            fornecedorImpedido: true);
+            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1),
+            fornecedorImpedido: true, PrazoDivulgacaoPadrao, Calendario);
 
         acao.Should().Throw<InvalidOperationException>()
             .WithMessage("*impeditiva*");

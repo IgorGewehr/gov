@@ -23,13 +23,16 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
             "Servicos de limpeza",
             ValorMonetario.De(valor),
             new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 1, 1),
             new DateOnly(2026, 12, 31),
-            fornecedorImpedido: false);
+            fornecedorImpedido: false,
+            PrazoDivulgacaoPadrao,
+            Calendario);
 
     private static Contrato ContratoEficaz(decimal valor = 100000m)
     {
         var contrato = NovoContratoLicitado(valor);
-        contrato.PublicarContratoPncp("PNCP-CT-0001");
+        contrato.PublicarContratoPncp("PNCP-CT-0001", new DateOnly(2026, 1, 2));
         contrato.ConfirmarDotacao(EmpenhoRef.De(Guid.NewGuid(), "2026NE000001"));
         return contrato;
     }
@@ -52,7 +55,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Licitacao, "  ",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false, PrazoDivulgacaoPadrao, Calendario);
 
         acao.Should().Throw<ArgumentException>();
     }
@@ -62,7 +65,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Licitacao, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 5, 1), new DateOnly(2026, 1, 1), fornecedorImpedido: false);
+            ValorMonetario.De(1m), new DateOnly(2026, 5, 1), new DateOnly(2026, 5, 1), new DateOnly(2026, 1, 1), fornecedorImpedido: false, PrazoDivulgacaoPadrao, Calendario);
 
         acao.Should().Throw<ArgumentException>();
     }
@@ -72,7 +75,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, null, Guid.NewGuid(), OrigemContratacao.Licitacao, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false, PrazoDivulgacaoPadrao, Calendario);
 
         acao.Should().Throw<InvalidOperationException>();
     }
@@ -82,7 +85,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var acao = () => Contrato.Celebrar(
             TenantA, Guid.NewGuid(), Guid.NewGuid(), OrigemContratacao.Dispensa, "Objeto",
-            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false);
+            ValorMonetario.De(1m), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), new DateOnly(2026, 2, 1), fornecedorImpedido: false, PrazoDivulgacaoPadrao, Calendario);
 
         acao.Should().Throw<InvalidOperationException>();
     }
@@ -92,7 +95,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     {
         var contrato = Contrato.Celebrar(
             TenantA, null, Guid.NewGuid(), OrigemContratacao.Dispensa, "Compra direta",
-            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1), fornecedorImpedido: false);
+            ValorMonetario.De(50000m), new DateOnly(2026, 1, 1), new DateOnly(2026, 1, 1), new DateOnly(2026, 6, 1), fornecedorImpedido: false, PrazoDivulgacaoPadrao, Calendario);
 
         contrato.Situacao.Should().Be(SituacaoContrato.Assinado);
         contrato.LicitacaoId.Should().BeNull();
@@ -111,7 +114,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
     public void Invariante_8_execucao_exige_dotacao()
     {
         var contrato = NovoContratoLicitado();
-        contrato.PublicarContratoPncp("PNCP-CT-0001");
+        contrato.PublicarContratoPncp("PNCP-CT-0001", new DateOnly(2026, 1, 2));
 
         ((Action)contrato.IniciarExecucao).Should().Throw<InvalidOperationException>();
     }
@@ -233,7 +236,7 @@ public sealed class ContratoFluxoTests : AdministracaoTestBase
         var contrato = NovoContratoLicitado();
         contrato.Situacao.Should().Be(SituacaoContrato.Assinado);
 
-        contrato.PublicarContratoPncp("PNCP-CT-0001");
+        contrato.PublicarContratoPncp("PNCP-CT-0001", new DateOnly(2026, 1, 2));
         contrato.Situacao.Should().Be(SituacaoContrato.Assinado); // so PNCP nao basta (I-8).
 
         contrato.ConfirmarDotacao(EmpenhoRef.De(Guid.NewGuid(), "2026NE000001"));

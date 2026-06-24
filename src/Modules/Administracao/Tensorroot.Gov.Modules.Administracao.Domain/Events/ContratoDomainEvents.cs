@@ -9,9 +9,9 @@ namespace Tensorroot.Gov.Modules.Administracao.Domain.Events;
 /// <param name="Valor">Valor global original do contrato.</param>
 public sealed record ContratoAssinado(ContratoId ContratoId, Guid FornecedorId, decimal Valor) : IDomainEvent;
 
-/// <summary>Contrato publicado no PNCP — condicao de eficacia (Lei 14.133/2021, art. 174).</summary>
+/// <summary>Contrato divulgado no PNCP — condicao de eficacia (Lei 14.133/2021, art. 94).</summary>
 /// <param name="ContratoId">Identificador do contrato.</param>
-/// <param name="NumeroContratoPncp">Identificador do contrato no PNCP.</param>
+/// <param name="NumeroContratoPncp">Numero de controle do contrato no PNCP.</param>
 public sealed record ContratoPublicadoPncp(ContratoId ContratoId, string NumeroContratoPncp) : IDomainEvent;
 
 /// <summary>Termo aditivo celebrado, respeitando o limite legal de alteracao (art. 125) — I-9/I-10.</summary>

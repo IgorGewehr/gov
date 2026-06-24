@@ -1,7 +1,9 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Configurations;
 
@@ -23,6 +25,18 @@ public sealed class ContratoConfiguration : IEntityTypeConfiguration<Contrato>
         builder.Property(contrato => contrato.OrigemContratacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(contrato => contrato.Situacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(contrato => contrato.NumeroContratoPncp).HasMaxLength(60);
+
+        // W9.1: marco inicial do prazo PNCP (art. 94) + flag de intempestividade da divulgacao.
+        builder.Property(contrato => contrato.DataAssinatura);
+        builder.Property(contrato => contrato.PublicacaoPncpVencida);
+
+        // Prazo de divulgacao no PNCP (VO PrazoPncp) — serializado em coluna unica, nullable (legados sem
+        // prazo). Reidratado por PrazoPncp.Reidratar a partir dos valores ja resolvidos (sem reler o
+        // calendario): o vencimento persistido e a fonte de verdade do ato praticado na celebracao.
+        builder.Property(contrato => contrato.PrazoPublicacaoPncp)
+            .HasColumnName("PrazoPublicacaoPncp")
+            .HasMaxLength(120)
+            .HasConversion(prazo => SerializarPrazoPncp(prazo), valor => DesserializarPrazoPncp(valor));
 
         builder.Property(contrato => contrato.ValorContratado)
             .HasConversion(valor => valor.Valor, valor => ValorMonetario.De(valor))
@@ -71,6 +85,40 @@ public sealed class ContratoConfiguration : IEntityTypeConfiguration<Contrato>
         var empenhoId = Guid.Parse(valor[..separador]);
         var numeroEmpenho = valor[(separador + 1)..];
         return EmpenhoRef.De(empenhoId, numeroEmpenho);
+    }
+
+    // Formato: "{tipo}|{dataAssinatura:O}|{quantidade}|{unidade}|{dataLimite:O}|{normaFonte}".
+    // A norma-fonte vai por ultimo (pode conter '|'? nao; mas split com count limita o risco).
+    private const char SeparadorPrazo = '|';
+
+    private static string? SerializarPrazoPncp(PrazoPncp? prazo)
+        => prazo is null
+            ? null
+            : string.Join(
+                SeparadorPrazo,
+                (int)prazo.Tipo,
+                prazo.DataAssinatura.ToString("O", CultureInfo.InvariantCulture),
+                prazo.Prazo.Quantidade,
+                (int)prazo.Prazo.Unidade,
+                prazo.DataLimitePublicacao.ToString("O", CultureInfo.InvariantCulture),
+                prazo.NormaFonte);
+
+    private static PrazoPncp? DesserializarPrazoPncp(string? valor)
+    {
+        if (string.IsNullOrEmpty(valor))
+        {
+            return null;
+        }
+
+        // Limita a 6 segmentos para preservar a norma-fonte intacta no ultimo campo.
+        var partes = valor.Split(SeparadorPrazo, 6);
+        var tipo = (TipoPrazoPncp)int.Parse(partes[0], CultureInfo.InvariantCulture);
+        var dataAssinatura = DateOnly.Parse(partes[1], CultureInfo.InvariantCulture);
+        var quantidade = int.Parse(partes[2], CultureInfo.InvariantCulture);
+        var unidade = (UnidadePrazo)int.Parse(partes[3], CultureInfo.InvariantCulture);
+        var dataLimite = DateOnly.Parse(partes[4], CultureInfo.InvariantCulture);
+        var normaFonte = partes[5];
+        return PrazoPncp.Reidratar(tipo, dataAssinatura, quantidade, unidade, dataLimite, normaFonte);
     }
 
     private static void MapearAditivos(OwnedNavigationBuilder<Contrato, Aditivo> aditivos)

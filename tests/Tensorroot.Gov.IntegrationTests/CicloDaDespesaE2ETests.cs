@@ -54,9 +54,9 @@ public sealed class CicloDaDespesaE2ETests(ApiHostFixture fixture)
 
             var loteId = licitacao.AdicionarLote(1, "Lote unico - desktops", ValorMonetario.De(100_000m));
             var propostaId = licitacao.RegistrarProposta(fornecedorId, loteId, ValorMonetario.De(90_000m));
-            licitacao.HabilitarLicitante(fornecedorId, ResultadoHabilitacao.Habilitado, "Documentacao regular", DateTimeOffset.UtcNow);
+            licitacao.HabilitarLicitante(fornecedorId, ResultadoHabilitacao.Habilitado, "Documentacao regular", DateTimeOffset.UtcNow, fornecedorImpedido: false);
             licitacao.JulgarPropostas(propostaId.Value);
-            licitacao.Homologar();
+            licitacao.Homologar(fornecedorVencedorImpedido: false);
 
             licitacoes.Adicionar(licitacao);
             await uow.SaveChangesAsync(CancellationToken.None);

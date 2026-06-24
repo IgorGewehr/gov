@@ -73,9 +73,24 @@ internal static class AdministracaoEndpoints
         grupo.MapPost("/contratos/{contratoId:guid}/contrato-pncp", async (
             Guid contratoId, PublicarContratoPncpPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new PublicarContratoNoPncpCommand(contratoId, payload.NumeroContratoPncp), cancellationToken);
+            // W9.1: o numero de controle NAO vem mais do cliente — a ACL (IPncpGateway) transmite e devolve.
+            await sender.Send(
+                new PublicarContratoNoPncpCommand(
+                    contratoId,
+                    payload.CnpjOrgao,
+                    payload.CodigoUnidade,
+                    payload.NumeroContratoInterno,
+                    payload.DocumentoFornecedor),
+                cancellationToken);
             return Results.NoContent();
         }).RequirePermission("administracao.gerenciar");
+
+        // W9.1.d: varredura dos prazos de divulgacao no PNCP (art. 94) -> alertas ao Portal do Gestor.
+        // Acionada por scheduler/worker (idempotente; alertas viajam pelo Outbox).
+        grupo.MapPost("/contratos/prazos-pncp/varrer", async (
+            ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { alertas = await sender.Send(new VarrerPrazosPncpCommand(), cancellationToken) }))
+            .RequirePermission("administracao.gerenciar");
 
         grupo.MapPost("/contratos/{contratoId:guid}/iniciar-execucao", async (
             Guid contratoId, ISender sender, CancellationToken cancellationToken) =>
@@ -149,7 +164,11 @@ internal static class AdministracaoEndpoints
 
     private sealed record JulgarPropostasPayload(Guid PropostaVencedoraId);
 
-    private sealed record PublicarContratoPncpPayload(string NumeroContratoPncp);
+    private sealed record PublicarContratoPncpPayload(
+        string CnpjOrgao,
+        string CodigoUnidade,
+        string NumeroContratoInterno,
+        string DocumentoFornecedor);
 
     private sealed record AplicarSancaoPayload(
         Domain.Fornecedores.TipoSancao Tipo,

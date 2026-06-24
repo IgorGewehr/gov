@@ -6,6 +6,8 @@
     <ProjectReference Include="../../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
     <!-- Integração cross-module: SOMENTE via Contracts (guardado por NetArchTest). -->
     <ProjectReference Include="../../Tributos/Tensorroot.Gov.Modules.Tributos.Contracts/Tensorroot.Gov.Modules.Tributos.Contracts.csproj" />
+    <!-- W9.1: invariante de bloqueio — checa o status PNCP do contrato antes do empenho (via Contracts). -->
+    <ProjectReference Include="../../Administracao/Tensorroot.Gov.Modules.Administracao.Contracts/Tensorroot.Gov.Modules.Administracao.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
