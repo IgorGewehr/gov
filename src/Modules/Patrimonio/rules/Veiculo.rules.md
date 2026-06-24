@@ -302,6 +302,8 @@ Eventos **emitidos pela raiz `Veiculo`** (frota):
 | `ManutencaoConcluida` | `(VeiculoId, ManutencaoOsId OrdemServicoId, decimal CustoRealizado)` | `Veiculo.ConcluirManutencao` |
 | `MultaRegistrada` | `(VeiculoId, string CodigoInfracaoCtb, decimal Valor, DateOnly DataInfracao)` | `Veiculo.RegistrarMulta` |
 | `VeiculoDepreciado` | `(VeiculoId, decimal ValorDepreciado, DateOnly Competencia)` | `Veiculo.Depreciar` (BUG-P4) |
+| `VeiculoReavaliado` | `(VeiculoId, decimal NovoValorContabil)` | `Veiculo.Reavaliar` / `Veiculo.RegistrarImpairment` (W10.6) |
+| `VeiculoBaixado` | `(VeiculoId, string Motivo, decimal ValorContabil)` | `Veiculo.Baixar` / `Veiculo.Alienar` (W10.6) |
 
 > Os eventos patrimoniais (`BemIncorporado`, `BemTombado`, `BemDepreciado`, `BemBaixado`, `BemReavaliado`)
 > são emitidos pelo agregado `BemPatrimonial` **vinculado** (vide `BemPatrimonial.rules.md`), **não** pelo
@@ -526,7 +528,7 @@ Cada cenário vira teste de integração.
 <!-- manifest
 commands: IncorporarVeiculo, TombarVeiculo, RegistrarAbastecimento, AbrirOrdemServico, ConcluirManutencao, RegistrarMulta, RegistrarLicenciamento, DesignarMotorista
 queries: ObterVeiculo, ListarAbastecimentosDoVeiculo, ListarMultasPendentes, ListarLicenciamentosPendentes, BuscarVeiculos, ObterPainelFrota, ObterCustoPorVeiculo, ListarCnhVencendo, ListarManutencoesAbertas
-domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada, VeiculoDepreciado
+domainEvents: AbastecimentoRegistrado, ManutencaoConcluida, MultaRegistrada, VeiculoDepreciado, VeiculoReavaliado, VeiculoBaixado
 integrationEventsPublished: BemIncorporadoIntegrationEvent, BemDepreciadoIntegrationEvent, BemBaixadoIntegrationEvent, BemReavaliadoIntegrationEvent
 integrationEventsConsumed: ContratoAssinadoIntegrationEvent
 -->

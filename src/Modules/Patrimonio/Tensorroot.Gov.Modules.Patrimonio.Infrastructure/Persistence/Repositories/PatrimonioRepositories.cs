@@ -245,15 +245,39 @@ public sealed class VeiculoRepository(PatrimonioDbContext context) : IVeiculoRep
 
                 // Km rodados no período: diferença entre o maior e o menor odômetro dos abastecimentos
                 // do período (proxy de operação; consumo só é determinável com >= 2 abastecimentos e litros > 0).
+                //
+                // Consumo médio pelo método tank-to-tank: o 1º abastecimento (menor odômetro) apenas FIXA o
+                // odômetro inicial da janela — seu combustível foi queimado ANTES do trecho medido (Max − Min),
+                // logo NÃO entra no denominador. Somar todos os litros subestima sistematicamente o km/L.
+                // Denominador correto = litros dos abastecimentos a partir do 2º (todos exceto o do menor odômetro).
                 var kmRodados = 0;
                 decimal? consumo = null;
+                var litrosConsumo = 0m;
                 if (abastecimentos.Count >= 2)
                 {
                     var odometros = abastecimentos.Select(a => a.Odometro.Valor).ToList();
-                    kmRodados = odometros.Max() - odometros.Min();
-                    if (litros > 0m && kmRodados > 0)
+                    var odometroInicial = odometros.Min();
+                    kmRodados = odometros.Max() - odometroInicial;
+
+                    // Exclui exatamente um abastecimento — o que define o odômetro inicial da janela.
+                    // Em empate de odômetro no menor valor, remove apenas a primeira ocorrência para não
+                    // descartar litros de abastecimentos legítimos distintos.
+                    litrosConsumo = litros;
+                    var primeiroNoOdometroInicial = abastecimentos
+                        .FirstOrDefault(a => a.Odometro.Valor == odometroInicial);
+                    if (primeiroNoOdometroInicial is not null)
                     {
-                        consumo = Math.Round(kmRodados / litros, 2);
+                        litrosConsumo -= primeiroNoOdometroInicial.Litros;
+                    }
+
+                    if (litrosConsumo < 0m)
+                    {
+                        litrosConsumo = 0m;
+                    }
+
+                    if (litrosConsumo > 0m && kmRodados > 0)
+                    {
+                        consumo = Math.Round(kmRodados / litrosConsumo, 2);
                     }
                 }
 
@@ -266,7 +290,8 @@ public sealed class VeiculoRepository(PatrimonioDbContext context) : IVeiculoRep
                     gastoManutencao,
                     gastoMultas,
                     kmRodados,
-                    consumo);
+                    consumo,
+                    litrosConsumo);
             })
             .OrderByDescending(linha => linha.CustoTotal)
             .ToList();

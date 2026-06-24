@@ -108,7 +108,7 @@ public sealed class FarmaciaImunizacaoDominioTests
         // Esquema de 2 doses, intervalo de 60 dias.
         var hepatiteB = Imunobiologico.Cadastrar(Tenant, "Hepatite B", "HB", totalDoses: 2, intervaloDiasProximaDose: 60, doseUnica: false);
 
-        var dose = carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, numeroDose: 1, "LOTE-VAC-1", new ProfissionalId(Guid.NewGuid()), Hoje);
+        var dose = carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, numeroDose: 1, "LOTE-VAC-1", new ProfissionalId(Guid.NewGuid()), Hoje, Hoje);
 
         carteira.Doses.Should().HaveCount(1);
         dose.NumeroDose.Should().Be(1);
@@ -123,8 +123,8 @@ public sealed class FarmaciaImunizacaoDominioTests
         var hepatiteB = Imunobiologico.Cadastrar(Tenant, "Hepatite B", "HB", totalDoses: 2, intervaloDiasProximaDose: 60, doseUnica: false);
         var prof = new ProfissionalId(Guid.NewGuid());
 
-        carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, 1, "L1", prof, Hoje);
-        var segunda = carteira.RegistrarDose(hepatiteB, TipoDose.Segunda, 2, "L2", prof, Hoje.AddDays(60));
+        carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, 1, "L1", prof, Hoje, Hoje);
+        var segunda = carteira.RegistrarDose(hepatiteB, TipoDose.Segunda, 2, "L2", prof, Hoje.AddDays(60), Hoje.AddDays(60));
 
         segunda.ProximaDoseAprazada.Should().BeNull("a ultima dose do esquema nao gera aprazamento");
         carteira.SituacaoPara(hepatiteB, Hoje.AddDays(60)).Should().Be(SituacaoVacinal.Completo);
@@ -136,7 +136,7 @@ public sealed class FarmaciaImunizacaoDominioTests
         var carteira = CarteiraVacinacao.Abrir(Tenant, new PacienteId(Guid.NewGuid()));
         var hepatiteB = Imunobiologico.Cadastrar(Tenant, "Hepatite B", "HB", totalDoses: 2, intervaloDiasProximaDose: 30, doseUnica: false);
 
-        carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, 1, "L1", new ProfissionalId(Guid.NewGuid()), Hoje);
+        carteira.RegistrarDose(hepatiteB, TipoDose.Primeira, 1, "L1", new ProfissionalId(Guid.NewGuid()), Hoje, Hoje);
 
         // Passados 45 dias, o aprazamento (Hoje+30) ja venceu e a 2a dose nao foi aplicada.
         var vencidos = carteira.AprazamentosVencidos(Hoje.AddDays(45));
@@ -150,8 +150,35 @@ public sealed class FarmaciaImunizacaoDominioTests
         var carteira = CarteiraVacinacao.Abrir(Tenant, new PacienteId(Guid.NewGuid()));
         var doseUnica = Imunobiologico.Cadastrar(Tenant, "Febre Amarela", "FA", totalDoses: 1, intervaloDiasProximaDose: 0, doseUnica: true);
 
-        var acao = () => carteira.RegistrarDose(doseUnica, TipoDose.Segunda, 2, "L1", new ProfissionalId(Guid.NewGuid()), Hoje);
+        var acao = () => carteira.RegistrarDose(doseUnica, TipoDose.Segunda, 2, "L1", new ProfissionalId(Guid.NewGuid()), Hoje, Hoje);
 
         acao.Should().Throw<InvalidOperationException>().WithMessage("*excede o esquema*");
+    }
+
+    [Fact]
+    public void Nao_registra_dose_fora_de_ordem_sem_a_anterior()
+    {
+        // SA-3 (I-IMUN-3): a 2a dose exige que a 1a ja exista no esquema.
+        var carteira = CarteiraVacinacao.Abrir(Tenant, new PacienteId(Guid.NewGuid()));
+        var hepatiteB = Imunobiologico.Cadastrar(Tenant, "Hepatite B", "HB", totalDoses: 3, intervaloDiasProximaDose: 60, doseUnica: false);
+
+        var acao = () => carteira.RegistrarDose(hepatiteB, TipoDose.Segunda, 2, "L2", new ProfissionalId(Guid.NewGuid()), Hoje, Hoje);
+
+        acao.Should().Throw<InvalidOperationException>().WithMessage("*fora de ordem*");
+        carteira.Doses.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Nao_registra_dose_com_data_futura()
+    {
+        // SA-4 (I-IMUN-4): data de aplicacao maior que a referencia (hoje) e recusada (fail-closed).
+        var carteira = CarteiraVacinacao.Abrir(Tenant, new PacienteId(Guid.NewGuid()));
+        var hepatiteB = Imunobiologico.Cadastrar(Tenant, "Hepatite B", "HB", totalDoses: 2, intervaloDiasProximaDose: 60, doseUnica: false);
+
+        var acao = () => carteira.RegistrarDose(
+            hepatiteB, TipoDose.Primeira, 1, "L1", new ProfissionalId(Guid.NewGuid()), Hoje.AddDays(1), Hoje);
+
+        acao.Should().Throw<InvalidOperationException>().WithMessage("*nao pode ser futura*");
+        carteira.Doses.Should().BeEmpty();
     }
 }

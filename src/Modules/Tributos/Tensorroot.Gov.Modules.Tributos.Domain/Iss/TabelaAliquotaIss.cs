@@ -38,12 +38,13 @@ public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMus
     {
     }
 
-    private TabelaAliquotaIss(TabelaAliquotaIssId id, Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal)
+    private TabelaAliquotaIss(TabelaAliquotaIssId id, Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal, string? municipioIbge)
         : base(id)
     {
         TenantId = tenantId;
         VigenciaInicioAaaaMm = vigenciaInicioAaaaMm;
         FundamentoLegal = fundamentoLegal;
+        MunicipioIbge = municipioIbge;
         Vigente = false;
         RaiseDomainEvent(new TabelaAliquotaIssCriada(id, tenantId, vigenciaInicioAaaaMm));
     }
@@ -60,6 +61,17 @@ public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMus
     /// </summary>
     public string FundamentoLegal { get; private set; } = default!;
 
+    /// <summary>
+    /// Código IBGE (7 dígitos) do município do tenant — o município competente para o ISS sob esta
+    /// lei municipal (LC 116/2003 art. 3º). É o parâmetro de confronto com o
+    /// <see cref="Nfse.NotaFiscalServico.MunicipioIncidenciaIbge"/> da nota: quando a nota declara
+    /// incidência em OUTRO município (exceções art. 3º), a apuração recusa lançá-la como ISS próprio
+    /// (fail-closed). Opcional/parametrizável por tenant: quando não informado, o confronto não é
+    /// aplicado (comportamento legado preservado). // TODO(validar-oficial): preencher com o código
+    /// IBGE de Maximiliano de Almeida/RS (4311981) na implantação do tenant.
+    /// </summary>
+    public string? MunicipioIbge { get; private set; }
+
     /// <summary>Indica se a tabela está vigente (publicada e imutável).</summary>
     public bool Vigente { get; private set; }
 
@@ -70,12 +82,14 @@ public sealed class TabelaAliquotaIss : AggregateRoot<TabelaAliquotaIssId>, IMus
     /// <param name="tenantId">Tenant dono do registro.</param>
     /// <param name="vigenciaInicioAaaaMm">Início de vigência (AAAAMM).</param>
     /// <param name="fundamentoLegal">Lei municipal de alíquotas do ISS.</param>
+    /// <param name="municipioIbge">Código IBGE (7 dígitos) do município do tenant (LC 116 art. 3º); opcional.</param>
     /// <returns>Nova <see cref="TabelaAliquotaIss"/>.</returns>
-    public static TabelaAliquotaIss Criar(Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal)
+    public static TabelaAliquotaIss Criar(Guid tenantId, int vigenciaInicioAaaaMm, string fundamentoLegal, string? municipioIbge = null)
     {
         GarantirCompetenciaValida(vigenciaInicioAaaaMm);
         ArgumentException.ThrowIfNullOrWhiteSpace(fundamentoLegal);
-        return new TabelaAliquotaIss(TabelaAliquotaIssId.New(), tenantId, vigenciaInicioAaaaMm, fundamentoLegal.Trim());
+        var ibge = string.IsNullOrWhiteSpace(municipioIbge) ? null : municipioIbge.Trim();
+        return new TabelaAliquotaIss(TabelaAliquotaIssId.New(), tenantId, vigenciaInicioAaaaMm, fundamentoLegal.Trim(), ibge);
     }
 
     /// <summary>Acrescenta (ou rejeita duplicata de) um item de alíquota por item da lista LC 116.</summary>

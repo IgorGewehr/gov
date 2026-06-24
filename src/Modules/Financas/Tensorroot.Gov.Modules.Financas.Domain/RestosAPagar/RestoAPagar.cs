@@ -188,14 +188,32 @@ public sealed class RestoAPagar : AggregateRoot<RestoAPagarId>, IMustHaveTenant
         RaiseDomainEvent(new RestoAPagarPago(Id, valor.Valor));
     }
 
-    /// <summary>Cancela parcela do Resto a Pagar (por prazo/normas locais).</summary>
+    /// <summary>
+    /// Cancela parcela do Resto a Pagar por prazo/decadência (Decreto 93.872/86 e normas
+    /// TCE-RS). A janela legal é validada contra a <paramref name="politicaPrazo"/>
+    /// parametrizável por tenant — fail-closed: cancelamento fora da vigência é rejeitado.
+    /// </summary>
     /// <param name="valor">Valor a cancelar.</param>
+    /// <param name="dataReferencia">Data de referência do cancelamento (competência).</param>
+    /// <param name="politicaPrazo">Política de prazo/decadência configurada pelo tenant.</param>
+    /// <exception cref="ArgumentNullException">Se <paramref name="politicaPrazo"/> for nulo.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Se exceder o saldo a pagar.</exception>
-    // TODO(revisao-contabil): regra de cancelamento de RAP por prazo (Decreto 93.872/86 e normas
-    // locais TCE-RS) — prazo parametrizavel por tenant, nao hardcoded.
-    public void Cancelar(ValorMonetario valor)
+    /// <exception cref="PrazoCancelamentoRestoAPagarException">Se o cancelamento ocorrer fora da janela legal.</exception>
+    public void Cancelar(ValorMonetario valor, DateOnly dataReferencia, PoliticaPrazoRestoAPagar politicaPrazo)
     {
         ArgumentNullException.ThrowIfNull(valor);
+        ArgumentNullException.ThrowIfNull(politicaPrazo);
+
+        // Fail-closed: cancelamento por prazo só é admitido dentro da janela de vigência
+        // (do exercício de inscrição até o exercício-limite de decadência, inclusive),
+        // conforme prazo parametrizável por tenant.
+        var exercicioReferencia = dataReferencia.Year;
+        var exercicioLimite = politicaPrazo.ExercicioLimiteVigencia(ExercicioInscricao, Classificacao);
+        if (exercicioReferencia < ExercicioInscricao || exercicioReferencia > exercicioLimite)
+        {
+            throw new PrazoCancelamentoRestoAPagarException(exercicioReferencia, exercicioLimite);
+        }
+
         if (valor.EhMaiorQue(SaldoAPagar))
         {
             throw new ArgumentOutOfRangeException(nameof(valor), "Valor a cancelar excede o saldo a pagar.");

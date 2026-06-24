@@ -58,11 +58,13 @@ public sealed class PainelFrotaTests : PatrimonioTestBase
         custo.ConsumoMedioKmL.Should().BeNull("consumo so e determinavel com >= 2 abastecimentos");
     }
 
-    [Fact] // Consumo medio com >= 2 abastecimentos = (maxOdometro - minOdometro) / litros.
+    [Fact] // Consumo medio tank-to-tank: (maxOdometro - minOdometro) / litros DO 2o abastecimento em diante.
     public async Task Consumo_com_dois_abastecimentos_calcula_km_por_litro()
     {
         var veiculo = VeiculoTombado("12345678900", "ABC1D23");
-        // 50000 -> 50400 = 400 km rodados; 50 L => 8,0 km/L.
+        // 50000 -> 50400 = 400 km rodados. O 1o abastecimento (50 L @ 50000) apenas fixa o odometro
+        // inicial — seu combustivel queimou ANTES do trecho medido. O 2o abastecimento (50 L @ 50400)
+        // reabasteceu os 400 km => 400 km / 50 L = 8,0 km/L.
         veiculo.RegistrarAbastecimento(InicioPeriodo, 50m, ValorMonetario.De(300m), 50000, 1010m, 100m, null);
         veiculo.RegistrarAbastecimento(InicioPeriodo.AddDays(5), 50m, ValorMonetario.De(300m), 50400, 1020m, 100m, null);
 
@@ -75,9 +77,9 @@ public sealed class PainelFrotaTests : PatrimonioTestBase
             new ObterCustoPorVeiculoQuery(veiculo.Id.Value, InicioPeriodo, FimPeriodo), default);
 
         custo.Should().NotBeNull();
-        custo!.LitrosAbastecidos.Should().Be(100m);
+        custo!.LitrosAbastecidos.Should().Be(100m, "litros totais abastecidos no periodo (lado custo) somam os dois");
         custo.KmRodados.Should().Be(400);
-        custo.ConsumoMedioKmL.Should().Be(4.0m, "400 km / 100 L = 4,0 km/L");
+        custo.ConsumoMedioKmL.Should().Be(8.0m, "400 km / 50 L (litros do 2o abastecimento) = 8,0 km/L");
     }
 
     [Fact] // Painel agrega custo total = combustivel + manutencao (OS concluida no periodo) + multas.
@@ -103,7 +105,7 @@ public sealed class PainelFrotaTests : PatrimonioTestBase
         painel.GastoMultas.Should().Be(195m);
         painel.GastoTotal.Should().Be(600m + 450m + 195m);
         painel.LitrosTotais.Should().Be(100m);
-        painel.ConsumoMedioFrotaKmL.Should().Be(4.0m);
+        painel.ConsumoMedioFrotaKmL.Should().Be(8.0m, "tank-to-tank: 400 km / 50 L (2o abastecimento) = 8,0 km/L");
     }
 
     [Fact] // Custos fora do periodo nao entram na agregacao (filtro de datas).

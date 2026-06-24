@@ -28,3 +28,14 @@ public sealed record MultaRegistrada(VeiculoId VeiculoId, string CodigoInfracaoC
 /// <param name="ValorDepreciado">Valor depreciado na competência.</param>
 /// <param name="Competencia">Mês/ano de referência do reconhecimento.</param>
 public sealed record VeiculoDepreciado(VeiculoId VeiculoId, decimal ValorDepreciado, DateOnly Competencia) : IDomainEvent;
+
+/// <summary>Veículo reavaliado/impairment ao valor justo informado (efeito prospectivo na depreciação).</summary>
+/// <param name="VeiculoId">Identificador do veículo.</param>
+/// <param name="NovoValorContabil">Novo valor contábil resultante.</param>
+public sealed record VeiculoReavaliado(VeiculoId VeiculoId, decimal NovoValorContabil) : IDomainEvent;
+
+/// <summary>Veículo baixado/alienado do acervo (saída contábil; cessa a depreciação).</summary>
+/// <param name="VeiculoId">Identificador do veículo.</param>
+/// <param name="Motivo">Motivo da baixa/alienação.</param>
+/// <param name="ValorContabil">Valor contábil na saída.</param>
+public sealed record VeiculoBaixado(VeiculoId VeiculoId, string Motivo, decimal ValorContabil) : IDomainEvent;

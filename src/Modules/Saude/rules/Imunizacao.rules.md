@@ -15,6 +15,8 @@ do imunobiológico reusando o `EstoqueMedicamento` da Farmácia. A carteira é *
 - Cada aplicação registra a dose na carteira do paciente e, quando o esquema prevê dose seguinte,
   calcula o **aprazamento** (data prevista) que passa a constar na carteira.
 - Não registra dose além do nº de doses do esquema do imunobiológico.
+- O esquema progride **em ordem**: a dose N só é aceita se a dose N-1 do mesmo imunobiológico já existe (recusa dose fora de ordem).
+- A **data de aplicação não pode ser futura** (maior que a referência de hoje) — registro com data impossível é recusado (fail-closed).
 - Aplicação com baixa de estoque respeita as invariantes da Farmácia (saldo válido, FEFO).
 - Aprazamento vencido (data prevista < hoje) entra na busca ativa por estabelecimento.
 

@@ -23,6 +23,7 @@ public sealed class TabelaAliquotaIssConfiguration : IEntityTypeConfiguration<Ta
 
         builder.Property(tabela => tabela.VigenciaInicioAaaaMm);
         builder.Property(tabela => tabela.FundamentoLegal).HasMaxLength(300).IsRequired();
+        builder.Property(tabela => tabela.MunicipioIbge).HasMaxLength(7);
         builder.Property(tabela => tabela.Vigente);
 
         builder.HasMany(tabela => tabela.Itens).WithOne().HasForeignKey(i => i.TabelaAliquotaIssId).OnDelete(DeleteBehavior.Cascade);

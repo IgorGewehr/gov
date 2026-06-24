@@ -20,6 +20,17 @@ public sealed class NotaFiscalServicoRepository(TributosDbContext context) : INo
     }
 
     /// <inheritdoc />
+    public Task<NotaFiscalServico?> ObterPorChaveAsync(string chaveAcesso, CancellationToken cancellationToken)
+    {
+        // IS-6 — Mesma defesa em profundidade da dedup: filtro EXPLICITO por TenantId (alem do Global
+        // Query Filter) ao buscar a nota para mutacao (cancelar/substituir), garantindo que um evento
+        // do ADN nunca alcance a nota de outro tenant com a mesma chave de acesso.
+        var tenantId = context.CurrentTenantId;
+        return context.NotasFiscaisServico
+            .FirstOrDefaultAsync(nota => nota.TenantId == tenantId && nota.ChaveAcesso == chaveAcesso, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public void Adicionar(NotaFiscalServico nota)
     {
         ArgumentNullException.ThrowIfNull(nota);

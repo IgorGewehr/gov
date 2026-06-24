@@ -48,3 +48,18 @@ public sealed class SaldoLiquidacaoInsuficienteException : SaldoInsuficienteExce
     {
     }
 }
+
+/// <summary>
+/// Lançada ao tentar cancelar um Resto a Pagar fora da janela legal de prazo/decadência
+/// (Decreto 93.872/86 e normas TCE-RS, parametrizável por tenant). Fail-closed.
+/// </summary>
+public sealed class PrazoCancelamentoRestoAPagarException : InvalidOperationException
+{
+    /// <summary>Cria a exceção com o contexto do prazo violado.</summary>
+    /// <param name="exercicioReferencia">Exercício da data de referência do cancelamento.</param>
+    /// <param name="exercicioLimiteVigencia">Último exercício de vigência do RAP.</param>
+    public PrazoCancelamentoRestoAPagarException(int exercicioReferencia, int exercicioLimiteVigencia)
+        : base($"Cancelamento de Resto a Pagar fora da janela legal: exercicio de referencia {exercicioReferencia} excede o limite de vigencia {exercicioLimiteVigencia}.")
+    {
+    }
+}

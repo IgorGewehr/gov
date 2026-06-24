@@ -15,6 +15,7 @@ using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Motor;
 using Tensorroot.Gov.Modules.Financas.Application.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Application.Planejamento.Compatibilidade;
 using Tensorroot.Gov.Modules.Financas.Application.Planejamento.Lrf;
+using Tensorroot.Gov.Modules.Financas.Application.RestosAPagar;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.ReadModels;
@@ -71,6 +72,11 @@ public sealed class FinancasModule : IModule
         var opcoesLrf = new OpcoesPlanejamentoLrf();
         configuration.GetSection(OpcoesPlanejamentoLrf.SecaoConfig).Bind(opcoesLrf);
         services.AddSingleton(opcoesLrf);
+
+        // Opcoes de prazo (decadencia) de cancelamento de RAP, parametrizaveis por tenant/config.
+        var opcoesRestosAPagar = new OpcoesRestosAPagar();
+        configuration.GetSection(OpcoesRestosAPagar.SecaoConfig).Bind(opcoesRestosAPagar);
+        services.AddSingleton(opcoesRestosAPagar);
         services.AddScoped<ILiquidacaoRepository, LiquidacaoRepository>();
         services.AddScoped<IOrdemDePagamentoRepository, OrdemDePagamentoRepository>();
         services.AddScoped<IRestoAPagarRepository, RestoAPagarRepository>();

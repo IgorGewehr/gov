@@ -82,6 +82,8 @@ public sealed class RegistrarDoseHandler(
             throw new InvalidOperationException("Imunobiologico inativo no catalogo.");
         }
 
+        var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
         var carteira = await carteiras.ObterPorPacienteAsync(pacienteId, cancellationToken).ConfigureAwait(false);
         if (carteira is null)
         {
@@ -92,7 +94,6 @@ public sealed class RegistrarDoseHandler(
         // Baixa de estoque do imunobiologico (1 dose), quando vinculado e o estabelecimento informado.
         if (imunobiologico.MedicamentoEstoqueId is { } medicamentoId && request.EstabelecimentoId is { } estabId)
         {
-            var hoje = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
             var estoque = await estoques
                 .ObterPorEstabelecimentoEMedicamentoAsync(
                     new DomainEstabelecimentoId(estabId), medicamentoId, cancellationToken)
@@ -109,7 +110,8 @@ public sealed class RegistrarDoseHandler(
             request.NumeroDose,
             request.Lote,
             new DomainProfissionalId(request.AplicadorId),
-            request.DataAplicacao);
+            request.DataAplicacao,
+            hoje);
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return carteira.Id.Value;

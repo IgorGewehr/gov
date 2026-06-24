@@ -76,6 +76,22 @@ public static class CalculadoraIss
             throw new InvalidOperationException($"A NFS-e {nota.ChaveAcesso} está {nota.Situacao} e não entra na apuração do ISS.");
         }
 
+        // T-W2 — LC 116/2003 art. 3º: o ISS é devido ao município do LOCAL da prestação. Quando a nota
+        // declara incidência em município DIFERENTE do tenant (exceções dos incisos I-XXV), o serviço NÃO
+        // é tributável aqui — recusamos lançá-lo como ISS próprio (fail-closed), evitando glosa e conflito
+        // de competência. O confronto só ocorre quando AMBOS os códigos IBGE estão informados: o do tenant
+        // (TabelaAliquotaIss.MunicipioIbge, parametrizável) e o da nota (ADN). Sem isso, mantém-se o
+        // comportamento legado (latente), pois o município de incidência pode não vir no leiaute.
+        if (!string.IsNullOrWhiteSpace(tabela.MunicipioIbge)
+            && !string.IsNullOrWhiteSpace(nota.MunicipioIncidenciaIbge)
+            && !string.Equals(tabela.MunicipioIbge, nota.MunicipioIncidenciaIbge, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"A NFS-e {nota.ChaveAcesso} tem incidência no município IBGE {nota.MunicipioIncidenciaIbge}, " +
+                $"distinto do município do tenant ({tabela.MunicipioIbge}). O ISS é devido a outro município " +
+                "(LC 116/2003 art. 3º) e não pode ser apurado/lançado como ISS próprio.");
+        }
+
         var item = tabela.ObterItem(nota.ItemListaServico)
             ?? throw new InvalidOperationException(
                 $"A tabela de ISS vigente não define alíquota para o item da lista '{nota.ItemListaServico}' (LC 116). Parametrize a lei municipal.");

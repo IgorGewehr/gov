@@ -14,6 +14,12 @@ namespace Tensorroot.Gov.Modules.Tributos.Application.Nfse;
 /// <param name="ItemListaServico">Item da lista de serviços LC 116/2003 (chave da alíquota/retenção). // TODO(validar-oficial): campo exato no XSD da NFS-e nacional.</param>
 /// <param name="IssRetidoNaFonte">Indicador (do XML) de retenção do ISS na fonte pelo tomador.</param>
 /// <param name="MunicipioIncidenciaIbge">Código IBGE do município de incidência do ISS (opcional).</param>
+/// <param name="Situacao">
+/// Situação fiscal do documento ingerido (Normal/Cancelada/Substituída). Quando o ADN reemite a MESMA
+/// chave com situação Cancelada/Substituída (evento de cancelamento/substituição), a sincronização tira
+/// a nota da apuração em vez de descartar o evento (T-W1). // TODO(validar-oficial): mapear os códigos
+/// exatos do manual de eventos do leiaute nacional para esta enumeração.
+/// </param>
 public sealed record NfseDocumento(
     string ChaveAcesso,
     string PrestadorCnpj,
@@ -25,7 +31,8 @@ public sealed record NfseDocumento(
     int Mes,
     string ItemListaServico = "",
     bool IssRetidoNaFonte = false,
-    string? MunicipioIncidenciaIbge = null);
+    string? MunicipioIncidenciaIbge = null,
+    SituacaoNfse Situacao = SituacaoNfse.Normal);
 
 /// <summary>Gateway (Anti-Corruption Layer) de acesso ao Ambiente de Dados Nacional da NFS-e.</summary>
 public interface INfseNacionalGateway
@@ -46,6 +53,12 @@ public interface INotaFiscalServicoRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns><c>true</c> se já existir.</returns>
     Task<bool> ExistePorChaveAsync(string chaveAcesso, CancellationToken cancellationToken);
+
+    /// <summary>Obtém a nota persistida pela chave de acesso (no tenant atual), ou <c>null</c> se não existir.</summary>
+    /// <param name="chaveAcesso">Chave de acesso.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A nota rastreada para mutação (cancelar/substituir), ou <c>null</c>.</returns>
+    Task<NotaFiscalServico?> ObterPorChaveAsync(string chaveAcesso, CancellationToken cancellationToken);
 
     /// <summary>Marca uma nota para inserção.</summary>
     /// <param name="nota">Nota a adicionar.</param>

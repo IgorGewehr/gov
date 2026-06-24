@@ -49,7 +49,11 @@ public sealed class PagarRestoAPagarHandler(IRestoAPagarRepository restos, IUnit
 }
 
 /// <summary>Handler do cancelamento de resto a pagar.</summary>
-public sealed class CancelarRestoAPagarHandler(IRestoAPagarRepository restos, IUnitOfWork unitOfWork)
+public sealed class CancelarRestoAPagarHandler(
+    IRestoAPagarRepository restos,
+    IUnitOfWork unitOfWork,
+    OpcoesRestosAPagar opcoes,
+    TimeProvider timeProvider)
     : ICommandHandler<CancelarRestoAPagarCommand>
 {
     /// <inheritdoc />
@@ -60,7 +64,13 @@ public sealed class CancelarRestoAPagarHandler(IRestoAPagarRepository restos, IU
         var resto = await restos.ObterPorIdAsync(new RestoAPagarId(request.RestoAPagarId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Resto a Pagar nao encontrado.");
 
-        resto.Cancelar(ValorMonetario.De(request.Valor));
+        // Prazo de decadência parametrizável por tenant (Decreto 93.872/86 + normas TCE-RS).
+        var politicaPrazo = PoliticaPrazoRestoAPagar.De(
+            opcoes.ValidadeExerciciosNaoProcessado,
+            opcoes.ValidadeExerciciosProcessado);
+        var dataReferencia = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+
+        resto.Cancelar(ValorMonetario.De(request.Valor), dataReferencia, politicaPrazo);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

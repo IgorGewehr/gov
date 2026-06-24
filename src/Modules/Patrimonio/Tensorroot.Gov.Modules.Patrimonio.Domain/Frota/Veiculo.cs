@@ -24,7 +24,7 @@ public readonly record struct VeiculoId(Guid Value)
 /// CTB (Lei 9.503/1997): placa/RENAVAM, abastecimento sob cota, manutenção (ordem de
 /// serviço), multas, licenciamento/IPVA e motorista (CNH). Raiz de agregado.
 /// </summary>
-public sealed class Veiculo : AggregateRoot<VeiculoId>, IMustHaveTenant
+public sealed partial class Veiculo : AggregateRoot<VeiculoId>, IMustHaveTenant
 {
     private readonly List<Abastecimento> _abastecimentos = [];
     private readonly List<ManutencaoOS> _ordensServico = [];

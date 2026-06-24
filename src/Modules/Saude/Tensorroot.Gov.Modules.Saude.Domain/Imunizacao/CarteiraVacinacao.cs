@@ -53,27 +53,41 @@ public sealed class CarteiraVacinacao : AggregateRoot<CarteiraVacinacaoId>, IMus
 
     /// <summary>
     /// Registra a aplicacao de uma dose, calculando o aprazamento da proxima a partir do esquema do
-    /// imunobiologico (intervalo parametrizado). Valida que a dose nao foi aplicada antes (I-IMUN-1) e
-    /// que o numero esta dentro do esquema (I-IMUN-2). Emite <see cref="DoseAplicadaRegistrada"/>.
+    /// imunobiologico (intervalo parametrizado). Valida que a dose nao foi aplicada antes (I-IMUN-1),
+    /// que o numero esta dentro do esquema (I-IMUN-2), que o esquema progride em ordem — a dose N exige
+    /// que a dose N-1 ja exista (I-IMUN-3) — e que a data de aplicacao nao e futura (I-IMUN-4).
+    /// Emite <see cref="DoseAplicadaRegistrada"/>.
     /// </summary>
     /// <param name="imunobiologico">Imunobiologico aplicado (define total de doses e intervalo).</param>
     /// <param name="tipoDose">Tipo da dose aplicada.</param>
     /// <param name="numeroDose">Numero da dose no esquema (1..TotalDoses).</param>
     /// <param name="lote">Lote aplicado.</param>
     /// <param name="aplicadorId">Profissional aplicador.</param>
-    /// <param name="dataAplicacao">Data de aplicacao.</param>
+    /// <param name="dataAplicacao">Data de aplicacao (nao pode ser futura em relacao a <paramref name="hoje"/>).</param>
+    /// <param name="hoje">Data de referencia (relogio) para barrar aplicacao com data futura — I-IMUN-4.</param>
     /// <returns>A <see cref="DoseAplicada"/> registrada.</returns>
-    /// <exception cref="InvalidOperationException">Se a dose ja foi aplicada ou o numero excede o esquema.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// Se a dose ja foi aplicada, o numero excede o esquema, a dose anterior do esquema nao existe
+    /// (fora de ordem) ou a data de aplicacao e futura.
+    /// </exception>
     public DoseAplicada RegistrarDose(
         Imunobiologico imunobiologico,
         TipoDose tipoDose,
         int numeroDose,
         string lote,
         ProfissionalId aplicadorId,
-        DateOnly dataAplicacao)
+        DateOnly dataAplicacao,
+        DateOnly hoje)
     {
         ArgumentNullException.ThrowIfNull(imunobiologico);
         ArgumentOutOfRangeException.ThrowIfLessThan(numeroDose, 1);
+
+        // I-IMUN-4: data de aplicacao nao pode ser futura (registro clinico com data impossivel — fail-closed).
+        if (dataAplicacao > hoje)
+        {
+            throw new InvalidOperationException(
+                $"Data de aplicacao ({dataAplicacao:yyyy-MM-dd}) nao pode ser futura (referencia {hoje:yyyy-MM-dd}).");
+        }
 
         // I-IMUN-2: numero da dose dentro do esquema.
         if (numeroDose > imunobiologico.TotalDoses)
@@ -86,6 +100,14 @@ public sealed class CarteiraVacinacao : AggregateRoot<CarteiraVacinacaoId>, IMus
         if (_doses.Any(d => d.ImunobiologicoId == imunobiologico.Id && d.NumeroDose == numeroDose))
         {
             throw new InvalidOperationException("Dose ja aplicada para este imunobiologico.");
+        }
+
+        // I-IMUN-3: esquema progride em ordem — a dose N so e aceita se a dose N-1 ja foi aplicada.
+        if (numeroDose > 1
+            && !_doses.Any(d => d.ImunobiologicoId == imunobiologico.Id && d.NumeroDose == numeroDose - 1))
+        {
+            throw new InvalidOperationException(
+                $"Dose {numeroDose} fora de ordem: a dose {numeroDose - 1} do esquema ainda nao foi aplicada.");
         }
 
         // Aprazamento: ha proxima dose se nao for unica e ainda faltarem doses no esquema.

@@ -65,8 +65,13 @@ public sealed class ObterPainelFrotaHandler(IVeiculoRepository veiculos)
         var litrosTotais = comCusto.Sum(l => l.LitrosAbastecidos);
         var kmTotais = comCusto.Sum(l => l.KmRodados);
 
-        decimal? consumoFrota = litrosTotais > 0m && kmTotais > 0
-            ? Math.Round(kmTotais / litrosTotais, 2)
+        // Consumo da frota pelo mesmo critério tank-to-tank do nível veículo: o denominador é a soma dos
+        // litros de consumo (excluído, por veículo, o 1º abastecimento que apenas fixa o odômetro inicial),
+        // não os litros totais abastecidos — caso contrário o km/L da frota seria subestimado.
+        var litrosConsumoFrota = comCusto.Sum(l => l.LitrosConsumo);
+
+        decimal? consumoFrota = litrosConsumoFrota > 0m && kmTotais > 0
+            ? Math.Round(kmTotais / litrosConsumoFrota, 2)
             : null;
 
         var detalhe = comCusto

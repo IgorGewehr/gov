@@ -108,11 +108,15 @@ public interface IVeiculoRepository
 /// <param name="Placa">Placa do veículo.</param>
 /// <param name="Descricao">Descrição do veículo.</param>
 /// <param name="GastoCombustivel">Gasto com combustível no período.</param>
-/// <param name="LitrosAbastecidos">Litros abastecidos no período.</param>
+/// <param name="LitrosAbastecidos">Litros abastecidos no período (lado custo: soma de TODOS os abastecimentos).</param>
 /// <param name="GastoManutencao">Gasto com manutenção (OS concluídas) no período.</param>
 /// <param name="GastoMultas">Valor de multas (infrações) no período.</param>
 /// <param name="KmRodados">Quilômetros rodados no período (odômetro final menos inicial dos abastecimentos).</param>
 /// <param name="ConsumoMedioKmL">Consumo médio km/L no período (nulo se indeterminável).</param>
+/// <param name="LitrosConsumo">
+/// Litros consumidos no trecho medido (método tank-to-tank: soma dos abastecimentos a partir do 2º —
+/// o 1º apenas fixa o odômetro inicial). É o denominador correto do km/L; agregável para o consumo da frota.
+/// </param>
 public sealed record CustoVeiculoLinha(
     Guid VeiculoId,
     string Placa,
@@ -122,7 +126,8 @@ public sealed record CustoVeiculoLinha(
     decimal GastoManutencao,
     decimal GastoMultas,
     int KmRodados,
-    decimal? ConsumoMedioKmL)
+    decimal? ConsumoMedioKmL,
+    decimal LitrosConsumo)
 {
     /// <summary>Custo total do veículo no período (combustível + manutenção + multas).</summary>
     public decimal CustoTotal => GastoCombustivel + GastoManutencao + GastoMultas;
