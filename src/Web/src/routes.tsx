@@ -15,11 +15,15 @@ import { LoginPage } from './app/pages/LoginPage';
 import { HomePage } from './app/pages/HomePage';
 import { NotFoundPage } from './app/pages/NotFoundPage';
 import { modules } from './modules/registry';
+import { cidadaoRoutes } from './modules/cidadao';
 
 const moduleRoutes: RouteObject[] = modules.flatMap((m) => m.routes);
 
 export const router = createBrowserRouter(
   [
+    // Portal do Cidadao (realm EXTERNO): nivel superior, FORA do RootProviders/ProtectedRoute
+    // do admin. Tem sua propria raiz (CidadaoRoot: QueryClient/Toast/sessao do cidadao).
+    ...cidadaoRoutes,
     {
       element: <RootProviders />,
       children: [
