@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.Modules.Tributos.Domain.Domicilio;
 using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 using Tensorroot.Gov.SharedKernel.Tempo;
@@ -26,6 +27,7 @@ public sealed class ConsultaTributariaCidadao(
     TributosDbContext context,
     ISituacaoFiscalConsulta situacaoFiscal,
     ICertidaoRegularidadeFiscalRepository certidoes,
+    IDomicilioEletronicoContribuinteRepository domicilios,
     ITenantContext tenant,
     IDataHojeTenant dataHoje) : IConsultaTributariaCidadao
 {
@@ -179,6 +181,54 @@ public sealed class ConsultaTributariaCidadao(
             certidao.DataValidade,
             certidao.CodigoAutenticacao,
             certidao.Observacao);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<MinhaMensagemFiscalDto>> ConsultarMinhaCaixaPostalFiscalAsync(
+        string documento,
+        DateOnly dataConsulta,
+        CancellationToken cancellationToken)
+    {
+        var contribuinteId = await ResolverContribuinteIdAsync(documento, cancellationToken).ConfigureAwait(false);
+        if (contribuinteId is null)
+        {
+            return [];
+        }
+
+        // Carrega o domicilio ATIVO do proprio cidadao (com mensagens). O repositorio aplica o Global
+        // Query Filter por tenant + TenantId explicito (defesa em profundidade) — nunca alcanca terceiro.
+        var domicilio = await domicilios
+            .ObterAtivoPorContribuinteAsync(contribuinteId.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (domicilio is null)
+        {
+            return [];
+        }
+
+        // A consulta vale como CIENCIA: primeiro aplica a ciencia TACITA ja vencida (decurso de prazo),
+        // depois registra a ciencia EXPRESSA das pendentes na data da consulta (efeito de intimacao). As
+        // duas operacoes sao do dominio (idempotentes) e persistidas na mesma transacao.
+        domicilio.AplicarCienciaTacita(dataConsulta);
+        foreach (var pendente in domicilio.Mensagens.Where(m => !m.TeveCiencia).ToList())
+        {
+            domicilio.DarCienciaPorConsulta(pendente.Id, dataConsulta);
+        }
+
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        return domicilio.Mensagens
+            .OrderByDescending(mensagem => mensagem.DataDisponibilizacao)
+            .Select(mensagem => new MinhaMensagemFiscalDto(
+                mensagem.Id.Value,
+                mensagem.Tipo.ToString(),
+                mensagem.Assunto,
+                mensagem.Corpo,
+                mensagem.ReferenciaExterna,
+                mensagem.DataDisponibilizacao,
+                mensagem.Forma.ToString(),
+                mensagem.DataCiencia,
+                mensagem.DataLimiteManifestacao))
+            .ToList();
     }
 
     /// <summary>

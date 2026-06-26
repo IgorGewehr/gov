@@ -14,7 +14,7 @@ fontes_legais:
   - "Lei 14.133/2021 art. 174 (PNCP — condição de eficácia/divulgação)"
   - "Lei 14.133/2021 art. 182 (atualização anual dos valores-limite pelo IPCA-E)"
   - "IN SEGES/ME 67/2021 (Sistema de Dispensa Eletrônica — aviso de contratação direta, lances sucessivos, julgamento, habilitação)"
-  - "Decreto 12.343/2024 (atualização dos valores de dispensa)"
+  - "Decreto 12.807/2025 (atualização dos valores de dispensa, vigência 01/01/2026 — revogou o Decreto 12.343/2024)"
 ---
 
 # DispensaEletronica — Regras-as-Code (Rules-as-Code)
@@ -25,7 +25,7 @@ fontes_legais:
 > fornecedores: **aviso de contratação direta** (prazo mínimo de divulgação) → **etapa de lances
 > sucessivos** → **julgamento/classificação** → **negociação/habilitação** → **homologação** pela
 > autoridade competente. **Fail-closed** quanto ao limite legal: o valor total estimado **não pode
-> exceder** o limite de dispensa vigente (parametrizável por tenant — Dec. 12.343/2024 e atualizações
+> exceder** o limite de dispensa vigente (parametrizável por tenant — Dec. 12.807/2025 e atualizações
 > anuais pelo IPCA-E, art. 182), nem se pode homologar fornecedor com **sanção impeditiva vigente**
 > (art. 14/156). Raiz de agregado, **tenant-scoped**. Este arquivo é **normativo e versionado**; o
 > código de domínio, aplicação, persistência e testes do agregado `DispensaEletronica` é **gerado e
@@ -164,7 +164,7 @@ Valores: `Aberta=1`, `AvisoPublicado=2`, `EmDisputa=3`, `EmJulgamento=4`, `Homol
 ## 9. Integrações Governamentais
 
 - **PNCP (art. 174):** divulgação da contratação direta; `NumeroPncp` registrado para rastreabilidade.
-- **Limites de dispensa:** Dec. 12.343/2024 e atualização anual pelo IPCA-E (art. 182) — parâmetro do tenant.
+- **Limites de dispensa:** Dec. 12.807/2025 (vigência 2026; revogou o Dec. 12.343/2024) e atualização anual pelo IPCA-E (art. 182) — parâmetro do tenant. Valores 2026: art. 75, I = R$ 130.984,20; II = R$ 65.492,11.
 
 ---
 
@@ -186,6 +186,7 @@ Valores: `Aberta=1`, `AvisoPublicado=2`, `EmDisputa=3`, `EmJulgamento=4`, `Homol
 | versao | data | mudança |
 |---|---|---|
 | 1.0.0 | 2026-06-26 | Versão inicial — derivada do código do agregado `DispensaEletronica` e da Lei 14.133/2021 art. 75 + IN SEGES/ME 67/2021 (Sistema de Dispensa Eletrônica): aviso, lances sucessivos, julgamento por proposta global, homologação, fracasso/deserção/revogação/anulação, teto legal fail-closed, PNCP. |
+| 1.0.1 | 2026-06-26 | Conformidade (L7/L8): atualização dos limites do art. 75 ao **Dec. 12.807/2025** (vigência 2026; revoga o Dec. 12.343/2024) — I = R$ 130.984,20; II = R$ 65.492,11. O teto fail-closed (I-4) passa a valer também na **celebração do contrato por dispensa em razão do valor** (`CelebrarContrato`), não só no agregado da dispensa eletrônica. |
 
 <!-- manifest
 commands: AbrirDispensa, AdicionarItemDispensa, PublicarAvisoDispensa, AbrirDisputaDispensa, RegistrarLanceDispensa, EncerrarDisputaDispensa, HomologarDispensa, DeclararDispensaFracassada, DeclararDispensaDeserta, RevogarDispensa, AnularDispensa

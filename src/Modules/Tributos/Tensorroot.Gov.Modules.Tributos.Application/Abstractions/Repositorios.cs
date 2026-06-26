@@ -3,7 +3,9 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
+using Tensorroot.Gov.Modules.Tributos.Domain.Desif;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.Modules.Tributos.Domain.Domicilio;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
@@ -12,6 +14,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.Sim;
 using Tensorroot.Gov.Modules.Tributos.Domain.Taxas;
 using Tensorroot.Gov.Modules.Tributos.Domain.ValueObjects;
 
@@ -398,4 +401,62 @@ public interface IObraContribuicaoMelhoriaRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>A obra, ou <c>null</c>.</returns>
     Task<ObraContribuicaoMelhoria?> ObterPorIdAsync(ObraContribuicaoMelhoriaId id, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="DeclaracaoDesif"/> (DES-IF — Apuração Mensal do ISSQN).</summary>
+public interface IDeclaracaoDesifRepository
+{
+    /// <summary>Marca uma nova declaração DES-IF para inserção.</summary>
+    /// <param name="declaracao">Declaração a adicionar.</param>
+    void Adicionar(DeclaracaoDesif declaracao);
+
+    /// <summary>Obtém uma declaração DES-IF por identificador (com subtítulos), ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A declaração, ou <c>null</c>.</returns>
+    Task<DeclaracaoDesif?> ObterPorIdAsync(DeclaracaoDesifId id, CancellationToken cancellationToken);
+
+    /// <summary>Obtém a DES-IF VIGENTE (não substituída) de um contribuinte numa competência, ou <c>null</c>.</summary>
+    /// <param name="contribuinteId">Contribuinte declarante.</param>
+    /// <param name="competencia">Competência.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>A declaração vigente, ou <c>null</c>.</returns>
+    Task<DeclaracaoDesif?> ObterVigentePorContribuinteCompetenciaAsync(ContribuinteId contribuinteId, Competencia competencia, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="TituloRegistroSim"/> (Serviço de Inspeção Municipal).</summary>
+public interface ITituloRegistroSimRepository
+{
+    /// <summary>Marca um novo título do S.I.M. para inserção.</summary>
+    /// <param name="titulo">Título a adicionar.</param>
+    void Adicionar(TituloRegistroSim titulo);
+
+    /// <summary>Obtém um título do S.I.M. por identificador (com produtos), ou <c>null</c>.</summary>
+    /// <param name="id">Identificador.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O título, ou <c>null</c>.</returns>
+    Task<TituloRegistroSim?> ObterPorIdAsync(TituloRegistroSimId id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Obtém o próximo sequencial do número do S.I.M. do tenant no exercício (total concedido no ano + 1).
+    /// // TODO(validar-oficial): máscara/sequência oficial conforme regulamento municipal.
+    /// </summary>
+    /// <param name="exercicio">Exercício (ano) de concessão.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Próximo sequencial (&gt;= 1).</returns>
+    Task<long> ObterProximoSequencialAsync(int exercicio, CancellationToken cancellationToken);
+}
+
+/// <summary>Repositório do agregado <see cref="DomicilioEletronicoContribuinte"/> (DEC).</summary>
+public interface IDomicilioEletronicoContribuinteRepository
+{
+    /// <summary>Marca um novo domicílio eletrônico para inserção.</summary>
+    /// <param name="domicilio">Domicílio a adicionar.</param>
+    void Adicionar(DomicilioEletronicoContribuinte domicilio);
+
+    /// <summary>Obtém o domicílio eletrônico ATIVO de um contribuinte (com mensagens), ou <c>null</c>.</summary>
+    /// <param name="contribuinteId">Contribuinte titular.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O domicílio ativo, ou <c>null</c>.</returns>
+    Task<DomicilioEletronicoContribuinte?> ObterAtivoPorContribuinteAsync(ContribuinteId contribuinteId, CancellationToken cancellationToken);
 }

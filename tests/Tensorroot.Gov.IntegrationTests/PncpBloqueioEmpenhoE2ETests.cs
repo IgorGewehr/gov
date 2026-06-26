@@ -95,7 +95,13 @@ public sealed class PncpBloqueioEmpenhoE2ETests(ApiHostFixture fixture)
             CnpjOrgao = "18345678000171",
             CodigoUnidade = "01.01",
             NumeroContratoInterno = "0010/2026",
-            DocumentoFornecedor = "45555666000144",
+            AnoContrato = 2026,
+            Processo = "0010/2026",
+            NiFornecedor = "45555666000144",
+            TipoPessoaFornecedor = "PessoaJuridica",
+            NomeRazaoSocialFornecedor = "Prestadora de Servicos LTDA",
+            TipoContratoId = 1,
+            CategoriaProcessoId = 2,
         });
         respPncp.StatusCode.Should().Be(HttpStatusCode.NoContent, await respPncp.Content.ReadAsStringAsync());
 

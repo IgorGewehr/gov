@@ -31,7 +31,7 @@ public sealed class SimuladoLeiauteCatalogo(IConfiguration configuration) : ILei
     {
         ArgumentNullException.ThrowIfNull(leiaute);
 
-        // REMESSA DE FOLHA ao TCE-RS (Res. 1099 / SIAPC Vol. V §3.1): TCE_4810/4820/4960.
+        // REMESSA DE FOLHA ao TCE-RS (Res. 1099 / SIAPC Vol. V v2.0 §3.2): TCE_4810/4820/4960.
         if (string.Equals(leiaute.Codigo, LeiauteFolhaTceSeed.Codigo, StringComparison.OrdinalIgnoreCase))
         {
             var modeloFolha = LeiauteFolhaTceSeed.ModeloPadrao() with { Versao = leiaute.Versao };

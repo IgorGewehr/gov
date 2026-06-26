@@ -186,6 +186,74 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.ToTable("Parcelas", "tributos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Certidoes.CertidaoRegularidadeFiscal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoAutenticacao")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("ContribuinteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataEmissao")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("DataValidade")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("nvarchar(14)");
+
+                    b.Property<string>("FundamentoLegal")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("InscricaoMunicipal")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("NomeContribuinte")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<long>("NumeroSequencial")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ContribuinteId");
+
+                    b.HasIndex("TenantId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("CertidoesRegularidadeFiscal", "tributos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes.Contribuinte", b =>
                 {
                     b.Property<Guid>("Id")
@@ -273,6 +341,107 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "Exercicio");
 
                     b.ToTable("TabelasCosip", "tributos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Desif.DeclaracaoDesif", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Competencia")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ContribuinteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("DataEntrega")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("DeducoesReceita")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("DepositosJudiciais")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("FundamentoLegal")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal>("IncentivosFiscais")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("IssqnARecolher")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("IssqnDevidoBruto")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Modulo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<decimal>("ReceitaTributavelTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ContribuinteId", "Competencia");
+
+                    b.ToTable("DeclaracoesDesif", "tributos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Desif.SubtituloDesif", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AliquotaPercentual")
+                        .HasColumnType("decimal(9,4)");
+
+                    b.Property<decimal>("BaseCalculo")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CodigoTributacaoDesif")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ContaCosif")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("DeclaracaoDesifId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal>("IssqnDevido")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ItemListaServico")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeclaracaoDesifId");
+
+                    b.ToTable("SubtitulosDesif", "tributos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Dividas.DividaAtiva", b =>
@@ -395,6 +564,87 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.ToTable("RemessasProtesto", "tributos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Domicilio.DomicilioEletronicoContribuinte", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ContribuinteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataAdesao")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DiasCienciaTacita")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ContribuinteId");
+
+                    b.ToTable("DomiciliosEletronicos", "tributos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Domicilio.MensagemFiscal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Assunto")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Corpo")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly?>("DataCiencia")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("DataDisponibilizacao")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("DataLimiteCienciaTacita")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataLimiteManifestacao")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DiasPrazoManifestacao")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("DomicilioEletronicoContribuinteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Forma")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ReferenciaExterna")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomicilioEletronicoContribuinteId");
+
+                    b.ToTable("MensagensFiscais", "tributos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Imoveis.Imovel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -447,74 +697,6 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.ToTable("ApuracoesIss", "tributos");
                 });
 
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Certidoes.CertidaoRegularidadeFiscal", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CodigoAutenticacao")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<Guid>("ContribuinteId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("DataEmissao")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly>("DataValidade")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Documento")
-                        .IsRequired()
-                        .HasMaxLength(14)
-                        .HasColumnType("nvarchar(14)");
-
-                    b.Property<string>("FundamentoLegal")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("InscricaoMunicipal")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("NomeContribuinte")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Numero")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<long>("NumeroSequencial")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Observacao")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Tipo")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Numero")
-                        .IsUnique();
-
-                    b.HasIndex("TenantId", "ContribuinteId");
-
-                    b.ToTable("CertidoesRegularidadeFiscal", "tributos");
-                });
-
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.DeclaracaoGiaIss", b =>
                 {
                     b.Property<Guid>("Id")
@@ -553,43 +735,6 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "ContribuinteId", "Competencia");
 
                     b.ToTable("DeclaracoesGiaIss", "tributos");
-                });
-
-            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.ItemGiaIss", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("AliquotaPercentual")
-                        .HasColumnType("decimal(9,4)");
-
-                    b.Property<decimal>("BaseCalculo")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("DeclaracaoGiaIssId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<decimal>("IssApurado")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("ItemListaServico")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<bool>("RetidoNaFonte")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeclaracaoGiaIssId");
-
-                    b.ToTable("ItensGiaIss", "tributos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.ItemAliquotaIss", b =>
@@ -658,6 +803,43 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.HasIndex("ApuracaoIssId");
 
                     b.ToTable("ItensApuracaoIss", "tributos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.ItemGiaIss", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AliquotaPercentual")
+                        .HasColumnType("decimal(9,4)");
+
+                    b.Property<decimal>("BaseCalculo")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("DeclaracaoGiaIssId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal>("IssApurado")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ItemListaServico")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<bool>("RetidoNaFonte")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeclaracaoGiaIssId");
+
+                    b.ToTable("ItensGiaIss", "tributos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.TabelaAliquotaIss", b =>
@@ -1167,6 +1349,89 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.ToTable("PgvValoresZona", "tributos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Sim.ProdutoInspecionadoSim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Classificacao")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Denominacao")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NumeroRotulo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<Guid>("TituloRegistroSimId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TituloRegistroSimId");
+
+                    b.ToTable("ProdutosInspecionadosSim", "tributos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Sim.TituloRegistroSim", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("DataRegistro")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("DataRequerimento")
+                        .HasColumnType("date");
+
+                    b.Property<string>("EnderecoEstabelecimento")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateOnly?>("FimVigencia")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Natureza")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("NumeroSim")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("RazaoSocialEstabelecimento")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ResponsavelId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "NumeroSim");
+
+                    b.HasIndex("TenantId", "ResponsavelId");
+
+                    b.ToTable("TitulosRegistroSim", "tributos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Taxas.FaixaTaxa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1333,6 +1598,15 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Desif.SubtituloDesif", b =>
+                {
+                    b.HasOne("Tensorroot.Gov.Modules.Tributos.Domain.Desif.DeclaracaoDesif", null)
+                        .WithMany("Subtitulos")
+                        .HasForeignKey("DeclaracaoDesifId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Dividas.DividaAtiva", b =>
                 {
                     b.OwnsOne("Tensorroot.Gov.Modules.Tributos.Domain.Dividas.RegraEncargosDivida", "RegraEncargos", b1 =>
@@ -1375,6 +1649,15 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.HasOne("Tensorroot.Gov.Modules.Tributos.Domain.Dividas.DividaAtiva", null)
                         .WithMany("RemessasProtesto")
                         .HasForeignKey("DividaAtivaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Domicilio.MensagemFiscal", b =>
+                {
+                    b.HasOne("Tensorroot.Gov.Modules.Tributos.Domain.Domicilio.DomicilioEletronicoContribuinte", null)
+                        .WithMany("Mensagens")
+                        .HasForeignKey("DomicilioEletronicoContribuinteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1583,6 +1866,15 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Sim.ProdutoInspecionadoSim", b =>
+                {
+                    b.HasOne("Tensorroot.Gov.Modules.Tributos.Domain.Sim.TituloRegistroSim", null)
+                        .WithMany("Produtos")
+                        .HasForeignKey("TituloRegistroSimId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Taxas.FaixaTaxa", b =>
                 {
                     b.HasOne("Tensorroot.Gov.Modules.Tributos.Domain.Taxas.TabelaTaxa", null)
@@ -1602,9 +1894,19 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.Navigation("Faixas");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Desif.DeclaracaoDesif", b =>
+                {
+                    b.Navigation("Subtitulos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Dividas.DividaAtiva", b =>
                 {
                     b.Navigation("RemessasProtesto");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Domicilio.DomicilioEletronicoContribuinte", b =>
+                {
+                    b.Navigation("Mensagens");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Iss.ApuracaoIss", b =>
@@ -1637,6 +1939,11 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Pgv.TabelaAliquotaIptu", b =>
                 {
                     b.Navigation("Faixas");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Sim.TituloRegistroSim", b =>
+                {
+                    b.Navigation("Produtos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Tributos.Domain.Taxas.TabelaTaxa", b =>

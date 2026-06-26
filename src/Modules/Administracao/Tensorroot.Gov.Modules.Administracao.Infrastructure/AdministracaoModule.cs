@@ -75,7 +75,7 @@ public sealed class AdministracaoModule : IModule
 
         // === Dispensa eletronica (Lei 14.133/2021, art. 75, I/II; IN SEGES/ME 67/2021) ===
         // Limites de dispensa parametrizaveis por tenant (sem numero magico — §16): defaults do
-        // Dec. 12.343/2024 sobrescrititiveis (atualizacao anual pelo IPCA-E, art. 182).
+        // Dec. 12.807/2025 (vigente 2026, revogou o Dec. 12.343/2024) sobrescrititiveis (IPCA-E, art. 182).
         services.Configure<DispensaOptions>(configuration.GetSection(DispensaOptions.SecaoConfig));
         services.AddScoped<IDispensaParametros, DispensaParametros>();
 

@@ -38,8 +38,8 @@ public enum SituacaoDispensa
 /// <summary>
 /// Fundamento legal da dispensa em razao do valor (Lei 14.133/2021, art. 75, I e II) — as duas
 /// hipoteses que comportam o procedimento competitivo de dispensa eletronica por faixa de valor.
-/// Os limites monetarios sao parametrizaveis por tenant (Dec. 12.343/2024 e atualizacoes anuais
-/// pelo IPCA-E, art. 182), nunca fixados no codigo.
+/// Os limites monetarios sao parametrizaveis por tenant (Dec. 12.807/2025, vigente em 2026, e
+/// atualizacoes anuais pelo IPCA-E, art. 182), nunca fixados no codigo.
 /// </summary>
 public enum FundamentoDispensaValor
 {

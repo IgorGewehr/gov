@@ -78,6 +78,7 @@ public abstract class PortalCidadaoTestBase : IDisposable
             contexto,
             new SituacaoFiscalConsulta(contexto),
             new CertidaoRegularidadeFiscalRepository(contexto),
+            new DomicilioEletronicoContribuinteRepository(contexto),
             new TenantContextFake(contexto.CurrentTenantId),
             new DataHojeTenantFake(TimeProvider.System));
 

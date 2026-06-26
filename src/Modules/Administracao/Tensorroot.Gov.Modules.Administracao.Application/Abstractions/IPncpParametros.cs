@@ -17,8 +17,17 @@ public interface IPncpParametros
     /// Prazo de DIVULGACAO do instrumento contratual no PNCP (condicao de eficacia — art. 94, caput).
     /// Padrao legal: 20 dias uteis a partir da assinatura.
     /// </summary>
-    /// <returns>Quantidade, unidade e norma-fonte do prazo de divulgacao do contrato.</returns>
+    /// <returns>Quantidade, unidade e norma-fonte do prazo de divulgacao do contrato (art. 94, I).</returns>
     ParametroPrazo Divulgacao();
+
+    /// <summary>
+    /// Prazo de DIVULGACAO do contrato decorrente de CONTRATACAO DIRETA (dispensa/inexigibilidade) no PNCP
+    /// — condicao de eficacia do art. 94, inciso II. Padrao legal: 10 dias uteis a partir da assinatura
+    /// (menor que a licitacao do inc. I — L1). A escolha do prazo pela origem da contratacao e feita no
+    /// handler de celebracao.
+    /// </summary>
+    /// <returns>Quantidade, unidade e norma-fonte do prazo de divulgacao da contratacao direta (art. 94, II).</returns>
+    ParametroPrazo DivulgacaoDireta();
 
     /// <summary>
     /// Prazo de divulgacao do EXTRATO/registro do contrato no PNCP (art. 94 — registro).

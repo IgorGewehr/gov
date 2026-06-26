@@ -67,7 +67,44 @@ public interface IConsultaTributariaCidadao
         string documento,
         string fundamentoLegal,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// CAIXA POSTAL FISCAL (Domicílio Eletrônico do Contribuinte — DEC): lista as comunicações oficiais
+    /// disponibilizadas ao PRÓPRIO cidadão (identificado pelo <paramref name="documento"/> resolvido
+    /// server-side) e, na MESMA operação de consulta, registra a CIÊNCIA EXPRESSA das mensagens ainda
+    /// pendentes na data informada (a consulta vale como ciência — efeito de intimação pessoal). Antes,
+    /// aplica a ciência TÁCITA já vencida (decurso de prazo). Read/escrita do dado-próprio.
+    /// </summary>
+    /// <param name="documento">CPF/CNPJ (somente dígitos) do próprio cidadão, resolvido server-side.</param>
+    /// <param name="dataConsulta">Data da consulta (data do fato — registra a ciência expressa).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>As mensagens da caixa (vazio se não houver domicílio ativo do contribuinte no tenant).</returns>
+    Task<IReadOnlyList<MinhaMensagemFiscalDto>> ConsultarMinhaCaixaPostalFiscalAsync(
+        string documento,
+        DateOnly dataConsulta,
+        CancellationToken cancellationToken);
 }
+
+/// <summary>Mensagem fiscal do Domicílio Eletrônico do próprio cidadão (projeção de leitura).</summary>
+/// <param name="MensagemId">Identificador da mensagem.</param>
+/// <param name="Tipo">Tipo da comunicação ("Intimacao"/"Notificacao"/"Aviso").</param>
+/// <param name="Assunto">Assunto da mensagem.</param>
+/// <param name="Corpo">Corpo da comunicação.</param>
+/// <param name="ReferenciaExterna">Referência ao ato de origem (ex.: nº do lançamento/CDA), se houver.</param>
+/// <param name="DataDisponibilizacao">Data de disponibilização.</param>
+/// <param name="FormaCiencia">Forma da ciência ("Pendente"/"Expressa"/"Tacita").</param>
+/// <param name="DataCiencia">Data da ciência, se já houve.</param>
+/// <param name="DataLimiteManifestacao">Data-limite de manifestação/pagamento, se houver prazo e ciência.</param>
+public sealed record MinhaMensagemFiscalDto(
+    Guid MensagemId,
+    string Tipo,
+    string Assunto,
+    string Corpo,
+    string? ReferenciaExterna,
+    DateOnly DataDisponibilizacao,
+    string FormaCiencia,
+    DateOnly? DataCiencia,
+    DateOnly? DataLimiteManifestacao);
 
 /// <summary>Lancamento tributario proprio (projecao de leitura cidada).</summary>
 /// <param name="LancamentoId">Identificador do lancamento.</param>

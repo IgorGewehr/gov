@@ -13,14 +13,31 @@ public sealed class PncpOptions
     /// <summary>Secao de configuracao (por tenant).</summary>
     public const string SecaoConfig = "Administracao:Pncp";
 
-    /// <summary>Quantidade do prazo de DIVULGACAO do contrato no PNCP (default legal: 20).</summary>
+    /// <summary>
+    /// Quantidade do prazo de DIVULGACAO do contrato decorrente de LICITACAO no PNCP — art. 94, inciso I
+    /// (default legal: 20 dias uteis a partir da assinatura).
+    /// </summary>
     public int DivulgacaoQuantidade { get; set; } = 20;
 
-    /// <summary>Unidade do prazo de divulgacao (default: dias uteis).</summary>
+    /// <summary>Unidade do prazo de divulgacao da licitacao (default: dias uteis).</summary>
     public UnidadePrazo DivulgacaoUnidade { get; set; } = UnidadePrazo.DiasUteis;
 
-    /// <summary>Norma-fonte do prazo de divulgacao.</summary>
-    public string DivulgacaoNormaFonte { get; set; } = "Lei 14.133/2021 art. 94";
+    /// <summary>Norma-fonte do prazo de divulgacao da licitacao (art. 94, I).</summary>
+    public string DivulgacaoNormaFonte { get; set; } = "Lei 14.133/2021 art. 94, I";
+
+    /// <summary>
+    /// Quantidade do prazo de DIVULGACAO do contrato decorrente de CONTRATACAO DIRETA (dispensa/
+    /// inexigibilidade) no PNCP — art. 94, inciso II (default legal: 10 dias uteis a partir da assinatura).
+    /// L1: a contratacao direta tem prazo MENOR que a licitacao (20 d.u., inc. I); usar 20 d.u. para toda
+    /// origem dava folga indevida de 10 d.u. a dispensa/inexigibilidade e marcava intempestividade errada.
+    /// </summary>
+    public int DivulgacaoDiretaQuantidade { get; set; } = 10;
+
+    /// <summary>Unidade do prazo de divulgacao da contratacao direta (default: dias uteis).</summary>
+    public UnidadePrazo DivulgacaoDiretaUnidade { get; set; } = UnidadePrazo.DiasUteis;
+
+    /// <summary>Norma-fonte do prazo de divulgacao da contratacao direta (art. 94, II).</summary>
+    public string DivulgacaoDiretaNormaFonte { get; set; } = "Lei 14.133/2021 art. 94, II";
 
     /// <summary>Quantidade do prazo de divulgacao do EXTRATO do contrato (default legal: 10).</summary>
     public int RegistroExtratoQuantidade { get; set; } = 10;

@@ -76,6 +76,9 @@ public sealed class TributosModule : IModule
         services.AddScoped<IAlvaraRepository, AlvaraRepository>();
         services.AddScoped<ITabelaCosipRepository, TabelaCosipRepository>();
         services.AddScoped<IObraContribuicaoMelhoriaRepository, ObraContribuicaoMelhoriaRepository>();
+        services.AddScoped<IDeclaracaoDesifRepository, DeclaracaoDesifRepository>();
+        services.AddScoped<ITituloRegistroSimRepository, TituloRegistroSimRepository>();
+        services.AddScoped<IDomicilioEletronicoContribuinteRepository, DomicilioEletronicoContribuinteRepository>();
         services.AddScoped<INfseSincronizador, NfseSincronizador>();
 
         // PORTAL DO CIDADAO (M8): porta de LEITURA cidada (Contracts). Read-only por DOCUMENTO resolvido
@@ -123,6 +126,7 @@ public sealed class TributosModule : IModule
         IssItbiEndpoints.Map(endpoints);
         TaxasCosipAlvaraMelhoriaEndpoints.Map(endpoints);
         CertidaoEndpoints.Map(endpoints);
+        ParidadeSapiEndpoints.Map(endpoints);
     }
 
     /// <inheritdoc />

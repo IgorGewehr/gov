@@ -12,20 +12,50 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 /// Divulga o contrato no PNCP — condicao de eficacia (Lei 14.133/2021, art. 94). NAO recebe mais o numero
 /// de controle de fora: a transmissao e feita pela ACL (<see cref="IPncpGateway"/>), que devolve o numero
 /// de controle PNCP oficial. (CORRECAO LEGAL: art. 174 institui o PNCP; a eficacia e do art. 94.)
+/// <para>
+/// L2: os campos do schema "Inserir Contrato/Empenho" do Manual 2.3.5 que NAO vivem no agregado
+/// (codigos de tabela de dominio do PNCP, vinculo a compra publicada, fornecedor) sao informados no
+/// comando pela borda. // TODO(M10-validate): conferir os codigos de dominio (tipoContratoId,
+/// categoriaProcessoId) contra <c>treina.pncp.gov.br</c> no credenciamento.
+/// </para>
 /// </summary>
 /// <param name="ContratoId">Contrato a divulgar.</param>
 /// <param name="CnpjOrgao">CNPJ do orgao/entidade comprador (pre-cadastro PNCP).</param>
 /// <param name="CodigoUnidade">Codigo da unidade administrativa compradora.</param>
 /// <param name="NumeroContratoInterno">Numero do contrato no ente (ex.: "0012/2026").</param>
-/// <param name="DocumentoFornecedor">CPF/CNPJ do fornecedor contratado.</param>
+/// <param name="AnoContrato">Ano do contrato (schema PNCP).</param>
+/// <param name="Processo">Numero do processo administrativo (schema PNCP).</param>
+/// <param name="NiFornecedor">CPF/CNPJ/identificador estrangeiro do fornecedor contratado.</param>
+/// <param name="TipoPessoaFornecedor">PJ/PF/PE do fornecedor (schema PNCP).</param>
+/// <param name="NomeRazaoSocialFornecedor">Nome/razao social do fornecedor (schema PNCP).</param>
+/// <param name="TipoContratoId">Codigo do tipo de contrato (tabela de dominio PNCP).</param>
+/// <param name="CategoriaProcessoId">Codigo da categoria do processo (tabela de dominio PNCP).</param>
+/// <param name="NumeroParcelas">Numero de parcelas (schema PNCP; default 1).</param>
+/// <param name="CnpjCompra">CNPJ originario da compra (default = CnpjOrgao).</param>
+/// <param name="AnoCompra">Ano da compra a que o contrato se vincula.</param>
+/// <param name="SequencialCompra">Sequencial da compra gerado pelo PNCP.</param>
+/// <param name="NumeroControlePncpCompra">Numero de controle da compra ja publicada (edital).</param>
+/// <param name="FrutoAdesao">Contrato fruto de adesao a ata de SRP (carona).</param>
 public sealed record PublicarContratoNoPncpCommand(
     Guid ContratoId,
     string CnpjOrgao,
     string CodigoUnidade,
     string NumeroContratoInterno,
-    string DocumentoFornecedor) : ICommand;
+    int AnoContrato,
+    string Processo,
+    string NiFornecedor,
+    TipoPessoaFornecedorPncp TipoPessoaFornecedor,
+    string NomeRazaoSocialFornecedor,
+    int TipoContratoId,
+    int CategoriaProcessoId,
+    int NumeroParcelas = 1,
+    string? CnpjCompra = null,
+    int AnoCompra = 0,
+    int SequencialCompra = 0,
+    string? NumeroControlePncpCompra = null,
+    bool FrutoAdesao = false) : ICommand;
 
-/// <summary>Regras de validacao da publicacao no PNCP.</summary>
+/// <summary>Regras de validacao da publicacao no PNCP (campos obrigatorios do schema 2.3.5).</summary>
 public sealed class PublicarContratoNoPncpValidator : AbstractValidator<PublicarContratoNoPncpCommand>
 {
     /// <summary>Define as regras.</summary>
@@ -33,9 +63,15 @@ public sealed class PublicarContratoNoPncpValidator : AbstractValidator<Publicar
     {
         RuleFor(comando => comando.ContratoId).NotEmpty();
         RuleFor(comando => comando.CnpjOrgao).NotEmpty().MaximumLength(14);
-        RuleFor(comando => comando.CodigoUnidade).NotEmpty().MaximumLength(30);
-        RuleFor(comando => comando.NumeroContratoInterno).NotEmpty().MaximumLength(30);
-        RuleFor(comando => comando.DocumentoFornecedor).NotEmpty().MaximumLength(14);
+        RuleFor(comando => comando.CodigoUnidade).NotEmpty().MaximumLength(20);
+        RuleFor(comando => comando.NumeroContratoInterno).NotEmpty().MaximumLength(50);
+        RuleFor(comando => comando.Processo).NotEmpty().MaximumLength(50);
+        RuleFor(comando => comando.NiFornecedor).NotEmpty().MaximumLength(30);
+        RuleFor(comando => comando.TipoPessoaFornecedor).IsInEnum();
+        RuleFor(comando => comando.NomeRazaoSocialFornecedor).NotEmpty().MaximumLength(100);
+        RuleFor(comando => comando.TipoContratoId).GreaterThan(0).WithMessage("tipoContratoId (tabela de dominio PNCP) e obrigatorio.");
+        RuleFor(comando => comando.CategoriaProcessoId).GreaterThan(0).WithMessage("categoriaProcessoId (tabela de dominio PNCP) e obrigatorio.");
+        RuleFor(comando => comando.NumeroParcelas).GreaterThan(0);
     }
 }
 
@@ -74,18 +110,33 @@ public sealed class PublicarContratoNoPncpHandler(
         }
 
         // Transmissao via ACL (Polly + idempotencia por chave). A chave de idempotencia amarra a
-        // operacao ao contrato — replays do Outbox nao geram registro duplicado no PNCP.
+        // operacao ao contrato — replays do Outbox nao geram registro duplicado no PNCP. Os campos
+        // obrigatorios do schema "Inserir Contrato/Empenho" 2.3.5 sao montados do agregado + comando.
         var requisicao = new PublicacaoContratoPncpRequest(
-            contrato.Id.Value,
-            request.CnpjOrgao,
-            request.CodigoUnidade,
-            request.NumeroContratoInterno,
-            contrato.Objeto,
-            contrato.ValorContratado.Valor,
-            contrato.DataAssinatura,
-            contrato.VigenciaInicio,
-            contrato.VigenciaFim,
-            request.DocumentoFornecedor,
+            ContratoId: contrato.Id.Value,
+            CnpjOrgao: request.CnpjOrgao,
+            CnpjCompra: request.CnpjCompra ?? request.CnpjOrgao,
+            AnoCompra: request.AnoCompra == 0 ? contrato.DataAssinatura.Year : request.AnoCompra,
+            SequencialCompra: request.SequencialCompra,
+            TipoContratoId: request.TipoContratoId,
+            NumeroContratoEmpenho: request.NumeroContratoInterno,
+            AnoContrato: request.AnoContrato,
+            Processo: request.Processo,
+            CategoriaProcessoId: request.CategoriaProcessoId,
+            Receita: false, // contrato administrativo de despesa
+            CodigoUnidade: request.CodigoUnidade,
+            NiFornecedor: request.NiFornecedor,
+            TipoPessoaFornecedor: request.TipoPessoaFornecedor,
+            NomeRazaoSocialFornecedor: request.NomeRazaoSocialFornecedor,
+            ObjetoContrato: contrato.Objeto,
+            ValorInicial: contrato.ValorContratado.Valor,
+            NumeroParcelas: request.NumeroParcelas,
+            ValorGlobal: contrato.ValorAtual.Valor,
+            DataAssinatura: contrato.DataAssinatura,
+            DataVigenciaInicio: contrato.VigenciaInicio,
+            DataVigenciaFim: contrato.VigenciaFim,
+            NumeroControlePncpCompra: request.NumeroControlePncpCompra,
+            FrutoAdesao: request.FrutoAdesao,
             ChaveIdempotencia: $"contrato:{contrato.Id.Value:N}");
 
         var resultado = await pncpGateway.PublicarContratoAsync(requisicao, cancellationToken).ConfigureAwait(false);

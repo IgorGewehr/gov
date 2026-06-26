@@ -5,6 +5,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel.Tempo;
@@ -23,6 +24,10 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 /// <param name="EmpenhoId">Identificador do empenho (quando informado na celebracao).</param>
 /// <param name="NumeroEmpenho">Numero do empenho (quando informado).</param>
 /// <param name="JustificativaContratacaoDireta">Justificativa do enquadramento (obrigatoria nas contratacoes diretas).</param>
+/// <param name="FundamentoDispensa">
+/// Fundamento legal do teto da dispensa por valor (art. 75, I = obras/eng.; II = demais) — usado apenas
+/// quando <paramref name="Origem"/> = Dispensa para escolher o limite vigente (L7). Default no inc. II.
+/// </param>
 public sealed record CelebrarContratoCommand(
     Guid? LicitacaoId,
     Guid FornecedorId,
@@ -34,7 +39,8 @@ public sealed record CelebrarContratoCommand(
     DateOnly VigenciaFim,
     Guid? EmpenhoId,
     string? NumeroEmpenho,
-    string? JustificativaContratacaoDireta) : ICommand<Guid>;
+    string? JustificativaContratacaoDireta,
+    FundamentoDispensaValor? FundamentoDispensa = null) : ICommand<Guid>;
 
 /// <summary>Regras de validacao da celebracao de contrato.</summary>
 public sealed class CelebrarContratoValidator : AbstractValidator<CelebrarContratoCommand>
@@ -73,6 +79,7 @@ public sealed class CelebrarContratoHandler(
     IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
     IPncpParametros pncpParametros,
+    IDispensaParametros dispensaParametros,
     ICalendarioDiasUteis calendario,
     IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
@@ -101,9 +108,29 @@ public sealed class CelebrarContratoHandler(
         // Data de assinatura: informada, ou a data corrente (relogio externo — nunca dentro do dominio).
         var dataAssinatura = request.DataAssinatura ?? hoje;
 
-        // Parametro de prazo de divulgacao no PNCP do tenant (art. 94) — sem numero magico (§16). Mapeia a
-        // triade da Application para o tipo domestico do Domain (preserva a regra de dependencia §2).
-        var divulgacao = pncpParametros.Divulgacao();
+        // L7 (fail-closed — teto da dispensa por valor): contrato decorrente de DISPENSA nao pode ser
+        // celebrado acima do limite legal vigente do art. 75 (parametro do tenant — Dec. 12.807/2025).
+        // Dispensa acima do limite e ato nulo (exigiria licitacao); recusar ANTES de assinar. A inexigibilidade
+        // (art. 74) nao tem teto por valor (inviabilidade de competicao), entao so guarda a dispensa.
+        if (request.Origem == OrigemContratacao.Dispensa)
+        {
+            // Fundamento informado (obras/eng. = inc. I; demais = inc. II); default no inciso II, mais restritivo.
+            var fundamento = request.FundamentoDispensa ?? FundamentoDispensaValor.OutrosServicosECompras;
+            var limite = dispensaParametros.LimiteVigente(fundamento);
+            if (request.Valor > limite.Valor)
+            {
+                throw new InvalidOperationException(
+                    $"Contrato por dispensa em razao do valor excede o limite legal vigente ({limite.Valor:N2} — {limite.NormaFonte}); " +
+                    $"valor contratado: {request.Valor:N2}. Acima do teto exige-se licitacao (art. 75 Lei 14.133/2021).");
+            }
+        }
+
+        // L1: prazo de divulgacao no PNCP do tenant POR ORIGEM (art. 94) — sem numero magico (§16):
+        // 20 d.u. para contrato de LICITACAO (inc. I) vs 10 d.u. para CONTRATACAO DIRETA (inc. II).
+        // Mapeia a triade da Application para o tipo domestico do Domain (preserva a regra de dependencia §2).
+        var divulgacao = request.Origem == OrigemContratacao.Licitacao
+            ? pncpParametros.Divulgacao()
+            : pncpParametros.DivulgacaoDireta();
         var prazoDivulgacao = new PrazoPncpParametro(divulgacao.Quantidade, divulgacao.Unidade, divulgacao.NormaFonte);
 
         var contrato = Contrato.Celebrar(

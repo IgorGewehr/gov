@@ -132,7 +132,23 @@ export interface PublicarContratoNoPncpInput {
   cnpjOrgao: string;
   codigoUnidade: string;
   numeroContratoInterno: string;
-  documentoFornecedor: string;
+  anoContrato: number;
+  processo: string;
+  /** niFornecedor: CNPJ/CPF/identificador estrangeiro (Manual PNCP 2.3.5). */
+  niFornecedor: string;
+  /** tipoPessoaFornecedor: 'PessoaJuridica' | 'PessoaFisica' | 'PessoaEstrangeira'. */
+  tipoPessoaFornecedor: 'PessoaJuridica' | 'PessoaFisica' | 'PessoaEstrangeira';
+  nomeRazaoSocialFornecedor: string;
+  /** tipoContratoId: código da tabela de domínio do PNCP. */
+  tipoContratoId: number;
+  /** categoriaProcessoId: código da tabela de domínio do PNCP. */
+  categoriaProcessoId: number;
+  numeroParcelas?: number;
+  cnpjCompra?: string;
+  anoCompra?: number;
+  sequencialCompra?: number;
+  numeroControlePncpCompra?: string;
+  frutoAdesao?: boolean;
 }
 
 /** Resposta da varredura de prazos PNCP (POST /contratos/prazos-pncp/varrer). */

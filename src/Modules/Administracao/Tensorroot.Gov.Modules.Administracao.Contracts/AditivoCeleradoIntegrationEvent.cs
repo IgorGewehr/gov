@@ -4,8 +4,9 @@ namespace Tensorroot.Gov.Modules.Administracao.Contracts;
 
 /// <summary>
 /// Evento de integracao publico: um termo aditivo foi celebrado (Lei 14.133/2021, art. 125). Dispara a
-/// publicacao no PNCP (condicao de eficacia do aditivo — art. 174) e o reforco de empenho em Financas.
-/// Idempotente por <c>EventId</c> no consumidor.
+/// divulgacao no PNCP (condicao de eficacia do aditivo — art. 94, cujo caput abrange "os contratos e seus
+/// aditamentos"; o art. 174 apenas institui o PNCP) e o reforco de empenho em Financas. Idempotente por
+/// <c>EventId</c> no consumidor.
 /// </summary>
 /// <param name="EventId">Identificador unico do evento.</param>
 /// <param name="OccurredOnUtc">Momento (UTC) de ocorrencia.</param>

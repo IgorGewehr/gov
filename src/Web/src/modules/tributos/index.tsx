@@ -55,6 +55,11 @@ const EmitirAlvaraPage = lazy(() =>
 const MelhoriaPage = lazy(() =>
   import('./MelhoriaPage').then((m) => ({ default: m.MelhoriaPage })),
 );
+const DesIfPage = lazy(() => import('./DesIfPage').then((m) => ({ default: m.DesIfPage })));
+const SimPage = lazy(() => import('./SimPage').then((m) => ({ default: m.SimPage })));
+const DomicilioEletronicoPage = lazy(() =>
+  import('./DomicilioEletronicoPage').then((m) => ({ default: m.DomicilioEletronicoPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'tributos',
@@ -79,6 +84,9 @@ const MODULE: ModuleDefinition = {
         { path: 'cosip', element: <ApurarCosipPage /> },
         { path: 'alvaras', element: <EmitirAlvaraPage /> },
         { path: 'melhoria', element: <MelhoriaPage /> },
+        { path: 'desif', element: <DesIfPage /> },
+        { path: 'sim', element: <SimPage /> },
+        { path: 'domicilio-eletronico', element: <DomicilioEletronicoPage /> },
       ],
     },
   ],

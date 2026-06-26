@@ -51,7 +51,7 @@ public sealed class AbrirDispensaHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Limite legal vigente resolvido do tenant (parametrizavel — Dec. 12.343/2024; nunca literal no agregado).
+        // Limite legal vigente resolvido do tenant (parametrizavel — Dec. 12.807/2025; nunca literal no agregado).
         var limite = parametros.LimiteVigente(request.Fundamento);
 
         var dispensa = DispensaEletronica.Abrir(

@@ -89,9 +89,10 @@ public sealed class RemessaFolhaTceTests : TransparenciaTestBase
         var vantagem = EmissorRegistroSiapc.SerializarLinha(definicao, linhas[0].Valores);
         var desconto = EmissorRegistroSiapc.SerializarLinha(definicao, linhas[1].Valores);
 
-        // Campo ValorOperacao em col. 30..46 (1 sinal + 16 digitos = 17 posicoes).
-        vantagem.Substring(29, 17).Should().Be("+0000000000800000", "8000.00 -> 800000 centavos, sinal '+'");
-        desconto.Substring(29, 17).Should().Be("-0000000000112000", "1120.00 -> 112000 centavos, sinal '-'");
+        // Campo "Valor da Vantagem/Desconto/Totalizador" em col. 33..49 (1 sinal + 16 digitos = 17 posicoes),
+        // conforme MT SIAPC Vol. V v2.0 §3.2.1 — antecedido pelo "Reservado para uso Futuro" (30..32, zeros).
+        vantagem.Substring(32, 17).Should().Be("+0000000000800000", "8000.00 -> 800000 centavos, sinal '+'");
+        desconto.Substring(32, 17).Should().Be("-0000000000112000", "1120.00 -> 112000 centavos, sinal '-'");
     }
 
     [Fact] // ISO-8859-1: acento ocupa 1 byte (largura em bytes == colunas) — encoding canonico do SIAPC.

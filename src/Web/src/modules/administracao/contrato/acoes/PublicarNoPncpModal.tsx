@@ -1,6 +1,7 @@
 // PublicarContratoNoPncp — divulgação no PNCP (condição de EFICÁCIA; Lei 14.133/2021, art. 94).
-// W9.1: o número de controle PNCP NÃO é digitado — a ACL transmite ao PNCP e o backend grava o número
-// devolvido. O formulário coleta apenas os dados de identificação da transmissão.
+// W9.1/L2: o número de controle PNCP NÃO é digitado — a ACL transmite ao PNCP e o backend grava o número
+// devolvido. O formulário coleta os campos obrigatórios do schema "Inserir Contrato/Empenho" (Manual de
+// Integração PNCP 2.3.5) que não vivem no agregado.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Alert, Button, FormField, Input, Modal, useToast } from '../../../../components/ui';
@@ -13,6 +14,7 @@ import type { AcaoModalProps } from './acaoModals.shared';
 type Campos = keyof PublicarContratoNoPncpInput;
 
 const apenasDigitos = (valor: string): string => valor.replace(/\D/g, '');
+const anoCorrente = new Date().getFullYear();
 
 export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProps) {
   const toast = useToast();
@@ -20,7 +22,12 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
   const [cnpjOrgao, setCnpjOrgao] = useState('');
   const [codigoUnidade, setCodigoUnidade] = useState('');
   const [numeroContratoInterno, setNumeroContratoInterno] = useState('');
-  const [documentoFornecedor, setDocumentoFornecedor] = useState('');
+  const [anoContrato, setAnoContrato] = useState(String(anoCorrente));
+  const [processo, setProcesso] = useState('');
+  const [niFornecedor, setNiFornecedor] = useState('');
+  const [nomeRazaoSocialFornecedor, setNomeRazaoSocialFornecedor] = useState('');
+  const [tipoContratoId, setTipoContratoId] = useState('1');
+  const [categoriaProcessoId, setCategoriaProcessoId] = useState('2');
   const [erros, setErros] = useState<Partial<Record<Campos, string>>>({});
 
   function fechar(): void {
@@ -28,13 +35,25 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
     onClose();
   }
 
+  // tipoPessoaFornecedor derivado do número de identificação: 11 díg = CPF (PF), 14 = CNPJ (PJ).
+  function tipoPessoa(ni: string): PublicarContratoNoPncpInput['tipoPessoaFornecedor'] {
+    return ni.length === 11 ? 'PessoaFisica' : 'PessoaJuridica';
+  }
+
   function validar(input: PublicarContratoNoPncpInput): Partial<Record<Campos, string>> {
     const e: Partial<Record<Campos, string>> = {};
     if (input.cnpjOrgao.length !== 14) e.cnpjOrgao = 'Informe os 14 dígitos do CNPJ do órgão.';
     if (input.codigoUnidade === '') e.codigoUnidade = 'Informe o código da unidade compradora.';
     if (input.numeroContratoInterno === '') e.numeroContratoInterno = 'Informe o número do contrato no ente.';
-    if (input.documentoFornecedor.length !== 11 && input.documentoFornecedor.length !== 14)
-      e.documentoFornecedor = 'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.';
+    if (!Number.isInteger(input.anoContrato) || input.anoContrato < 2021) e.anoContrato = 'Informe o ano do contrato.';
+    if (input.processo === '') e.processo = 'Informe o número do processo administrativo.';
+    if (input.niFornecedor.length !== 11 && input.niFornecedor.length !== 14)
+      e.niFornecedor = 'Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.';
+    if (input.nomeRazaoSocialFornecedor === '') e.nomeRazaoSocialFornecedor = 'Informe o nome/razão social do fornecedor.';
+    if (!Number.isInteger(input.tipoContratoId) || input.tipoContratoId <= 0)
+      e.tipoContratoId = 'Informe o código do tipo de contrato (tabela PNCP).';
+    if (!Number.isInteger(input.categoriaProcessoId) || input.categoriaProcessoId <= 0)
+      e.categoriaProcessoId = 'Informe o código da categoria do processo (tabela PNCP).';
     return e;
   }
 
@@ -44,7 +63,13 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
       cnpjOrgao,
       codigoUnidade: codigoUnidade.trim(),
       numeroContratoInterno: numeroContratoInterno.trim(),
-      documentoFornecedor,
+      anoContrato: Number(anoContrato),
+      processo: processo.trim(),
+      niFornecedor,
+      tipoPessoaFornecedor: tipoPessoa(niFornecedor),
+      nomeRazaoSocialFornecedor: nomeRazaoSocialFornecedor.trim(),
+      tipoContratoId: Number(tipoContratoId),
+      categoriaProcessoId: Number(categoriaProcessoId),
     };
     const locais = validar(input);
     if (Object.keys(locais).length > 0) {
@@ -62,7 +87,12 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
             cnpjOrgao: true,
             codigoUnidade: true,
             numeroContratoInterno: true,
-            documentoFornecedor: true,
+            anoContrato: true,
+            processo: true,
+            niFornecedor: true,
+            nomeRazaoSocialFornecedor: true,
+            tipoContratoId: true,
+            categoriaProcessoId: true,
           }) as Partial<Record<Campos, string>>,
         );
         toast.error(error instanceof ApiError ? error.userMessage : 'Não foi possível divulgar no PNCP.');
@@ -111,7 +141,7 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
-              maxLength={30}
+              maxLength={20}
               value={codigoUnidade}
               onChange={(e) => setCodigoUnidade(e.target.value)}
             />
@@ -128,16 +158,41 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
               id={id}
               aria-describedby={describedBy}
               invalid={invalid}
-              maxLength={30}
+              maxLength={50}
               value={numeroContratoInterno}
               onChange={(e) => setNumeroContratoInterno(e.target.value)}
+            />
+          )}
+        </FormField>
+        <FormField label="Ano do contrato" required error={erros.anoContrato}>
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              inputMode="numeric"
+              maxLength={4}
+              value={anoContrato}
+              onChange={(e) => setAnoContrato(apenasDigitos(e.target.value).slice(0, 4))}
+            />
+          )}
+        </FormField>
+        <FormField label="Número do processo administrativo" required error={erros.processo} help='Ex.: "0012/2026".'>
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              maxLength={50}
+              value={processo}
+              onChange={(e) => setProcesso(e.target.value)}
             />
           )}
         </FormField>
         <FormField
           label="CPF/CNPJ do fornecedor"
           required
-          error={erros.documentoFornecedor}
+          error={erros.niFornecedor}
           help="11 dígitos (CPF) ou 14 (CNPJ), somente números."
         >
           {({ id, describedBy, invalid }) => (
@@ -147,8 +202,56 @@ export function PublicarNoPncpModal({ contratoId, open, onClose }: AcaoModalProp
               invalid={invalid}
               inputMode="numeric"
               maxLength={14}
-              value={documentoFornecedor}
-              onChange={(e) => setDocumentoFornecedor(apenasDigitos(e.target.value).slice(0, 14))}
+              value={niFornecedor}
+              onChange={(e) => setNiFornecedor(apenasDigitos(e.target.value).slice(0, 14))}
+            />
+          )}
+        </FormField>
+        <FormField label="Nome/razão social do fornecedor" required error={erros.nomeRazaoSocialFornecedor}>
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              maxLength={100}
+              value={nomeRazaoSocialFornecedor}
+              onChange={(e) => setNomeRazaoSocialFornecedor(e.target.value)}
+            />
+          )}
+        </FormField>
+        <FormField
+          label="Tipo de contrato (PNCP)"
+          required
+          error={erros.tipoContratoId}
+          help="Código da tabela de domínio do PNCP (ex.: 1 = Contrato)."
+        >
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              inputMode="numeric"
+              maxLength={3}
+              value={tipoContratoId}
+              onChange={(e) => setTipoContratoId(apenasDigitos(e.target.value).slice(0, 3))}
+            />
+          )}
+        </FormField>
+        <FormField
+          label="Categoria do processo (PNCP)"
+          required
+          error={erros.categoriaProcessoId}
+          help="Código da tabela de domínio do PNCP."
+        >
+          {({ id, describedBy, invalid }) => (
+            <Input
+              id={id}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              inputMode="numeric"
+              maxLength={3}
+              value={categoriaProcessoId}
+              onChange={(e) => setCategoriaProcessoId(apenasDigitos(e.target.value).slice(0, 3))}
             />
           )}
         </FormField>

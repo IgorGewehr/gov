@@ -10,11 +10,13 @@ namespace Tensorroot.Gov.Modules.Transparencia.Domain.RemessasFolha;
 /// serializa as linhas em largura fixa ISO-8859-1. Puro: sem I/O.
 /// </summary>
 /// <remarks>
-/// REGRA [OFICIAL] §16: o casamento campo->valor segue a ESTRUTURA do MT SIAPC Vol. V §3.1, mas os nomes
-/// EXATOS de campo/codigos numericos de rubrica dependem do documento oficial — marcado
-/// <c>// TODO(validar-leiaute-folha-1099)</c>. Mapeia apenas campos cujo nome existe na grade resolvida;
-/// campos da grade nao alimentados ficam com o default do tipo (vazio/zeros), e a obrigatoriedade e
-/// checada na PRE-VALIDACAO LOCAL.
+/// REGRA [OFICIAL] §16: o casamento campo->valor segue a grade OFICIAL do MT SIAPC Vol. V v2.0 (Set/2010)
+/// §3.2 (TCE_4810 §3.2.1, TCE_4820 §3.2.2, TCE_4960 §3.2.3), exatamente como semeada em
+/// <c>LeiauteFolhaTceSeed</c>. Mapeia apenas campos cujo nome existe na grade resolvida; campos da grade
+/// nao alimentados pelo resumo ficam com o default do tipo (vazio/zeros para Reservado/uso futuro), e a
+/// obrigatoriedade e checada na PRE-VALIDACAO LOCAL. NB.: no leiaute v2.0 o unico indicador de incidencia
+/// do TCE_4810 e o do IRRF (col. 51) — nao ha colunas de RPPS/INSS no 4810; e o TCE_4960 nao possui colunas
+/// de "operacao" nem "plano de contas da folha" (a operacao V/D/T/O e gravada por LANCAMENTO no TCE_4810).
 /// </remarks>
 public static class MapeadorRemessaFolhaTce
 {
@@ -85,7 +87,8 @@ public static class MapeadorRemessaFolhaTce
         ServidorFolhaResumo servidor,
         DateOnly competencia)
     {
-        // TODO(validar-leiaute-folha-1099): nomes/posicoes EXATOS dos campos do TCE_4820.
+        // Grade OFICIAL TCE_4820 (MT Vol. V v2.0 §3.2.2). Campos do cadastro que o resumo NAO carrega
+        // (Setor, Sexo, Situacao, RG, CBO, NIT, endereco, etc.) ficam com o default do tipo na grade.
         var fonte = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["DataAtualizacao"] = competencia,
@@ -97,7 +100,7 @@ public static class MapeadorRemessaFolhaTce
             ["DataDemissao"] = servidor.DataDemissao,
             ["CodigoCargo"] = servidor.CodigoCargo,
             ["NomeCargo"] = servidor.NomeCargo,
-            ["Matricula"] = servidor.Matricula,
+            ["RegimePrevidenciario"] = RegimePrevidenciarioCodigo(servidor.Regime),
         };
 
         return PreencherGrade(definicao, fonte);
@@ -108,15 +111,15 @@ public static class MapeadorRemessaFolhaTce
         RubricaFolhaResumo rubrica,
         DateOnly competencia)
     {
-        // TODO(validar-leiaute-folha-1099): nomes/posicoes EXATOS dos campos do TCE_4960 + Plano de Contas da Folha.
+        // Grade OFICIAL TCE_4960 (MT Vol. V v2.0 §3.2.3): apenas Data, Reservado, Nome(45), BaseLegal(150),
+        // Codigo(5). NB.: o leiaute v2.0 NAO tem coluna de "operacao" nem de "plano de contas da folha" no
+        // 4960 — a operacao V/D/T/O e gravada por LANCAMENTO no TCE_4810 (col. 50).
         var fonte = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["DataAtualizacao"] = competencia,
             ["Nome"] = rubrica.Descricao,
             ["BaseLegal"] = rubrica.BaseLegal,
             ["CodigoRubrica"] = CodigoRubricaNumerico(rubrica.Codigo),
-            ["ContaPlanoFolhaTce"] = rubrica.ContaPlanoFolhaTce,
-            ["Operacao"] = rubrica.Operacao,
         };
 
         return PreencherGrade(definicao, fonte);
@@ -129,22 +132,23 @@ public static class MapeadorRemessaFolhaTce
         RubricaFolhaResumo? rubrica,
         DateOnly competencia)
     {
-        // Sinal do valor pela operacao: Vantagem (+) credita; Desconto (-) debita (TCE_4810 campo 6/7).
+        // Sinal do valor pela operacao: Vantagem (+) credita; Desconto (-) debita. No TCE_4810 o sinal
+        // integra o campo Valor (col. 33-49, tipo Valor) e a Identificacao da Operacao vai na col. 50.
         var ehDesconto = string.Equals(lancamento.Operacao, "D", StringComparison.OrdinalIgnoreCase);
         var valorComSinal = ehDesconto ? -Math.Abs(lancamento.Valor) : Math.Abs(lancamento.Valor);
 
-        // TODO(validar-leiaute-folha-1099): nomes/posicoes EXATOS dos 27 campos do TCE_4810.
+        // Grade OFICIAL TCE_4810 (MT Vol. V v2.0 §3.2.1): a operacao V/D/T/O vai na col. 50 e o UNICO
+        // indicador de incidencia e o do IRRF (col. 51). Os campos bancarios (52-111) e Observacoes (112-141)
+        // nao sao alimentados pelo resumo e saem com o default do tipo; Reservado (30-32) sai com zeros.
         var fonte = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
             ["TipoFolha"] = (long)TipoFolhaCodigo(resumo.TipoFolha),
-            ["CodigoRegistroFuncionario"] = lancamento.CodigoRegistroServidor,
+            ["CodigoRegistroFuncionario"] = CodigoRubricaNumerico(lancamento.CodigoRegistroServidor),
             ["DataCompetencia"] = competencia,
             ["DataPagamento"] = resumo.DataPagamento,
             ["ValorOperacao"] = valorComSinal,
-            ["Operacao"] = lancamento.Operacao,
+            ["Operacao"] = OperacaoTce(lancamento.Operacao),
             ["IncidenciaIrrf"] = Indicador(rubrica?.IncideIrrf),
-            ["IncidenciaRpps"] = Indicador(rubrica?.IncideRpps),
-            ["IncidenciaInss"] = Indicador(rubrica?.IncideInss),
             ["CodigoRubrica"] = CodigoRubricaNumerico(lancamento.CodigoRubrica),
         };
 
@@ -169,7 +173,13 @@ public static class MapeadorRemessaFolhaTce
     private static ValorCampo Converter(CampoLeiaute campo, object? bruto)
         => campo.Tipo switch
         {
-            TipoCampoLeiaute.Numerico => ValorCampo.Numerico(campo.Nome, bruto is long numero ? numero : 0),
+            // Numerico aceita long direto OU string com digitos (CPF, conta, codigo de registro do funcionario).
+            TipoCampoLeiaute.Numerico => ValorCampo.Numerico(campo.Nome, bruto switch
+            {
+                long numero => numero,
+                string texto => SomenteDigitos(texto),
+                _ => 0,
+            }),
             TipoCampoLeiaute.Valor => ValorCampo.Monetario(campo.Nome, bruto is decimal valor ? valor : 0m),
             TipoCampoLeiaute.Data => bruto is DateOnly data
                 ? ValorCampo.DataCampo(campo.Nome, data)
@@ -177,7 +187,8 @@ public static class MapeadorRemessaFolhaTce
             _ => ValorCampo.Caractere(campo.Nome, bruto?.ToString()),
         };
 
-    // Indicador S/N/X (X=NSA quando a rubrica nao foi encontrada). MT Vol. V §3.1.1.
+    // Indicador de incidencia do IRRF S/N (TCE_4810 col. 51, MT Vol. V v2.0 §3.2.1). X=NSA quando a rubrica
+    // do lancamento nao foi encontrada na tabela de rubricas do resumo (defesa em profundidade).
     private static string Indicador(bool? incide)
         => incide switch
         {
@@ -186,7 +197,18 @@ public static class MapeadorRemessaFolhaTce
             null => "X",
         };
 
-    // TipoFolha numerico do TCE_4810 (1-Normal..9-Outros). TODO(validar-leiaute-folha-1099): tabela oficial.
+    // Operacao do TCE_4810/Identificacao da Operacao (col. 50): V=Vantagem, D=Desconto, T=Totalizador, O=Outros.
+    private static string OperacaoTce(string operacao)
+        => operacao?.Trim().ToUpperInvariant() switch
+        {
+            "V" or "VANTAGEM" => "V",
+            "D" or "DESCONTO" => "D",
+            "T" or "TOTALIZADOR" => "T",
+            _ => "O",
+        };
+
+    // Codigo do Tipo da Folha do TCE_4810 (col. 1-1, MT Vol. V v2.0 §3.2.1): 1-Normal, 2-13o, 3-Ferias,
+    // 4-Rescisao, 5-Complementar, 6-Afastamento, 9-Outros.
     private static int TipoFolhaCodigo(string tipoFolha)
         => tipoFolha switch
         {
@@ -194,14 +216,31 @@ public static class MapeadorRemessaFolhaTce
             "DecimoTerceiro" => 2,
             "Ferias" => 3,
             "Rescisao" => 4,
+            "Complementar" => 5,
+            "Afastamento" => 6,
             _ => 9,
         };
 
+    // Regime Previdenciario do TCE_4820 (col. 213-214, MT Vol. V v2.0 §3.2.2): 01-RPPS, 02-RGPS, 99-Outros.
+    private static long RegimePrevidenciarioCodigo(string regime)
+        => regime?.Trim().ToUpperInvariant() switch
+        {
+            "RPPS" => 1,
+            "RGPS" or "INSS" => 2,
+            _ => 99,
+        };
+
     // O codigo de rubrica do TCE e Numerico(5); extrai os digitos do codigo S-1010 do RH.
-    // TODO(validar-leiaute-folha-1099): mapeamento oficial codigo S-1010 -> codigo de rubrica TCE.
-    private static long CodigoRubricaNumerico(string codigo)
+    private static long CodigoRubricaNumerico(string codigo) => SomenteDigitos(codigo);
+
+    private static long SomenteDigitos(string? valor)
     {
-        var digitos = new string([.. codigo.Where(char.IsDigit)]);
+        if (string.IsNullOrEmpty(valor))
+        {
+            return 0;
+        }
+
+        var digitos = new string([.. valor.Where(char.IsDigit)]);
         return digitos.Length > 0 && long.TryParse(digitos, NumberStyles.None, CultureInfo.InvariantCulture, out var numero)
             ? numero
             : 0;

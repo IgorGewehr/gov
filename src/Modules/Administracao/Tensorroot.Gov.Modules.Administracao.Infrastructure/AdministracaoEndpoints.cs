@@ -7,6 +7,7 @@ using Tensorroot.Gov.Modules.Administracao.Application.Contratos;
 using Tensorroot.Gov.Modules.Administracao.Application.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Application.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Application.Licitacoes;
+using Tensorroot.Gov.Modules.Administracao.Application.LicitaCon;
 using Tensorroot.Gov.Modules.Administracao.Application.Pca;
 using Tensorroot.Gov.Modules.Administracao.Application.RegistroPrecos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
@@ -18,7 +19,12 @@ using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 namespace Tensorroot.Gov.Modules.Administracao.Infrastructure;
 
 /// <summary>Endpoints HTTP (Minimal API) do modulo Administracao (Lei 14.133/2021).</summary>
-internal static class AdministracaoEndpoints
+/// <remarks>
+/// Particionada em arquivos por subdominio para respeitar o limite de manutenibilidade (god-file &lt; 500 linhas):
+/// este arquivo cobre licitacoes, fornecedores, catalogo, ARP e PCA; <c>AdministracaoEndpoints.Contratacoes.cs</c>
+/// cobre dispensas (contratacao direta) e contratos.
+/// </remarks>
+internal static partial class AdministracaoEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -177,8 +183,53 @@ internal static class AdministracaoEndpoints
         grupo.MapPost("/licitacoes/{licitacaoId:guid}/edital-pncp", async (
             Guid licitacaoId, PublicarEditalPncpPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
-            await sender.Send(new PublicarEditalNoPncpCommand(licitacaoId, payload.NumeroEditalPncp), cancellationToken);
+            // L4: o numero de controle NAO vem mais do cliente — a ACL (IPncpGateway) transmite o edital/compra e devolve.
+            await sender.Send(
+                new PublicarEditalNoPncpCommand(
+                    licitacaoId,
+                    payload.CnpjOrgao,
+                    payload.CodigoUnidade,
+                    payload.AnoCompra,
+                    payload.NumeroCompra,
+                    payload.ModalidadeId,
+                    payload.ModoDisputaId,
+                    payload.AmparoLegalCodigo),
+                cancellationToken);
             return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        // L6: gera a remessa LicitaCon 1.4 (14 CSV) do certame e devolve um ZIP — saida validada pelo
+        // e-Validador do TCE-RS (IN 13/2017). A TRANSMISSAO ao Processo Eletronico (credencial) e // TODO(M10).
+        grupo.MapPost("/licitacoes/{licitacaoId:guid}/remessa-licitacon", async (
+            Guid licitacaoId, GerarRemessaLicitaConPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var remessa = await sender.Send(
+                new GerarRemessaLicitaConQuery(
+                    licitacaoId,
+                    payload.CodigoOrgao,
+                    payload.NomeOrgao,
+                    payload.CodigoTipoModalidade,
+                    payload.TipoObjeto,
+                    payload.CodigoTipoFaseAtual,
+                    payload.TipoNivelJulgamento,
+                    payload.NumeroProcesso,
+                    payload.AnoProcesso,
+                    payload.NumeroLicitacao,
+                    payload.AnoLicitacao),
+                cancellationToken);
+
+            using var memoria = new MemoryStream();
+            using (var zip = new System.IO.Compression.ZipArchive(memoria, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var arquivo in remessa.Arquivos)
+                {
+                    var entrada = zip.CreateEntry(arquivo.Nome, System.IO.Compression.CompressionLevel.Optimal);
+                    await using var fluxo = entrada.Open();
+                    await fluxo.WriteAsync(arquivo.Conteudo, cancellationToken);
+                }
+            }
+
+            return Results.File(memoria.ToArray(), "application/zip", $"licitacon_{licitacaoId:N}.zip");
         }).RequirePermission("administracao.gerenciar");
 
         grupo.MapPost("/licitacoes/{licitacaoId:guid}/julgar", async (
@@ -205,171 +256,6 @@ internal static class AdministracaoEndpoints
         grupo.MapGet("/licitacoes", async (
             SituacaoLicitacao situacao, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ListarLicitacoesPorSituacaoQuery(situacao), cancellationToken)))
-            .RequirePermission("administracao.ver");
-    }
-
-    private static void MapDispensas(RouteGroupBuilder grupo)
-    {
-        // Abertura (rascunho) — Lei 14.133/2021, art. 75, I/II; IN SEGES/ME 67/2021.
-        grupo.MapPost("/dispensas", async (
-            AbrirDispensaCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
-            .RequirePermission("administracao.gerenciar");
-
-        // Inclusao de item (com fail-closed do teto legal vigente no agregado).
-        grupo.MapPost("/dispensas/{dispensaId:guid}/itens", async (
-            Guid dispensaId, AdicionarItemDispensaPayload payload, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new
-            {
-                itemId = await sender.Send(
-                    new AdicionarItemDispensaCommand(dispensaId, payload.ItemCatalogoId, payload.Descricao, payload.Quantidade, payload.ValorUnitarioEstimado),
-                    cancellationToken),
-            }))
-            .RequirePermission("administracao.gerenciar");
-
-        // Publicacao do aviso de contratacao direta (valida o prazo minimo de divulgacao).
-        grupo.MapPost("/dispensas/{dispensaId:guid}/aviso", async (
-            Guid dispensaId, PublicarAvisoDispensaPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new PublicarAvisoDispensaCommand(dispensaId, payload.NumeroAviso, payload.AberturaDisputa), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        // Abertura da etapa de lances.
-        grupo.MapPost("/dispensas/{dispensaId:guid}/disputa/abrir", async (
-            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new AbrirDisputaDispensaCommand(dispensaId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        // Registro de lance (cotacao) — fail-closed para fornecedor impedido; lance sucessivo deve melhorar.
-        grupo.MapPost("/dispensas/{dispensaId:guid}/lances", async (
-            Guid dispensaId, RegistrarLanceDispensaPayload payload, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new
-            {
-                cotacaoId = await sender.Send(
-                    new RegistrarLanceDispensaCommand(dispensaId, payload.ItemId, payload.FornecedorId, payload.Valor),
-                    cancellationToken),
-            }))
-            .RequirePermission("administracao.gerenciar");
-
-        // Encerramento da disputa + julgamento (indica vencedora pelo criterio).
-        grupo.MapPost("/dispensas/{dispensaId:guid}/disputa/encerrar", async (
-            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new EncerrarDisputaDispensaCommand(dispensaId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        // Homologacao (autoridade competente) — exige vencedor habilitado e nao impedido.
-        grupo.MapPost("/dispensas/{dispensaId:guid}/homologar", async (
-            Guid dispensaId, HomologarDispensaPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new HomologarDispensaCommand(dispensaId, payload.VencedorHabilitado), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        // Atos terminais.
-        grupo.MapPost("/dispensas/{dispensaId:guid}/fracassar", async (
-            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new DeclararDispensaFracassadaCommand(dispensaId, payload.Motivo), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/dispensas/{dispensaId:guid}/deserta", async (
-            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new DeclararDispensaDesertaCommand(dispensaId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/dispensas/{dispensaId:guid}/revogar", async (
-            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new RevogarDispensaCommand(dispensaId, payload.Motivo), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/dispensas/{dispensaId:guid}/anular", async (
-            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new AnularDispensaCommand(dispensaId, payload.Motivo), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapGet("/dispensas/{dispensaId:guid}", async (
-            Guid dispensaId, ISender sender, CancellationToken cancellationToken)
-            => await sender.Send(new ObterDispensaPorIdQuery(dispensaId), cancellationToken) is { } detalhe
-                ? Results.Ok(detalhe)
-                : Results.NotFound())
-            .RequirePermission("administracao.ver");
-
-        grupo.MapGet("/dispensas", async (
-            SituacaoDispensa situacao, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ListarDispensasPorSituacaoQuery(situacao), cancellationToken)))
-            .RequirePermission("administracao.ver");
-    }
-
-    private static void MapContratos(RouteGroupBuilder grupo)
-    {
-        grupo.MapPost("/contratos", async (
-            CelebrarContratoCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
-            .RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/contratos/{contratoId:guid}/contrato-pncp", async (
-            Guid contratoId, PublicarContratoPncpPayload payload, ISender sender, CancellationToken cancellationToken) =>
-        {
-            // W9.1: o numero de controle NAO vem mais do cliente — a ACL (IPncpGateway) transmite e devolve.
-            await sender.Send(
-                new PublicarContratoNoPncpCommand(
-                    contratoId,
-                    payload.CnpjOrgao,
-                    payload.CodigoUnidade,
-                    payload.NumeroContratoInterno,
-                    payload.DocumentoFornecedor),
-                cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        // W9.1.d: varredura dos prazos de divulgacao no PNCP (art. 94) -> alertas ao Portal do Gestor.
-        // Acionada por scheduler/worker (idempotente; alertas viajam pelo Outbox).
-        grupo.MapPost("/contratos/prazos-pncp/varrer", async (
-            ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { alertas = await sender.Send(new VarrerPrazosPncpCommand(), cancellationToken) }))
-            .RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/contratos/{contratoId:guid}/iniciar-execucao", async (
-            Guid contratoId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new IniciarExecucaoContratoCommand(contratoId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapPost("/contratos/{contratoId:guid}/encerrar", async (
-            Guid contratoId, ISender sender, CancellationToken cancellationToken) =>
-        {
-            await sender.Send(new EncerrarContratoCommand(contratoId), cancellationToken);
-            return Results.NoContent();
-        }).RequirePermission("administracao.gerenciar");
-
-        grupo.MapGet("/contratos/{contratoId:guid}", async (
-            Guid contratoId, ISender sender, CancellationToken cancellationToken)
-            => await sender.Send(new ObterContratoPorIdQuery(contratoId), cancellationToken) is { } detalhe
-                ? Results.Ok(detalhe)
-                : Results.NotFound())
-            .RequirePermission("administracao.ver");
-
-        grupo.MapGet("/contratos/vigentes", async (
-            DateOnly referencia, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ListarContratosVigentesQuery(referencia), cancellationToken)))
-            .RequirePermission("administracao.ver");
-
-        grupo.MapGet("/fornecedores/{fornecedorId:guid}/contratos", async (
-            Guid fornecedorId, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(await sender.Send(new ListarContratosPorFornecedorQuery(fornecedorId), cancellationToken)))
             .RequirePermission("administracao.ver");
     }
 
@@ -409,9 +295,28 @@ internal static class AdministracaoEndpoints
             .RequirePermission("administracao.ver");
     }
 
-    private sealed record PublicarEditalPncpPayload(string NumeroEditalPncp);
+    private sealed record PublicarEditalPncpPayload(
+        string CnpjOrgao,
+        string CodigoUnidade,
+        int AnoCompra,
+        string NumeroCompra,
+        int ModalidadeId,
+        int ModoDisputaId,
+        string AmparoLegalCodigo);
 
     private sealed record JulgarPropostasPayload(Guid PropostaVencedoraId);
+
+    private sealed record GerarRemessaLicitaConPayload(
+        int CodigoOrgao,
+        string NomeOrgao,
+        int CodigoTipoModalidade,
+        int TipoObjeto,
+        int CodigoTipoFaseAtual,
+        int TipoNivelJulgamento,
+        string NumeroProcesso,
+        int AnoProcesso,
+        int NumeroLicitacao,
+        int AnoLicitacao);
 
     private sealed record AdicionarItemDispensaPayload(
         Guid? ItemCatalogoId,
@@ -429,7 +334,19 @@ internal static class AdministracaoEndpoints
         string CnpjOrgao,
         string CodigoUnidade,
         string NumeroContratoInterno,
-        string DocumentoFornecedor);
+        int AnoContrato,
+        string Processo,
+        string NiFornecedor,
+        Application.Abstractions.TipoPessoaFornecedorPncp TipoPessoaFornecedor,
+        string NomeRazaoSocialFornecedor,
+        int TipoContratoId,
+        int CategoriaProcessoId,
+        int NumeroParcelas = 1,
+        string? CnpjCompra = null,
+        int AnoCompra = 0,
+        int SequencialCompra = 0,
+        string? NumeroControlePncpCompra = null,
+        bool FrutoAdesao = false);
 
     private sealed record AplicarSancaoPayload(
         Domain.Fornecedores.TipoSancao Tipo,

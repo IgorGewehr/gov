@@ -21,6 +21,10 @@ public sealed class PncpParametros(IOptions<PncpOptions> options) : IPncpParamet
         => new(_options.DivulgacaoQuantidade, _options.DivulgacaoUnidade, _options.DivulgacaoNormaFonte);
 
     /// <inheritdoc />
+    public ParametroPrazo DivulgacaoDireta()
+        => new(_options.DivulgacaoDiretaQuantidade, _options.DivulgacaoDiretaUnidade, _options.DivulgacaoDiretaNormaFonte);
+
+    /// <inheritdoc />
     public ParametroPrazo RegistroExtrato()
         => new(_options.RegistroExtratoQuantidade, _options.RegistroExtratoUnidade, _options.RegistroExtratoNormaFonte);
 

@@ -128,9 +128,19 @@ export interface AbrirLicitacaoInput {
   termoReferenciaId?: string | null;
 }
 
-/** PublicarEditalPncpPayload. */
+/**
+ * PublicarEditalPncpPayload (L4). O número de controle PNCP NÃO é mais digitado: a ACL (IPncpGateway)
+ * transmite o edital/compra ao PNCP (pré-cadastro órgão/unidade/compra) e devolve o número oficial, que
+ * o backend grava na licitação. O front envia apenas os dados do pré-cadastro da compra.
+ */
 export interface PublicarEditalPncpInput {
-  numeroEditalPncp: string;
+  cnpjOrgao: string;
+  codigoUnidade: string;
+  anoCompra: number;
+  numeroCompra: string;
+  modalidadeId: number;
+  modoDisputaId: number;
+  amparoLegalCodigo: string;
 }
 
 /** JulgarPropostasPayload. */

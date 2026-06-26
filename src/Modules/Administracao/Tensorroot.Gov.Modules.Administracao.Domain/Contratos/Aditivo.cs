@@ -64,7 +64,7 @@ public sealed class Aditivo : Entity<AditivoId>
     /// <summary>Justificativa do aditivo (motivacao do ato administrativo).</summary>
     public string Justificativa { get; private set; } = default!;
 
-    /// <summary>Eficacia obtida pela publicacao do aditivo no PNCP (art. 174).</summary>
+    /// <summary>Eficacia obtida pela divulgacao do aditivo no PNCP (Lei 14.133/2021, art. 94 — caput abrange contratos e seus aditamentos; o art. 174 institui o PNCP).</summary>
     public bool PublicadoNoPncp { get; private set; }
 
     /// <summary>Data de celebracao do termo aditivo.</summary>
@@ -105,6 +105,6 @@ public sealed class Aditivo : Entity<AditivoId>
             dataCelebracao);
     }
 
-    /// <summary>Marca o aditivo como publicado no PNCP (condicao de sua eficacia — art. 174).</summary>
+    /// <summary>Marca o aditivo como publicado no PNCP (condicao de sua eficacia — Lei 14.133/2021, art. 94).</summary>
     internal void MarcarPublicado() => PublicadoNoPncp = true;
 }

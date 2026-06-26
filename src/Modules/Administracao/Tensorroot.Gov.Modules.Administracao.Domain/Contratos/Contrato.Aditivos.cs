@@ -143,8 +143,12 @@ public sealed partial class Contrato
     }
 
     /// <summary>
-    /// Marca um aditivo como publicado no PNCP — condicao de sua eficacia (art. 174; I-11). Acionado pelo
-    /// handler do Outbox apos a publicacao efetiva do termo aditivo.
+    /// Marca um aditivo como publicado no PNCP — condicao de sua EFICACIA (Lei 14.133/2021, art. 94, cujo
+    /// caput abrange "os contratos e seus aditamentos"; o art. 174 apenas institui o PNCP). Acionado pelo
+    /// handler do Outbox apos a transmissao efetiva do termo aditivo pela ACL <c>IPncpGateway</c>.
+    /// <para>// TODO(M10): o aditivo deve transmitir com PRAZO PNCP proprio (art. 94 conta da assinatura do
+    /// aditamento) pelo cliente HTTP real do PNCP; hoje a transmissao do aditivo segue o // TODO(M10) geral
+    /// do gateway, sem prazo persistido proprio.</para>
     /// </summary>
     /// <param name="aditivoId">Identificador do aditivo publicado.</param>
     /// <exception cref="InvalidOperationException">Se o aditivo nao pertencer ao contrato.</exception>

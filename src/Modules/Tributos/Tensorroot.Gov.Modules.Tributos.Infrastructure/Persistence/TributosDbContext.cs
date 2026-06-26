@@ -6,7 +6,9 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Arrecadacao;
 using Tensorroot.Gov.Modules.Tributos.Domain.Certidoes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Contribuintes;
 using Tensorroot.Gov.Modules.Tributos.Domain.Cosip;
+using Tensorroot.Gov.Modules.Tributos.Domain.Desif;
 using Tensorroot.Gov.Modules.Tributos.Domain.Dividas;
+using Tensorroot.Gov.Modules.Tributos.Domain.Domicilio;
 using Tensorroot.Gov.Modules.Tributos.Domain.Imoveis;
 using Tensorroot.Gov.Modules.Tributos.Domain.Iss;
 using Tensorroot.Gov.Modules.Tributos.Domain.Itbi;
@@ -15,6 +17,7 @@ using Tensorroot.Gov.Modules.Tributos.Domain.Lancamentos;
 using Tensorroot.Gov.Modules.Tributos.Domain.Melhoria;
 using Tensorroot.Gov.Modules.Tributos.Domain.Nfse;
 using Tensorroot.Gov.Modules.Tributos.Domain.Pgv;
+using Tensorroot.Gov.Modules.Tributos.Domain.Sim;
 using Tensorroot.Gov.Modules.Tributos.Domain.Taxas;
 
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
@@ -85,6 +88,15 @@ public sealed class TributosDbContext(DbContextOptions<TributosDbContext> option
 
     /// <summary>Obras de Contribuição de Melhoria (edital, impugnação e rateio — CTN arts. 81–82).</summary>
     public DbSet<ObraContribuicaoMelhoria> ObrasContribuicaoMelhoria => Set<ObraContribuicaoMelhoria>();
+
+    /// <summary>Declarações DES-IF (Apuração Mensal do ISSQN das instituições financeiras — ABRASF).</summary>
+    public DbSet<DeclaracaoDesif> DeclaracoesDesif => Set<DeclaracaoDesif>();
+
+    /// <summary>Títulos de registro no Serviço de Inspeção Municipal (S.I.M. — produtos de origem animal/vegetal).</summary>
+    public DbSet<TituloRegistroSim> TitulosRegistroSim => Set<TituloRegistroSim>();
+
+    /// <summary>Domicílios Eletrônicos do Contribuinte (DEC — caixa postal fiscal com ciência/prazo).</summary>
+    public DbSet<DomicilioEletronicoContribuinte> DomiciliosEletronicos => Set<DomicilioEletronicoContribuinte>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
