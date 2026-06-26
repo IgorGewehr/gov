@@ -68,8 +68,10 @@ public sealed class PensaoEConsolidacaoTests : RecursosHumanosTestBase
             ctx.Servidores.Add(servidor);
             SemearTabelasERubricas(ctx, competencia);
 
+            // Base R$ 7.000 (faixa decrescente do redutor 2026): o IRRF permanece POSITIVO mesmo apos o redutor
+            // parcial, deixando observavel a deducao da pensao (em R$ 5.000 o redutor zeraria o IRRF).
             var folha = FolhaDePagamento.Abrir(TenantA, competencia);
-            folha.AdicionarEvento(servidor.Id.Value, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(5000m), 5000m, RegimePrevidenciario.Rgps);
+            folha.AdicionarEvento(servidor.Id.Value, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(7000m), 7000m, RegimePrevidenciario.Rgps);
             folhaId = folha.Id.Value;
             ctx.FolhasDePagamento.Add(folha);
             await ctx.SaveChangesAsync();
@@ -82,9 +84,10 @@ public sealed class PensaoEConsolidacaoTests : RecursosHumanosTestBase
             var folha = await ctx.FolhasDePagamento.Include(f => f.Eventos).SingleAsync(f => f.Id == new FolhaDePagamentoId(folhaId));
             // Pensao gera o desconto/repasse de 800.
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "PENSAO-ALIM" && e.Valor == 800m);
-            // IRRF deduz a pensao: base de IRRF cai 800 ante o cenario sem pensao (312,89) -> imposto menor.
+            // IRRF deduz a pensao: base de IRRF cai 800 ante o cenario sem pensao (802,68 em R$ 7.000) -> imposto menor e positivo.
             var irrf = folha.Eventos.Single(e => e.Rubrica.Codigo == "IRRF");
-            irrf.Valor.Should().BeLessThan(312.89m);
+            irrf.Valor.Should().BeLessThan(802.68m);
+            irrf.Valor.Should().BeGreaterThan(0m);
         }
     }
 
@@ -275,8 +278,9 @@ public sealed class PensaoEConsolidacaoTests : RecursosHumanosTestBase
 
         // INSS isolado = 2 x 501,51 = 1003,02 (cada parcela de 5000 abaixo do teto). ERRADO: ignora o teto unico.
         inssIsolado.Should().Be(1003.02m);
-        // IRRF isolado = 2 x 312,89 = 625,78 (cada 5000 na faixa de 15%). ERRADO: ignora a progressividade mensal.
-        irrfIsolado.Should().Be(625.78m);
+        // IRRF isolado (2026) = 0: cada parcela de 5000, apurada isolada, fica isenta pelo redutor mensal da
+        // Lei 15.270/2025 (isencao efetiva ate 5.000). ERRADO: ignora a progressividade — a SOMA (10000) e tributada.
+        irrfIsolado.Should().Be(0m);
 
         // ---------- (B) CONSOLIDADO: re-apura sobre a SOMA (10000) ----------
         // Competencia distinta (a constraint UNIQUE e por TenantId+Competencia+Tipo); tabelas vigentes em

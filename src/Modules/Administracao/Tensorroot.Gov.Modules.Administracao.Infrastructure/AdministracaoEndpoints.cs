@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Tensorroot.Gov.Modules.Administracao.Application.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Application.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Application.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Application.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Application.Licitacoes;
 using Tensorroot.Gov.Modules.Administracao.Application.Pca;
 using Tensorroot.Gov.Modules.Administracao.Application.RegistroPrecos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
+using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
 using Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
@@ -23,6 +25,7 @@ internal static class AdministracaoEndpoints
         var grupo = endpoints.MapGroup("/api/administracao").WithTags("Administracao");
 
         MapLicitacoes(grupo);
+        MapDispensas(grupo);
         MapContratos(grupo);
         MapFornecedores(grupo);
         MapCatalogo(grupo);
@@ -205,6 +208,110 @@ internal static class AdministracaoEndpoints
             .RequirePermission("administracao.ver");
     }
 
+    private static void MapDispensas(RouteGroupBuilder grupo)
+    {
+        // Abertura (rascunho) — Lei 14.133/2021, art. 75, I/II; IN SEGES/ME 67/2021.
+        grupo.MapPost("/dispensas", async (
+            AbrirDispensaCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("administracao.gerenciar");
+
+        // Inclusao de item (com fail-closed do teto legal vigente no agregado).
+        grupo.MapPost("/dispensas/{dispensaId:guid}/itens", async (
+            Guid dispensaId, AdicionarItemDispensaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                itemId = await sender.Send(
+                    new AdicionarItemDispensaCommand(dispensaId, payload.ItemCatalogoId, payload.Descricao, payload.Quantidade, payload.ValorUnitarioEstimado),
+                    cancellationToken),
+            }))
+            .RequirePermission("administracao.gerenciar");
+
+        // Publicacao do aviso de contratacao direta (valida o prazo minimo de divulgacao).
+        grupo.MapPost("/dispensas/{dispensaId:guid}/aviso", async (
+            Guid dispensaId, PublicarAvisoDispensaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new PublicarAvisoDispensaCommand(dispensaId, payload.NumeroAviso, payload.AberturaDisputa), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        // Abertura da etapa de lances.
+        grupo.MapPost("/dispensas/{dispensaId:guid}/disputa/abrir", async (
+            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AbrirDisputaDispensaCommand(dispensaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        // Registro de lance (cotacao) — fail-closed para fornecedor impedido; lance sucessivo deve melhorar.
+        grupo.MapPost("/dispensas/{dispensaId:guid}/lances", async (
+            Guid dispensaId, RegistrarLanceDispensaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                cotacaoId = await sender.Send(
+                    new RegistrarLanceDispensaCommand(dispensaId, payload.ItemId, payload.FornecedorId, payload.Valor),
+                    cancellationToken),
+            }))
+            .RequirePermission("administracao.gerenciar");
+
+        // Encerramento da disputa + julgamento (indica vencedora pelo criterio).
+        grupo.MapPost("/dispensas/{dispensaId:guid}/disputa/encerrar", async (
+            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new EncerrarDisputaDispensaCommand(dispensaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        // Homologacao (autoridade competente) — exige vencedor habilitado e nao impedido.
+        grupo.MapPost("/dispensas/{dispensaId:guid}/homologar", async (
+            Guid dispensaId, HomologarDispensaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new HomologarDispensaCommand(dispensaId, payload.VencedorHabilitado), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        // Atos terminais.
+        grupo.MapPost("/dispensas/{dispensaId:guid}/fracassar", async (
+            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new DeclararDispensaFracassadaCommand(dispensaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/dispensas/{dispensaId:guid}/deserta", async (
+            Guid dispensaId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new DeclararDispensaDesertaCommand(dispensaId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/dispensas/{dispensaId:guid}/revogar", async (
+            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RevogarDispensaCommand(dispensaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/dispensas/{dispensaId:guid}/anular", async (
+            Guid dispensaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new AnularDispensaCommand(dispensaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapGet("/dispensas/{dispensaId:guid}", async (
+            Guid dispensaId, ISender sender, CancellationToken cancellationToken)
+            => await sender.Send(new ObterDispensaPorIdQuery(dispensaId), cancellationToken) is { } detalhe
+                ? Results.Ok(detalhe)
+                : Results.NotFound())
+            .RequirePermission("administracao.ver");
+
+        grupo.MapGet("/dispensas", async (
+            SituacaoDispensa situacao, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarDispensasPorSituacaoQuery(situacao), cancellationToken)))
+            .RequirePermission("administracao.ver");
+    }
+
     private static void MapContratos(RouteGroupBuilder grupo)
     {
         grupo.MapPost("/contratos", async (
@@ -305,6 +412,18 @@ internal static class AdministracaoEndpoints
     private sealed record PublicarEditalPncpPayload(string NumeroEditalPncp);
 
     private sealed record JulgarPropostasPayload(Guid PropostaVencedoraId);
+
+    private sealed record AdicionarItemDispensaPayload(
+        Guid? ItemCatalogoId,
+        string Descricao,
+        decimal Quantidade,
+        decimal ValorUnitarioEstimado);
+
+    private sealed record PublicarAvisoDispensaPayload(string NumeroAviso, DateTimeOffset AberturaDisputa);
+
+    private sealed record RegistrarLanceDispensaPayload(Guid ItemId, Guid FornecedorId, decimal Valor);
+
+    private sealed record HomologarDispensaPayload(bool VencedorHabilitado);
 
     private sealed record PublicarContratoPncpPayload(
         string CnpjOrgao,

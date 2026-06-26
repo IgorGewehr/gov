@@ -68,7 +68,8 @@ public sealed class CriarCargoValidator : AbstractValidator<CriarCargoCommand>
 public sealed class CriarCargoHandler(
     ICargoRepository cargos,
     IUnitOfWork unitOfWork,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    IPoliticaPrevidenciariaProvider politicaPrevidenciaria)
     : ICommandHandler<CriarCargoCommand, Guid>
 {
     /// <inheritdoc />
@@ -82,6 +83,9 @@ public sealed class CriarCargoHandler(
             request.Lotacao.DenominacaoUnidade,
             request.Lotacao.CodigoLotacaoTributaria);
 
+        // Regime previdenciario do cargo = politica do ente (tem RPPS proprio?), nunca derivacao fixa.
+        var politica = await politicaPrevidenciaria.ObterAsync(cancellationToken).ConfigureAwait(false);
+
         var cargo = Cargo.Criar(
             tenant.TenantId,
             request.Denominacao,
@@ -90,6 +94,7 @@ public sealed class CriarCargoHandler(
             lotacao,
             request.QuantidadeVagas,
             request.LeiCriacao,
+            politica,
             request.PlanoDeCargosId is { } plano ? new PlanoDeCargosId(plano) : null);
 
         cargos.Adicionar(cargo);

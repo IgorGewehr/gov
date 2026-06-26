@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
 using Tensorroot.Gov.Modules.Administracao.Domain.Pca;
@@ -22,6 +23,9 @@ public sealed class AdministracaoDbContext(DbContextOptions<AdministracaoDbConte
 
     /// <summary>Licitacoes (Lei 14.133/2021).</summary>
     public DbSet<Licitacao> Licitacoes => Set<Licitacao>();
+
+    /// <summary>Dispensas eletronicas em razao do valor (art. 75, I/II; IN SEGES/ME 67/2021).</summary>
+    public DbSet<DispensaEletronica> Dispensas => Set<DispensaEletronica>();
 
     /// <summary>Contratos administrativos.</summary>
     public DbSet<Contrato> Contratos => Set<Contrato>();

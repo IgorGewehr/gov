@@ -15,7 +15,8 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.ESocial;
 /// <param name="CodCateg">Categoria eSocial do trabalhador (Tabela 01). // TODO(validar-oficial).</param>
 /// <param name="CodCargo">Codigo do cargo (S-1010/estrutura). // TODO(validar-oficial).</param>
 /// <param name="VrSalFx">Valor do salario fixo/vencimento do vinculo.</param>
-public sealed record GerarS2200Command(Guid ServidorId, string CodCateg, string CodCargo, decimal VrSalFx) : ICommand<Guid>;
+/// <param name="TpProv">Tipo de provimento do estatutario (Tabela 14; ex.: "1"=nomeacao cargo efetivo). // TODO(validar-oficial: dominio).</param>
+public sealed record GerarS2200Command(Guid ServidorId, string CodCateg, string CodCargo, decimal VrSalFx, string TpProv = "1") : ICommand<Guid>;
 
 /// <summary>Handler do S-2200.</summary>
 public sealed class GerarS2200Handler(
@@ -38,12 +39,16 @@ public sealed class GerarS2200Handler(
             servidor.DadosPessoais.Nome,
             servidor.DadosPessoais.DataNascimento,
             servidor.Matricula.Valor,
-            // // TODO(validar-oficial): dtAdm = qual marco (nomeacao/posse/exercicio) para estatutario.
-            servidor.DataPosse ?? servidor.DataNomeacao,
+            // dtNomeacao do estatutario (marco de provimento). dtPosse/dtExercicio vao em campos proprios.
+            servidor.DataNomeacao,
             request.CodCateg,
             RoteadorRemuneracao.DerivarTpRegPrev(servidor.Regime),
             request.CodCargo,
-            request.VrSalFx);
+            request.VrSalFx,
+            InscricaoEmpregadorFactory.De(p),
+            request.TpProv,
+            servidor.DataPosse,
+            servidor.DataExercicio);
 
         var chave = ChaveIdempotenciaEvento.Criar(TipoEventoESocial.S2200Admissao, servidor.Id.Value.ToString());
         var xml = GeradorEventosESocial.GerarS2200(insumo, idEvento: "PENDENTE");

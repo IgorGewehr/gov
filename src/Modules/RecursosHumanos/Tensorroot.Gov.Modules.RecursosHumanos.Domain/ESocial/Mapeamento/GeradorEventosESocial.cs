@@ -132,6 +132,8 @@ public static class GeradorEventosESocial
         return EscritorXmlEvento.Escrever("evtAdmissao", Ns("evtAdmissao/v_S_01_03_00"), idEvento, w =>
         {
             EscreverIdeEventoNaoPeriodico(w);
+            EscreverIdeEmpregador(w, insumo.Empregador);
+
             w.WriteStartElement("trabalhador");
             w.WriteElementString("cpfTrab", insumo.CpfTrab);
             w.WriteElementString("nmTrab", insumo.NomeTrab);
@@ -149,7 +151,21 @@ public static class GeradorEventosESocial
             w.WriteEndElement(); // remuneracao
             w.WriteStartElement("infoRegimeTrab");
             w.WriteStartElement("infoEstatutario");
-            w.WriteElementString("dtNomeacao", EscritorXmlEvento.Data(insumo.DataAdmissao)); // // TODO(validar-oficial: tpProv/dtPosse/dtExercicio).
+            // S-1.3 (MOS): infoEstatutario exige tpProv + os marcos da nomeacao/posse/exercicio. dtPosse e
+            // dtExercicio sao condicionais (so quando ja ocorreram). // TODO(M10-validate): tpPlanRP/indTetoRGPS/
+            // indAbonoPerm e o dominio de tpProv (Tabela 14) no XSD travado.
+            w.WriteElementString("tpProv", insumo.TpProv);
+            w.WriteElementString("dtNomeacao", EscritorXmlEvento.Data(insumo.DataAdmissao));
+            if (insumo.DataPosse is { } dtPosse)
+            {
+                w.WriteElementString("dtPosse", EscritorXmlEvento.Data(dtPosse));
+            }
+
+            if (insumo.DataExercicio is { } dtExercicio)
+            {
+                w.WriteElementString("dtExercicio", EscritorXmlEvento.Data(dtExercicio));
+            }
+
             w.WriteEndElement(); // infoEstatutario
             w.WriteEndElement(); // infoRegimeTrab
             w.WriteEndElement(); // infoContrato
@@ -196,6 +212,8 @@ public static class GeradorEventosESocial
             EscreverProcEmiVerProc(w);
             w.WriteEndElement(); // ideEvento
 
+            EscreverIdeEmpregador(w, insumo.Empregador);
+
             w.WriteStartElement("ideTrabalhador");
             w.WriteElementString("cpfTrab", insumo.CpfTrab);
             w.WriteEndElement(); // ideTrabalhador
@@ -205,19 +223,31 @@ public static class GeradorEventosESocial
             w.WriteElementString("ideDmDev", insumo.Matricula);
             w.WriteElementString("codCateg", insumo.CodCateg);
             w.WriteStartElement("infoPerApur");
+
+            // S-1.3 (MOS): dmDev > infoPerApur > ideEstabLot > remunPerApur > itensRemun. O grupo intermediario
+            // remunPerApur (com matricula) e itensRemun (rubricas) sao OBRIGATORIOS — o XSD rejeita detVerbas
+            // diretamente sob ideEstabLot. // TODO(M10-validate): confirmar codLotacao/indSimples no XSD travado.
             w.WriteStartElement("ideEstabLot");
-            // detVerbas: somado por rubrica/incidencia — a folha E a fonte de verdade (ESOCIAL-SPEC §1.6).
+            w.WriteElementString("tpInsc", insumo.EstabLotacao.TpInsc.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            w.WriteElementString("nrInsc", insumo.EstabLotacao.NrInsc);
+            w.WriteElementString("codLotacao", insumo.EstabLotacao.CodLotacao);
+
+            w.WriteStartElement("remunPerApur");
+            w.WriteElementString("matricula", insumo.Matricula);
+
+            // itensRemun: somado por rubrica/incidencia — a folha E a fonte de verdade (ESOCIAL-SPEC §1.6).
             foreach (var v in insumo.Verbas)
             {
-                w.WriteStartElement("detVerbas");
+                w.WriteStartElement("itensRemun");
                 w.WriteElementString("codRubr", v.CodRubr);
                 w.WriteElementString("ideTabRubr", v.IdeTabRubr);
                 w.WriteElementString("qtdRubr", EscritorXmlEvento.Valor(v.QtdRubr));
                 w.WriteElementString("vrRubr", EscritorXmlEvento.Valor(v.VrRubr));
                 w.WriteElementString("indApurIR", v.IndApurIr.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                w.WriteEndElement(); // detVerbas
+                w.WriteEndElement(); // itensRemun
             }
 
+            w.WriteEndElement(); // remunPerApur
             w.WriteEndElement(); // ideEstabLot
             w.WriteEndElement(); // infoPerApur
             w.WriteEndElement(); // dmDev
@@ -288,6 +318,15 @@ public static class GeradorEventosESocial
         w.WriteElementString("indRetif", "1");
         EscreverProcEmiVerProc(w);
         w.WriteEndElement();
+    }
+
+    private static void EscreverIdeEmpregador(XmlWriter w, InscricaoEmpregador empregador)
+    {
+        // ideEmpregador (tpInsc/nrInsc): obrigatorio em todos os eventos do S-1.3 logo apos ideEvento.
+        w.WriteStartElement("ideEmpregador");
+        w.WriteElementString("tpInsc", empregador.TpInsc.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        w.WriteElementString("nrInsc", empregador.NrInsc);
+        w.WriteEndElement(); // ideEmpregador
     }
 
     private static void EscreverProcEmiVerProc(XmlWriter w)

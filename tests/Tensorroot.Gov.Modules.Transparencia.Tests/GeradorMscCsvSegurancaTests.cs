@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using FluentAssertions;
+using Tensorroot.Gov.Modules.Transparencia.Application.Abstractions;
 using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
 using Tensorroot.Gov.Modules.Transparencia.Domain.ValueObjects;
 using Tensorroot.Gov.Modules.Transparencia.Infrastructure.Integracoes;
@@ -9,18 +10,27 @@ using Xunit;
 namespace Tensorroot.Gov.Modules.Transparencia.Tests;
 
 /// <summary>
-/// Seguranca do CSV publico/aberto da MSC (OWASP CSV Injection + RFC 4180). Campos como a conta PCASP e a
-/// informacao complementar carregam texto de origem externa; uma celula iniciada por <c>= + - @</c> (ou TAB/CR)
-/// vira FORMULA executavel ao abrir no Excel/LibreOffice/Sheets. O gerador deve neutralizar o gatilho (prefixo
-/// aspa simples) e citar campos com CR isolado (RFC 4180 §2.6) para nao quebrar a linha do dataset.
+/// Seguranca do CSV publico/aberto da MSC (OWASP CSV Injection + RFC 4180). Valores como a conta PCASP e os
+/// valores de informacao complementar (IC) carregam texto de origem externa; uma celula iniciada por
+/// <c>= + - @</c> (ou TAB/CR) vira FORMULA executavel ao abrir no Excel/LibreOffice/Sheets. O gerador deve
+/// neutralizar o gatilho (prefixo aspa simples) e citar campos com CR isolado (RFC 4180 §2.6) para nao
+/// quebrar a linha do dataset. O payload e injetado como VALOR de um par IC oficial (<c>PO=&lt;payload&gt;</c>),
+/// que vira a celula <c>IC1</c> do leiaute (Regras Gerais MSC 2026).
 /// </summary>
 public sealed class GeradorMscCsvSegurancaTests
 {
     private static readonly Guid TenantA = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-    private static string GerarCsv(string informacaoComplementar)
+    // Fake do provedor de Cod.Siconfi (IBGE + EX): determinístico, sem configuração.
+    private sealed class IdentificacaoEnteSiconfiFake : IIdentificacaoEnteSiconfi
     {
-        // Matriz balanceada minima (debito == credito) com o texto suspeito na informacao complementar.
+        public Task<string> ObterCodigoSiconfiAsync(CancellationToken cancellationToken)
+            => Task.FromResult("4312104EX");
+    }
+
+    private static string GerarCsv(string payload)
+    {
+        // Matriz balanceada minima (debito == credito) com o texto suspeito como VALOR do par IC "PO".
         var declaracao = DeclaracaoFiscal.ConsolidarMatriz(
             TenantA,
             TipoDeclaracaoFiscal.Msc,
@@ -32,11 +42,12 @@ public sealed class GeradorMscCsvSegurancaTests
             new DateOnly(2026, 6, 5),
             MatrizSaldos.Montar(
             [
-                LinhaContabil.Criar("1.1.1.1.01.00", NaturezaSaldo.Devedor, ValorMonetario.De(1000m), informacaoComplementar),
+                LinhaContabil.Criar("1.1.1.1.01.00", NaturezaSaldo.Devedor, ValorMonetario.De(1000m), "PO=" + payload),
                 LinhaContabil.Criar("2.1.1.1.01.00", NaturezaSaldo.Credor, ValorMonetario.De(1000m)),
             ]));
 
-        var artefato = new GeradorMscCsv().GerarAsync(declaracao, default).GetAwaiter().GetResult();
+        var artefato = new GeradorMscCsv(new IdentificacaoEnteSiconfiFake())
+            .GerarAsync(declaracao, default).GetAwaiter().GetResult();
 
         using var memoria = new MemoryStream(artefato.Conteudo.ToArray());
         using var zip = new ZipArchive(memoria, ZipArchiveMode.Read);

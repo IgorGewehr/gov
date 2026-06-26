@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
 using Tensorroot.Gov.Modules.Administracao.Domain.Pca;
@@ -29,6 +30,29 @@ public sealed class LicitacaoRepository(AdministracaoDbContext context) : ILicit
         => await context.Licitacoes
             .Where(licitacao => licitacao.Situacao == situacao)
             .OrderBy(licitacao => licitacao.Objeto)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="DispensaEletronica"/>.</summary>
+public sealed class DispensaRepository(AdministracaoDbContext context) : IDispensaRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(DispensaEletronica dispensa)
+    {
+        ArgumentNullException.ThrowIfNull(dispensa);
+        context.Dispensas.Add(dispensa);
+    }
+
+    /// <inheritdoc />
+    public Task<DispensaEletronica?> ObterPorIdAsync(DispensaEletronicaId id, CancellationToken cancellationToken)
+        => context.Dispensas.FirstOrDefaultAsync(dispensa => dispensa.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<DispensaEletronica>> ListarPorSituacaoAsync(SituacaoDispensa situacao, CancellationToken cancellationToken)
+        => await context.Dispensas
+            .Where(dispensa => dispensa.Situacao == situacao)
+            .OrderBy(dispensa => dispensa.Objeto)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 }

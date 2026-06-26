@@ -142,20 +142,102 @@ public sealed class GerarRemessaTceHandler(
         return arquivos;
     }
 
-    // Cabeçalho (1ª linha): CNPJ + Setor de Governo + datas + Código da Remessa. Formato exato do MT 2026.
-    // TODO(validar-leiaute-MT-2026): posições/tamanhos exatos do cabeçalho (CNPJ, datas, Código da Remessa
-    // em 119-130) conforme o MT SIAPC 2026; abaixo um cabeçalho textual delimitado provisório (não oficial).
+    // Cabeçalho POSICIONAL de largura fixa 130 (SIAPC/PAD MT-ASCE-0105 Vol.V v2.0 Set/2010, §"Cabeçalho").
+    // Obrigatório na 1ª linha de TODOS os arquivos. SEM separadores — campos justapostos por posição:
+    //   CNPJ do Setor de Governo .... Numérico  14 ... 1-14    (zeros à esquerda)
+    //   Data Inicial da Informação .. Data      08 ... 15-22   (ddmmaaaa)
+    //   Data Final da Informação .... Data      08 ... 23-30   (ddmmaaaa)
+    //   Data da Geração do Arquivo .. Data      08 ... 31-38   (ddmmaaaa)
+    //   Nome do Setor de Governo .... Caracter  80 ... 39-118  (esquerda, espaços à direita)
+    //   Código da Remessa ........... Numérico  12 ... 119-130 (zeros à esquerda)
+    // Ex. oficial: 99999999000199 01012001 31122001 31012002 "Prefeitura..."(ate 118) 000000000001.
     private static byte[] MontarCabecalho(IdentificacaoEnteRemessa identificacao, DateOnly dataGeracao)
     {
-        var texto = string.Join(
-            ';',
-            identificacao.Cnpj,
-            identificacao.NomeSetorGoverno,
-            $"{identificacao.DataInicioPeriodo:ddMMyyyy}",
-            $"{identificacao.DataFimPeriodo:ddMMyyyy}",
-            $"{dataGeracao:ddMMyyyy}",
-            identificacao.CodigoRemessa.ToString(System.Globalization.CultureInfo.InvariantCulture).PadLeft(12, '0'));
-        return EmissorRegistroSiapc.Codificar(texto + EmissorRegistroSiapc.TerminadorLinha);
+        Span<char> linha = stackalloc char[LarguraCabecalho];
+        linha.Fill(' ');
+
+        EscreverNumericoPosicional(linha, PosCnpj, TamCnpj, SomenteDigitos(identificacao.Cnpj));
+        EscreverDataPosicional(linha, PosDataInicial, identificacao.DataInicioPeriodo);
+        EscreverDataPosicional(linha, PosDataFinal, identificacao.DataFimPeriodo);
+        EscreverDataPosicional(linha, PosDataGeracao, dataGeracao);
+        EscreverCaracterePosicional(linha, PosNomeSg, TamNomeSg, identificacao.NomeSetorGoverno);
+        EscreverNumericoPosicional(
+            linha,
+            PosCodigoRemessa,
+            TamCodigoRemessa,
+            identificacao.CodigoRemessa.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        return EmissorRegistroSiapc.Codificar(new string(linha) + EmissorRegistroSiapc.TerminadorLinha);
+    }
+
+    // Grade posicional do cabeçalho (1-based na norma; convertido a 0-based no acesso ao span).
+    private const int LarguraCabecalho = 130;
+    private const int PosCnpj = 0;
+    private const int TamCnpj = 14;
+    private const int PosDataInicial = 14;
+    private const int PosDataFinal = 22;
+    private const int PosDataGeracao = 30;
+    private const int TamData = 8;
+    private const int PosNomeSg = 38;
+    private const int TamNomeSg = 80;
+    private const int PosCodigoRemessa = 118;
+    private const int TamCodigoRemessa = 12;
+
+    // Numérico: alinhado à DIREITA com ZEROS à esquerda; trunca à esquerda só se exceder (não deve ocorrer).
+    private static void EscreverNumericoPosicional(Span<char> linha, int posicao, int tamanho, string digitos)
+    {
+        var destino = linha.Slice(posicao, tamanho);
+        destino.Fill('0');
+        var fonte = digitos.AsSpan();
+        if (fonte.Length > tamanho)
+        {
+            fonte = fonte[^tamanho..];
+        }
+
+        fonte.CopyTo(destino[(tamanho - fonte.Length)..]);
+    }
+
+    // Caractere: alinhado à ESQUERDA com ESPAÇOS à direita; trunca à direita se exceder a largura.
+    private static void EscreverCaracterePosicional(Span<char> linha, int posicao, int tamanho, string texto)
+    {
+        var destino = linha.Slice(posicao, tamanho);
+        destino.Fill(' ');
+        var fonte = (texto ?? string.Empty).AsSpan();
+        if (fonte.Length > tamanho)
+        {
+            fonte = fonte[..tamanho];
+        }
+
+        fonte.CopyTo(destino);
+    }
+
+    // Data: ddmmaaaa (8 posições), sem separadores.
+    private static void EscreverDataPosicional(Span<char> linha, int posicao, DateOnly data)
+    {
+        var destino = linha.Slice(posicao, TamData);
+        data.Day.ToString("00", System.Globalization.CultureInfo.InvariantCulture).AsSpan().CopyTo(destino);
+        data.Month.ToString("00", System.Globalization.CultureInfo.InvariantCulture).AsSpan().CopyTo(destino[2..]);
+        data.Year.ToString("0000", System.Globalization.CultureInfo.InvariantCulture).AsSpan().CopyTo(destino[4..]);
+    }
+
+    private static string SomenteDigitos(string valor)
+    {
+        if (string.IsNullOrEmpty(valor))
+        {
+            return string.Empty;
+        }
+
+        Span<char> destino = stackalloc char[valor.Length];
+        var escritos = 0;
+        foreach (var c in valor)
+        {
+            if (char.IsAsciiDigit(c))
+            {
+                destino[escritos++] = c;
+            }
+        }
+
+        return new string(destino[..escritos]);
     }
 
     // Finalizador: "FINALIZADOR" + qtd de registros (Numérico 10). CONFIANÇA: ALTA (verificação e-validador 4.2).

@@ -1402,7 +1402,38 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                                 .HasForeignKey("TabelaIrrfId");
                         });
 
+                    b.OwnsOne("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais.RedutorIrrf", "Redutor", b1 =>
+                        {
+                            b1.Property<Guid>("TabelaIrrfId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("CoeficienteBase")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("RedutorCoeficienteBase");
+
+                            b1.Property<decimal>("CoeficienteRendimento")
+                                .HasColumnType("decimal(9,6)")
+                                .HasColumnName("RedutorCoeficienteRendimento");
+
+                            b1.Property<decimal>("LimiteRendimento")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("RedutorLimiteRendimento");
+
+                            b1.Property<decimal>("TetoRedutor")
+                                .HasColumnType("decimal(18,2)")
+                                .HasColumnName("RedutorTeto");
+
+                            b1.HasKey("TabelaIrrfId");
+
+                            b1.ToTable("TabelasIrrf", "recursoshumanos");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TabelaIrrfId");
+                        });
+
                     b.Navigation("Faixas");
+
+                    b.Navigation("Redutor");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais.TabelaRpps", b =>

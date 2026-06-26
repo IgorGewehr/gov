@@ -5,6 +5,7 @@ import { SubNav, type SubNavItem } from '../../components/ui';
 
 const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/administracao/licitacoes', label: 'Licitações' },
+  { to: '/administracao/dispensas', label: 'Dispensa Eletrônica' },
   { to: '/administracao/contratos', label: 'Contratos' },
   { to: '/administracao/fornecedores', label: 'Fornecedores' },
   { to: '/administracao/catalogo', label: 'Catálogo' },

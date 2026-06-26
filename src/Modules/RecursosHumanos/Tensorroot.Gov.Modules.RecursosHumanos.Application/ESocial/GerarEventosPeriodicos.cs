@@ -48,7 +48,7 @@ public sealed class GerarRemuneracaoFolhaHandler(
                 continue;
             }
 
-            // detVerbas: somado por rubrica (codigo). A folha e a fonte de verdade.
+            // itensRemun: somado por rubrica (codigo). A folha e a fonte de verdade.
             var verbas = grupoServidor
                 .GroupBy(e => e.Rubrica.Codigo)
                 .Select(g => new ItemVerba(
@@ -66,7 +66,9 @@ public sealed class GerarRemuneracaoFolhaHandler(
                 // // TODO(validar-oficial): codCateg real do servidor (GAP — ESOCIAL-SPEC §1.4); placeholder estrutural.
                 CodCateg: RoteadorRemuneracao.EhRpps(servidor.Regime) ? "301" : "101",
                 perApur,
-                verbas);
+                verbas,
+                InscricaoEmpregadorFactory.De(p),
+                InscricaoEmpregadorFactory.EstabLotacao(p));
 
             var rpps = RoteadorRemuneracao.EhRpps(servidor.Regime);
             var tipo = RoteadorRemuneracao.TipoRemuneracao(servidor.Regime);

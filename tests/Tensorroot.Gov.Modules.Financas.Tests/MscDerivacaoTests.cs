@@ -135,4 +135,51 @@ public sealed class MscDerivacaoTests
 
         linhas.Should().BeEmpty();
     }
+
+    // ---- Regras duras do SICONFI (Regras Gerais MSC 2026, "Observacoes Importantes") ----
+
+    private static InformacoesComplementaresMsc Ic() => InformacoesComplementaresMsc.Criar();
+
+    private static LinhaMsc Reg(string conta, NaturezaSaldo lado, TipoValorMsc tipo, decimal valor)
+        => LinhaMsc.Criar(conta, lado, tipo, valor, Ic())!;
+
+    [Fact]
+    public void Matriz_que_fecha_no_total_mas_desbalanceia_uma_classe_e_bloqueada()
+    {
+        // Total geral D=C fecha (300 D = 300 C), MAS dentro da classe PATRIMONIAL ha so devedor
+        // e na ORCAMENTARIA so credor: cada classe individualmente NAO fecha. O SICONFI rejeita.
+        var linhas = new[]
+        {
+            // Patrimonial (classe 1): so saldo final devedor.
+            Reg("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.SaldoInicial, 0m + 300m),
+            Reg("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.SaldoFinal, 300m),
+            // Orcamentaria (classe 6): so saldo final credor — fecha o TOTAL geral, nao a classe.
+            Reg("6.2.1.1.00", NaturezaSaldo.Credora, TipoValorMsc.SaldoInicial, 300m),
+            Reg("6.2.1.1.00", NaturezaSaldo.Credora, TipoValorMsc.SaldoFinal, 300m),
+        };
+
+        var acao = () => MatrizSaldosContabeis.Montar(Tenant, 2026, 3, TipoMatrizMsc.Agregada, linhas);
+
+        acao.Should().Throw<MatrizSaldosClasseDesbalanceadaException>();
+    }
+
+    [Fact]
+    public void Conta_com_saldo_inicial_mais_movimento_diferente_do_saldo_final_e_bloqueada()
+    {
+        // Conta devedora: SI(100) + Mov(D 500 - C 300 = +200) = 300, mas SF informado = 999. Inconsistente.
+        // Par credor adicionado so para o total geral e cada classe fecharem (isola a regra de consistencia).
+        var linhas = new[]
+        {
+            Reg("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.SaldoInicial, 100m),
+            Reg("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.MovimentoPeriodo, 500m),
+            Reg("1.1.1.1.01", NaturezaSaldo.Credora, TipoValorMsc.MovimentoPeriodo, 300m),
+            Reg("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.SaldoFinal, 999m),
+            Reg("2.1.3.1.01", NaturezaSaldo.Credora, TipoValorMsc.SaldoInicial, 999m),
+            Reg("2.1.3.1.01", NaturezaSaldo.Credora, TipoValorMsc.SaldoFinal, 999m),
+        };
+
+        var acao = () => MatrizSaldosContabeis.Montar(Tenant, 2026, 3, TipoMatrizMsc.Agregada, linhas);
+
+        acao.Should().Throw<MatrizSaldosContaInconsistenteException>();
+    }
 }

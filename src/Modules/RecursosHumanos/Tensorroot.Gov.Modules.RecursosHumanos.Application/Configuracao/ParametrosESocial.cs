@@ -31,6 +31,12 @@ public sealed class ParametrosESocial
     public string IdeTabRubricas { get; set; } = "RUBRICAS";
 
     /// <summary>
+    /// Codigo da lotacao tributaria (<c>codLotacao</c>) do <c>ideEstabLot</c> no S-1200/S-1202. Para ente
+    /// publico sem tabela de lotacoes (S-1020) propria, usa-se o codigo padrao do tenant. // TODO(validar-oficial).
+    /// </summary>
+    public string CodLotacao { get; set; } = "1";
+
+    /// <summary>
     /// Ambiente de transmissao. Producao Restrita por padrao (homologacao sem efeito juridico —
     /// ESOCIAL-SPEC §3). So Producao quando o ente estiver apto e autorizado pelo dono.
     /// </summary>

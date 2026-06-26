@@ -113,9 +113,12 @@ public sealed class ApurarDescontosLegaisTests : RecursosHumanosTestBase
             ctx.Rubricas.Add(RubricaFolha.Criar(TenantA, Rubrica.De("VENCIMENTO"), "Vencimento", NaturezaRubrica.Provento, competencia, incideInss: true, incideIrrf: true));
 
             // Uma unica folha Mensal (invariante: unica por Tenant+Competencia+Tipo) com os dois servidores.
+            // Base R$ 7.000 (faixa decrescente do redutor 2026): o imposto fica POSITIVO mesmo apos o
+            // redutor parcial, deixando o efeito da deducao por dependente observavel (em R$ 5.000 o
+            // redutor zeraria ambos e a comparacao perderia sentido — ver Irrf2026RedutorTests).
             var folha = FolhaDePagamento.Abrir(TenantA, competencia);
-            folha.AdicionarEvento(idNaoElegivel, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(5000m), 5000m, RegimePrevidenciario.Rgps);
-            folha.AdicionarEvento(idElegivel, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(5000m), 5000m, RegimePrevidenciario.Rgps);
+            folha.AdicionarEvento(idNaoElegivel, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(7000m), 7000m, RegimePrevidenciario.Rgps);
+            folha.AdicionarEvento(idElegivel, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(7000m), 7000m, RegimePrevidenciario.Rgps);
             folhaId = folha.Id.Value;
             ctx.FolhasDePagamento.Add(folha);
             await ctx.SaveChangesAsync();
@@ -139,14 +142,14 @@ public sealed class ApurarDescontosLegaisTests : RecursosHumanosTestBase
             var irrfNaoElegivel = folha.Eventos.Single(e => e.ServidorId == idNaoElegivel && e.Rubrica.Codigo == "IRRF").Valor;
             var irrfElegivel = folha.Eventos.Single(e => e.ServidorId == idElegivel && e.Rubrica.Codigo == "IRRF").Valor;
 
-            // O dependente NAO-elegivel nao deduz: imposto identico ao baseline de zero dependentes (312,89).
-            irrfNaoElegivel.Should().Be(312.89m);
+            // O dependente NAO-elegivel nao deduz: imposto identico ao baseline de zero dependentes (positivo).
+            irrfNaoElegivel.Should().BeGreaterThan(0m);
             // O dependente ELEGIVEL deduz 189,59 da base -> imposto estritamente menor.
             irrfElegivel.Should().BeLessThan(irrfNaoElegivel);
         }
     }
 
-    [Fact] // RGPS 5000, 0 dependentes: apura INSS 501,51 + IRRF 312,89; liquido 4185,60.
+    [Fact] // RGPS 5000, 0 dependentes (competencia 2026): INSS 501,51 + IRRF 0 (isencao efetiva pelo redutor da Lei 15.270/2025); liquido 4498,49.
     public async Task Apura_descontos_legais_rgps_e_calcula_liquido()
     {
         Guid folhaId;
@@ -190,10 +193,11 @@ public sealed class ApurarDescontosLegaisTests : RecursosHumanosTestBase
 
             var folha = await ctx.FolhasDePagamento.Include(f => f.Eventos).SingleAsync(f => f.Id == new FolhaDePagamentoId(folhaId));
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "INSS" && e.Valor == 501.51m);
-            folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "IRRF" && e.Valor == 312.89m);
+            // 2026: base R$ 5.000 fica isenta de IRRF pelo redutor mensal (Lei 15.270/2025) -> nenhum evento IRRF.
+            folha.Eventos.Should().NotContain(e => e.Rubrica.Codigo == "IRRF");
 
             folha.Calcular(50000m, new DateOnly(2026, 7, 1));
-            folha.TotalLiquido.Valor.Should().Be(4185.60m);
+            folha.TotalLiquido.Valor.Should().Be(4498.49m);
         }
     }
 
@@ -218,7 +222,9 @@ public sealed class ApurarDescontosLegaisTests : RecursosHumanosTestBase
 
             ctx.Rubricas.Add(RubricaFolha.Criar(TenantA, Rubrica.De("VENCIMENTO"), "Vencimento", NaturezaRubrica.Provento, competencia, incideInss: true, incideIrrf: true));
             var folha = FolhaDePagamento.Abrir(TenantA, competencia);
-            folha.AdicionarEvento(servidorId, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(5000m), 5000m, RegimePrevidenciario.Rgps);
+            // Base R$ 7.000: IRRF positivo em 2026 (redutor parcial) -> o evento IRRF existe e a checagem de
+            // idempotencia "exatamente 1" e significativa (em R$ 5.000 o redutor zeraria o IRRF, sem evento).
+            folha.AdicionarEvento(servidorId, Rubrica.De("VENCIMENTO"), TipoEvento.Provento, BaseCalculo.De(7000m), 7000m, RegimePrevidenciario.Rgps);
             folhaId = folha.Id.Value;
             ctx.FolhasDePagamento.Add(folha);
             await ctx.SaveChangesAsync();

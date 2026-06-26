@@ -58,12 +58,16 @@ public sealed class ESocialGeradorTests
         doc.Descendants().Single(e => e.Name.LocalName == "codIncIRRF").Value.Should().Be("11");
     }
 
-    [Fact] // S-2200: CPF, matricula, tpRegPrev e codCateg do servidor.
+    private static readonly InscricaoEmpregador Empregador = new((int)TipoInscricao.Cnpj, "11222333000181");
+    private static readonly EstabelecimentoLotacao EstabLot = new((int)TipoInscricao.Cnpj, "11222333000181", "1");
+
+    [Fact] // S-2200: ideEmpregador + marcos estatutarios (tpProv/dtNomeacao/dtPosse/dtExercicio) do S-1.3.
     public void S2200_gera_admissao()
     {
         var insumo = new InsumoS2200(
             "12345678901", "Fulano", new DateOnly(1990, 1, 1), "MAT1",
-            new DateOnly(2026, 1, 5), "301", RoteadorRemuneracao.TpRegPrevRpps, "CARGO1", 5000m);
+            new DateOnly(2026, 1, 5), "301", RoteadorRemuneracao.TpRegPrevRpps, "CARGO1", 5000m,
+            Empregador, TpProv: "1", DataPosse: new DateOnly(2026, 1, 10), DataExercicio: new DateOnly(2026, 1, 12));
 
         var xml = GeradorEventosESocial.GerarS2200(insumo, Id);
         var doc = Parse(xml);
@@ -72,30 +76,44 @@ public sealed class ESocialGeradorTests
         doc.Descendants().Single(e => e.Name.LocalName == "cpfTrab").Value.Should().Be("12345678901");
         doc.Descendants().Single(e => e.Name.LocalName == "tpRegPrev").Value.Should().Be("2");
         doc.Descendants().Single(e => e.Name.LocalName == "codCateg").Value.Should().Be("301");
+        // ideEmpregador obrigatorio (S-1.3): nrInsc do empregador presente.
+        doc.Descendants().Any(e => e.Name.LocalName == "ideEmpregador").Should().BeTrue();
+        // Marcos estatutarios.
+        doc.Descendants().Single(e => e.Name.LocalName == "tpProv").Value.Should().Be("1");
+        doc.Descendants().Single(e => e.Name.LocalName == "dtNomeacao").Value.Should().Be("2026-01-05");
+        doc.Descendants().Single(e => e.Name.LocalName == "dtPosse").Value.Should().Be("2026-01-10");
+        doc.Descendants().Single(e => e.Name.LocalName == "dtExercicio").Value.Should().Be("2026-01-12");
     }
 
-    [Fact] // S-1200 (RGPS): nome do evento evtRemun e detVerbas somado por rubrica.
-    public void S1200_rgps_gera_remuneracao_com_detVerbas()
+    [Fact] // S-1200 (RGPS): evtRemun com ideEmpregador + remunPerApur > itensRemun (S-1.3, nao detVerbas direto).
+    public void S1200_rgps_gera_remuneracao_com_itensRemun()
     {
         var verbas = new List<ItemVerba>
         {
             new("VENC", "RUBRICAS", 1m, 5000m, 0),
             new("INSS", "RUBRICAS", 1m, 550m, 0),
         };
-        var insumo = new InsumoS1200("12345678901", "MAT1", "101", "2026-06", verbas);
+        var insumo = new InsumoS1200("12345678901", "MAT1", "101", "2026-06", verbas, Empregador, EstabLot);
 
         var xml = GeradorEventosESocial.GerarS1200(insumo, Id, rpps: false);
         var doc = Parse(xml);
 
         Raiz(doc).Elements().Single().Name.LocalName.Should().Be("evtRemun");
-        doc.Descendants().Count(e => e.Name.LocalName == "detVerbas").Should().Be(2);
+        // Hierarquia S-1.3: ideEstabLot > remunPerApur > itensRemun (detVerbas nao existe mais aqui).
+        doc.Descendants().Any(e => e.Name.LocalName == "ideEmpregador").Should().BeTrue();
+        doc.Descendants().Single(e => e.Name.LocalName == "remunPerApur").Should().NotBeNull();
+        doc.Descendants().Count(e => e.Name.LocalName == "itensRemun").Should().Be(2);
+        doc.Descendants().Any(e => e.Name.LocalName == "detVerbas").Should().BeFalse();
         doc.Descendants().Single(e => e.Name.LocalName == "perApur").Value.Should().Be("2026-06");
+        // matricula sob remunPerApur.
+        doc.Descendants().First(e => e.Name.LocalName == "remunPerApur")
+            .Elements().Single(e => e.Name.LocalName == "matricula").Value.Should().Be("MAT1");
     }
 
     [Fact] // S-1202 (RPPS): roteado para evtRmnRPPS.
     public void S1202_rpps_gera_evento_rpps()
     {
-        var insumo = new InsumoS1200("12345678901", "MAT1", "301", "2026-06", [new("VENC", "RUBRICAS", 1m, 8000m, 0)]);
+        var insumo = new InsumoS1200("12345678901", "MAT1", "301", "2026-06", [new("VENC", "RUBRICAS", 1m, 8000m, 0)], Empregador, EstabLot);
 
         var xml = GeradorEventosESocial.GerarS1200(insumo, Id, rpps: true);
         var doc = Parse(xml);

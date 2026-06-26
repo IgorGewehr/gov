@@ -96,7 +96,10 @@ public sealed class TransparenciaModule : IModule
         // Empacotamento real do ZIP nomeado (NAO transmite — TCE-RS nao tem API de envio).
         services.AddSingleton<IEmpacotadorRemessaSiapc, EmpacotadorRemessaSiapc>();
 
-        // Geracao real da MSC (CSV adaptado do XBRL-GL, zipado) para upload MANUAL no portal SICONFI.
+        // Identificacao do ente para o SICONFI (Cod.Siconfi = IBGE + "EX"), parametrizada por tenant.
+        services.AddSingleton<IIdentificacaoEnteSiconfi, IdentificacaoEnteSiconfiConfiguracao>();
+
+        // Geracao real da MSC no leiaute CSV oficial (Regras Gerais MSC 2026) para upload MANUAL no SICONFI.
         services.AddSingleton<IGeradorMsc, GeradorMscCsv>();
 
         // SICONFI permanece com a transmissao simulada da declaracao (operador registra protocolo; sem POST).

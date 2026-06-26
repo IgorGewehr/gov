@@ -20,6 +20,13 @@ const LicitacaoDetailPage = lazy(() =>
   import('./licitacao/LicitacaoDetailPage').then((m) => ({ default: m.LicitacaoDetailPage })),
 );
 
+const DispensaListPage = lazy(() =>
+  import('./dispensa/DispensaListPage').then((m) => ({ default: m.DispensaListPage })),
+);
+const DispensaDetailPage = lazy(() =>
+  import('./dispensa/DispensaDetailPage').then((m) => ({ default: m.DispensaDetailPage })),
+);
+
 const ContratoListPage = lazy(() =>
   import('./contrato/ContratoListPage').then((m) => ({ default: m.ContratoListPage })),
 );
@@ -55,6 +62,8 @@ const MODULE: ModuleDefinition = {
         { index: true, element: <LicitacaoListPage /> },
         { path: 'licitacoes', element: <LicitacaoListPage /> },
         { path: 'licitacoes/:id', element: <LicitacaoDetailPage /> },
+        { path: 'dispensas', element: <DispensaListPage /> },
+        { path: 'dispensas/:id', element: <DispensaDetailPage /> },
         { path: 'contratos', element: <ContratoListPage /> },
         { path: 'contratos/:id', element: <ContratoDetailPage /> },
         { path: 'fornecedores', element: <FornecedorListPage /> },

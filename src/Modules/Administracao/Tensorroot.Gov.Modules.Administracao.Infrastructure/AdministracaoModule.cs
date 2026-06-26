@@ -14,6 +14,7 @@ using Tensorroot.Gov.Modules.Administracao.Application;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Application.Licitacoes;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
+using Tensorroot.Gov.Modules.Administracao.Infrastructure.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Repositories;
 using Tensorroot.Gov.Modules.Administracao.Infrastructure.Pncp;
@@ -57,6 +58,7 @@ public sealed class AdministracaoModule : IModule
         });
 
         services.AddScoped<ILicitacaoRepository, LicitacaoRepository>();
+        services.AddScoped<IDispensaRepository, DispensaRepository>();
         services.AddScoped<IContratoRepository, ContratoRepository>();
         services.AddScoped<IFornecedorRepository, FornecedorRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
@@ -70,6 +72,12 @@ public sealed class AdministracaoModule : IModule
         // Parametros de prazo do PNCP por tenant (sem numero magico — §16): defaults legais sobrescrititiveis.
         services.Configure<PncpOptions>(configuration.GetSection(PncpOptions.SecaoConfig));
         services.AddScoped<IPncpParametros, PncpParametros>();
+
+        // === Dispensa eletronica (Lei 14.133/2021, art. 75, I/II; IN SEGES/ME 67/2021) ===
+        // Limites de dispensa parametrizaveis por tenant (sem numero magico — §16): defaults do
+        // Dec. 12.343/2024 sobrescrititiveis (atualizacao anual pelo IPCA-E, art. 182).
+        services.Configure<DispensaOptions>(configuration.GetSection(DispensaOptions.SecaoConfig));
+        services.AddScoped<IDispensaParametros, DispensaParametros>();
 
         // ACL do PNCP. M9: impl. SIMULADA (numero deterministico, testavel contra WireMock).
         // TODO(M10): trocar por PncpGatewayHttp (login JWT ~1h + pre-cadastro + Polly + creds no Key Vault).

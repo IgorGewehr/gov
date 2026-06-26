@@ -78,6 +78,16 @@ public sealed class TabelaIrrfConfiguration : IEntityTypeConfiguration<TabelaIrr
         });
         builder.Navigation(t => t.Faixas).UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        // Redutor mensal do IRRF (Lei 15.270/2025) — owned opcional: colunas nulas nas competencias sem redutor.
+        builder.OwnsOne(t => t.Redutor, redutor =>
+        {
+            redutor.Property(r => r.CoeficienteBase).HasColumnName("RedutorCoeficienteBase").HasColumnType("decimal(18,2)");
+            redutor.Property(r => r.CoeficienteRendimento).HasColumnName("RedutorCoeficienteRendimento").HasColumnType("decimal(9,6)");
+            redutor.Property(r => r.TetoRedutor).HasColumnName("RedutorTeto").HasColumnType("decimal(18,2)");
+            redutor.Property(r => r.LimiteRendimento).HasColumnName("RedutorLimiteRendimento").HasColumnType("decimal(18,2)");
+        });
+        builder.Navigation(t => t.Redutor).IsRequired(false);
+
         builder.HasIndex(t => new { t.TenantId, t.VigenciaInicio }).IsUnique();
     }
 }

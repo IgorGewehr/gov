@@ -68,7 +68,7 @@ public sealed class CicloAnualHandlersTests : RecursosHumanosTestBase
             new ServidorRegimeConsulta(ctx), new TabelasLegaisProvider(ctx),
             new ParametrosFolhaProviderFake(), ctx, new TenantContextFake(TenantA));
 
-    [Fact] // 13o 2a parcela: INSS-13 501,51 e IRRF-13 336,67 (base separada, sem simplificado) + abate da 1a parcela.
+    [Fact] // 13o 2a parcela (2026): INSS-13 501,51; IRRF-13 23,78 (tabela 336,67 menos redutor 312,89 da Lei 15.270/2025, § 3o) + abate da 1a parcela.
     public async Task Decimo_terceiro_segunda_parcela_apura_inss_irrf_proprios_e_abate_primeira()
     {
         Guid servidorId;
@@ -95,7 +95,8 @@ public sealed class CicloAnualHandlersTests : RecursosHumanosTestBase
             folha.BaseSeparada.Should().BeTrue();
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "13-SAL" && e.Tipo == TipoEvento.Provento && e.Valor == 5000m);
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "INSS-13" && e.Valor == 501.51m);
-            folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "IRRF-13" && e.Valor == 336.67m);
+            // 2026: imposto da tabela 336,67 menos o redutor mensal 312,89 (Lei 15.270/2025, aplicavel ao 13o, § 3o).
+            folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "IRRF-13" && e.Valor == 23.78m);
             // Abate da 1a parcela ja paga (50% = 2500).
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "13-ADIANT" && e.Valor == 2500m);
         }
@@ -266,9 +267,10 @@ public sealed class CicloAnualHandlersTests : RecursosHumanosTestBase
 
             var folha = await ctx.FolhasDePagamento.Include(f => f.Eventos).SingleAsync(f => f.Tipo == TipoFolha.Rescisao);
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "13-PROP" && e.Valor == 5000m);
-            // INSS-13 sobre 5000 = 501,51; IRRF-13 base separada (sem simplificado) = 336,67 — mesmos do 13o anual.
+            // INSS-13 sobre 5000 = 501,51; IRRF-13 base separada (sem simplificado), 336,67 menos redutor — mesmos do 13o anual.
             folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "INSS-13" && e.Valor == 501.51m);
-            folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "IRRF-13" && e.Valor == 336.67m);
+            // 2026: imposto da tabela 336,67 menos o redutor mensal 312,89 (Lei 15.270/2025, aplicavel ao 13o, § 3o).
+            folha.Eventos.Should().Contain(e => e.Rubrica.Codigo == "IRRF-13" && e.Valor == 23.78m);
         }
     }
 

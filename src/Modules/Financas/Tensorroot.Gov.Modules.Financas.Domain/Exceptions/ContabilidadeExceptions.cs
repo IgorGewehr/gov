@@ -101,6 +101,56 @@ public sealed class MatrizSaldosDesbalanceadaException : ContabilidadeException
 }
 
 /// <summary>
+/// Lançada quando a MSC não fecha o balanço D=C DENTRO de uma classe contábil (natureza de informação:
+/// Patrimonial, Orçamentária ou Controle). Regra dura do SICONFI: o equilíbrio das partidas dobradas é
+/// verificado POR CLASSE, não só no total geral (Regras Gerais MSC 2026, "Observações Importantes").
+/// </summary>
+public sealed class MatrizSaldosClasseDesbalanceadaException : ContabilidadeException
+{
+    /// <summary>Cria a exceção com a competência, a classe e os totais por lado.</summary>
+    /// <param name="exercicio">Exercício.</param>
+    /// <param name="mes">Mês da competência.</param>
+    /// <param name="naturezaInformacao">Classe contábil (natureza de informação) ofensora.</param>
+    /// <param name="totalDevedor">Soma dos saldos finais devedores da classe.</param>
+    /// <param name="totalCredor">Soma dos saldos finais credores da classe.</param>
+    public MatrizSaldosClasseDesbalanceadaException(
+        int exercicio,
+        int mes,
+        string naturezaInformacao,
+        decimal totalDevedor,
+        decimal totalCredor)
+        : base($"MSC {exercicio}/{mes:00} desbalanceada na classe {naturezaInformacao}: "
+            + $"saldo final devedor {totalDevedor:0.00} != credor {totalCredor:0.00}.")
+    {
+    }
+}
+
+/// <summary>
+/// Lançada quando uma conta+informação complementar da MSC viola a consistência
+/// <c>saldo_inicial + movimento = saldo_final</c> (movimento = débitos − créditos do período, com sinal no
+/// lado natural da conta). Regra dura do SICONFI (Regras Gerais MSC 2026, "Observações Importantes").
+/// </summary>
+public sealed class MatrizSaldosContaInconsistenteException : ContabilidadeException
+{
+    /// <summary>Cria a exceção identificando a conta e os valores divergentes.</summary>
+    /// <param name="contaPcasp">Conta PCASP ofensora.</param>
+    /// <param name="saldoInicial">Saldo inicial (com sinal no lado natural).</param>
+    /// <param name="movimento">Movimento líquido do período (D − C no lado natural).</param>
+    /// <param name="saldoFinalApurado">Saldo final esperado (inicial + movimento).</param>
+    /// <param name="saldoFinalInformado">Saldo final efetivamente informado na MSC.</param>
+    public MatrizSaldosContaInconsistenteException(
+        string contaPcasp,
+        decimal saldoInicial,
+        decimal movimento,
+        decimal saldoFinalApurado,
+        decimal saldoFinalInformado)
+        : base($"MSC: conta {contaPcasp} inconsistente: saldo inicial {saldoInicial:0.00} + movimento "
+            + $"{movimento:0.00} = {saldoFinalApurado:0.00}, mas saldo final informado e {saldoFinalInformado:0.00}.")
+    {
+    }
+}
+
+/// <summary>
 /// Lançada quando uma demonstração DCASP não fecha o invariante esperado (ex.: BP Ativo ≠ Passivo+PL,
 /// BO Receita ≠ Despesa, BF Ingressos ≠ Dispêndios) — indica balancete inconsistente ou mapa incorreto.
 /// </summary>

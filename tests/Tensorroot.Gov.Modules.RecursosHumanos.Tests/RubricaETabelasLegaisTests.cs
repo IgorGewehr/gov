@@ -118,8 +118,15 @@ public sealed class RubricaETabelasLegaisTests : RecursosHumanosTestBase
             inss2026.Faixas.Should().HaveCount(4);
 
             var irrf = await ctx.TabelasIrrf.Include(t => t.Faixas).ToListAsync();
-            irrf.Should().HaveCount(2);
+            irrf.Should().HaveCount(3); // jan-abr/2025, mai-dez/2025 e 2026.
             irrf.SelectMany(t => t.Faixas).Should().NotBeEmpty();
+
+            // IRRF 2026 traz o redutor mensal (Lei 15.270/2025) persistido como owned opcional.
+            var irrf2026 = irrf.Single(t => t.VigenciaInicio == Competencia.De(2026, 1));
+            irrf2026.Redutor.Should().NotBeNull();
+            irrf2026.Redutor!.TetoRedutor.Should().Be(312.89m);
+            // Tabelas anteriores nao tem redutor.
+            irrf.Single(t => t.VigenciaInicio == Competencia.De(2025, 1)).Redutor.Should().BeNull();
         }
 
         await using (var ctx = CriarContexto(TenantB))

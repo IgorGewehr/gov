@@ -36,7 +36,8 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
         IReadOnlyList<FaixaIrrf> faixas,
         decimal deducaoPorDependente,
         decimal descontoSimplificado,
-        string baseLegal)
+        string baseLegal,
+        RedutorIrrf? redutor)
         : base(id)
     {
         TenantId = tenantId;
@@ -45,6 +46,7 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
         DeducaoPorDependente = deducaoPorDependente;
         DescontoSimplificado = descontoSimplificado;
         BaseLegal = baseLegal;
+        Redutor = redutor;
     }
 
     /// <summary>Tenant (ente publico) dono do registro.</summary>
@@ -62,6 +64,12 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
     /// <summary>Fundamento legal (ex.: Lei/IN da Receita) para auditoria/TCE.</summary>
     public string BaseLegal { get; private set; } = default!;
 
+    /// <summary>
+    /// Redutor mensal do IRRF (Lei 15.270/2025, vigencia 2026); nulo nas competencias sem redutor.
+    /// Parametro legal por exercicio — aplicado APOS a tabela progressiva e limitado ao imposto apurado.
+    /// </summary>
+    public RedutorIrrf? Redutor { get; private set; }
+
     /// <summary>Faixas progressivas ordenadas por limite (somente leitura).</summary>
     public IReadOnlyList<FaixaIrrf> Faixas => _faixas;
 
@@ -72,6 +80,7 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
     /// <param name="deducaoPorDependente">Deducao mensal por dependente.</param>
     /// <param name="descontoSimplificado">Desconto simplificado mensal (zero se inaplicavel).</param>
     /// <param name="baseLegal">Fundamento legal.</param>
+    /// <param name="redutor">Redutor mensal do IRRF (Lei 15.270/2025); nulo nas competencias sem redutor.</param>
     /// <returns>Nova <see cref="TabelaIrrf"/>.</returns>
     /// <exception cref="ArgumentException">Se faixas/base legal forem invalidas.</exception>
     public static TabelaIrrf Criar(
@@ -80,7 +89,8 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
         IReadOnlyList<FaixaIrrf> faixas,
         decimal deducaoPorDependente,
         decimal descontoSimplificado,
-        string baseLegal)
+        string baseLegal,
+        RedutorIrrf? redutor = null)
     {
         ArgumentNullException.ThrowIfNull(vigenciaInicio);
         ArgumentNullException.ThrowIfNull(faixas);
@@ -107,7 +117,8 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
             faixas,
             deducaoPorDependente,
             descontoSimplificado,
-            baseLegal.Trim());
+            baseLegal.Trim(),
+            redutor);
     }
 
     /// <summary>
@@ -159,6 +170,18 @@ public sealed class TabelaIrrf : AggregateRoot<TabelaIrrfId>, IMustHaveTenant
         }
 
         var faixa = _faixas.FirstOrDefault(f => f.Enquadra(baseImposto)) ?? _faixas[^1];
-        return faixa.Imposto(baseImposto);
+        var imposto = faixa.Imposto(baseImposto);
+
+        // Redutor mensal (Lei 15.270/2025, vigencia 2026): aplicado APOS a tabela e limitado ao proprio
+        // imposto apurado (art. 3o-A, § 1o). Incide sobre o rendimento tributavel BRUTO (antes das
+        // deducoes), conforme orientacao RFB. Nulo nas competencias anteriores (sem alteracao de calculo).
+        // Tambem aplicavel ao IRRF do 13o (§ 3o), independente da regra do desconto simplificado mensal.
+        if (Redutor is { } redutor && imposto > 0m)
+        {
+            var valorRedutor = Math.Min(imposto, redutor.Calcular(rendimentoTributavel));
+            imposto = decimal.Round(imposto - valorRedutor, 2, MidpointRounding.AwayFromZero);
+        }
+
+        return imposto;
     }
 }

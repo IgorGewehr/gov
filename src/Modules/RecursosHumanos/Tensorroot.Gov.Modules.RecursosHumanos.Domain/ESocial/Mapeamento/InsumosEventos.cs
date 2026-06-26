@@ -51,6 +51,10 @@ public sealed record InsumoS1005(
 /// <param name="TpRegPrev">Regime previdenciario (1=RGPS, 2=RPPS, 3=Exterior, 4=SPSMFA).</param>
 /// <param name="CodCargo">Codigo do cargo.</param>
 /// <param name="VrSalFx">Valor do salario fixo/vencimento.</param>
+/// <param name="Empregador">Inscricao do empregador (<c>ideEmpregador</c>) — obrigatoria no S-1.3.</param>
+/// <param name="TpProv">Tipo de provimento do estatutario (Tabela 14; ex.: 1=nomeacao em cargo efetivo). // TODO(validar-oficial: dominio).</param>
+/// <param name="DataPosse">Data da posse (<c>dtPosse</c>); nula quando ainda nao houve posse.</param>
+/// <param name="DataExercicio">Data de inicio de exercicio (<c>dtExercicio</c>); nula quando ainda nao houve exercicio.</param>
 public sealed record InsumoS2200(
     string CpfTrab,
     string NomeTrab,
@@ -60,7 +64,19 @@ public sealed record InsumoS2200(
     string CodCateg,
     int TpRegPrev,
     string CodCargo,
-    decimal VrSalFx);
+    decimal VrSalFx,
+    InscricaoEmpregador Empregador,
+    string TpProv,
+    DateOnly? DataPosse,
+    DateOnly? DataExercicio);
+
+/// <summary>
+/// Inscricao do empregador/declarante para o grupo <c>ideEmpregador</c> presente em todos os eventos do
+/// S-1.3 (S-1200/S-1210/S-1299/S-2200/S-2299...). Origem: <c>ParametrosESocial</c> do tenant.
+/// </summary>
+/// <param name="TpInsc">Tipo de inscricao (1=CNPJ p/ ente publico).</param>
+/// <param name="NrInsc">Numero de inscricao (CNPJ do ente — base de 8 digitos quando aplicavel).</param>
+public sealed record InscricaoEmpregador(int TpInsc, string NrInsc);
 
 /// <summary>
 /// Snapshot de desligamento para o S-2299. Origem: <see cref="Events.ServidorDesligado"/>.
@@ -76,7 +92,7 @@ public sealed record InsumoS2299(
     DateOnly DataDesligamento,
     string MtvDeslig);
 
-/// <summary>Um item de verba (rubrica) do demonstrativo de remuneracao (<c>detVerbas</c> do S-1200/S-1202).</summary>
+/// <summary>Um item de verba (rubrica) do demonstrativo de remuneracao (<c>itensRemun</c> do S-1200/S-1202).</summary>
 /// <param name="CodRubr">Codigo da rubrica (S-1010).</param>
 /// <param name="IdeTabRubr">Identificador da tabela de rubricas. // TODO(validar-oficial).</param>
 /// <param name="QtdRubr">Quantidade de referencia (ex.: 1).</param>
@@ -87,19 +103,33 @@ public sealed record ItemVerba(string CodRubr, string IdeTabRubr, decimal QtdRub
 /// <summary>
 /// Snapshot de remuneracao de UM servidor numa competencia para o S-1200/S-1202. Origem:
 /// <see cref="ResultadoCalculoServidor"/> + lancamentos (<see cref="Folha.EventoFolha"/>) da folha
-/// fechada. // TODO(validar-oficial: grupos dmDev/detVerbas/infoPerApur e base RPPS do XSD).
+/// fechada. // TODO(validar-oficial: grupos dmDev/infoPerApur/remunPerApur/itensRemun e base RPPS do XSD).
 /// </summary>
 /// <param name="CpfTrab">CPF do trabalhador.</param>
 /// <param name="Matricula">Matricula do vinculo.</param>
 /// <param name="CodCateg">Categoria do trabalhador.</param>
 /// <param name="PerApur">Periodo de apuracao (<c>AAAA-MM</c>).</param>
 /// <param name="Verbas">Itens de verba (por rubrica/incidencia).</param>
+/// <param name="Empregador">Inscricao do empregador (<c>ideEmpregador</c>) — obrigatoria no S-1.3.</param>
+/// <param name="EstabLotacao">Estabelecimento + lotacao do demonstrativo (<c>ideEstabLot</c>).</param>
 public sealed record InsumoS1200(
     string CpfTrab,
     string Matricula,
     string CodCateg,
     string PerApur,
-    IReadOnlyList<ItemVerba> Verbas);
+    IReadOnlyList<ItemVerba> Verbas,
+    InscricaoEmpregador Empregador,
+    EstabelecimentoLotacao EstabLotacao);
+
+/// <summary>
+/// Estabelecimento + codigo de lotacao tributaria do demonstrativo de remuneracao (<c>ideEstabLot</c> do
+/// S-1200/S-1202). Para ente publico sem tabela de lotacoes propria, o <paramref name="CodLotacao"/> usa o
+/// padrao acordado com o tenant. // TODO(validar-oficial): tabela de lotacoes S-1020 do ente.
+/// </summary>
+/// <param name="TpInsc">Tipo de inscricao do estabelecimento (1=CNPJ).</param>
+/// <param name="NrInsc">Inscricao do estabelecimento (CNPJ do ente).</param>
+/// <param name="CodLotacao">Codigo da lotacao tributaria (<c>codLotacao</c>).</param>
+public sealed record EstabelecimentoLotacao(int TpInsc, string NrInsc, string CodLotacao);
 
 /// <summary>
 /// Snapshot de pagamento de UM servidor para o S-1210. Origem: <see cref="Events.PagamentoEfetuado"/> +

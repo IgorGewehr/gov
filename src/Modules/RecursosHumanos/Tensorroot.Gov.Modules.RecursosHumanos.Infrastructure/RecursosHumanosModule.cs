@@ -22,6 +22,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Providers;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Repositories;
 using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Ponto.Coleta;
+using Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Previdencia;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure;
 
@@ -127,6 +128,10 @@ public sealed class RecursosHumanosModule : IModule
         // houver creds de Producao Restrita; manter Polly + mTLS + URLs por IOptions/Key Vault).
         services.AddScoped<IEventoESocialRepository, EventoESocialRepository>();
         services.AddScoped<IEmpregadorESocialProvider, EmpregadorESocialProvider>();
+
+        // PC1: regime previdenciario do quadro = parametro do tenant (tem RPPS proprio?), nao roteamento
+        // fixo. Default RGPS/INSS (municipio pequeno sem RPPS proprio — Maximiliano de Almeida).
+        services.AddScoped<IPoliticaPrevidenciariaProvider, PoliticaPrevidenciariaProvider>();
         services.AddScoped<GeradorEventoApplicationService>();
         services.AddSingleton<IESocialGateway, ESocialGatewaySimulado>();
 

@@ -19,9 +19,16 @@ public readonly record struct CargoId(Guid Value)
 
 /// <summary>
 /// Cargo publico: posicao na estrutura de pessoal do ente publico (efetivo, comissionado ou
-/// temporario). Define vencimento, lotacao e regime previdenciario associado (efetivo → RPPS;
-/// demais → RGPS — EC 103/2019), controla quantitativo de vagas (provimento/vacancia) e sujeita-se
-/// ao teto remuneratorio (CF art. 37, XI). Raiz de agregado, nasce valida via <see cref="Criar"/>.
+/// temporario). Define vencimento, lotacao e regime previdenciario associado, controla quantitativo de
+/// vagas (provimento/vacancia) e sujeita-se ao teto remuneratorio (CF art. 37, XI). Raiz de agregado,
+/// nasce valida via <see cref="Criar"/>.
+/// <para>
+/// O regime previdenciario NAO e derivado fixamente do tipo: depende de o ENTE possuir RPPS proprio
+/// instituido por lei municipal (EC 103/2019). Municipio sem RPPS proprio (caso default de municipios
+/// pequenos) recolhe TODO o quadro ao RGPS/INSS; com RPPS proprio, efetivo → RPPS e demais → RGPS. O
+/// roteamento e portanto PARAMETRIZADO por tenant (ver <see cref="PoliticaPrevidenciaria"/>), nunca
+/// hardcoded no agregado (CLAUDE.md §7/§16).
+/// </para>
 /// </summary>
 public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
 {
@@ -39,6 +46,7 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
         TipoCargo tipo,
         Vencimento vencimento,
         Lotacao lotacao,
+        RegimePrevidenciario regime,
         int quantidadeVagas,
         string leiCriacao,
         PlanoDeCargosId? planoDeCargosId)
@@ -49,7 +57,7 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
         Tipo = tipo;
         Vencimento = vencimento;
         Lotacao = lotacao;
-        Regime = DerivarRegime(tipo);
+        Regime = regime;
         QuantidadeVagas = quantidadeVagas;
         VagasOcupadas = 0;
         LeiCriacao = leiCriacao;
@@ -73,7 +81,7 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
     /// <summary>Lotacao/estabelecimento de exercicio.</summary>
     public Lotacao Lotacao { get; private set; } = default!;
 
-    /// <summary>Regime previdenciario, derivado do <see cref="Tipo"/> (efetivo → RPPS; demais → RGPS).</summary>
+    /// <summary>Regime previdenciario do cargo, resolvido pela politica previdenciaria do ente (parametrizado).</summary>
     public RegimePrevidenciario Regime { get; private set; }
 
     /// <summary>Quantitativo de vagas autorizadas em lei.</summary>
@@ -102,6 +110,11 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
     /// <param name="lotacao">Lotacao/estabelecimento de exercicio.</param>
     /// <param name="quantidadeVagas">Vagas autorizadas (maior ou igual a 1).</param>
     /// <param name="leiCriacao">Lei de criacao do cargo.</param>
+    /// <param name="politicaPrevidenciaria">
+    /// Politica previdenciaria do ente (tem RPPS proprio?). Resolve o <see cref="Regime"/> do cargo a partir
+    /// do <paramref name="tipo"/>. Parametro do tenant — default <see cref="PoliticaPrevidenciaria.SomenteRgps"/>
+    /// (municipio sem RPPS proprio, caso de Maximiliano de Almeida ~5 mil hab.).
+    /// </param>
     /// <param name="planoDeCargosId">Plano de cargos a que pertence (opcional).</param>
     /// <returns>Novo <see cref="Cargo"/> em situacao <see cref="SituacaoCargo.Ativo"/>.</returns>
     /// <exception cref="ArgumentException">Se a denominacao ou a lei de criacao forem vazias, ou se as vagas forem menores que 1.</exception>
@@ -114,6 +127,7 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
         Lotacao lotacao,
         int quantidadeVagas,
         string leiCriacao,
+        PoliticaPrevidenciaria? politicaPrevidenciaria = null,
         PlanoDeCargosId? planoDeCargosId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(denominacao);
@@ -125,6 +139,9 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
             throw new ArgumentException($"Quantidade de vagas deve ser ao menos {VagasMinimas}.", nameof(quantidadeVagas));
         }
 
+        // Default fail-safe: sem politica informada, assume municipio SEM RPPS proprio (RGPS/INSS p/ todos).
+        var regime = (politicaPrevidenciaria ?? PoliticaPrevidenciaria.SomenteRgps).RegimeDe(tipo);
+
         return new Cargo(
             CargoId.New(),
             tenantId,
@@ -132,6 +149,7 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
             tipo,
             vencimento,
             lotacao,
+            regime,
             quantidadeVagas,
             leiCriacao.Trim(),
             planoDeCargosId);
@@ -218,9 +236,6 @@ public sealed class Cargo : AggregateRoot<CargoId>, IMustHaveTenant
         Situacao = SituacaoCargo.Extinto;
         RaiseDomainEvent(new CargoExtinto(Id, leiExtincao.Trim()));
     }
-
-    private static RegimePrevidenciario DerivarRegime(TipoCargo tipo)
-        => tipo == TipoCargo.Efetivo ? RegimePrevidenciario.Rpps : RegimePrevidenciario.Rgps;
 
     private void GarantirNaoExtinto()
     {

@@ -85,7 +85,7 @@ public static class TabelasFederaisSeed
         return new[] { inss2025, inss2026 };
     }
 
-    /// <summary>Tabelas IRRF oficiais (jan-abr/2025 e mai-dez/2025).</summary>
+    /// <summary>Tabelas IRRF oficiais (jan-abr/2025, mai-dez/2025 e 2026 com redutor da Lei 15.270/2025).</summary>
     /// <param name="tenantId">Tenant destino.</param>
     /// <returns>Tabelas IRRF para persistir.</returns>
     public static IReadOnlyList<TabelaIrrf> Irrf(Guid tenantId)
@@ -123,9 +123,34 @@ public static class TabelasFederaisSeed
             descontoSimplificado: 607.20m,
             baseLegal: "Tabela progressiva mensal IRRF mai-dez/2025 (Lei 15.191/2025, ex-MP 1.294/2025)");
 
-        // TODO(validar-oficial): IRRF 2026 — redutor da Lei 15.270/2025 na retencao mensal NAO acoplado:
-        // depende da IN/ato da Receita vigente (verificacao §3 — INCERTO). Ate la, a competencia 2026
-        // herda a tabela mai-dez/2025 como ultima vigente. Semear tabela 2026 quando a IN sair.
-        return new[] { irrfJan2025, irrfMai2025 };
+        // IRRF 2026 — Lei 15.270/2025 (vigencia 01/01/2026). A tabela progressiva mensal mantem os mesmos
+        // limites/parcelas de mai-dez/2025 (Lei 15.191/2025); a novidade e o REDUTOR MENSAL do art. 3o-A da
+        // Lei 9.250/1995 (acrescido pela Lei 15.270/2025): isencao efetiva ate R$ 5.000,00 e reducao
+        // decrescente ate R$ 7.350,00. FONTE: RFB (orientacao 12/2025) — formula e teto CONFIRMADOS ao vivo;
+        // os limites/parcelas exatos da tabela 2026 ainda dependem de ato infralegal anual da Receita.
+        // // TODO(M10-validate): confirmar limites/parcelas 2026 e coeficientes do redutor no ato RFB do exercicio.
+        var irrf2026 = TabelaIrrf.Criar(
+            tenantId,
+            Competencia.De(2026, 1),
+            new[]
+            {
+                FaixaIrrf.De(2428.80m, 0.0m, 0.0m),
+                FaixaIrrf.De(2826.65m, 0.075m, 182.16m),
+                FaixaIrrf.De(3751.05m, 0.15m, 394.16m),
+                FaixaIrrf.De(4664.68m, 0.225m, 675.49m),
+                FaixaIrrf.De(decimal.MaxValue, 0.275m, 908.73m),
+            },
+            deducaoPorDependente: 189.59m,
+            descontoSimplificado: 607.20m,
+            baseLegal: "Tabela IRRF 2026 + redutor mensal (Lei 15.270/2025, art. 3o-A Lei 9.250/1995)",
+            // Redutor mensal 2026 (RFB): redutor = min(312,89; max(0; 978,62 - 0,133145 x rendimento)),
+            // aplicado ate rendimento bruto de R$ 7.350,00; em R$ 5.000,00 a formula ~ 312,895 (coberto pelo teto).
+            redutor: RedutorIrrf.De(
+                coeficienteBase: 978.62m,
+                coeficienteRendimento: 0.133145m,
+                tetoRedutor: 312.89m,
+                limiteRendimento: 7350.00m));
+
+        return new[] { irrfJan2025, irrfMai2025, irrf2026 };
     }
 }

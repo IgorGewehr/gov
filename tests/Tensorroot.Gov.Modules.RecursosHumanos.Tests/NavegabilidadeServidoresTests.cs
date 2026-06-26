@@ -66,7 +66,8 @@ public sealed class NavegabilidadeServidoresTests : RecursosHumanosTestBase
         {
             var cargo = Cargo.Criar(
                 TenantA, "Analista Administrativo", TipoCargo.Efetivo, Vencimento.De(5000m),
-                Lotacao.Criar("12345678000190", "Secretaria de Administracao", "1010"), 3, "Lei 100/2020");
+                Lotacao.Criar("12345678000190", "Secretaria de Administracao", "1010"), 3, "Lei 100/2020",
+                PoliticaPrevidenciaria.ComRppsProprio); // ente com RPPS proprio: efetivo -> RPPS (coerente com o servidor).
             // O servidor referencia o cargo pelo Id real do cargo criado.
             var servidor = Servidor.Admitir(
                 TenantA, Cpf.Create("11144477735"), Matricula.De("MAT-0001"),

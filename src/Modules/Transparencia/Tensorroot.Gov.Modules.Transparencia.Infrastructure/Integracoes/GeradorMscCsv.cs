@@ -7,28 +7,51 @@ using Tensorroot.Gov.Modules.Transparencia.Domain.DeclaracoesFiscais;
 namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Integracoes;
 
 /// <summary>
-/// Gerador da MSC (Matriz de Saldos Contábeis) em CSV adaptado do XBRL-GL, zipado, a partir da
-/// <see cref="DeclaracaoFiscal"/> consolidada. Automatizável 100% — NÃO transmite (homologação é ato
-/// humano com e-CPF A3 no portal SICONFI).
+/// Gerador da MSC (Matriz de Saldos Contábeis) no leiaute CSV oficial do SICONFI (Regras Gerais MSC 2026 —
+/// Anexo I da Portaria STN 642/2019, §"Arquivo CSV"), zipado, a partir da <see cref="DeclaracaoFiscal"/>
+/// consolidada. Automatizável 100% — NÃO transmite (a homologação é ato humano com e-CPF A3 no portal
+/// SICONFI).
 /// </summary>
 /// <remarks>
-/// As COLUNAS/atributos EXATOS do CSV/XBRL-GL seguem as Regras Gerais MSC do exercício —
-/// <c>// TODO(validar-leiaute-MT-2026)</c>. O cabeçalho abaixo é uma versão mínima (conta;natureza;valor;
-/// informação complementar), suficiente para o pipeline e a reconciliação.
+/// Leiaute oficial (18 colunas, separador <c>|</c>): Periodo, Cod.Siconfi, NaturezaInformacao, Conta,
+/// Tipo_Valor, Valor, e SEIS pares de informação complementar (TIPO1/IC1 .. TIPO6/IC6). O
+/// <c>Tipo_Valor</c> usa os literais da taxonomia XBRL GL (<c>saldo_inicial</c>/<c>movimento</c>/
+/// <c>saldo_final</c>); o <c>Cod.Siconfi</c> é o IBGE+<c>"EX"</c> do ente; o <c>Periodo</c> é
+/// <c>YYYY-MM</c> (mensal) ou <c>YYYY-13</c> (encerramento/anual). A declaração consolidada na
+/// Transparência guarda apenas as linhas de SALDO FINAL (a ACL filtra TipoValor=ending_balance), logo todas
+/// as linhas saem como <c>saldo_final</c>; saldo inicial/movimento por conta são detalhados no M4.
+/// // TODO(M10-validate): confirmar separador/ordem/codigos das tabelas TIPO contra o e-Validador SICONFI.
 /// </remarks>
-public sealed class GeradorMscCsv : IGeradorMsc
+public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) : IGeradorMsc
 {
     private static readonly DateTimeOffset DataEntradaFixa = new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
-    // TODO(validar-leiaute-MT-2026): cabeçalho/colunas oficiais da MSC (Poder e Órgão, conta corrente etc.).
-    private const string CabecalhoCsv = "conta_contabil;natureza_saldo;valor;informacao_complementar";
+    // Separador oficial do CSV da MSC (pipe). Os valores nao contem pipe (conta/valor/atributos numericos).
+    private const char Separador = '|';
+
+    // Numero fixo de pares de informacao complementar (TIPOx/ICx) do leiaute oficial.
+    private const int QuantidadeInformacoesComplementares = 6;
+
+    // Mes 13 = MSC de Encerramento/anual (Periodo YYYY-13). DeclaracaoFiscal sem Competencia => exercicio.
+    private const int MesEncerramento = 13;
+
+    // Sufixo do Poder Executivo no Cod.Siconfi (a MSC e enviada SO pelo Executivo).
+    private const string SufixoExecutivo = "EX";
+
+    // Cabecalho oficial: 6 colunas fixas + 6 pares TIPOx/ICx.
+    private static readonly string CabecalhoCsv = MontarCabecalho();
 
     /// <inheritdoc />
-    public Task<ArtefatoMsc> GerarAsync(DeclaracaoFiscal declaracao, CancellationToken cancellationToken)
+    public async Task<ArtefatoMsc> GerarAsync(DeclaracaoFiscal declaracao, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(declaracao);
 
-        var csv = MontarCsv(declaracao);
+        var codigoSiconfi = await identificacaoEnte
+            .ObterCodigoSiconfiAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var periodo = MontarPeriodo(declaracao);
+        var csv = MontarCsv(declaracao, periodo, codigoSiconfi);
         var bytesCsv = Encoding.UTF8.GetBytes(csv);
         var nomeBaseCsv = string.Create(
             CultureInfo.InvariantCulture,
@@ -46,30 +69,123 @@ public sealed class GeradorMscCsv : IGeradorMsc
         var nomeZip = string.Create(
             CultureInfo.InvariantCulture,
             $"MSC_{declaracao.TipoDeclaracao}_{declaracao.Exercicio}.zip");
-        return Task.FromResult(new ArtefatoMsc(nomeZip, memoria.ToArray()));
+        return new ArtefatoMsc(nomeZip, memoria.ToArray());
     }
 
-    private static string MontarCsv(DeclaracaoFiscal declaracao)
+    // Periodo YYYY-MM (mensal) ou YYYY-13 (encerramento/anual: declaracao sem Competencia).
+    private static string MontarPeriodo(DeclaracaoFiscal declaracao)
+    {
+        var mes = declaracao.Competencia?.Mes ?? MesEncerramento;
+        return string.Create(CultureInfo.InvariantCulture, $"{declaracao.Exercicio:0000}-{mes:00}");
+    }
+
+    private static string MontarCsv(DeclaracaoFiscal declaracao, string periodo, string codigoSiconfi)
     {
         var construtor = new StringBuilder();
         construtor.Append(CabecalhoCsv).Append("\r\n");
 
+        var codSiconfi = NormalizarCodigoSiconfi(codigoSiconfi);
+
         foreach (var linha in declaracao.Matriz.Linhas)
         {
+            var naturezaInformacao = NaturezaInformacaoDe(linha.ContaPcasp);
+            var pares = ExtrairInformacoesComplementares(linha.InformacaoComplementar);
+
             construtor
-                .Append(Escapar(linha.ContaPcasp)).Append(';')
-                .Append(linha.NaturezaSaldo).Append(';')
-                .Append(linha.Valor.Valor.ToString("0.00", CultureInfo.InvariantCulture)).Append(';')
-                .Append(Escapar(linha.InformacaoComplementar ?? string.Empty))
-                .Append("\r\n");
+                .Append(periodo).Append(Separador)
+                .Append(codSiconfi).Append(Separador)
+                .Append(naturezaInformacao).Append(Separador)
+                .Append(Escapar(linha.ContaPcasp)).Append(Separador)
+                .Append("saldo_final").Append(Separador) // unica especie consolidada nesta camada.
+                .Append(linha.Valor.Valor.ToString("0.00", CultureInfo.InvariantCulture));
+
+            // Emite SEMPRE os 6 pares (preenchidos ou vazios) — nº/ordem de colunas FIXO no leiaute oficial.
+            for (var i = 0; i < QuantidadeInformacoesComplementares; i++)
+            {
+                var (tipo, valor) = i < pares.Count ? pares[i] : (string.Empty, string.Empty);
+                construtor
+                    .Append(Separador).Append(Escapar(tipo))
+                    .Append(Separador).Append(Escapar(valor));
+            }
+
+            construtor.Append("\r\n");
         }
 
         return construtor.ToString();
     }
 
+    // Cabecalho: Periodo|Cod.Siconfi|NaturezaInformacao|Conta|Tipo_Valor|Valor|TIPO1|IC1|...|TIPO6|IC6.
+    private static string MontarCabecalho()
+    {
+        var construtor = new StringBuilder("Periodo|Cod.Siconfi|NaturezaInformacao|Conta|Tipo_Valor|Valor");
+        for (var i = 1; i <= QuantidadeInformacoesComplementares; i++)
+        {
+            construtor.Append(Separador).Append("TIPO").Append(i.ToString(CultureInfo.InvariantCulture));
+            construtor.Append(Separador).Append("IC").Append(i.ToString(CultureInfo.InvariantCulture));
+        }
+
+        return construtor.ToString();
+    }
+
+    // NaturezaInformacao (classe contabil) a partir do 1o digito da conta PCASP (PCASP §3):
+    // 1-4 Patrimonial, 5-6 Orcamentaria, 7-8 Controle.
+    private static string NaturezaInformacaoDe(string contaPcasp)
+        => PrimeiroDigito(contaPcasp) switch
+        {
+            >= 1 and <= 4 => "Patrimonial",
+            5 or 6 => "Orcamentaria",
+            _ => "Controle",
+        };
+
+    private static int PrimeiroDigito(string contaPcasp)
+    {
+        foreach (var c in contaPcasp)
+        {
+            if (char.IsAsciiDigit(c))
+            {
+                return c - '0';
+            }
+        }
+
+        return 7;
+    }
+
+    // Garante o sufixo "EX" (Executivo) no Cod.Siconfi se o provedor devolver so o IBGE.
+    private static string NormalizarCodigoSiconfi(string codigoSiconfi)
+    {
+        var bruto = (codigoSiconfi ?? string.Empty).Trim();
+        return bruto.EndsWith(SufixoExecutivo, StringComparison.OrdinalIgnoreCase)
+            ? bruto
+            : bruto + SufixoExecutivo;
+    }
+
+    // Converte o texto canonico "CHAVE=valor;CHAVE=valor" (de InformacoesComplementaresMsc.ParaTexto) nos
+    // pares (TIPO, IC) do leiaute: TIPO = codigo do atributo (PO/FP/DC/FR/CO/NR/ND/FS/AI), IC = o valor.
+    private static List<(string Tipo, string Valor)> ExtrairInformacoesComplementares(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return [];
+        }
+
+        var pares = new List<(string Tipo, string Valor)>(QuantidadeInformacoesComplementares);
+        foreach (var parte in texto.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var igual = parte.IndexOf('=', StringComparison.Ordinal);
+            if (igual <= 0)
+            {
+                continue;
+            }
+
+            pares.Add((parte[..igual], parte[(igual + 1)..]));
+        }
+
+        return pares;
+    }
+
     // Caracteres que, no INICIO de uma celula, fazem o Excel/LibreOffice/Sheets interpretar
-    // o conteudo como FORMULA (OWASP CSV Injection). Conta/informacao complementar podem
-    // carregar texto de origem externa → neutralizar antes de escapar.
+    // o conteudo como FORMULA (OWASP CSV Injection). Conta/atributos podem carregar texto de
+    // origem externa -> neutralizar antes de escapar.
     private static readonly char[] GatilhosFormulaCsv = ['=', '+', '-', '@', '\t', '\r'];
 
     private static string Escapar(string valor)
@@ -78,8 +194,8 @@ public sealed class GeradorMscCsv : IGeradorMsc
             ? "'" + valor
             : valor;
 
-        // RFC 4180 §2.6: campo com delimitador, aspas, LF ou CR isolado deve ser citado.
-        return conteudo.Contains(';', StringComparison.Ordinal)
+        // Campo com o delimitador, aspas, LF ou CR isolado deve ser citado.
+        return conteudo.Contains(Separador, StringComparison.Ordinal)
             || conteudo.Contains('"', StringComparison.Ordinal)
             || conteudo.Contains('\n', StringComparison.Ordinal)
             || conteudo.Contains('\r', StringComparison.Ordinal)

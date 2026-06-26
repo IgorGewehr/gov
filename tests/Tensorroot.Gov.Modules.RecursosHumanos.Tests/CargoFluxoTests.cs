@@ -22,7 +22,8 @@ public sealed class CargoFluxoTests : RecursosHumanosTestBase
         decimal vencimento = 5000m,
         int vagas = 3,
         string denominacao = "Analista Administrativo",
-        string lei = "Lei 1.000/2020")
+        string lei = "Lei 1.000/2020",
+        PoliticaPrevidenciaria? politica = null)
         => Cargo.Criar(
             TenantA,
             denominacao,
@@ -30,14 +31,15 @@ public sealed class CargoFluxoTests : RecursosHumanosTestBase
             Vencimento.De(vencimento),
             NovaLotacao(),
             vagas,
-            lei);
+            lei,
+            politica);
 
     // ---------- Invariantes ----------
 
-    [Fact] // I-11 + Cenario 1: cargo efetivo nasce Ativo, RPPS, sem ocupantes e emite CargoCriado.
-    public void Invariante_11_criacao_efetivo_nasce_ativo_rpps_e_emite_evento()
+    [Fact] // PC1 + Cenario 1: efetivo de ente COM RPPS proprio nasce Ativo, RPPS, sem ocupantes e emite CargoCriado.
+    public void Criacao_efetivo_com_rpps_proprio_nasce_ativo_rpps_e_emite_evento()
     {
-        var cargo = NovoCargo(TipoCargo.Efetivo);
+        var cargo = NovoCargo(TipoCargo.Efetivo, politica: PoliticaPrevidenciaria.ComRppsProprio);
 
         cargo.Situacao.Should().Be(SituacaoCargo.Ativo);
         cargo.Regime.Should().Be(RegimePrevidenciario.Rpps);
@@ -45,18 +47,26 @@ public sealed class CargoFluxoTests : RecursosHumanosTestBase
         cargo.DomainEvents.OfType<CargoCriado>().Should().ContainSingle();
     }
 
-    [Fact] // I-2 + Cenario 2: cargo comissionado deriva RGPS.
-    public void Invariante_2_comissionado_deriva_rgps()
+    [Fact] // PC1: default (sem politica) = municipio SEM RPPS proprio -> efetivo recolhe ao RGPS/INSS.
+    public void Criacao_efetivo_sem_rpps_proprio_default_recolhe_rgps()
     {
-        var cargo = NovoCargo(TipoCargo.Comissionado);
+        var cargo = NovoCargo(TipoCargo.Efetivo);
 
         cargo.Regime.Should().Be(RegimePrevidenciario.Rgps);
     }
 
-    [Fact] // I-2: cargo temporario deriva RGPS.
+    [Fact] // PC1: mesmo com RPPS proprio, comissionado deriva RGPS.
+    public void Invariante_2_comissionado_deriva_rgps()
+    {
+        var cargo = NovoCargo(TipoCargo.Comissionado, politica: PoliticaPrevidenciaria.ComRppsProprio);
+
+        cargo.Regime.Should().Be(RegimePrevidenciario.Rgps);
+    }
+
+    [Fact] // PC1: mesmo com RPPS proprio, temporario deriva RGPS.
     public void Invariante_2_temporario_deriva_rgps()
     {
-        var cargo = NovoCargo(TipoCargo.Temporario);
+        var cargo = NovoCargo(TipoCargo.Temporario, politica: PoliticaPrevidenciaria.ComRppsProprio);
 
         cargo.Regime.Should().Be(RegimePrevidenciario.Rgps);
     }
