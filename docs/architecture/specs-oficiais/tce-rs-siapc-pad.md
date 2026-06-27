@@ -2,7 +2,7 @@
 
 > Piloto: Maximiliano de Almeida/RS. Fonte primária verificada: Manual Técnico do SIAPC **Volume V (MT-ASCE-0105, Revisão 6, mar/2024, válido a partir de jun/2024)**, 36 páginas, baixado do espelho MPC-RS. Trechos de campos/larguras abaixo foram transcritos **literalmente** do PDF oficial. Onde o leiaute completo do exercício corrente não foi extraído integralmente, há marca `[obter leiaute oficial do exercício]`.
 >
-> ATENÇÃO (CLAUDE.md §16): NÃO inventar campos. Antes de codificar o gerador de remessa, baixar o leiaute do exercício-alvo (a Revisão muda anualmente; verificar a versão do PAD do ano).
+> ATENÇÃO (CONVENCOES-ENGENHARIA.md §8): NÃO inventar campos. Antes de codificar o gerador de remessa, baixar o leiaute do exercício-alvo (a Revisão muda anualmente; verificar a versão do PAD do ano).
 
 ---
 

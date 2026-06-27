@@ -3,15 +3,14 @@
 > **Papel:** Arquiteto. Este documento define o **comportamento correto** do motor de ITBI
 > e a **mudança exata** em `CalculoItbi.cs` + `TransmissaoImobiliaria.cs`, mais as novas
 > entidades/estados do **arbitramento (CTN art. 148)**.
-> Base: `pesquisa-tese-1113.md`, `pesquisa-arbitramento-ctn148.md`, `verificacao.md`.
-> Data: 2026-06-22. Itens incertos marcados `[a confirmar]` (CLAUDE.md §16).
-> **Exige ADR + parecer da procuradoria** antes de produção (altera regra do M6-DESIGN §3.1).
+> Data: 2026-06-22. Itens incertos marcados `[a confirmar]` (CONVENCOES-ENGENHARIA.md §8).
+> **Exige ADR + parecer da procuradoria** antes de produção.
 
 ---
 
 ## 1. Resumo (12 linhas)
 
-1. **Problema:** o motor usa `base = MAIOR(valor venal de referência, valor declarado)` — ilegítimo sob o Tema 1.113/STJ (CONFIRMADO em `verificacao.md` §8).
+1. **Problema:** o motor usa `base = MAIOR(valor venal de referência, valor declarado)` — ilegítimo sob o Tema 1.113/STJ (confirmado no código atual).
 2. **Tese (a):** a base do ITBI é o valor de mercado, **não vinculada ao IPTU**; valor venal nem como piso.
 3. **Tese (b):** o **valor declarado presume-se** condizente com o mercado (presunção **relativa**); só cai por **processo administrativo art. 148 CTN**.
 4. **Tese (c):** o município **não pode arbitrar previamente** com valor de referência unilateral.
@@ -105,7 +104,7 @@ public static MemoriaItbi Calcular(
     ValorMonetario valorDeclarado,
     decimal aliquotaGeralPercentual,
     decimal aliquotaSfhPercentual,
-    decimal margemDivergenciaPercentual = 0m,   // parametrizável por tenant (CLAUDE.md §7) — só dispara alerta
+    decimal margemDivergenciaPercentual = 0m,   // parametrizável por tenant (CONVENCOES-ENGENHARIA.md §7) — só dispara alerta
     ParametrosItbi? parametros = null)
 {
     ArgumentNullException.ThrowIfNull(valorVenalReferencia);
@@ -203,7 +202,7 @@ de triagem/alerta. Elevação da base **somente** via `RecalcularComArbitramento
 
 ## 4. Novas entidades/estados do arbitramento (CTN art. 148)
 
-Fluxo **separado** e **auditado** (CLAUDE.md §4, §6). Modelado como **agregado** com máquina de
+Fluxo **separado** e **auditado** (CONVENCOES-ENGENHARIA.md §4, §6). Modelado como **agregado** com máquina de
 estados — nunca como cálculo aritmético.
 
 ### 4.1 `ProcessoArbitramentoItbi` (AggregateRoot, IMustHaveTenant)
@@ -227,7 +226,7 @@ Vincula-se a uma `TransmissaoImobiliaria`. Guarda fundamentação, contraditóri
 **Invariantes:**
 - Não se pode pular `AguardandoContraditorio` (contraditório é obrigatório — tese b + acórdão).
 - `Concluido` exige `ValorArbitradoFinal` definido e `JustificativaContribuinte` registrada (ou prazo de defesa decorrido, com data — `[a confirmar]` regra de revelia com a procuradoria).
-- Toda transição gera **domain event** (`ProcessoArbitramentoItbi*`) → trilha de auditoria imutável (CLAUDE.md §6).
+- Toda transição gera **domain event** (`ProcessoArbitramentoItbi*`) → trilha de auditoria imutável (CONVENCOES-ENGENHARIA.md §6).
 - `[a confirmar]` **contraditório diferido** (lançar pelo declarado e abrir arbitramento depois): tese de PGM (Joinville 2025), **não vinculante** — só adotar se a procuradoria do tenant aprovar.
 
 ### 4.2 `ResultadoArbitramento` (Value Object — entrada do recálculo)
@@ -256,12 +255,12 @@ de leitura, não parte da `MemoriaItbi` aritmética.
 
 ---
 
-## 6. Conformidade com CLAUDE.md
+## 6. Conformidade com CONVENCOES-ENGENHARIA.md
 
 - **§7 (nada hardcoded):** `MargemDivergenciaPercentual`, alíquotas e metodologia de referência são parâmetros por tenant/CTM.
 - **§4/§6 (auditoria):** toda elevação de base tem trilha ligada ao nº do processo art. 148; máquina de estados gera eventos imutáveis.
 - **§5 (multi-tenant):** `ProcessoArbitramentoItbi` é `IMustHaveTenant`.
-- **§16:** itens incertos marcados `[a confirmar]`; **exige ADR + procuradoria** antes de produção.
+- **§8:** itens incertos marcados `[a confirmar]`; **exige ADR + procuradoria** antes de produção.
 
 ---
 
@@ -281,4 +280,4 @@ de leitura, não parte da `MemoriaItbi` aritmética.
 - `src/Modules/Tributos/Tensorroot.Gov.Modules.Tributos.Domain/Calculo/CalculoItbi.cs` (motor — §3)
 - `src/Modules/Tributos/Tensorroot.Gov.Modules.Tributos.Domain/Itbi/TransmissaoImobiliaria.cs` (agregado — §5)
 - **Novos** (em `.../Domain/Itbi/Arbitramento/`): `ProcessoArbitramentoItbi.cs`, `EstadoArbitramentoItbi.cs`, `ResultadoArbitramento.cs`, `OrigemBaseCalculoItbi.cs`, eventos de domínio do arbitramento — §4.
-- ADR a criar em `docs/adr/` registrando a decisão (substitui regra do M6-DESIGN §3.1).
+- ADR a criar em `docs/adr/` registrando a decisão.

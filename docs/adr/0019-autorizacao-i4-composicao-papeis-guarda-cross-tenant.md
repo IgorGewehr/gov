@@ -59,7 +59,7 @@ Provar o I4 **no domínio** (não na UI) e tirar a permissão de plataforma do c
   permissões efetivas; reprovas retornam **403 com motivo** (auditável, não silencioso).
 - ➕ Poder de **plataforma é inalcançável** por papel de tenant (fora do catálogo) **e** barrado por
   guarda cross-tenant auditada — defesa em profundidade sobre a separação de poderes (ADR-0007).
-- ➕ Casa com o isolamento multi-tenant (CLAUDE.md §5) e com a auditoria (a tentativa cross-tenant é
+- ➕ Casa com o isolamento multi-tenant (CONVENCOES-ENGENHARIA.md §5) e com a auditoria (a tentativa cross-tenant é
   registrada com IP/sub).
 - ➖ **Custo de verificação** a cada composição/atribuição (resolver escopo efetivo do concedente +
   cobertura por permissão); mitigado por cache de escopo (ADR-0007).

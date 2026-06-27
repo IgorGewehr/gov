@@ -39,7 +39,7 @@ Arquivo de regra: [`src/Modules/Administracao/rules/Contrato.rules.md`](../../sr
 |---|---|---|---|
 | **Divulgação no PNCP é condição de eficácia do contrato** (prazos em **dias úteis**) | **Lei 14.133/2021 art. 94** | 🟢 parâmetro (calendário de dias úteis/feriados por tenant; `IPrazoPncp`, `ICalendarioDiasUteis`) + 🟡 lógica | **Conferir os prazos:** 20 d.u. (bens/serviços) · 10 d.u. (serviços/trabalhos) · obras: 25/45 d.u. (art. 94 §3). Contrato **sem nº de controle PNCP é ineficaz e NÃO sustenta empenho** (trava de bloqueio). |
 | Edital obrigatoriamente publicado no PNCP | **Lei 14.133/2021 art. 174** | 🟡 lógica (evento `EditalPublicadoNoPncp`) | Confira que a publicação é exigida para a regularidade do certame. |
-| Aditivo conta prazo PNCP próprio (da assinatura) | Lei 14.133/2021 art. 94 | 🟡 lógica (tem `TODO(M10)`) | Confira a contagem de prazo do aditivo (transmissão real é M10 — ver `tce-rs-integracao.md`). |
+| Aditivo conta prazo PNCP próprio (da assinatura) | Lei 14.133/2021 art. 94 | 🟡 lógica (tem `TODO(M10)`) | Confira a contagem de prazo do aditivo (transmissão real pendente de credencial/canal de produção — `TODO(M10)` no código; ver `tce-rs-integracao.md`). |
 
 > **Atenção:** o art. **94** (eficácia por prazo) é diferente do art. **174** (institui o PNCP/obriga
 > a publicidade). Os dois aparecem no sistema; confira ambos.
@@ -110,7 +110,7 @@ Arquivo de regra: [`src/Modules/Administracao/rules/LicitaCon.rules.md`](../../s
 
 | Item | Norma | Tipo | O QUE CONFERIR |
 |---|---|---|---|
-| Remessa LicitaCon **1.4** — 14 arquivos CSV, validada pelo e-Validador | **TCE-RS IN 13/2017**; Leiaute 1.4 (e-Validador); Lei 14.133/2021 | 🟡 lógica | Confira os 14 arquivos (PESSOAS, LICITACAO, LICITANTE, LOTE, ITEM, PROPOSTA, CONTRATO etc.) e a determinismo da geração. Transmissão real é M10 — detalhe em [`tce-rs-integracao.md`](tce-rs-integracao.md). |
+| Remessa LicitaCon **1.4** — 14 arquivos CSV, validada pelo e-Validador | **TCE-RS IN 13/2017**; Leiaute 1.4 (e-Validador); Lei 14.133/2021 | 🟡 lógica | Confira os 14 arquivos (PESSOAS, LICITACAO, LICITANTE, LOTE, ITEM, PROPOSTA, CONTRATO etc.) e a determinismo da geração. Transmissão real pendente de credencial/canal de produção (`TODO(M10)` no código) — detalhe em [`tce-rs-integracao.md`](tce-rs-integracao.md). |
 
 > **Convênios/parcerias (MROSC):** o módulo Convenios não tem `.rules.md` próprio nesta fase, mas tem
 > a integração com o Transferegov.br (Lei 13.019/2014) — pontos de transmissão em

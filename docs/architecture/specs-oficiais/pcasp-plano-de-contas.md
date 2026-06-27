@@ -149,8 +149,8 @@ de fontes para abertura de créditos adicionais e dos Restos a Pagar.
 | Geração de saldos PCASP → **MSC** | **Mensal** | SICONFI (Portaria STN 642) |
 | DCASP (Balanços Orçamentário, Financeiro, Patrimonial, DVP) | Anual + bimestral/quadrimestral conforme RREO/RGF | SICONFI + TCE-RS |
 
-> Prazos específicos do TCE-RS (remessas SIAPC/PAD, periodicidade mensal/anual) serão detalhados na espec.
-> "prestação de contas TCE-RS" (tarefa M4). Aqui registra-se apenas o vínculo PCASP → MSC → SICONFI/TCE-RS.
+> Prazos específicos do TCE-RS (remessas SIAPC/PAD, periodicidade mensal/anual) estão detalhados na spec
+> [`tce-rs-siapc-pad.md`](./tce-rs-siapc-pad.md). Aqui registra-se apenas o vínculo PCASP → MSC → SICONFI/TCE-RS.
 
 ---
 
@@ -179,4 +179,4 @@ de fontes para abertura de créditos adicionais e dos Restos a Pagar.
 - [ ] **Síntese de Alterações PCASP 2026** — https://thot-arquivos.tesouro.gov.br/publicacao-anexo/27248 — confirmar contas novas/extintas vs. 2025.
 - [ ] **MCASP 11ª ed., Volume IV (vigente)** — baixar do portal STN (link §9); a base textual usada nesta espec. é a 2ª edição (mirror SP) — validar máscara/dígitos exatos do nível 5–7 contra a 11ª ed.
 - [ ] **Portaria STN 642 / Anexo I 2026 (MSC)** — confirmar de-para PCASP → contas-correntes da MSC p/ envio SICONFI.
-- [ ] **TCE-RS** — leiaute SIAPC/PAD e periodicidade de remessa (detalhar na espec. M4).
+- [ ] **TCE-RS** — leiaute SIAPC/PAD e periodicidade de remessa (ver `docs/architecture/specs-oficiais/tce-rs-siapc-pad.md`).

@@ -14,32 +14,38 @@ sensíveis sob escrutínio do **Tribunal de Contas (foco TCE-RS e padrão nacion
 - **Multi-tenant** com **ativação modular por tenant** — cada ente licencia só os módulos que usa ([ADR-0002](docs/adr/0002-multitenancy-ativacao-modular.md)).
 - **Backend:** .NET 8 · C# 12 · EF Core 8 · MediatR · Serilog · OpenTelemetry · Polly.
 - **Frontend:** React + **gov.br Design System** ([ADR-0004](docs/adr/0004-frontend-react-govbr-ds.md)).
-- **Regras de engenharia:** ver [`CLAUDE.md`](CLAUDE.md) (constituição estrita).
+- **Convenções de engenharia:** ver [`docs/CONVENCOES-ENGENHARIA.md`](docs/CONVENCOES-ENGENHARIA.md) (regras estritas).
 
-## Estado atual (provado em runtime)
+## O que o sistema faz
 
-| Marco | Entrega | Status |
-|---|---|---|
-| **M0** | Build + bugs críticos | ✅ |
-| **M1** | Autorização organizacional (UO + escopo + ABAC) | ✅ |
-| **M2** | Contabilidade PCASP (lançamento automático, balancete ΣD=ΣC) | ✅ |
-| **M3** | Demonstrações DCASP + MSC | ✅ |
-| **M4** | Prestação de contas TCE-RS/SICONFI (remessa SIAPC + protocolo) | ✅ |
-| — | Cofre A1 (envelope encryption) · Outbox resiliente · Legislativo demonstrável | ✅ |
-| — | Planejamento PPA/LDO/LOA · Encerramento de exercício (resultado + RAP) | ✅ |
-| **M5** | RH: folha mensal + 13º/férias/rescisão · ponto (software + coletor REP) · eSocial estrutural · remessa folha TCE | ✅ |
-| **M6** | Tributos: IPTU · ISS (NFS-e passiva) · ITBI (Tema 1.113) · taxas/COSIP/alvarás · dívida ativa/CDA/protesto | ✅ |
-| — | Segurança: 6 críticos + 5 altos do red-team fechados · auditoria hash-chain imutável | ✅ |
-| **M7–M10** | Saúde/Educação/Assistência · Cidadão/Gestor/BI · Suprimentos/QA · **Prontidão PoC/Go-live** | 🔜 |
+ERP integrado para os dois poderes municipais, com a espinha fiscal completa e os módulos setoriais:
 
-**Build 0 erros / 0 avisos** (warnings=errors) · **~1.067 testes backend + 192 frontend** · fitness/arquitetura verdes. Acompanhe em [`docs/progresso/`](docs/progresso/).
+- **Espinha fiscal:** autorização organizacional (UO + escopo + ABAC) · contabilidade PCASP (lançamento
+  automático, balancete ΣD=ΣC) · demonstrações DCASP + MSC · prestação de contas TCE-RS/SICONFI
+  (remessa SIAPC + protocolo) · planejamento PPA/LDO/LOA · encerramento de exercício (resultado + RAP).
+- **RH:** folha mensal + 13º/férias/rescisão · ponto (software + coletor REP) · eSocial estrutural ·
+  remessa de folha ao TCE.
+- **Tributos:** IPTU · ISS (NFS-e passiva) · ITBI (Tema 1.113) · taxas/COSIP/alvarás ·
+  dívida ativa/CDA/protesto.
+- **Setoriais e suporte:** Saúde · Educação · Assistência Social · Legislativo · Patrimônio ·
+  Protocolo · Transparência (LAI / dados abertos).
+- **Plataforma:** Cofre A1 (envelope encryption) · Outbox resiliente · auditoria hash-chain imutável.
 
-> **Honestidade "simulado vs oficial":** NFS-e/ADN é integração real; TCE/SICONFI geram artefato correto com validação **local** (validação no PAD **oficial** pendente do leiaute MT 2026); demais integrações chegam nos marcos M5–M10. Detalhe verificado em [`docs/estudo/DIAGNOSTICO-VS-REAL.md`](docs/estudo/DIAGNOSTICO-VS-REAL.md).
+Build **0 erros / 0 avisos** (warnings=errors) · suíte de testes backend + frontend · fitness functions
+de arquitetura verdes.
 
-### Para o time
+> **Honestidade "simulado vs oficial":** NFS-e/ADN é integração **real**; as remessas TCE-RS/SICONFI
+> geram o artefato correto com validação **local** (a validação no PAD **oficial** depende do leiaute MT
+> do exercício e das credenciais do município — ver [`docs/go-live/`](docs/go-live/)). As demais
+> integrações governamentais que dependem de credencial/canal de produção estão marcadas no código e
+> documentadas em [`docs/REVISAO-HUMANA/`](docs/REVISAO-HUMANA/).
+
+### Por onde começar
 - 🚀 **Rodar/testar/depurar:** [`docs/RUNBOOK.md`](docs/RUNBOOK.md) · login demo `admin@tensorroot.gov` / `Mudar@123`.
-- 📐 **Decisões com trade-offs:** [`docs/adr/`](docs/adr/) · **onde está cada coisa no código:** [`docs/MAPA-TOPICO-CODIGO.md`](docs/MAPA-TOPICO-CODIGO.md).
-- 📚 **Estudo guiado (.NET + GovTech):** abra [`docs/roadmap_team.html`](docs/roadmap_team.html) no navegador.
+- 📐 **Decisões com trade-offs:** [`docs/adr/`](docs/adr/).
+- ✅ **Pontos para revisão humana (contador/jurídico):** [`docs/REVISAO-HUMANA/`](docs/REVISAO-HUMANA/).
+- 🌐 **Operação de go-live (credenciais, validação oficial):** [`docs/go-live/`](docs/go-live/).
+- 📏 **Convenções de engenharia:** [`docs/CONVENCOES-ENGENHARIA.md`](docs/CONVENCOES-ENGENHARIA.md).
 
 ## Bounded Contexts (11)
 
@@ -69,9 +75,15 @@ src/
 tests/
   ArchitectureTests/            fitness functions (NetArchTest)
 docs/
+  CONVENCOES-ENGENHARIA.md      regras estritas de engenharia
   adr/                          decisões arquiteturais
-  architecture/                 diagramas e visões
+  architecture/                 designs por tópico + specs oficiais
   design-system/                Design System Constitution (UI/UX gov.br DS)
+  governanca/                   Rules-as-Code
+  go-live/                      credenciais e validação oficial para entrar em produção
+  normas/                       fontes normativas
+  REVISAO-HUMANA/               pontos para conferência de contador/jurídico
+  RUNBOOK.md                    guia operacional para rodar/testar/depurar
 ```
 
 ## Stack
@@ -91,20 +103,13 @@ docs/
 
 > O alvo é **.NET 8** (`net8.0`). O `global.json` usa `rollForward: latestMajor`, então o SDK .NET 10
 > compila a solução; para **executar** o runtime net8 localmente, instale o runtime .NET 8.
+> Detalhes e troubleshooting no [`RUNBOOK`](docs/RUNBOOK.md).
 
 ```bash
 dotnet restore
 dotnet build -c Release
-dotnet test            # testes de arquitetura (Fase 6)
+dotnet test            # inclui as fitness functions de arquitetura
 ```
-
-## Roadmap (marcos M0–M10)
-
-Execução por **marcos** (ver progresso real em [`docs/progresso/`](docs/progresso/) e plano em [`docs/planejamento/PLANO-MESTRE.md`](docs/planejamento/PLANO-MESTRE.md)):
-
-- **M0–M4 ✅** — build, autorização, espinha fiscal (PCASP → DCASP/MSC → prestação TCE-RS) + PPA/LDO/LOA + encerramento de exercício.
-- **M5 ✅** RH (folha mensal + ciclo anual + ponto/coletor + eSocial + remessa folha) · **M6 ✅** Tributos (IPTU/ISS/ITBI/taxas/dívida) · **M7** Saúde/Educação/Assistência · **M8** Cidadão/Gestor/BI · **M9** Suprimentos + compliance + QA.
-- **M10** — **Prontidão para PoC + Go-live** (capstone): validação no oficial, avaliações isentas, deploy/infra, segurança/LGPD final. "Pronto" = validado no oficial + deployável no município, não só código.
 
 ## Compliance
 

@@ -6,7 +6,6 @@
 > dos equipamentos físicos REP** e **ingere as marcações** no nosso domínio, de forma idempotente,
 > multi-tenant e auditável.
 >
-> Base de pesquisa: `pesquisa-rep-afd.md` e `pesquisa-fabricantes-sdk.md` (mesma pasta).
 > `[a confirmar]` = depende de SDK/doc proprietário do fabricante ou do texto integral do Anexo da 671.
 
 ---
@@ -22,7 +21,7 @@ Logo:
 > pipeline de ingestão consome.** Isso isola o proprietário (`[a confirmar]`) na borda e mantém o
 > núcleo estável.
 
-Espelha a topologia já aprovada do `NfseSync` (CLAUDE.md §2/§8): **Worker** dedicado, **atrás de
+Espelha a topologia já aprovada do `NfseSync` (CONVENCOES-ENGENHARIA.md §2/§8): **Worker** dedicado, **atrás de
 ACL**, integração **idempotente, resiliente (Polly) e multi-tenant por iteração explícita**.
 
 ```
@@ -34,7 +33,7 @@ ACL**, integração **idempotente, resiliente (Polly) e multi-tenant por iteraç
 
 ---
 
-## 2. Onde mora cada peça (respeitando isolamento de módulo, CLAUDE.md §2)
+## 2. Onde mora cada peça (respeitando isolamento de módulo, CONVENCOES-ENGENHARIA.md §2)
 
 | Peça | Camada/projeto | Papel |
 |---|---|---|
@@ -47,7 +46,7 @@ ACL**, integração **idempotente, resiliente (Polly) e multi-tenant por iteraç
 
 **Regra de dependência:** os drivers ficam em **Infrastructure** (têm I/O e SDK proprietário). O
 **Domain** só conhece `IParserAfd` (puro). A **Application** orquestra via `IColetorRep` e o command
-de ingestão. Credenciais dos REPs → **Azure Key Vault**, nunca no banco/repo (CLAUDE.md §6).
+de ingestão. Credenciais dos REPs → **Azure Key Vault**, nunca no banco/repo (CONVENCOES-ENGENHARIA.md §6).
 
 ---
 
@@ -80,7 +79,7 @@ public sealed record LoteAfdColetado(
   pendrive coletado na porta fiscal) e entra no mesmo pipeline. Funciona para **qualquer** REP-C,
   inclusive marcas sem SDK (Tellijack `[a confirmar]`).
 - **Resiliência:** todo driver de rede usa **Polly** (timeout + retry + circuit breaker) e mapeia
-  erros do fabricante para exceções de domínio (Anti-Corruption Layer, CLAUDE.md §8).
+  erros do fabricante para exceções de domínio (Anti-Corruption Layer, CONVENCOES-ENGENHARIA.md §8).
 
 ---
 
@@ -93,7 +92,7 @@ faz o caminho inverso, **reusando `CampoPosicional` e `Crc16Ccitt` já existente
 // Domain/Ponto — serviço PURO (sem I/O), simétrico a GeradorAfd.
 public interface IParserAfd
 {
-    ResultadoParseAfd Parse(ReadOnlySpan<byte> afd); // Span<byte> p/ fatiar sem alocar (CLAUDE.md §7)
+    ResultadoParseAfd Parse(ReadOnlySpan<byte> afd); // Span<byte> p/ fatiar sem alocar (CONVENCOES-ENGENHARIA.md §7)
 }
 
 public sealed record RegistroAfdParseado(long Nsr, Cpf Cpf, DateTimeOffset DataHora, TipoRep Origem);
@@ -128,14 +127,14 @@ distintos** — não se pode misturar. Decisão:
   re-coleta após falha) **não duplica**: o handler ignora pares já vistos.
 - Reusa a entidade `MarcacaoPonto` (append-only, imutável) e o `IMarcacaoPontoRepository` existentes.
   Adiciona-se ao agregado os campos `RepId` + `NsrEquipamento` (o `Nsr` interno do nosso REP-P segue
-  para marcações próprias). Migration por módulo (CLAUDE.md §9).
+  para marcações próprias). Migration por módulo (CONVENCOES-ENGENHARIA.md §9).
 
 ```csharp
 public sealed record IngestarMarcacoesAfdCommand(Guid RepId, byte[] ConteudoAfd, byte[]? AssinaturaCades)
     : ICommand<ResultadoIngestao>;
 
 // Handler (pseudo):
-//  1. parser.Parse(afd) -> valida CRC/NSR/assinatura (fail-closed se inválido — CLAUDE.md §16)
+//  1. parser.Parse(afd) -> valida CRC/NSR/assinatura (fail-closed se inválido — CONVENCOES-ENGENHARIA.md §8)
 //  2. já-vistos = repo.NsrsEquipamentoExistentes(RepId, [nsrs do lote])  // dedup em lote
 //  3. para cada registro novo: resolve ServidorId por CPF (consulta no tenant);
 //     MarcacaoPonto.RegistrarDeEquipamento(tenant, servidorId, cpf, repId, nsrEquip, dataHora, sentido, origem)
@@ -150,7 +149,7 @@ public sealed record IngestarMarcacoesAfdCommand(Guid RepId, byte[] ConteudoAfd,
 - **CPF → ServidorId:** resolvido via consulta no tenant (reusa padrão `IServidorPontoConsulta`).
   CPF sem servidor correspondente → registro **pendente de vínculo** (auditável), não descartado.
 - **Multi-tenancy:** `RepId` pertence a um tenant; o `TenantInterceptor`/Global Query Filter garante
-  isolamento. Gravação cross-tenant lança exceção (CLAUDE.md §5).
+  isolamento. Gravação cross-tenant lança exceção (CONVENCOES-ENGENHARIA.md §5).
 
 ---
 
@@ -188,7 +187,7 @@ src/Workers/Tensorroot.Gov.Workers.PontoColetor/
 | `ParametrosPonto` (por tenant) | Estendido com `RecursosHumanos:Ponto:Coletor` (intervalo, modo, marcas habilitadas). |
 | Cofre A1 / `IAssinaturaEmEscopoDedicado` | Reusado para **validar** o `.p7s` do AFD recebido e assinar nosso AEJ. |
 
-Papel regulatório (pesquisa §5): atuamos como **PTRP** consumindo AFD de REP-C de terceiros, e/ou
+Papel regulatório: atuamos como **PTRP** consumindo AFD de REP-C de terceiros, e/ou
 como **REP-P** (coletores próprios). O coletor habilita o cenário **PTRP** sem mudar o núcleo.
 
 ---
@@ -203,7 +202,7 @@ como **REP-P** (coletores próprios). O coletor habilita o cenário **PTRP** sem
 - **Posições/larguras integrais** do leiaute AFD 671 (tipos 3 vs 7, CPF 035–046, CRC) — Anexo oficial
   (DOU). Os `// TODO(validar-oficial)` já presentes no Domain cobrem o ajuste.
 - **Push/webhook** de cada cloud (formato do payload Control iD/Dimep) para o endpoint de ingestão.
-- **Certificado ICP-Brasil** (A1/A3) para validar `.p7s` do AFD e assinar o AEJ — reusar Key Vault/M2.
+- **Certificado ICP-Brasil** (A1/A3) para validar `.p7s` do AFD e assinar o AEJ — reusar o Key Vault.
 - **Templates biométricos** são proprietários e **não-portáveis** — fora do escopo da coleta de AFD;
   re-enrollment ao trocar de marca é decisão operacional, não de software.
 
@@ -229,7 +228,7 @@ como **REP-P** (coletores próprios). O coletor habilita o cenário **PTRP** sem
 ## CAMINHO (próximos passos de implementação)
 
 1. **Domain:** `IParserAfd` + `ResultadoParseAfd` (espelho de `GeradorAfd`); corrigir `TipoRegistroAfd`
-   (3 vs 7) e `GeradorAfd` para distinguir REP-C/A vs REP-P. Specs BDD antes (CLAUDE.md §1/§12).
+   (3 vs 7) e `GeradorAfd` para distinguir REP-C/A vs REP-P. Specs BDD antes (CONVENCOES-ENGENHARIA.md §1/§12).
 2. **Domain/Infra:** entidade `RepConfigurado` (+`RepId`/`NsrEquipamento` em `MarcacaoPonto`),
    `IRepRepository`, migration `PontoColeta`. Credenciais → Key Vault.
 3. **Application:** `IColetorRep`/`LoteAfdColetado`; `IngestarMarcacoesAfdCommand`+handler idempotente;
@@ -251,6 +250,6 @@ como **REP-P** (coletores próprios). O coletor habilita o cenário **PTRP** sem
 - Alterdata — PIS→CPF no AFD 671 (CPF 12 chars, posição 035–046): https://ajuda.alterdata.com.br/ponbase/extincao-do-pis-e-nova-formatacao-de-afd
 - Control iD — iDCloud / modo Push (push.idsecure.com.br): https://www.controlid.com.br/docs/access-api-pt/modo-push/idcloud/
 - Control iD — API (get_afd, load_objects): https://www.controlid.com.br/docs/access-api-pt/
-- (demais fontes por-fabricante: ver `pesquisa-fabricantes-sdk.md` e `pesquisa-rep-afd.md`)
+- (demais fontes por-fabricante: ver a documentação/SDK oficial de cada fabricante)
 
 *Design: 2026-06-22. Validar `[a confirmar]` (SDKs proprietários + Anexo integral 671) antes de implementar driver/uso fiscal.*

@@ -61,6 +61,6 @@ Modelar o ITBI segundo o Tema 1.113, no domínio:
   **procuradoria**, o **CTM de Maximiliano de Almeida/RS** (alíquotas, margem de triagem, rito de
   notificação/contraditório diferido) e o fluxo de lançamento complementar/restituição. O
   `Itbi.rules.md` exige **ADR + parecer** antes de produção — este ADR registra a decisão de modelo;
-  os números fiscais permanecem parametrizáveis (CLAUDE.md §7/§16).
+  os números fiscais permanecem parametrizáveis (CONVENCOES-ENGENHARIA.md §7/§8).
 - 🔗 Decisão **jurídica que muda o motor** — referência obrigatória para qualquer evolução do cálculo
   de ITBI.

@@ -1,10 +1,9 @@
-# M10 — CREDENCIAIS & ONBOARDING (Insumos de Produção)
+# Credenciais & Onboarding para Go-Live (Insumos de Produção)
 
-**Guia acionável para o DONO do produto.** Esta é a fronteira do M10 que **não depende de horas de engenharia**, e sim de **processos burocráticos externos** (cadastros, certificados, adesões, convênios). O código já está pronto e marcado com `// TODO(M10)` / `// TODO(M10-creds)` / `// TODO(validar-leiaute-*)` atrás de ACL (Anti-Corruption Layer) e de gateways `Simulado*`/`Stub` — a troca por integração real só "acende" quando a credencial chega.
+**Guia acionável para o responsável pelo produto/município.** Esta é a parte do go-live que **não depende de horas de engenharia**, e sim de **processos burocráticos externos** (cadastros, certificados, adesões, convênios). O código está pronto e marcado no `src/` com `// TODO(M10)` / `// TODO(M10-creds)` / `// TODO(validar-leiaute-*)` atrás de ACL (Anti-Corruption Layer) e de gateways `Simulado*`/`Stub` — a troca por integração real só "acende" quando a credencial chega.
 
 - **Piloto:** Município de Maximiliano de Almeida/RS — Tribunal de Contas do Estado do RS (TCE-RS).
-- **Âncora:** estado ATUAL do código (14 módulos, Cofre A1 em modo DEV pronto p/ PROD, gateways simulados nas integrações oficiais).
-- **Data de referência:** 2026-06-23.
+- **Âncora:** estado do código (módulos completos, Cofre A1 em modo DEV pronto p/ PROD, gateways simulados nas integrações oficiais).
 
 > ⚠️ **REGRA DE OURO DESTE GUIA:** prazos, links e nomes de portais/sistemas oficiais **mudam**. Todo prazo aqui é uma **estimativa de planejamento**, não um SLA. **CONFIRMAR na hora** no portal/órgão oficial e com o contador/controlador do município antes de agir. Onde escrevo "confirmar link/prazo oficial", é porque o valor exato pode ter mudado desde a redação.
 
@@ -122,7 +121,7 @@ Abertura de assinatura via cartão: **horas a 1 dia**. Via **compra pública/con
 
 **(iv) Dependências.** Nenhuma técnica anterior, mas se a contratação for por compra pública, depende do rito licitatório. **Item 1 (A1)** é guardado **dentro** do Key Vault, então 5 viabiliza 1 em produção.
 
-**(v) O que destrava.** Cofre A1 em **modo PROD** (KEK no Key Vault, item P2/M10 da auditoria), hospedagem de produção, segredos fora do repo. **Pré-requisito de go-live.** Se a via for licitação, **tem lead-time longo → começar JÁ.**
+**(v) O que destrava.** Cofre A1 em **modo PROD** (KEK no Key Vault), hospedagem de produção, segredos fora do repo. **Pré-requisito de go-live.** Se a via for licitação, **tem lead-time longo → começar JÁ.**
 
 ---
 

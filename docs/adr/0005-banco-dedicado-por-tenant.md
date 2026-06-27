@@ -8,7 +8,7 @@
 O Tensorroot.Gov processa **dinheiro público** e dados sensíveis sob escrutínio do
 Tribunal de Contas (TCE-RS) e da LGPD. O isolamento entre tenants — onde Executivo e
 Legislativo do mesmo município são tenants distintos — é requisito de compliance, não
-preferência. A `CLAUDE.md` original (§9) descreve "um `DbContext` por módulo, **schema
+preferência. A `CONVENCOES-ENGENHARIA.md` (§9) descreve "um `DbContext` por módulo, **schema
 isolado**", o que num modelo *shared-database* deixaria todos os tenants partilhando a
 mesma base física, com isolamento apenas lógico (Global Query Filter por `TenantId`).
 
@@ -53,8 +53,8 @@ Adotar **um banco de dados DEDICADO por tenant** (*database-per-tenant*):
   de operações administrativas. Mitigado por automação (`SchemaProvisioner`, migrations por módulo).
 - ➖ **Sem JOIN cross-tenant** nem consultas administrativas globais triviais — consolidações
   (ex.: relatórios de plataforma) exigem agregação explícita e auditada, nunca leitura cruzada.
-- ➖ **Diverge da `CLAUDE.md` §9** ("um DbContext por módulo, schema isolado" lido como
+- ➖ **Diverge da `CONVENCOES-ENGENHARIA.md` §9** ("um DbContext por módulo, schema isolado" lido como
   shared-DB): esta decisão re-significa "schema isolado" como *schema por módulo dentro do
-  banco dedicado do tenant*. A constituição deve ser lida sob esta ADR.
+  banco dedicado do tenant*. As Convenções de Engenharia devem ser lidas sob esta ADR.
 - 🔗 Trade-off honesto: ganhamos isolamento e compliance ao preço de operação mais cara — para
   o perfil (poucas centenas de entes, dado regulado) o isolamento vale o custo.

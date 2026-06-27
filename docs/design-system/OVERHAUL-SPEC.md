@@ -4,7 +4,7 @@
 > contratos de API nem features. Eleva o frontend ao patamar **govtech/fintech SaaS**:
 > limpo, confiável, denso de dados mas organizado — aplicando o gov.br DS com **rigor de
 > layout, espaçamento, hierarquia e dataviz**.
-> **Base normativa inegociável (CLAUDE.md §13 + Constitution):** gov.br DS + eMAG + WCAG 2.1 AA.
+> **Base normativa inegociável (CONVENCOES-ENGENHARIA.md §13 + Design System Constitution):** gov.br DS + eMAG + WCAG 2.1 AA.
 > Tokens = *single source of truth*; zero *magic number*; foco visível; contraste ≥ 4,5:1.
 >
 > **Como ler:** cada item traz **Queixa → Diagnóstico → Conserto**. Tudo via CSS vars em

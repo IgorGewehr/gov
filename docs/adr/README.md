@@ -29,6 +29,6 @@ crie uma nova que a **substitua** (`Superseded by`).
 | [0021](0021-reprodutibilidade-calculo-fiscal-exercicio-fato-gerador.md) | Reprodutibilidade do cálculo fiscal: derivar do EXERCÍCIO do fato gerador, nunca do relógio [OFICIAL] | Aceito | 2026-06-22 |
 
 > **Nota:** o ADR-0005 aprofunda e firma o modelo *database-per-tenant* esboçado no ADR-0002.
-> A decisão **NFS-e passiva** é o ADR-0003 (já existente). Onde estas ADRs divergem da `CLAUDE.md`
+> A decisão **NFS-e passiva** é o ADR-0003 (já existente). Onde estas ADRs divergem da `CONVENCOES-ENGENHARIA.md`
 > (ex.: §9 "schema isolado" lido como shared-DB → ADR-0005; §6 "segredos só no Key Vault" → ADR-0008),
-> a leitura da constituição passa a ser feita **sob a ADR**.
+> a leitura das Convenções de Engenharia passa a ser feita **sob a ADR**.

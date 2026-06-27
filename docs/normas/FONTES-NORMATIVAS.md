@@ -3,7 +3,7 @@
 > Catálogo consolidado de fontes autoritativas para conformidade legal/fiscal.
 > Jurisdição: **TCE-RS** · Cliente PoC: **Prefeitura de Maximiliano de Almeida/RS** (município pequeno).
 > Aquisição ao vivo (jun/2026). Datas/versões vigentes confirmadas via busca web.
-> Módulos = `src/Modules/*`. Esta é a **fonte da verdade** para a etapa (a) de auditoria de conformidade — ver `PLANO-CONFORMIDADE.md`.
+> Módulos = `src/Modules/*`. Esta é a **fonte da verdade** das normas que cada módulo precisa cumprir.
 
 **Convenções:**
 - **Criticidade-PoC**: CRÍTICA (bloqueia o PoC — é saída que o TCE-RS/SICONFI valida ou base contábil/fiscal de cálculo) · ALTA · MÉDIA · BAIXA/INFORMATIVA (substituída/expirada — pode exigir REMOÇÃO de código desatualizado).
@@ -29,7 +29,7 @@
 | A1 | **MCASP — Manual de Contabilidade Aplicada ao Setor Público** (inclui PCASP + DCASP) | https://www.gov.br/tesouronacional/pt-br/contabilidade-e-custos/manuais/manual-de-contabilidade-aplicada-ao-setor-publico-mcasp-1 | **11ª ed., vigente desde jan/2025**; consulta pública de mudanças no PCASP p/ vigência 2026 (jul–ago/2025) | Plano de contas (PCASP estendido), reconhecimento/mensuração, estrutura das demonstrações (DCASP) | `Financas` (Contabilidade/PlanoDeContas, /EventosContabeis, /Lancamentos) | **CRÍTICA** |
 | A2 | **MSC — Matriz de Saldos Contábeis: Regras Gerais** (Anexo I, Portaria STN 642/2019) | https://siconfi.tesouro.gov.br/siconfi/pages/public/arquivo/conteudo/2026_Anexo_I_Portaria_STN_642_Regras_Gerais_MSC.pdf | **Regras Gerais 2026**; leiaute (Anexo II) atualizado 05/08/2026 | Estrutura/regras da MSC (agregada/encerramento) enviada ao SICONFI; base de RREO/RGF | `Financas` (Contabilidade/Msc) | **CRÍTICA** |
 | A3 | **MDF — Manual de Demonstrativos Fiscais** (RREO, RGF, AMF, ARF) | https://www.gov.br/tesouronacional/pt-br/contabilidade-e-custos/manuais/manual-de-demonstrativos-fiscais-mdf | **15ª ed., atualizada 16/09/2025** | Leiaute dos demonstrativos da LRF: RREO (bimestral), RGF (quadrimestral p/ municípios), AMF, ARF | `Financas`, `Transparencia` (DeclaracoesFiscais/Fiscal), `PainelGestor` | **CRÍTICA** |
-| A4 | **Decreto 10.540/2020 — SIAFIC** | https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/decreto/d10540.htm | Vigente | Requisitos mínimos do sistema único/integrado de execução orçamentária, financeira e contábil. Citado por TODO TR de ERP municipal | `Financas` (núcleo M2/M3), `Transparencia` | **CRÍTICA** |
+| A4 | **Decreto 10.540/2020 — SIAFIC** | https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/decreto/d10540.htm | Vigente | Requisitos mínimos do sistema único/integrado de execução orçamentária, financeira e contábil. Citado por TODO TR de ERP municipal | `Financas` (núcleo), `Transparencia` | **CRÍTICA** |
 
 > Pendência (etapa a): validar se as **alterações do PCASP com vigência 2026** (consulta pública STN jul–ago/2025) já estão na 11ª ed. do MCASP ou em portaria complementar — impacta o plano de contas de `Financas`.
 

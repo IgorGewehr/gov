@@ -2,7 +2,7 @@
 
 - **Status:** Aceito (corrige a premissa de `EnviarRemessaTce` via POST)
 - **Data:** 2026-06-22
-- **Fonte:** `docs/architecture/m4-prep/M4-DESIGN.md` + verificações adversariais em `m4-prep/`
+- **Fonte:** design e verificações adversariais consolidados neste ADR.
 
 ## Contexto
 

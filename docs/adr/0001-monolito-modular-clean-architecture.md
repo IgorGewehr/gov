@@ -20,7 +20,7 @@ Adotar **Monolito Modular** com **Clean Architecture** e **DDD Tático**:
   **Contracts** público como **única** superfície cross-module.
 - Comunicação intra-processo via **MediatR** (Domain Events in-process) e **Integration Events**
   via **Outbox Pattern** (consistência transacional com o estado).
-- Acoplamento bloqueado por **fitness functions** (NetArchTest) na Fase 6.
+- Acoplamento bloqueado por **fitness functions** (NetArchTest).
 - Um único deployable (`ApiHost`) + Workers de processo (ex.: `NfseSync`).
 
 ## Consequências

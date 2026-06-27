@@ -1,7 +1,7 @@
 # DESIGN — Hardening de Performance e Escala (Tensorroot.Gov)
 
-> Design **pronto-para-implementar** do endurecimento de performance derivado de
-> `auditoria.md` (gargalos G1–G5) e da auditoria de arquitetura (H2/H3/H4/M-3/M-4).
+> Design **pronto-para-implementar** do endurecimento de performance, cobrindo os
+> gargalos G1–G5 e os achados da auditoria de arquitetura (H2/H3/H4/M-3/M-4).
 > **Princípio inviolável:** melhorar performance **sem** comprometer **correção**,
 > **isolamento de tenant** (database-per-tenant + Global Query Filter) ou **auditoria**
 > (trilha imutável). Toda chave de cache é **sempre prefixada por `tenantId`**.
@@ -106,7 +106,7 @@ a reconstrução `O(U)` da árvore por request.
   segurança. Sem invalidação confiável, um papel revogado continuaria autorizando ⇒ tratar a
   invalidação como **requisito de correção**, não otimização.
 - **Isolamento:** chave por `(tenant, usuário)`; um usuário só existe em um tenant (CNPJs
-  distintos são tenants distintos — CLAUDE.md §4). Sem cruzamento possível.
+  distintos são tenants distintos — CONVENCOES-ENGENHARIA.md §4). Sem cruzamento possível.
 - **Auditoria:** inalterada — autorização não escreve trilha; o command-side fino por
   permissão+UO (guards) permanece e não usa este cache de leitura.
 - **`[a confirmar]`** ponto de saturação do thread-pool antes/depois (medir p99 sob carga
@@ -218,7 +218,7 @@ reavaliação por query (reflete o escopo atual a cada execução) — **não** 
 ### Risco de correção / isolamento (e mitigação)
 
 - **Semântica do filtro:** qualquer mudança deve produzir **exatamente** o mesmo conjunto
-  filtrado (mesma união de UOs). Mitigação: testes de isolamento/UO existentes (CLAUDE.md §12)
+  filtrado (mesma união de UOs). Mitigação: testes de isolamento/UO existentes (CONVENCOES-ENGENHARIA.md §12)
   como gate; o filtro de UO **e** o de tenant permanecem combinados por `AND`
   (`ModelBuilderExtensions.cs:63`).
 - **DEV vs PROD:** SQLite (DEV) não sofre o plan-cache bloat ⇒ **`[a confirmar]` por medição no

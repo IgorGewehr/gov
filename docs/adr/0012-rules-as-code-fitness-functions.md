@@ -8,7 +8,7 @@
 
 O domínio é **rico e regulado** (Lei 4.320, PCASP/MCASP, Lei 14.133, eSocial, prazos legais),
 sob princípio **Spec-Driven/BDD-first**: nenhuma feature sem `Given/When/Then` aprovado **antes**
-do código (CLAUDE.md §1/§12). Sem mecanismo de *enforcement*, duas coisas erodem com o tempo:
+do código (CONVENCOES-ENGENHARIA.md §1/§12). Sem mecanismo de *enforcement*, duas coisas erodem com o tempo:
 
 1. As **regras de negócio** viram conhecimento tácito disperso no código, divergindo das fontes
    oficiais e das specs.
@@ -25,7 +25,7 @@ arquitetura como teste que falha o build):
   invariantes numeradas e cenários BDD, **referenciando a spec oficial** (ex.:
   `Financas/rules/Contabilidade.rules.md` → `docs/architecture/specs-oficiais/pcasp-*.md`). É a
   **fonte** que dirige a implementação do domínio; layouts/códigos não confirmados ficam marcados
-  (`// TODO(validar-leiaute-oficial)` / `[a confirmar]`), nunca inventados (§16).
+  (`// TODO(validar-leiaute-oficial)` / `[a confirmar]`), nunca inventados (CONVENCOES-ENGENHARIA.md §8).
 - **Fitness Functions (NetArchTest):** testes de arquitetura bloqueiam, no build, (a)
   `Domain → Infrastructure`; (b) módulo → interno de outro módulo; (c) referência cross-module
   fora de `*.Contracts`. Acoplamento proibido **quebra o CI**, não depende de revisão humana.

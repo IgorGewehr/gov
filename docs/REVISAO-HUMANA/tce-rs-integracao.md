@@ -71,7 +71,7 @@ Agrupados pelo sistema externo / credencial que aguardam:
 
 ## Parte 3 — O que TODA transmissão tem em comum (padrão do sistema)
 
-Antes de "ligar" qualquer integração, confira que ela respeita o padrão da casa (CLAUDE.md §8/§11):
+Antes de "ligar" qualquer integração, confira que ela respeita o padrão da casa (CONVENCOES-ENGENHARIA.md §8/§11):
 
 - **Certificado A1 (.pfx) por tenant**, sempre do **Azure Key Vault** — nunca no repositório.
 - **Idempotência:** reenviar a mesma remessa não duplica no destino (chave por ID da remessa/evento).

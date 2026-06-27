@@ -1,9 +1,8 @@
 # Cadeia Contabilidade (PCASP) → MSC → Prestação de Contas (TCE-RS / SICONFI)
 
-> **Status:** spec de arquitetura (dirige a geração Rules-as-Code das Fases 2.2 e 2.3).
 > **Princípio:** a **contabilidade é a FONTE**. Sem lançamento contábil correto, MSC e remessa ao TCE
 > nascem ocas. Por isso a ordem é **contabilidade primeiro, transmissão por último**.
-> **Constituição §16:** layouts/códigos oficiais NÃO são inventados — pontos assim ficam marcados
+> **CONVENCOES-ENGENHARIA.md §8:** layouts/códigos oficiais NÃO são inventados — pontos assim ficam marcados
 > `// TODO(validar-leiaute-oficial)` e listados na seção *Pendências de fonte oficial*.
 
 ## 1. Fluxo ponta a ponta
@@ -73,15 +72,17 @@ orçamentário dispara um handler que resolve o `EventoContabil` vigente e gera 
 4. **Transmissão** (`EnviarRemessaTce`): hoje é comentário → implementar canal real (SOAP/REST do SICOE)
    com **Polly** (retry/circuit breaker) + ACL, idempotente por `RemessaTceId`, via **Outbox**.
 
-## 5. Ordem de implementação
+## 5. Escopo da contabilidade no módulo Financas
 
-1. **Fase 2.1 (em curso):** ciclo da despesa em Financas (Dotação→Empenho→Liquidação→Pagamento→Restos).
-2. **Fase 2.2 — Contabilidade PCASP:** PlanoDeContas, LancamentoContabil (partida dobrada),
+O escopo cobre, em camadas que se sustentam:
+
+1. **Ciclo da despesa** em Financas (Dotação→Empenho→Liquidação→Pagamento→Restos).
+2. **Contabilidade PCASP:** PlanoDeContas, LancamentoContabil (partida dobrada),
    EventoContabil parametrizável, lançamento **automático** a partir dos eventos do ciclo, Balancete,
    **geração da MSC** + `MSCGeradaIntegrationEvent`. Inclui `*.rules.md` ricas (manifesto + BDD dos invariantes).
-3. **Fase 2.3 — TCE real:** leiaute SIAPC/PAD, e-Validador, assinatura A1, transmissão SICOE.
+3. **Remessa ao TCE:** leiaute SIAPC/PAD, e-Validador, assinatura A1, transmissão SICOE.
 
-## 6. Pendências de fonte oficial (NÃO inventar — §16)
+## 6. Pendências de fonte oficial (NÃO inventar — CONVENCOES-ENGENHARIA.md §8)
 
 - [ ] **Plano de Contas PCASP** vigente (códigos/contas exatos) — STN/MCASP.
 - [ ] **Tabela de eventos contábeis** (roteiros de partidas oficiais) por fato.

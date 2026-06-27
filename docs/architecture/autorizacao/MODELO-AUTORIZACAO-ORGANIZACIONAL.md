@@ -10,8 +10,8 @@
 > o conteúdo durável desses estudos vive aqui e no **ADR-0007**.
 >
 > Lido contra o código real: `src/Modules/Identidade/...Domain/{Usuarios,Papeis,Permissoes}` e
-> `CLAUDE.md` §5/§6. **Não** reescreve a constituição nem o diagnóstico — estende-os.
-> Marcações **[a confirmar]** = ponto jurídico/normativo a validar antes de implementar (CLAUDE.md §16).
+> `CONVENCOES-ENGENHARIA.md` §5/§6. **Não** reescreve as convenções nem o diagnóstico — estende-os.
+> Marcações **[a confirmar]** = ponto jurídico/normativo a validar antes de implementar (CONVENCOES-ENGENHARIA.md §8).
 > Piloto: Maximiliano de Almeida/RS (TCE-RS). Data: 2026-06-22.
 
 ---
@@ -35,8 +35,8 @@
    pelo isolamento de módulo (RH não enxerga PEP/SUAS por contrato) + trilha de **leitura** (hoje ausente).
 9. **GAP:** UO, atribuição papel→UO, filtro de UO, sensibilidade, delegação e trilha de leitura **não existem**;
    tenant-boundary e RBAC plano já existem e são reaproveitados.
-10. **Plano:** M1 mínimo = UO + `AtribuicaoDePapel` com escopo + filtro de UO + RBAC no `/admin/tenants` +
-    verbos SoD de Finanças; delegação completa + sensibilidade/LGPD seguem em M1.x/M2.
+10. **Cobertura:** UO + `AtribuicaoDePapel` com escopo + filtro de UO + RBAC no `/admin/tenants` +
+    verbos SoD de Finanças, além de delegação completa + sensibilidade/LGPD.
 
 ---
 
@@ -50,7 +50,7 @@
 | Permissões efetivas | `Application/Internal/CalculadoraPermissoesEfetivas.cs` | **união** dos `Papel.Permissoes` (sem escopo, sem negação explícita) |
 | Token | `Infrastructure/Seguranca/EmissorToken.cs` | JWT; 1 claim `perm` por permissão + `tenant_id`/`tenant_name` |
 | Enforcement | `BuildingBlocks.Infrastructure/Authorization` | política `perm:<escopo>`, deny-by-default por presença de claim |
-| Tenant / isolamento | `ApiHost/Tenancy` + `CLAUDE.md` §5 | DB-per-tenant + Global Query Filter + `TenantSaveChangesInterceptor` |
+| Tenant / isolamento | `ApiHost/Tenancy` + `CONVENCOES-ENGENHARIA.md` §5 | DB-per-tenant + Global Query Filter + `TenantSaveChangesInterceptor` |
 
 **Propriedades boas a preservar:** catálogo canônico imutável (`EhConhecida` nega-por-padrão na concessão);
 permissões efetivas como **união** de papéis; enforcement por claim na borda; **tenant como fronteira dura**.
@@ -170,7 +170,7 @@ OK D1/D2) com papel "Operador de Saúde" (⊆ delegáveis e ⊆ as dele — OK D
 ## 6. Impacto nos módulos de negócio
 Entidades de negócio ganham, onde fizer sentido, `UnidadeId` (UO dona) e `NivelSensibilidade`. Prioridade
 fiscal: Finanças (Empenho/Dotação por UO/UG), Patrimônio (bem por setor), RH (servidor por lotação) e os
-sensíveis Saúde/Assistência/Educação. **Cross-module continua só por `*.Contracts`** (CLAUDE.md §2): a UO é
+sensíveis Saúde/Assistência/Educação. **Cross-module continua só por `*.Contracts`** (CONVENCOES-ENGENHARIA.md §2): a UO é
 um `Guid`+código, não referência ao agregado da Identidade. A ponte UO↔UG alinha autorização e prestação de
 contas (SIAPC/PAD, MSC) [a confirmar: granularidade da UG no leiaute do exercício].
 
@@ -220,7 +220,7 @@ somente leitura auditada). Admin da Plataforma (Tensorroot) provisiona/licencia 
 | **Delegação de admin com escopo** | ❌ `identidade.usuarios.gerenciar` tudo-ou-nada | `ConcessaoDelegacao` + algoritmo D1–D6 | 🔴 alto |
 | SoD (segregação de funções) | ❌ união livre de papéis | regra I9 + matriz | 🟠 médio [a confirmar] |
 | Escopo no token | ⚠️ só `perm:X` global | resolução server-side + cache/revogação | 🟠 médio |
-| `/admin/tenants` protegido | ❌ só `.RequireAuthorization()` | RBAC real (já no GAP-E-ROADMAP 1.6) | 🔴 (priorizado) |
+| `/admin/tenants` protegido | ❌ só `.RequireAuthorization()` | RBAC real | 🔴 (priorizado) |
 | Auditoria de concessão/revogação | ⚠️ trilha existe, não-imutável de fato | I8 + WORM/hash-chain (Eixo 6) | 🟠 médio |
 
 ---
@@ -244,7 +244,7 @@ somente leitura auditada). Admin da Plataforma (Tensorroot) provisiona/licencia 
    `IncluiSubunidades=true`, `Origem=Direta` (compatibilidade — comportamento global preservado no go-live).
 3. `concessoes_delegacao` (+ tabela de junção `PermissoesDelegaveis`).
 4. Coluna `NivelSensibilidade` nas entidades sensíveis (Saúde/Assistência/Educação/Tributos) e `UnidadeId`
-   nas entidades fiscais (Finanças/Patrimônio/RH) — migrations **por módulo** (CLAUDE.md §9).
+   nas entidades fiscais (Finanças/Patrimônio/RH) — migrations **por módulo** (CONVENCOES-ENGENHARIA.md §9).
 5. Store de **trilha de leitura LGPD** (append-only) — coordenar com Eixo 6 (WORM/hash-chain).
 
 ### 10.3 Aplicação / enforcement
@@ -253,7 +253,7 @@ somente leitura auditada). Admin da Plataforma (Tensorroot) provisiona/licencia 
 - Global Query Filter de UO por reflexão sobre `IMustHaveUnidade`; guards de command-side.
 - Handlers de concessão/delegação validam D1–D6 e I9 (SoD) e emitem trilha (I8).
 
-### 10.4 UI (React / gov.br DS — CLAUDE.md §13)
+### 10.4 UI (React / gov.br DS — CONVENCOES-ENGENHARIA.md §13)
 - Tela **Estrutura Organizacional**: árvore de UOs (CRUD, ativar/desativar, vínculo UG contábil).
 - Tela **Usuário → Atribuições**: papel + UO + incluir subunidades + vigência (substitui o seletor plano de papéis).
 - Tela **Delegações**: conceder/revogar com escopo, mostrando apenas permissões que o concedente possui (UI
@@ -261,11 +261,11 @@ somente leitura auditada). Admin da Plataforma (Tensorroot) provisiona/licencia 
 - **Banner de sensibilidade** + justificativa obrigatória ao abrir recurso `SensivelLGPD` (alimenta a trilha de leitura).
 - RBAC real na tela `/admin/tenants` (corrige gap atual).
 
-### 10.5 Ordem sugerida (sem furar a prioridade do dono — contabilidade/TCE)
-Este modelo é **pré-requisito de qualidade** do Eixo 1 (M1): escopo por UO/UG e SoD são exigências do TCE.
-- **M1 (mínimo viável):** UO + `AtribuicaoDePapel` com escopo + filtro de UO + RBAC no `/admin/tenants` +
-  verbos SoD de Finanças.
-- **M1.x / M2:** delegação completa (D1–D6), sensibilidade/clearance, trilha de leitura LGPD, SoD I9 plena,
+### 10.5 Cobertura do modelo
+Este modelo é **pré-requisito de qualidade** da contabilidade/TCE: escopo por UO/UG e SoD são exigências do TCE.
+O modelo provê o conjunto completo:
+- UO + `AtribuicaoDePapel` com escopo + filtro de UO + RBAC no `/admin/tenants` + verbos SoD de Finanças.
+- Delegação completa (D1–D6), sensibilidade/clearance, trilha de leitura LGPD, SoD I9 plena,
   resolução de escopo server-side com revogação imediata.
 
 ---

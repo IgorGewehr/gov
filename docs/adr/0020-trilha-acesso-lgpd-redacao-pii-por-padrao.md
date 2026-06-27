@@ -10,7 +10,7 @@
 
 ## Contexto
 
-CLAUDE.md §6 (LGPD) exige, para dados sensíveis (**Saúde, Assistência Social, menores na Educação**),
+CONVENCOES-ENGENHARIA.md §6 (LGPD) exige, para dados sensíveis (**Saúde, Assistência Social, menores na Educação**),
 **base legal explícita**, **minimização** e **trilha de acesso** — *quem leu o quê, quando, por quê*.
 A `AuditTrail` (ADR-0016) registra **mutações**; faltavam dois mecanismos: (1) **trilha de leitura**
 (a LGPD pede *accountability* de **acesso**, não só de escrita) e (2) garantir que a própria trilha

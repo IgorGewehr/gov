@@ -27,7 +27,7 @@ Loop por **exercício** (a versão do PAD e o leiaute mudam todo ano):
 
 ```
 [1] OBTER          PAD vigente (.MSI) + MT Vol I/II/V (PDF) do portal SIAPC
-       │           → versionar PDFs em docs/estudo/fontes/ (host bloqueia fetch CI: usar UA navegador)
+       │           → versionar PDFs em docs/go-live/fontes/ (host bloqueia fetch CI: usar UA navegador)
        ▼
 [2] CODIFICAR      Extrair tabela posicional (Descrição|Tipo|Bytes|Colunas|Obs) de cada .TXT
        │           → gerar MAPA DE CAMPOS (JSON) que alimenta gerador E EValidadorLocalSiapc
@@ -91,11 +91,11 @@ service real, **sem efeito legal**, próprio para validar eventos de verdade pon
 - **MT Vol V** (Informações Complementares — inclui Folha): `MT_Vol_V_Arq_DispTCE_4320.pdf` (espelho MPC: `MT-ASCE-0105-06-MT-Volume-V.pdf`, rev.06). **[FONTE]**
 - **MT Vol II** (`MT_Vol_II_SiapcPAD_6404.pdf`) e **Vol I** (leiaute contábil/orçamentário do balancete — PCASP/MSC). **[FONTE]** — [a confirmar: revisão/data 2026]
 - **FAQ SIAPC** (`perguntas_frequentes.pdf`) e **Resumo de Leiaute** (Vol V). **[FONTE]**
-- ⚠️ Operacional: `tcers.tc.br` retorna **HTTP 403** a fetch automatizado — baixar com **User-Agent de navegador** ou manualmente e **versionar em `docs/estudo/fontes/`**. **[FONTE: tentativas WebFetch]**
+- ⚠️ Operacional: `tcers.tc.br` retorna **HTTP 403** a fetch automatizado — baixar com **User-Agent de navegador** ou manualmente e **versionar em `docs/go-live/fontes/`**. **[FONTE: tentativas de download]**
 
 **Acessos / credenciais (de quem) — só o município tem:**
 - **Acesso ao portal TCE-RS + SISCAD** (cadastro de responsáveis/período de efetivo exercício) — do **contador/gestor de Maximiliano de Almeida/RS** (piloto). **[FONTE: FAQ SIAPC]**
-- **Certificado ICP-Brasil A1/A3 ou conta gov.br prata/ouro** do município — para o PAD assinar o RVE e transmitir. **No nosso fluxo, fica no Azure Key Vault por tenant.** **[FONTE: CLAUDE.md §6; FAQ SIAPC]**
+- **Certificado ICP-Brasil A1/A3 ou conta gov.br prata/ouro** do município — para o PAD assinar o RVE e transmitir. **No nosso fluxo, fica no Azure Key Vault por tenant.** **[FONTE: CONVENCOES-ENGENHARIA.md §6; FAQ SIAPC]**
 - **Máquina Windows** (PAD é desktop) para rodar a etapa [4] do loop. **[FONTE: distribuição .MSI]**
 
 **Chamado a abrir ao TCE-RS (pode mudar todo o quadro) — [a confirmar]:**

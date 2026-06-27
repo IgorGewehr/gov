@@ -2,7 +2,7 @@
 
 > Espinha Contabilidade → MSC → Prestação de Contas (TCE-RS + União). Piloto: Maximiliano de Almeida/RS.
 > Edição vigente: **MCASP 11ª edição (STN)**, em vigor a partir da execução da **LOA 2025**. PCASP é a Parte IV do MCASP.
-> Princípio CLAUDE.md §16: não inventar. Onde o código relacional exato (par D/C oficial) não foi confirmado no documento-fonte, está marcado **[obter arquivo oficial]**.
+> Princípio CONVENCOES-ENGENHARIA.md §8: não inventar. Onde o código relacional exato (par D/C oficial) não foi confirmado no documento-fonte, está marcado **[obter arquivo oficial]**.
 
 ---
 

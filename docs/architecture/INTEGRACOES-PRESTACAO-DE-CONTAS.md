@@ -81,7 +81,7 @@ quem disparou, quando, qual competência, qual protocolo de retorno) — pronta 
 5. **Retorno** (aceito/rejeitado + inconsistências) volta como evento → painel de pendências.
 
 > ⚠️ Layout do TCE-RS muda por exercício: a versão é confirmada em fonte oficial antes de cada
-> ciclo (regra §16 da Constituição). O motor é genérico; o **layout é plugável por versão**.
+> ciclo (regra CONVENCOES-ENGENHARIA.md §8). O motor é genérico; o **layout é plugável por versão**.
 
 ---
 

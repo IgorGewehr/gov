@@ -66,5 +66,5 @@ Evoluir para **RBAC dinâmico + ABAC organizacional**, mantendo o catálogo de p
   invariantes I1–I10 viram testes obrigatórios.
 - ➖ Pontos jurídicos `[a confirmar]` antes de congelar: matriz oficial de SoD do TCE-RS, registro
   de base legal LGPD, verbos finos de atos com efeito legal, política de subdelegação.
-- 🔗 Faseado: M1 = UO + `AtribuicaoDePapel` + filtro de UO + RBAC no `/admin/tenants` + verbos SoD
-  de Finanças; M1.x/M2 = delegação D1–D6, sensibilidade/clearance e trilha de leitura LGPD plenas.
+- 🔗 O modelo cobre UO + `AtribuicaoDePapel` com escopo + filtro de UO + RBAC no `/admin/tenants` +
+  verbos SoD de Finanças, além de delegação (D1–D6), sensibilidade/clearance e trilha de leitura LGPD.

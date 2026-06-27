@@ -1,9 +1,10 @@
 # Governança Rules-as-Code — A Especificação é a Fonte da Verdade
 
-> **Princípio:** o código é **gerado e mantido por IA** a partir de um arquivo de regras
-> (`*.rules.md`) por **módulo** e por **agregado/entidade**. O engenheiro humano altera
-> **apenas o `.rules.md`**; a IA (re)gera domínio, casos de uso, persistência, endpoints e
-> **testes**, e se autoaudita contra as regras. O `.rules.md` é **normativo e versionado**.
+> **Princípio:** o código é **derivado de um arquivo de regras** (`*.rules.md`) por **módulo**
+> e por **agregado/entidade**. A especificação `.rules.md` é a **fonte da verdade**: dela saem
+> domínio, casos de uso, persistência, endpoints e **testes**, e o código é **auditado contra as
+> regras** (Spec-Code Consistency Check). O `.rules.md` é **normativo e versionado** — alterações
+> de comportamento começam por ele.
 
 ---
 
@@ -21,15 +22,15 @@ contrato:
 ## 2. Fluxo de trabalho
 
 ```
-Engenheiro edita  src/Modules/<M>/rules/<Entidade>.rules.md   (única ação humana)
+Engenheiro edita  src/Modules/<M>/rules/<Entidade>.rules.md   (ponto de partida)
         │
         ▼
-Workflow de IA (multiagente, determinístico):
-  1. Gerador      → Domain + Application + Infrastructure conforme as regras
-  2. Testador     → 1 teste por invariante, 1 por transição de estado, 1 por cenário BDD
-  3. Auditor      → verifica código ⇄ regras (cobertura total) + segurança + tenant
-  4. Corretor     → conserta divergências (mexe no CÓDIGO, nunca nas regras)
-  5. Checker      → roda build + testes + fitness functions + spec-code consistency
+Pipeline (determinístico):
+  1. Geração   → Domain + Application + Infrastructure conforme as regras
+  2. Testes    → 1 teste por invariante, 1 por transição de estado, 1 por cenário BDD
+  3. Auditoria → verifica código ⇄ regras (cobertura total) + segurança + tenant
+  4. Correção  → conserta divergências (mexe no CÓDIGO, nunca nas regras)
+  5. Checagem  → roda build + testes + fitness functions + spec-code consistency
         │
         ▼
 PR  →  CI (NetArchTest + spec-code consistency + auditoria de CVEs)  →  merge
@@ -101,8 +102,8 @@ Enumerados (cada um vira teste).
 
 ## 4. Enforcement (o que torna as regras VINCULANTES)
 
-1. **Fitness Functions (NetArchTest)** — já existentes: isolamento de camadas e de módulos.
-2. **Spec-Code Consistency Check** (novo, Sprint 1) — teste/analisador que, lendo o front-matter
+1. **Fitness Functions (NetArchTest)** — isolamento de camadas e de módulos.
+2. **Spec-Code Consistency Check** — teste/analisador que, lendo o front-matter
    e as seções do `.rules.md`, exige que:
    - todo **Comando** tenha um `*Command` + `*Handler` + `*Validator`;
    - toda **Consulta** tenha `*Query` + `*Handler`;
@@ -113,16 +114,16 @@ Enumerados (cada um vira teste).
 3. **Cobertura obrigatória** das invariantes e cenários (gate de CI).
 4. **Auditoria de CVEs** (NuGetAudit, já ligada) e **revisão de segurança** automatizada.
 
-## 5. Papéis dos agentes de IA (workflow por entidade)
+## 5. Responsabilidades por etapa (separação de papéis no pipeline)
 
-| Agente | Lê | Produz | Nunca faz |
+| Etapa | Lê | Produz | Nunca faz |
 |---|---|---|---|
-| **Gerador** | `.rules.md` | Domain/App/Infra | inventar regra fora do `.md` |
-| **Testador** | `.rules.md` | testes (invariantes/estados/BDD) | testar além do especificado |
-| **Auditor** | código + `.rules.md` | relatório de divergência | corrigir |
-| **Corretor** | relatório | correção de **código** | editar `.rules.md` |
-| **Integrador** | `.rules.md` §11 | gateway/worker/ACL + Polly | acoplar a outro módulo |
-| **Revisor de Segurança** | diff | parecer (tenant/LGPD/SQLi/segredos) | aprovar sem checar |
+| **Geração** | `.rules.md` | Domain/App/Infra | inventar regra fora do `.md` |
+| **Testes** | `.rules.md` | testes (invariantes/estados/BDD) | testar além do especificado |
+| **Auditoria** | código + `.rules.md` | relatório de divergência | corrigir |
+| **Correção** | relatório | correção de **código** | editar `.rules.md` |
+| **Integração** | `.rules.md` §11 | gateway/worker/ACL + Polly | acoplar a outro módulo |
+| **Revisão de Segurança** | diff | parecer (tenant/LGPD/SQLi/segredos) | aprovar sem checar |
 
 ## 6. Exemplo concreto (retrofit do código já existente)
 
@@ -159,5 +160,5 @@ I-6. Dívida `Quitada`/`Cancelada` não admite novas transições.
 - Dado dívida `Quitada`, Quando Protestar, Então erro "não exigível".
 ```
 
-O código atual (`DividaAtiva.cs`, handlers, EF config, testes) **já satisfaz** essas regras —
-provando que o modelo é fiel ao que construímos. A partir do Sprint 1, **todo módulo nasce do `.rules.md`**.
+O código (`DividaAtiva.cs`, handlers, EF config, testes) **satisfaz** essas regras —
+o modelo é fiel ao `.rules.md`. **Todo módulo nasce do `.rules.md`.**

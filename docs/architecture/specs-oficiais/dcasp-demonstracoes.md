@@ -1,7 +1,7 @@
 # DCASP — Demonstrações Contábeis Aplicadas ao Setor Público
 
-> **Status:** spec oficial (insumo Rules-as-Code do M3 — Demonstrações DCASP + MSC).
-> **Princípio (CLAUDE.md §16):** layouts/quadros/contas oficiais NÃO são inventados. Onde o
+> **Spec oficial** — insumo Rules-as-Code das Demonstrações DCASP + MSC.
+> **Princípio (CONVENCOES-ENGENHARIA.md §8):** layouts/quadros/contas oficiais NÃO são inventados. Onde o
 > documento-fonte estava em PDF comprimido (FlateDecode) e não pôde ser lido linha-a-linha,
 > a estrutura confirmada por fonte é descrita e os detalhes faltantes ficam marcados
 > `[obter arquivo oficial]` com nome/URL na seção *Pendências de fonte oficial*.

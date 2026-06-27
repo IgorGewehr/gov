@@ -9,7 +9,7 @@
 
 ## Contexto
 
-O `AuditSaveChangesInterceptor` (CLAUDE.md §6) grava a `AuditTrail` (antes/depois em JSON, quem, IP,
+O `AuditSaveChangesInterceptor` (CONVENCOES-ENGENHARIA.md §6) grava a `AuditTrail` (antes/depois em JSON, quem, IP,
 quando) com propriedades **`init`-only** — o que impede mutação **pela aplicação**, mas **não** pelo
 banco. Um operador com acesso ao banco **dedicado** do tenant (ADR-0005), ou uma SQL injection
 futura, poderia **reescrever ou apagar** a trilha. Para um ERP que processa dinheiro público sob

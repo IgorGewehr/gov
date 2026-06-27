@@ -1,20 +1,20 @@
 # DESIGN — Planejamento Orçamentário (PPA / LDO / LOA) no módulo Finanças
 
-> **Status:** design pronto-para-implementar (Fase 3/4 do roadmap — entidades ricas + casos de uso).
+> **Escopo:** design do ciclo de planejamento PPA/LDO/LOA — entidades ricas + casos de uso.
 > **Objetivo:** fechar o GAP recorrente apontado pela avaliação independente — o módulo `Financas`
 > modela só a **execução** (Dotação→Empenho→Liquidação→Pagamento + PCASP/MSC) e **não tem
 > planejamento**. Este documento especifica os agregados **PPA**, **LDO**, **LOA** + **Créditos
 > Adicionais** e o **vínculo** que faz a `DotacaoOrcamentaria` **nascer da LOA** (dotação inicial =
 > despesa fixada), com a cadeia de compatibilidade **LOA ⊆ LDO ⊆ PPA** validada.
 > **Fontes:** CF/88 art. 165/166/167 + ADCT 35; Lei 4.320/1964 (arts. 2-15, 40-46); LC 101/2000
-> (LRF) arts. 4-5. Detalhe legal em `pesquisa-ppa-ldo-loa.md` e `pesquisa-ciclo-e-prestacao.md`.
-> Itens incertos marcados **[a confirmar]** (§16 da Constituição de Engenharia).
+> (LRF) arts. 4-5.
+> Itens incertos marcados **[a confirmar]** (CONVENCOES-ENGENHARIA.md §8).
 
 ---
 
 ## 1. Contexto e princípios de design
 
-Adere à `CLAUDE.md`: Clean Architecture + DDD tático, domínio rico (invariantes no
+Adere à `CONVENCOES-ENGENHARIA.md`: Clean Architecture + DDD tático, domínio rico (invariantes no
 construtor/factory, construtor privado, `sealed`), multi-tenant (`IMustHaveTenant` + Global Query
 Filter), auditoria imutável, NRT/warnings-as-errors, PT-BR sem acento nos identificadores,
 parâmetros legais **por tenant** (nunca hardcoded). Cross-module **só via `*.Contracts` + Integration
@@ -158,7 +158,7 @@ calamidade/urgência (CF 167 §3º), dá ciência ao Legislativo.
 
 **Efeito (em `Abrir()`):** dispara `Dotacao.Reforcar(valor)` no alvo e, se houver fonte por anulação,
 `Dotacao.AnularCredito(valor)` na origem — reusando o roteiro contábil `EVT-DOT` (`FatoContabil.DotacaoAprovada`).
-Trilha imutável: cada alteração da LOA é um fato com ato legal (auditoria, CLAUDE.md §1.4/§6).
+Trilha imutável: cada alteração da LOA é um fato com ato legal (auditoria, CONVENCOES-ENGENHARIA.md §1/§6).
 
 ---
 
@@ -185,7 +185,7 @@ aprovação é manual via endpoint (RBAC restrito), mantendo o mesmo método de 
 
 **Contabilidade:** nenhuma rota nova — `Dotacao.Criar*` já levanta `DotacaoCriada`/`CreditoReforcado`,
 roteados por `FatoContabil.DotacaoAprovada` (D 5.2.2.1.01 / C 6.2.2.1.1). RREO/Balanço Orçamentário
-agora têm o "previsto" fiel (LOA + créditos), fechando a lacuna apontada na pesquisa do ciclo.
+agora têm o "previsto" fiel (LOA + créditos), fechando a lacuna do ciclo orçamentário.
 
 ---
 
@@ -225,7 +225,7 @@ segregação de funções, exigência de controle interno/TCE). `AprovarLoa`/`Ab
 
 ---
 
-## 9. Ordem de implementação (sub-marcos)
+## 9. Ordem de implementação (entregas)
 
 - **P1 — PPA (base da cadeia):** agregado `PlanoPlurianual` (Programa/Ação/Meta) + config EF +
   migration parcial + repo + commands/queries + endpoints + BDD. Sem ele nada referencia.
@@ -240,12 +240,12 @@ segregação de funções, exigência de controle interno/TCE). `AprovarLoa`/`Ab
 - **P6 — Costura cross-tenant:** `LoaAprovadaIntegrationEvent` (Legislativo.Contracts) + handler de
   consumo via Outbox [a confirmar contrato]; endpoint manual de aprovação como fallback.
 
-Cada sub-marco: spec BDD `.md` **antes** do código (CLAUDE.md §1/§12), testes das invariantes
+Cada entrega: spec BDD `.md` **antes** do código (CONVENCOES-ENGENHARIA.md §1/§12), testes das invariantes
 críticas (compatibilidade, equilíbrio, isolamento de tenant) e NetArchTest verde.
 
 ---
 
-## 10. Pendências [a confirmar] (§16)
+## 10. Pendências [a confirmar] (CONVENCOES-ENGENHARIA.md §8)
 
 - Obrigatoriedade vigente de AMF/ARF p/ município < 50 mil hab. — posição **TCE-RS**.
 - Datas exatas de envio/devolução de PPA/LDO/LOA — **LOM de Maximiliano de Almeida/RS** (parametrizável).

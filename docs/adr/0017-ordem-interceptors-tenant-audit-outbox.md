@@ -46,7 +46,7 @@ Centralizar o registro num **ponto único**, com **ordem fixa Tenant → Audit �
 
 - ➕ A trilha registra **sempre o `TenantId` correto**, inclusive para entidades sem tenant
   pré-setado — fecha W0.2 e preserva a segregação por tenant da auditoria (ADR-0016) e o isolamento
-  multi-tenant (CLAUDE.md §5).
+  multi-tenant (CONVENCOES-ENGENHARIA.md §5).
 - ➕ Ordem **garantida por construção** num único lugar; módulos novos a herdam ao chamar o helper.
 - ➕ Casa com o ADR-0016 (hash-chain por tenant precisa do `TenantId` já carimbado para selar na
   cadeia certa) e com o ADR-0011 (Outbox materializa por último).

@@ -1,11 +1,11 @@
 # DESIGN — Encerramento de Exercício Contábil (PCASP/MCASP)
 
-> **Módulo:** Finanças · **Camadas:** Domain/Application/Infrastructure (Clean Arch, CLAUDE.md §2)
-> **Status:** pronto-para-implementar · **Pré-requisito provado:** PCASP (lançamentos automáticos via
+> **Módulo:** Finanças · **Camadas:** Domain/Application/Infrastructure (Clean Arch, CONVENCOES-ENGENHARIA.md §2)
+> **Pré-requisito provado:** PCASP (lançamentos automáticos via
 > `MotorContabil`), balancete (ΣD=ΣC), MSC agregada e DCASP.
-> **Fundamentação:** ver [`pesquisa.md`](./pesquisa.md) — STN/IPC 03, Lei 4.320/64 (arts. 35, 36, 38, 105),
+> **Fundamentação:** STN/IPC 03, Lei 4.320/64 (arts. 35, 36, 38, 105),
 > Regras Gerais MSC (Portaria STN 642/2019) e o doc dedicado SICONFI ["MSC de encerramento do exercício"](https://siconfi.tesouro.gov.br/siconfi/pages/public/arquivo/conteudo/2024_Orientacoes_MSC_encerramento.pdf).
-> Itens **[a confirmar]** preservados conforme §16 da Constituição.
+> Itens **[a confirmar]** preservados conforme CONVENCOES-ENGENHARIA.md §8.
 
 ---
 
@@ -49,7 +49,7 @@ extraordinários para **escriturar** a apuração sem poluir dezembro/mês 12:
 ## 3. Agregado de controle: `EncerramentoExercicio`
 
 Novo agregado em `Domain/Contabilidade/Encerramento/` — **máquina de estados idempotente e auditável** que
-governa as fases (nunca apaga; preserva trilha, CLAUDE.md §4):
+governa as fases (nunca apaga; preserva trilha, CONVENCOES-ENGENHARIA.md §4):
 
 ```
 EncerramentoExercicio : AggregateRoot<EncerramentoExercicioId>, IMustHaveTenant
@@ -97,7 +97,7 @@ controle origem inicial×adicional)** adotado por default; §50 fica como evolu�
 
 ### 4.3 `InscreverRestosAPagar` (RAP do exercício corrente)
 Reusa a lógica de `EncerrarExercicioHandler` (classifica RPP=liquidado-não-pago / RPNP=não-liquidado por
-empenho) **e** acrescenta os **lançamentos de controle** que faltavam (o `TODO` da pesquisa §3): transfere os
+empenho) **e** acrescenta os **lançamentos de controle** que faltavam (o `TODO(revisao-contabil)`): transfere os
 empenhos para `6.2.2.1.3.05/06/07` e escritura `5.3`/`6.3`. **Estes lançamentos saem na MSC agregada de
 dezembro** (não no mês 13) — exigência das Regras Gerais MSC: a inscrição de RAP integra a MSC de dezembro.
 Por isso esta fase é escriturada com `PeriodoMes = 12` (Data 31/12), enquanto 4.1/4.2 vão ao mês 13.
@@ -118,7 +118,7 @@ D 2.3.7.1.1.03.00  C 2.3.7.1.1.02.00   (ajustes de ex. anteriores, se houver sal
 A **reabertura dos saldos de Ativo/Passivo/PL** é obtida **sem novo lançamento** — o `BalanceteProjection` já
 transporta o saldo final das contas permanentes para o mês 1 do exercício seguinte. **Confirmação de
 consistência:** ΣD=ΣC do BP de abertura. (Nota: **todas** Ativo/Passivo F e P transferem; o atributo F/P só
-classifica para o superávit financeiro — pesquisa §4 [a confirmar] mantido.)
+classifica para o superávit financeiro — [a confirmar] mantido.)
 
 ---
 
@@ -154,7 +154,7 @@ o encerramento patrimonial/orçamentário.
 A **DCA** (Declaração de Contas Anuais, LC 101/2000 art. 51) é gerada pelo SICONFI/Transparência a partir do
 **rascunho da MSC de Encerramento** (Regras Gerais MSC). No Tensorroot.Gov: **a MSC de Encerramento (§6) é o
 insumo da DCA** — não há geração de DCA "à parte". Sem o encerramento, a DCA nasceria com classes 3/4 não
-zeradas, RAP subnotificado e BP de abertura incorreto (pesquisa §5). Com o encerramento, as demonstrações
+zeradas, RAP subnotificado e BP de abertura incorreto. Com o encerramento, as demonstrações
 DCASP já existentes (BP, DVP, Balanços Orçamentário/Financeiro) refletem o resultado apurado, e a MSC de
 encerramento (mês 13) alimenta a consolidação. Nenhum novo agregado de DCA é necessário nesta fase.
 
@@ -176,7 +176,7 @@ balancete → fase seguinte lê saldos já atualizados):
 7. `MotorEncerramento.AbrirExercicioSeguinte` (mês 0 do exercício+1) → `MarcarAberturaConcluida`.
 
 Cada fase é **idempotente** (status do agregado + `ExisteParaOrigemAsync`), permitindo retomar de falha sem
-duplicar lançamentos (CLAUDE.md §8 resiliência). Pipeline MediatR padrão: Validation → Logging →
+duplicar lançamentos (CONVENCOES-ENGENHARIA.md §8 resiliência). Pipeline MediatR padrão: Validation → Logging →
 Transaction → Idempotency.
 
 ---
@@ -204,14 +204,14 @@ Frontend: o `EncerrarExercicioModal.tsx` existente evolui para wizard de fases c
 ## 10. Persistência e migrations
 
 - Nova tabela `financas.encerramento_exercicio` (1 por tenant+exercício) — config + migration por módulo
-  (CLAUDE.md §9). Interceptors de tenant/auditoria já aplicados na base.
+  (CONVENCOES-ENGENHARIA.md §9). Interceptors de tenant/auditoria já aplicados na base.
 - `LancamentoContabilConfiguration` / chave única do balancete: aceitar `PeriodoMes ∈ {0,13}` (sem migration
   de schema se a coluna já é `int`; ajustar só índices/constraints se houver CHECK 1..12).
 - `IMscGeradaStore`: já chaveado por `TipoMatriz` — comporta `Encerramento` sem mudança de schema.
 
 ---
 
-## 11. Testes (BDD-first, CLAUDE.md §1/§12)
+## 11. Testes (BDD-first, CONVENCOES-ENGENHARIA.md §1/§12)
 
 `Given` balancete de dezembro com VPA>VPD `When` apurar `Then` `2.3.7.1.1.01.00` credora = superávit e classes
 3/4 zeradas; ΣD=ΣC após cada fase; MSC de encerramento `saldo_inicial+movimento=saldo_final` com 3/4 zeradas;
@@ -220,7 +220,7 @@ idempotência: reexecutar fase não duplica lançamentos.
 
 ---
 
-## 12. Itens [a confirmar] (§16) carregados da pesquisa
+## 12. Itens [a confirmar] (CONVENCOES-ENGENHARIA.md §8)
 
 RPNP→RPP na edição vigente do MCASP; mecânica do superávit financeiro por fonte e tabela de atributo F/P
 (MCASP Parte II/IV); prazo de envio da MSC de encerramento; nomenclatura mês 13/14 (não padronizada pela STN —

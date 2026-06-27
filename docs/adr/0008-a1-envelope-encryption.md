@@ -2,15 +2,14 @@
 
 - **Status:** Aceito
 - **Data:** 2026-06-22
-- **Fonte:** `docs/architecture/m4-prep/A1-DESIGN.md`
 
 ## Contexto
 
 O certificado **A1 (.pfx, ICP-Brasil)** é necessário para assinar server-side (eSocial,
-e — se confirmado — pacotes/anexos TCE), por tenant. Há uma tensão entre dois requisitos da
-constituição/dono:
+e — se confirmado — pacotes/anexos TCE), por tenant. Há uma tensão entre dois requisitos das
+Convenções de Engenharia/dono:
 
-- **`CLAUDE.md` §6:** "segredos só no **Azure Key Vault**".
+- **`CONVENCOES-ENGENHARIA.md` §6:** "segredos só no **Azure Key Vault**".
 - **Pedido do dono / ADR-0005:** material do tenant **co-localizado no banco DEDICADO** do
   ente (isolamento físico, custódia junto da trilha de auditoria do tenant).
 
@@ -55,7 +54,7 @@ violaria §6. É preciso conciliar isolamento físico com "o segredo só no Key 
   inútil sem a KEK; a tag GCM autentica (adulteração → decifra falha, com AAD = `TenantId||Thumbprint`).
 - ➕ Reconcilia §6 (Key Vault) com a custódia no banco dedicado (ADR-0005) sem violar nenhuma.
 - ➖ **Mais código de criptografia nosso** = mais superfície de erro (reuso de nonce, AAD, zeroização).
-  Mitigado por testes known-answer, *round-trip*, e checklist de aceite do `A1-DESIGN.md`.
+  Mitigado por testes known-answer e *round-trip* sobre o envelope.
 - ➖ Dependência operacional do Key Vault para wrap/unwrap em toda assinatura — atrás de Polly/ACL/OTel.
 - ➖ **Divergência consciente** da leitura literal de §6: o segredo *de acesso* está no Key Vault,
   mas o *blob cifrado* mora no banco. Esta ADR documenta a reconciliação.

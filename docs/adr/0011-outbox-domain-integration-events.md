@@ -39,7 +39,7 @@ Adotar o **Outbox Pattern** com escrita transacional:
 ## Consequências
 
 - ➕ **Consistência transacional** estado↔evento (sem dual-write); entrega *at-least-once* com
-  consumidores **idempotentes** (CLAUDE.md §8).
+  consumidores **idempotentes** (CONVENCOES-ENGENHARIA.md §8).
 - ➕ Desacopla produtor de consumidor; casa com isolamento de módulo (só `Contracts` cruzam) e com
   integrações governamentais resilientes (Polly/ACL).
 - ➕ Habilita o acoplamento legítimo **inter-tenant** auditado (ex.: repasse de duodécimo) sem

@@ -34,4 +34,4 @@ padrão **ABRASF** e **assinatura A1** das notas no nosso lado) tornou-se **obso
 - ➖ **Dependência da disponibilidade da API nacional** — mitigada por **Polly** (retry/circuit breaker),
   reprocessamento idempotente (chave de acesso) e janelas de sincronização.
 - ➖ Requer **credenciamento/escopo de acesso** aos dados do tenant no ambiente nacional (config por tenant).
-- 🔗 Implementação detalhada na **Fase 5**; spec no README do módulo **Tributos**.
+- 🔗 Implementação no módulo **Tributos** (ver README do módulo).

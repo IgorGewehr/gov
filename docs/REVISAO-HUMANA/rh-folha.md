@@ -119,7 +119,7 @@ Pasta: `src/Modules/RecursosHumanos/rules/`
 | Regra | Arquivo | Norma | O QUE CONFERIR |
 |---|---|---|---|
 | **13º** (base separada de IRRF, **sem** desconto simplificado), **férias** (+1/3), **rescisão** | [`CicloAnual.rules.md`](../../src/Modules/RecursosHumanos/rules/CicloAnual.rules.md) | CF art. 7 VIII/XVII; **Lei 7.713/88 art. 12-A**; CLT 129-145/477/484-A; Lei 12.506/11 (aviso prévio); Súmula 386/STJ; STF Tema 985 | Confira a base separada do IRRF do 13º e a matriz de rescisão por tipo×regime. |
-| **PASEP** (ente sobre folha bruta) | [`Pasep.rules.md`](../../src/Modules/RecursosHumanos/rules/Pasep.rules.md) | **LC 8/1970**; CF art. 239; Lei 9.715/98 | Confira base = soma dos proventos da competência × alíquota (1% default). Recolhimento real é M10. |
+| **PASEP** (ente sobre folha bruta) | [`Pasep.rules.md`](../../src/Modules/RecursosHumanos/rules/Pasep.rules.md) | **LC 8/1970**; CF art. 239; Lei 9.715/98 | Confira base = soma dos proventos da competência × alíquota (1% default). Recolhimento real pendente de credencial/canal de produção (`TODO(M10)` no código). |
 | **Consignações** (3 baldes de margem; corte por prioridade) | [`Consignacao.rules.md`](../../src/Modules/RecursosHumanos/rules/Consignacao.rules.md) | **Lei 14.131/2021** | Confira que a averbação respeita a margem disponível e a ordem de corte (obrigatória→facultativa→benefício). |
 | **Afastamentos** (percentual de remuneração por tipo; conta/não conta tempo) | [`Afastamento.rules.md`](../../src/Modules/RecursosHumanos/rules/Afastamento.rules.md) | Lei 8.112/90; Lei 12.873/13; CF art. 38 | Confira o percentual e o efeito na folha por tipo. |
 

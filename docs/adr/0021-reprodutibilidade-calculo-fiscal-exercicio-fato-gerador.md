@@ -25,7 +25,7 @@ gerador**:
   `LancarIptuAnualCommand`, `ApuradorItbi.ApurarAsync(..., int exercicio, ...)`).
 - **Parâmetros versionados por vigência.** A PGV e as tabelas de alíquota são **versionadas por
   exercício** (lei municipal); o motor lê **sempre** a versão vigente no exercício do fato gerador
-  (`plantas.ObterVigenteAsync(exercicio)`), **nunca** defaults numéricos no código (CLAUDE.md §7/§16:
+  (`plantas.ObterVigenteAsync(exercicio)`), **nunca** defaults numéricos no código (CONVENCOES-ENGENHARIA.md §7/§8:
   "nenhum número fiscal vive no código").
 - **Valores derivados do tempo saem do exercício.** A **idade** para depreciação é
   `Math.Max(0, planta.Exercicio - anoConstrucao)` — **não** `DateTime.UtcNow - dataConstrucao`. Assim
@@ -48,7 +48,7 @@ gerador**:
 
 - ➕ **Reapuração estável:** o mesmo lançamento recalculado em qualquer ano dá o mesmo resultado —
   cálculo **auditável e defensável** perante o TCE.
-- ➕ Casa com a parametrização por tenant/exercício (CLAUDE.md §7) e com o ITBI (ADR-0018), cuja
+- ➕ Casa com a parametrização por tenant/exercício (CONVENCOES-ENGENHARIA.md §7) e com o ITBI (ADR-0018), cuja
   alíquota também é lida por exercício.
 - ➕ Determinismo facilita **teste por casos conhecidos** (entradas iguais → saídas iguais) e prova de
   invariantes.

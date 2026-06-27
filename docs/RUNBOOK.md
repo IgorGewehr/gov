@@ -272,7 +272,7 @@ processo (ex.: `plataforma.db` ao lado de onde você rodou `dotnet run`). O
 | KEK do Cofre (envelope encryption A1) | `Cofre:ProvedorKek=Config` + `Cofre__KekBase64` via **variável de ambiente** (nunca versionar) | `Cofre:ProvedorKek=KeyVault` + `Cofre:KeyVaultUri` |
 | Connection strings | `appsettings.json` (`ConnectionStrings:Platform = plataforma.db`) | Key Vault / config segura |
 
-Regras (CLAUDE.md §6/§7, A1-DESIGN §1):
+Regras (CONVENCOES-ENGENHARIA.md §6/§7, ADR-0008 envelope encryption):
 
 - **Nunca** versionar a KEK nem segredos de produção no repo.
 - Em DEV, fornecer a KEK por env: `export Cofre__KekBase64=<base64-de-32-bytes>`
@@ -335,7 +335,7 @@ Pare a API, apague `plataforma.db` e os `.db` de tenant, suba de novo (Seção 6
 ## 9. Fitness Functions (testes de arquitetura)
 
 São testes **NetArchTest** que blindam a Clean Architecture e o isolamento entre
-Bounded Contexts (constituição §2/§12). Ficam em
+Bounded Contexts (CONVENCOES-ENGENHARIA.md §2/§12). Ficam em
 `tests/Tensorroot.Gov.ArchitectureTests/` (`FitnessFunctions.cs`,
 `MaintainabilityTests.cs`, `SpecCodeConsistency.cs`). Exemplos do que validam: Domain
 não depende de EF Core / ASP.NET; sem dependências cruzadas entre módulos.

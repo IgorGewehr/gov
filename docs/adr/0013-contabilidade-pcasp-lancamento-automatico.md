@@ -31,7 +31,7 @@ depender de digitação.
 - O `Balancete` (read model) deriva dos lançamentos e é a base da **MSC**, publicada como
   `MSCGeradaIntegrationEvent` para a Transparência (SICONFI + insumo da remessa TCE-RS).
 - Códigos/contas exatos do PCASP e roteiros oficiais ficam marcados `// TODO(validar-leiaute-oficial)`
-  até a fonte oficial (STN/MCASP) — modelamos pela **natureza** das contas, sem inventar (§16).
+  até a fonte oficial (STN/MCASP) — modelamos pela **natureza** das contas, sem inventar (CONVENCOES-ENGENHARIA.md §8).
 
 ## Alternativas consideradas
 
@@ -53,5 +53,5 @@ depender de digitação.
   cadeia. Mitigado por `*.rules.md` com BDD dos invariantes e validação contra spec oficial.
 - ➖ **Bloqueado por fonte oficial:** Plano de Contas PCASP vigente, tabela de eventos contábeis,
   leiaute MSC — sem eles, congelamos só o conceito, não os códigos.
-- 🔗 Faseado: Fase 2.1 ciclo da despesa → 2.2 PCASP + lançamento automático + Balancete + MSC →
-  2.3 TCE real (leiaute, e-Validador, A1, empacotamento — ver ADR-0009).
+- 🔗 Abrange o ciclo da despesa, o PCASP com lançamento automático, o Balancete e a MSC, e a remessa
+  ao TCE (leiaute, e-Validador, A1, empacotamento — ver ADR-0009).
