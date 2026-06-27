@@ -119,8 +119,13 @@ public sealed class SituacaoFiscalConsulta(TributosDbContext context) : ISituaca
                     // Exigibilidade SUSPENSA (CTN art. 151, VI) → habilita CPEN, não CND.
                     suspensas++;
                     break;
+                case SituacaoDividaAtiva.EmExecucaoFiscal when divida.Garantida && !divida.EstaPrescrita(dataBase):
+                    // Execução fiscal GARANTIDA por penhora/depósito suficiente (CTN art. 206; Súmula
+                    // 451-STJ): exigibilidade afastada para fins de certidão → habilita CPEN, não Positiva (P2-7).
+                    suspensas++;
+                    break;
                 default:
-                    // Inscrita/CdaEmitida/Protestada/EmExecucaoFiscal: exigível se NÃO prescrita na data-base.
+                    // Inscrita/CdaEmitida/Protestada/EmExecucaoFiscal (sem garantia): exigível se NÃO prescrita.
                     if (!divida.EstaPrescrita(dataBase))
                     {
                         exigiveis++;

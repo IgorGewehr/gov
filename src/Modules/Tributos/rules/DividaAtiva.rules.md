@@ -389,7 +389,7 @@ Cada cenário vira teste de integração.
 <!-- manifest
 commands: InscreverEmDividaAtiva, EmitirCda, QuitarDivida, GerarRemessaProtesto, ProcessarRetornoProtesto, AjuizarExecucaoFiscal
 queries: ObterDividasAtivasDoContribuinte, AvaliarPrescricaoDivida
-domainEvents: DividaAtivaInscrita, CdaEmitida, ParcelamentoFirmado, DividaQuitada, RemessaProtestoGerada, RetornoProtestoProcessado, ExecucaoFiscalAjuizada, PrescricaoInterrompida
+domainEvents: DividaAtivaInscrita, CdaEmitida, ParcelamentoFirmado, DividaQuitada, RemessaProtestoGerada, RetornoProtestoProcessado, ExecucaoFiscalAjuizada, GarantiaPenhoraRegistrada, PrescricaoInterrompida
 integrationEventsPublished: ReceitaArrecadadaIntegrationEvent, PosicaoDividaAtivaIntegrationEvent
 integrationEventsConsumed: 
 -->

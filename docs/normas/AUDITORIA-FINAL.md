@@ -1,84 +1,87 @@
 # AUDITORIA ADVERSARIAL FINAL — W10.6
 
-> Consolidação das três frentes de auditoria adversarial (FISCAL/CONTÁBIL, RH, TRIBUTOS/COMPRAS) sobre o código novo da Onda final. READ-ONLY — nenhum arquivo de produto foi editado. Cada regra fina foi conferida contra a fonte oficial ao vivo (IN RFB 1234/2012, FEBRABAN CNAB240 v10.x, Regras Gerais MSC 2026, Lei 15.270/2025, eSocial S-1.3, Lei 8.213/91, Lei 14.133/2021, CTN, Tema 1.113/STJ, ABRASF DES-IF).
+> Consolidação das três frentes de auditoria adversarial (FISCAL/CONTÁBIL, RH, TRIBUTOS/COMPRAS) sobre o código novo da Onda final. Cada regra fina foi conferida contra a fonte oficial ao vivo (IN RFB 1234/2012, FEBRABAN CNAB240 v10.x, Regras Gerais MSC 2026, Lei 15.270/2025, eSocial S-1.3, Lei 8.213/91, Lei 14.133/2021, CTN, Tema 1.113/STJ, ABRASF DES-IF).
+>
+> **⚙️ STATUS DE REMEDIAÇÃO (atualizado).** Os 4 P0 e os 7 P1 foram **RESOLVIDOS** em código (ver coluna *Status*). Dos P2: P2-1, P2-6, P2-7, P2-9 e P2-10 resolvidos; P2-3 (Transparência) e os demais permanecem como polimento aberto. O leiaute posicional do SIAPES (P1-7) foi reancorado na FONTE OFICIAL do TCE-RS — [`ImportDadosSIAPESConsist57.pdf`](https://www.tce.rs.gov.br/sistemas_controle/SIAPES/arquivos/pdf/ImportDadosSIAPESConsist57.pdf), Tabela 14 ("Formato Básico"), record de 1179 bytes; o `itensRemun` (P1-4) e o `indApurIR` foram reancorados no Manual eSocial S-1.3 (itensRemun NÃO tem `tpRubr`; `indApurIR=0` é a REGRA). Este documento deixou de gerar falso-alarme.
 
 ---
 
 ## 1. VEREDITO
 
-O **miolo de cálculo está pronto para produção e para os validadores oficiais** — alíquotas IRRF/PJ (IN 1234) e IRRF 2026 com redutor (Lei 15.270, zera no R$5.000) corretas, ciclo contábil de retenção/consignação balanceado e idempotente, ITBI honrando o Tema 1.113, CND/CPEN fail-closed, Registro de Preços com os dois tetos certos, prazo PNCP art. 94 correto, certidão de tempo de serviço sem furos. **O risco de produção está na casca de transmissão, não no cálculo**: o gerador de CSV da MSC (`GeradorMscCsv`) não herda as validações duras do agregado de Finanças (fail-open → e-Validador SICONFI rejeita), o CNAB240 tem um off-by-one na contagem do Trailer de Lote (banco rejeita), e dois eventos eSocial (S-1202/RPPS e S-2200/admissão) reusam a estrutura errada do S-1200 (XSD rejeita toda folha de RPPS e toda admissão em municípios afetados). Há ainda um Integration Event de Dispensa publicado fora do Outbox (evento perdível). **Conclusão honesta: o cálculo aguenta; a casca de saída NÃO aguenta sem os 4 P0 — qualquer município com RPPS, ou que transmita MSC/CNAB real, é rejeitado hoje.** Sem validação XSD no pipeline eSocial (P2 #8 RH), esses defeitos passam silenciosos até o órgão real.
+O **miolo de cálculo está pronto para produção e para os validadores oficiais** — alíquotas IRRF/PJ (IN 1234) e IRRF 2026 com redutor (Lei 15.270, zera no R$5.000) corretas, ciclo contábil de retenção/consignação balanceado e idempotente, ITBI honrando o Tema 1.113, CND/CPEN fail-closed, Registro de Preços com os dois tetos certos, prazo PNCP art. 94 correto, certidão de tempo de serviço sem furos. **O risco de produção está na casca de transmissão, não no cálculo**: o gerador de CSV da MSC (`GeradorMscCsv`) não herda as validações duras do agregado de Finanças (fail-open → e-Validador SICONFI rejeita), o CNAB240 tem um off-by-one na contagem do Trailer de Lote (banco rejeita), e dois eventos eSocial (S-1202/RPPS e S-2200/admissão) reusam a estrutura errada do S-1200 (XSD rejeita toda folha de RPPS e toda admissão em municípios afetados). Há ainda um Integration Event de Dispensa publicado fora do Outbox (evento perdível). **Conclusão honesta (diagnóstico original):** o cálculo aguentava; a casca de saída NÃO aguentava sem os 4 P0. **Estado atual:** os 4 P0 e os 7 P1 estão **RESOLVIDOS** — a casca de saída (CSV MSC, XML eSocial S-1200/S-1202/S-2200, CNAB240, arquivo SIAPES) agora herda as validações duras e a estrutura/posições oficiais. Resta o habilitador transversal P2-5 (validação XSD no pipeline eSocial) como reforço anti-regressão.
 
-**Contagem:** 4 P0 · 9 P1 · 11 P2.
+**Contagem (original):** 4 P0 · 7 P1 · 11 P2 · ⇒ **Resolvidos: 4 P0 + 7 P1 + 5 P2 (P2-1/-6/-7/-9/-10).**
 
 ---
 
 ## 2. TABELA DE ACHADOS CONSOLIDADA
 
-### P0 — Bloqueantes (rejeição garantida pelo validador/banco/órgão)
+### P0 — Bloqueantes (rejeição garantida pelo validador/banco/órgão) — **TODOS RESOLVIDOS**
 
-| # | Frente | Achado | Arquivo:linha | Norma | Fix |
-|---|--------|--------|---------------|-------|-----|
-| P0-1 | FISCAL | **MSC fail-open**: o caminho que gera o artefato SICONFI (`GeradorMscCsv`) NÃO aplica as 3 validações duras (PO obrigatório, balanço por classe, SI+mov=SF). Elas só existem em `MatrizSaldosContabeis.Montar` (Finanças); o CSV consome `MatrizSaldos.Montar` (Transparência), que só valida D=C global por `Equals`. Matriz desbalanceada/sem PO gera CSV rejeitado pelo e-Validador. | `GeradorMscCsv.cs:45-73`; `GerarMSC.cs:35-46`; `MatrizSaldos.cs:51-62` | Regras Gerais MSC 2026 (Anexo I Port. STN 642/2019) | Antes de emitir, validar via as 3 regras duras (compartilhar `MatrizSaldosContabeis` via Contracts); rejeitar linha sem PO. |
-| P0-2 | FISCAL | **`GeradorMscCsv` não garante PO como TIPO1/IC1**: emite os 6 pares na ordem em que vierem no texto livre `CHAVE=valor`, sem ordenar nem exigir PO primeiro. Sem PO (ou com outro atributo antes), a coluna obrigatória Poder/Órgão sai vazia/fora de posição → rejeição. | `GeradorMscCsv.cs:92,102-109,164-184` | Regras Gerais MSC 2026, IC nº1 (PO em TODAS as contas) | Mapear cada IC ao slot fixo por código (PO→par1); exigir PO não-vazio; não confiar na ordem do texto. |
-| P0-3 | RH | **S-1202 (evtRmnRPPS) reusa estrutura do S-1200**: `GerarS1200(..., rpps:true)` troca só a raiz/ns mas emite `ideEstabLot`+`codLotacao`+`remunPerApur`. O S-1202 usa `ideEstab` (sem `ideEstabLot`/`codLotacao`). XSD rejeita → toda folha de efetivos de município COM RPPS próprio é rejeitada. | `GeradorEventosESocial.cs:202-255` (esp. 230-233) | eSocial S-1.3 NT 06/2026 (evtRmnRPPS) | Gerar S-1202 com estrutura própria (`ideEstab`+`remunPerApur`+`itensRemun`); não reusar o S-1200. |
-| P0-4 | RH | **S-2200: `infoRegimeTrab` aninhado DENTRO de `infoContrato`** (deveria ser filho direto de `vinculo`, ANTES de `infoContrato`); **falta `tpRegTrab`** (obrigatório em `vinculo`). XSD é `sequence` → ordem/aninhamento errados rejeitam toda admissão. | `GeradorEventosESocial.cs:143-172` (abre `infoRegimeTrab` em 152) | eSocial S-1.3 S-2200 (ordem de `vinculo`) | `infoRegimeTrab` como irmão de `infoContrato`, ANTES dele; adicionar `tpRegTrab`. |
+| # | Frente | Achado | Arquivo:linha | Norma | Status |
+|---|--------|--------|---------------|-------|--------|
+| P0-1 | FISCAL | **MSC fail-open**: o caminho que gera o artefato SICONFI (`GeradorMscCsv`) NÃO aplicava as 3 validações duras (PO obrigatório, balanço por classe, SI+mov=SF). | `GeradorMscCsv.cs`; `ValidadorMscCsv.cs` | ✅ **RESOLVIDO** — `GeradorMscCsv.Gerar` chama `ValidadorMscCsv.GarantirValida(declaracao.Matriz, ExtrairPoderOrgao)` antes de emitir. |
+| P0-2 | FISCAL | **`GeradorMscCsv` não garantia PO como TIPO1/IC1**: emitia os pares na ordem do texto livre, sem exigir PO primeiro. | `GeradorMscCsv.cs:171-184` | ✅ **RESOLVIDO** — `OrdemSlotsIc = ["PO","FP","DC","FR","CO","NR","ND","FS","AI"]`; slot por CÓDIGO, PO garantido em IC1. |
+| P0-3 | RH | **S-1202 (evtRmnRPPS) reusava estrutura do S-1200** (`ideEstabLot`/`codLotacao` em vez de `ideEstab`). | `GeradorEventosESocial.cs:205-280` | ✅ **RESOLVIDO** — `GerarS1200` roteia `rpps ? GerarS1202Rpps : GerarS1200Rgps`; o S-1202 usa `ideEstab` próprio. |
+| P0-4 | RH | **S-2200: `infoRegimeTrab` aninhado DENTRO de `infoContrato`; faltava `tpRegTrab`**. | `GeradorEventosESocial.cs:143-174` | ✅ **RESOLVIDO** — `infoRegimeTrab` é IRMÃO de `infoContrato` (antes dele); `tpRegTrab` emitido (1=CLT/2=Estatutário). |
 
-### P1 — Graves (cálculo/integridade errados; rejeição provável ou perda fiscal)
+### P1 — Graves (cálculo/integridade errados; rejeição provável ou perda fiscal) — **TODOS RESOLVIDOS**
 
-| # | Frente | Achado | Arquivo:linha | Norma | Fix |
-|---|--------|--------|---------------|-------|-----|
-| P1-1 | FISCAL | **CNAB240 off-by-one no Trailer de Lote**: calcula `2 + (favorecidos*2) + 1` (=2N+3); o correto é Header Lote(1)+detalhes(2N)+Trailer(1) = 2N+2. Banco rejeita "Quantidade de Registros divergente". | `Cnab240Writer.cs:49,178` | FEBRABAN CNAB240 v10.x, Trailer de Lote (reg.5), tipos 1+3+5 | Trocar `2 + (Favorecidos.Count*2) + 1` por `1 + (Favorecidos.Count*2) + 1`. |
-| P1-2 | TRIBUTOS | **DES-IF: dedução de RECEITA abatida do IMPOSTO** (sub-arrecada ISS). `IssqnARecolher = IssqnDevidoBruto − (deducoesReceita+incentivos+depositos)`, mas `deducoesReceita` é dedução da BASE (Reg. 0440). Município perde `deducoesReceita×(1−alíquota)`. | `Domain/Desif/DeclaracaoDesif.cs:234-246` | ABRASF DES-IF Mód.2 (Reg.0430/0440); LC 116/2003 | `deducoesReceita` reduz a base antes da alíquota; só incentivos/depósitos abatem o imposto. |
-| P1-3 | TRIBUTOS | **Integration Event da Dispensa publicado FORA do Outbox** (evento perdível): `Homologar()`→`SaveChangesAsync()`(commit)→depois `publisher.Publish(DispensaHomologadaIntegrationEvent)` via MediatR in-process. Crash entre commit e publish perde o evento (sem retry/idempotência). O irmão `PublicarContratoNoPncp` faz certo via Outbox. | `Application/Dispensas/HomologarDispensa.cs:57-71` | CLAUDE.md §8/§10 (Integration Events via Outbox) | Trocar `IPublisher.Publish` por `IIntegrationEventWriter.Enfileirar` antes do `SaveChangesAsync` (mesma transação). |
-| P1-4 | RH | **S-1200 `itensRemun` soma proventos E descontos como `vrRubr` positivo**, sem `tpRubr`/sinal; `indApurIR` fixo `0`. Totalização CP/IRRF errada → divergência S-1200↔S-1210↔DCTFWeb. | `GerarEventosPeriodicos.cs:52-61` | eSocial S-1.3 (itensRemun por tpRubr) | Emitir `tpRubr` e `indApurIR` reais por rubrica; não somar desconto como provento. |
-| P1-5 | RH | **Banco de Horas: prescrição re-conta créditos já prescritos**. `PrescreverCreditosAnterioresA` soma TODOS os créditos com `Data<limite` (originais nunca removidos) e o job avança `limite` mês a mês → prescreve a mais, destrói horas válidas. | `BancoDeHoras.cs:126-154` (135-139); `BancoDeHorasCommands.cs:102-108` | Portaria MTP 671/2021 (prescrição 6/12m) | Descontar o já-prescrito (`vencidos − Σ prescrições anteriores`) ou marcar créditos consumidos. |
-| P1-6 | RH | **SICAP/SIAPES: regime jurídico derivado do regime previdenciário** (`RGPS→Celetista`). Município sem RPPS com efetivos estatutários sob RGPS é classificado como Celetista → remessa de pessoal do TCE-RS errada. | `MapeamentoSiapes.cs:35-40` | SIAPES Tabela 5 (CD_REGIME_JURIDICO) | Usar regime jurídico do cadastro do cargo/servidor, não derivar do previdenciário. |
-| P1-7 | RH | **SIAPES linha de ato: campos posicionais intermediários omitidos** (06, 15, 17-20, 22, 24 — comentários pulam 05→07, 14→16, 16→21, 21→23, 23→25). Layout é largura fixa; se os campos existem no Formato Básico, todos os offsets deslocam → rejeição por desalinhamento. | `LeiauteSiapes.cs:61-80` | SIAPES "Formato Básico" (grade posicional) | Confirmar a grade oficial; emitir TODOS os campos (em branco/zero) preservando posições. |
+| # | Frente | Achado | Arquivo | Norma | Status |
+|---|--------|--------|---------|-------|--------|
+| P1-1 | FISCAL | **CNAB240 off-by-one no Trailer de Lote**: calculava `2N+3`; o correto é `1+2N+1`. | `Cnab240Writer.cs:53` | FEBRABAN CNAB240 v10.x, Trailer de Lote (reg.5), tipos 1+3+5 | ✅ **RESOLVIDO** — `quantidadeRegistrosLote = 1 + (Favorecidos.Count * 2) + 1`. |
+| P1-2 | TRIBUTOS | **DES-IF: dedução de RECEITA abatida do IMPOSTO** (sub-arrecada ISS). `deducoesReceita` é dedução da BASE (Reg. 0440), não do imposto; município perdia `deducoesReceita×(1−alíquota)`. | `Domain/Desif/DeclaracaoDesif.cs` (`Entregar`) | ABRASF DES-IF Mód.2 (Reg.0430/0440); LC 116/2003 | ✅ **RESOLVIDO** — a dedução de receita reduz a BASE (ISS = `dedução × alíquota efetiva = devidoBruto÷receitaTributável`); só incentivos/depósitos abatem o imposto. Fail-closed contra imposto negativo. |
+| P1-3 | TRIBUTOS | **Integration Event da Dispensa publicado FORA do Outbox** (evento perdível) via `IPublisher.Publish` pós-commit. | `Application/Dispensas/HomologarDispensa.cs` | CLAUDE.md §8/§10 (Integration Events via Outbox) | ✅ **RESOLVIDO** — `DispensaHomologadaIntegrationEvent` enfileirado via `IIntegrationEventWriter.Enfileirar` na mesma transação (Outbox). |
+| P1-4 | RH | **S-1200 `itensRemun` somava proventos E descontos como `vrRubr` positivo**, sem distinguir natureza; `indApurIR` fixo `0`. | `GerarEventosPeriodicos.cs:51-66` | Manual eSocial S-1.3 (itensRemun; indApurIR) | ✅ **RESOLVIDO** — agrupa por `(Rubrica.Codigo, Tipo)`: provento e desconto JAMAIS colapsam num mesmo `vrRubr`. *(Anc. oficial: `itensRemun` NÃO tem campo `tpRubr` — ele vive no S-1010; o sinal vem do tpRubr da rubrica. `indApurIR=0` é a REGRA do MOS — IR apurado no eSocial; `1` é a exceção via EFD-Reinf, inaplicável aqui.)* |
+| P1-5 | RH | **Banco de Horas: prescrição re-contava créditos já prescritos** (o job avança o limite mês a mês; originais nunca removidos → prescreve a mais). | `BancoDeHoras.cs` (`PrescreverCreditosAnterioresA`) | Portaria MTP 671/2021 (prescrição 6/12m) | ✅ **RESOLVIDO** — desconta o já-prescrito (`Σ lançamentos de Prescrição`) dos vencidos antes de calcular `aPrescrever`; prescreve só o vencido AINDA NÃO prescrito, limitado ao saldo. |
+| P1-6 | RH | **SIAPES: regime jurídico derivado do regime PREVIDENCIÁRIO** (`RGPS→Celetista`). | `MapeamentoSiapes.cs:35-41`; `AdicionarAtoRemessa.cs:67` | SIAPES Tabela 5 (CD_REGIME_JURIDICO) | ✅ **RESOLVIDO** — `RegimePadraoDe(TipoCargo)`: Efetivo→Estatutário, Comissionado/Temporário→Administrativo; deriva do TIPO DO CARGO (atributo do vínculo). O caller passa `cargo.Tipo`, não `servidor.Regime`. Celetista só por override. |
+| P1-7 | RH | **SIAPES linha de ato: campos posicionais intermediários omitidos** (05→07, 14→16, 16→21, 21→23, 23→25) — largura fixa, offsets deslocados → rejeição. | `LeiauteSiapes.cs` (`MontarLinhaAto`) | **SIAPES "Formato Básico", Tabela 14 ([`Consist57`](https://www.tce.rs.gov.br/sistemas_controle/SIAPES/arquivos/pdf/ImportDadosSIAPESConsist57.pdf))** | ✅ **RESOLVIDO** — emite TODOS os campos 01..25 nas posições EXATAS da Tabela 14 oficial (1-490): inclui 06 `CD_REGIME_JURIDICO_ANT`, 08 `CD_MUNICIPIO_MAE`, 09 `CD_ORGAO_ANT`, 15 `CONCURSADO`, 17 `ESPECIALIZACAO_PROF`, 18 `DS_CARGO_ANTERIOR`, 19 `ESPECIALIZACAO_ANT`, 20 `IDENTIFICADOR_PESSOA`, 22 `RG`, 24 `TITULO_ELEITOR` (padded). CD_REGIME_JURIDICO corrigido para N(2) por Tabela 14. |
 
 ### P2 — Médios (defensivo, coerência, semântica, escopo)
 
 | # | Frente | Achado | Arquivo:linha | Norma | Fix |
 |---|--------|--------|---------------|-------|-----|
-| P2-1 | FISCAL | `MatrizSaldos.EstaBalanceada` (Transparência) usa `Equals` exato sem tolerância de centavos — diverge de `MatrizSaldosContabeis` (Finanças, `ToleranciaFechamento=0.01`). | `MatrizSaldos.cs:51-52` | MCASP/partida dobrada | Aplicar a mesma tolerância de 0,01. |
+| P2-1 | FISCAL | `MatrizSaldos.EstaBalanceada` (Transparência) usava `Equals` exato sem tolerância de centavos. | `MatrizSaldos.cs:58-59` | MCASP/partida dobrada | ✅ **RESOLVIDO** — `Math.Abs(TotalDebitos − TotalCreditos) <= ToleranciaFechamento` (`0.01m`). |
 | P2-2 | FISCAL | Retenção IRRF/PJ modela só a parcela de IR (1,2%/2,4%/4,8%), não o agregado do DARF (IR+CSLL+COFINS+PIS, ex. 4,65% no cód. 6147). Líquido ao fornecedor sai maior que o devido se esperado o "cheio". Alíquotas de IR corretas — lacuna é de escopo. | `TabelaIrrfServicosCatalogo.cs:22-47`; `NaturezaRetencao.cs` | IN RFB 1234/2012 Anexo I | Modelar CSLL/COFINS/PIS como naturezas do mesmo DARF, ou documentar IR-only. |
 | P2-3 | FISCAL | CSV injection: coluna `Valor` formatada `0.00` não passa por `Escapar`. Não é exploit hoje (decimal não-negativo); defensivo. | `GeradorMscCsv.cs:100,189` | OWASP CSV Injection (defensivo) | Sem ação obrigatória; padronizar formatação invariante. |
 | P2-4 | RH | S-2210 (CAT): mapeamento aproximado (`dscLesao`/`lateralidade`/`agenteCausador`/`codCID` como leaf onde o leiaute espera grupos `parteAtingida`/`agenteCausador`); sem enforcement de prazo. | `GeradorEventosSst.cs:42-48`; `ComunicarAcidente.cs` | eSocial S-2210 | Modelar grupos corretos; alertar prazo de CAT. |
 | P2-5 | RH | **Validação XSD ausente em todo o pipeline eSocial** — nenhum `XmlSchema`/`XmlReaderSettings` valida antes de assinar/transmitir. Mascara P0-3, P0-4, P1-4, P2-4. | módulo eSocial (sem validador) | ESOCIAL-SPEC §2.6 / MOS | Pipeline `XmlReaderSettings` com XSD S-1.3 pré-assinatura (fail-closed). |
-| P2-6 | RH | `NumericoEsquerda` trunca via `[^tamanho..]` — se `CodigoOrgao` excede a largura, pega os dígitos INFERIORES (órgão errado); negativos corrompem. | `LeiauteSiapes.cs` (`NumericoEsquerda`) | coerência/leiaute | Validar largura/sinal antes; rejeitar overflow. |
-| P2-7 | TRIBUTOS | CPEN não emitida para execução fiscal garantida por penhora — `EmExecucaoFiscal` cai no `default` → exigível → Positiva. Fail-closed contra o contribuinte (direção segura). | `CertidaoGiaRepositories.cs:122-130`; `DividaAtiva.cs:23-45` | CTN art. 206; Súmula 451-STJ | Modelar penhora/garantia → tratar como suspensa (CPEN). |
+| P2-6 | RH | `NumericoEsquerda` truncava via `[^tamanho..]` — overflow pegava os dígitos INFERIORES (órgão errado); negativos corrompiam. | `LeiauteSiapes.cs` (`NumericoEsquerda`) | coerência/leiaute | ✅ **RESOLVIDO** — fail-closed: `ThrowIfNegative` + `InvalidOperationException` no overflow (não trunca silenciosamente). |
+| P2-7 | TRIBUTOS | CPEN não emitida para execução fiscal garantida por penhora — `EmExecucaoFiscal` caía no `default` → exigível → Positiva. | `CertidaoGiaRepositories.cs`; `DividaAtiva.cs` | CTN art. 206; Súmula 451-STJ | ✅ **RESOLVIDO** — `DividaAtiva.RegistrarGarantiaPenhora(data)` + flag `Garantida`; o cálculo da situação fiscal trata execução garantida não-prescrita como SUSPENSA → habilita CPEN. *(Requer migração EF: colunas `Garantida`/`DataGarantiaPenhora`.)* |
 | P2-8 | TRIBUTOS | Habilitação da Dispensa é flag confiada do chamador (fail-open): `VencedorHabilitado` repassado direto ao domínio; handler não rechecagem regularidade. (Sanção impeditiva, essa sim, é rechecada fail-closed.) | `HomologarDispensa.cs:20,57` | Lei 14.133/2021 art. 63; IN SEGES/ME 67/2021 | Cross-check de regularidade no servidor ou exigir evidência registrada. |
-| P2-9 | TRIBUTOS | Off-by-one de fuso na aferição de sanção: `DateOnly.FromDateTime(agora.UtcDateTime)` usa data UTC, não o fuso do tenant (UTC-3). À noite no Brasil o "hoje" UTC vira o dia seguinte. `VarrerPrazosPncp` já usa `IDataHojeTenant`; aqui ficou UTC. | `RegistrarLanceDispensa.cs:56`; `HomologarDispensa.cs:48,77` | CLAUDE.md §16 (prazo por dia civil, fuso do tenant) | Usar `IDataHojeTenant.Hoje()` para a data de aferição. |
-| P2-10 | TRIBUTOS | ITBI complementar: fato gerador ancorado no mês do vencimento da guia, não na transmissão (`new DateOnly(Exercicio, VencimentoComplementar.Month, 1)`). Decadência é year-anchored (inócuo no mesmo exercício), mas semanticamente errado e quebra entre anos. | `ArbitramentoItbi.cs:258` | CTN art. 173, I; art. 116 | Derivar o mês do fato gerador da data real da transmissão. |
+| P2-9 | TRIBUTOS | Off-by-one de fuso na aferição de sanção: usava data UTC, não o fuso do tenant (UTC-3). | `RegistrarLanceDispensa.cs`; `HomologarDispensa.cs` | CLAUDE.md §16 (prazo por dia civil, fuso do tenant) | ✅ **RESOLVIDO** — usa `IDataHojeTenant.Hoje()` (os handlers de Dispensa recebem `IDataHojeTenant`, como `VarrerPrazosPncp`). |
+| P2-10 | TRIBUTOS | ITBI complementar: fato gerador ancorado no mês do vencimento da guia (`new DateOnly(Exercicio, VencimentoComplementar.Month, 1)`) — quebra entre anos. | `ArbitramentoItbi.cs` | CTN art. 173, I; art. 116 | ✅ **RESOLVIDO** — fato gerador ancorado no EXERCÍCIO da transmissão (`new DateOnly(transmissao.Exercicio, 1, 1)`), não no vencimento da guia complementar. *(TODO/M10: persistir a data-dia real da transmissão na `TransmissaoImobiliaria` — hoje guarda só o exercício; decadência é year-anchored.)* |
 | P2-11 | RH | Retenção IRRF/PJ — ver P2-2 (escopo CSLL/COFINS/PIS) [referência cruzada, contado em P2-2]. | — | — | — |
 
 > Nota: P2-11 é a mesma lacuna de escopo de P2-2 sob a frente RH; não soma à contagem (a contagem real de P2 é 11, excluindo esta linha de referência cruzada, que renumera P2-2..P2-10 = 10 mais P2-1 = 11).
 
 ---
 
-## 3. FILA DE FIX PRIORIZADA
+## 3. FILA DE FIX — ESTADO
 
-### Bloco P0 (conserta ANTES de tudo — sem isto, validador/banco/órgão rejeitam)
+### Bloco P0 — ✅ TODOS RESOLVIDOS
 
-1. **P0-3 (S-1202/RPPS)** — gerar evtRmnRPPS com estrutura própria (`ideEstab`). *Impacto: toda folha de efetivos de município com RPPS. `GeradorEventosESocial.cs:202-255`.*
-2. **P0-4 (S-2200/admissão)** — `infoRegimeTrab` como irmão de `infoContrato` ANTES dele + adicionar `tpRegTrab`. *Impacto: toda admissão. `GeradorEventosESocial.cs:143-172`.*
-3. **P0-1 (MSC fail-open)** — aplicar as 3 validações duras no `GeradorMscCsv`/`GerarMscHandler` antes de emitir. *Impacto: artefato SICONFI rejeitado. `GeradorMscCsv.cs:45-73`.*
-4. **P0-2 (MSC sem PO em slot fixo)** — mapear cada IC ao slot por código, exigir PO não-vazio. *Mesmo arquivo do P0-1; fechar junto. `GeradorMscCsv.cs:92,102-184`.*
+1. ✅ **P0-3 (S-1202/RPPS)** — `GerarS1202Rpps` com `ideEstab` próprio. `GeradorEventosESocial.cs`.
+2. ✅ **P0-4 (S-2200/admissão)** — `infoRegimeTrab` irmão de `infoContrato` + `tpRegTrab`. `GeradorEventosESocial.cs`.
+3. ✅ **P0-1 (MSC fail-open)** — `ValidadorMscCsv.GarantirValida` no `GeradorMscCsv`. `GeradorMscCsv.cs`.
+4. ✅ **P0-2 (MSC PO em slot fixo)** — `OrdemSlotsIc`, PO em IC1. `GeradorMscCsv.cs`.
 
-> Habilitador transversal recomendado junto ao bloco P0: **P2-5 (validação XSD no pipeline eSocial)** — sem ela, P0-3/P0-4 voltam a passar silenciosos. Barato e protege os dois P0 de RH contra regressão.
+> Habilitador transversal ainda recomendado: **P2-5 (validação XSD no pipeline eSocial)** — reforço anti-regressão dos P0/P1 de RH (ABERTO).
 
-### Bloco P1
+### Bloco P1 — ✅ TODOS RESOLVIDOS
 
-5. **P1-1 (CNAB240 off-by-one)** — `2N+3`→`2N+2`. Banco rejeita pagamento. `Cnab240Writer.cs:49,178`. *Fix de 1 caractere.*
-6. **P1-2 (DES-IF dedução de receita)** — mover dedução de receita para a base. Perda de arrecadação direta. `DeclaracaoDesif.cs:234-246`.
-7. **P1-3 (Dispensa fora do Outbox)** — `IIntegrationEventWriter.Enfileirar` na transação. `HomologarDispensa.cs:57-71`.
-8. **P1-4 (S-1200 tpRubr/sinal)** — emitir tpRubr/indApurIR reais. `GerarEventosPeriodicos.cs:52-61`.
-9. **P1-5 (Banco de Horas prescrição dupla)** — descontar já-prescrito. `BancoDeHoras.cs:126-154`.
-10. **P1-6 (SIAPES regime jurídico)** — usar regime do cadastro, não do previdenciário. `MapeamentoSiapes.cs:35-40`.
-11. **P1-7 (SIAPES posições)** — confirmar grade oficial e emitir todos os campos. `LeiauteSiapes.cs:61-80`.
+5. ✅ **P1-1 (CNAB240)** — `1+2N+1`. `Cnab240Writer.cs:53`.
+6. ✅ **P1-2 (DES-IF dedução de receita)** — dedução reduz a BASE (alíquota efetiva). `DeclaracaoDesif.cs`.
+7. ✅ **P1-3 (Dispensa fora do Outbox)** — `IIntegrationEventWriter.Enfileirar`. `HomologarDispensa.cs`.
+8. ✅ **P1-4 (S-1200 itensRemun)** — agrupa por `(Codigo, Tipo)`; indApurIR=0 (regra MOS). `GerarEventosPeriodicos.cs`.
+9. ✅ **P1-5 (Banco de Horas prescrição dupla)** — desconta o já-prescrito. `BancoDeHoras.cs`.
+10. ✅ **P1-6 (SIAPES regime jurídico)** — deriva do `TipoCargo`. `MapeamentoSiapes.cs` + `AdicionarAtoRemessa.cs`.
+11. ✅ **P1-7 (SIAPES posições)** — campos 01..25 nas posições da Tabela 14 oficial. `LeiauteSiapes.cs`.
 
-### Bloco P2 (polimento — defensivo/semântico/escopo)
+### Bloco P2 (polimento)
 
-12. P2-1 tolerância de centavos em `MatrizSaldos`. 13. P2-9 fuso na sanção (`IDataHojeTenant`). 14. P2-8 cross-check de habilitação da Dispensa. 15. P2-7 CPEN com penhora. 16. P2-10 ITBI fato gerador pela transmissão. 17. P2-4 grupos do S-2210. 18. P2-6 overflow `NumericoEsquerda`. 19. P2-2 escopo CSLL/COFINS/PIS (decidir/documentar). 20. P2-3 `Escapar` na coluna Valor.
+- ✅ **P2-1** tolerância de centavos em `MatrizSaldos`. ✅ **P2-6** overflow `NumericoEsquerda` (fail-closed). ✅ **P2-7** CPEN com penhora (`Garantida` + `RegistrarGarantiaPenhora`). ✅ **P2-9** fuso na sanção (`IDataHojeTenant`). ✅ **P2-10** ITBI fato gerador no exercício da transmissão.
+- ⏳ ABERTOS: **P2-2** escopo CSLL/COFINS/PIS (decidir/documentar). **P2-3** `Escapar` na coluna Valor (Transparência). **P2-4** grupos do S-2210. **P2-5** validação XSD no pipeline eSocial. **P2-8** cross-check de habilitação da Dispensa.
 
 ---
 

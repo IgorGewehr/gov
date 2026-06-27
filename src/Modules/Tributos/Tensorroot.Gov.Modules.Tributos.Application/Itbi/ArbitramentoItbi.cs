@@ -252,10 +252,13 @@ public sealed class ConcluirArbitramentoItbiHandler(
         {
             var adquirenteId = new ContribuinteId(request.AdquirenteId);
             var valorDiferenca = ValorMonetario.De(diferenca);
-            // Lançamento de ofício complementar (CTN art. 149): fato gerador = transmissão original
-            // (exercício da transmissão); data da constituição = data da decisão do arbitramento
-            // (data do fato). A decadência (CTN art. 173, I) é aferida no agregado.
-            var dataFatoGerador = new DateOnly(transmissao.Exercicio, request.VencimentoComplementar.Month, 1);
+            // Lançamento de ofício complementar (CTN art. 149): o fato gerador é a TRANSMISSÃO ORIGINAL,
+            // NÃO o vencimento da guia complementar (que pode cair em mês/ano posterior e quebraria a
+            // decadência entre exercícios — correção P2-10). Ancora-se no exercício da transmissão (CTN
+            // art. 35/116), idêntico ao fato gerador do lançamento original.
+            // // TODO(validar-oficial/M10): persistir a DATA real da transmissão (dia) na TransmissaoImobiliaria
+            // // e derivar o mês daí; hoje a transmissão guarda apenas o exercício (decadência é year-anchored).
+            var dataFatoGerador = new DateOnly(transmissao.Exercicio, 1, 1);
             var lancamento = Lancamento.Lancar(
                 tenant.TenantId,
                 adquirenteId,

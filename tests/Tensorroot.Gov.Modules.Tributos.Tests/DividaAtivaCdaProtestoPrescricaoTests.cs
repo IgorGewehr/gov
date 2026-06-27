@@ -246,6 +246,79 @@ public sealed class DividaAtivaCdaProtestoPrescricaoTests : IDisposable
     }
 
     // ----------------------------------------------------------------------------------------------
+    // 5) GARANTIA da execução fiscal por PENHORA (CTN art. 206; Súmula 451-STJ) — habilita CPEN (P2-7)
+    // ----------------------------------------------------------------------------------------------
+
+    private static DividaAtiva EmExecucaoFiscal(DateOnly inscricao, DateOnly ajuizamento)
+    {
+        var divida = InscreverExemplo(
+            TenantA, ValorMonetario.De(2000m),
+            new DateOnly(2020, 4, 10), new DateOnly(2020, 5, 10), inscricao);
+        divida.EmitirCda("CDA-2021/0050", "Devedor Garantido", null, null, inscricao, null);
+        divida.AjuizarExecucaoFiscal(ajuizamento);
+        return divida;
+    }
+
+    [Fact] // Penhora suficiente afasta a exigibilidade p/ certidão: marca Garantida + emite evento (sem extinguir/suspender).
+    public void Registrar_garantia_penhora_marca_garantida_e_emite_evento()
+    {
+        var divida = EmExecucaoFiscal(new DateOnly(2021, 1, 15), new DateOnly(2021, 6, 1));
+
+        divida.RegistrarGarantiaPenhora(new DateOnly(2021, 7, 10));
+
+        divida.Garantida.Should().BeTrue();
+        divida.DataGarantiaPenhora.Should().Be(new DateOnly(2021, 7, 10));
+        divida.Situacao.Should().Be(SituacaoDividaAtiva.EmExecucaoFiscal); // continua executada, apenas garantida.
+        divida.DomainEvents.Should().ContainItemsAssignableTo<Tensorroot.Gov.Modules.Tributos.Domain.Events.GarantiaPenhoraRegistrada>();
+    }
+
+    [Fact] // A garantia só se registra em EXECUÇÃO FISCAL (não em dívida apenas inscrita/CDA).
+    public void Registrar_garantia_penhora_fora_de_execucao_fiscal_e_recusada()
+    {
+        var divida = InscreverExemplo(
+            TenantA, ValorMonetario.De(2000m),
+            new DateOnly(2020, 4, 10), new DateOnly(2020, 5, 10), new DateOnly(2021, 1, 15));
+
+        var act = () => divida.RegistrarGarantiaPenhora(new DateOnly(2021, 7, 10));
+
+        act.Should().Throw<InvalidOperationException>();
+        divida.Garantida.Should().BeFalse();
+    }
+
+    [Fact] // Fail-closed (CTN art. 156, V): penhora NÃO regulariza crédito já prescrito.
+    public void Registrar_garantia_penhora_em_divida_prescrita_e_recusada()
+    {
+        // Constituição 10/05/2020 → prescreve 10/05/2025. Penhora em 2026 (após) deve ser barrada.
+        var divida = EmExecucaoFiscal(new DateOnly(2020, 6, 1), new DateOnly(2020, 6, 2));
+
+        var act = () => divida.RegistrarGarantiaPenhora(new DateOnly(2026, 1, 10));
+
+        act.Should().Throw<DividaAtivaPrescritaException>();
+        divida.Garantida.Should().BeFalse();
+    }
+
+    [Fact] // P2-7 persistência: as colunas Garantida/DataGarantiaPenhora (migração nova) round-trip no banco.
+    public async Task Garantia_penhora_persiste_as_colunas_novas()
+    {
+        DividaAtivaId dividaId;
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var divida = EmExecucaoFiscal(new DateOnly(2021, 1, 15), new DateOnly(2021, 6, 1));
+            divida.RegistrarGarantiaPenhora(new DateOnly(2021, 7, 10));
+            dividaId = divida.Id;
+            contexto.DividasAtivas.Add(divida);
+            await contexto.SaveChangesAsync();
+        }
+
+        await using (var contexto = CriarContexto(TenantA))
+        {
+            var divida = await contexto.DividasAtivas.SingleAsync(d => d.Id == dividaId);
+            divida.Garantida.Should().BeTrue();
+            divida.DataGarantiaPenhora.Should().Be(new DateOnly(2021, 7, 10));
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------
     // PERSISTÊNCIA + ISOLAMENTO POR TENANT
     // ----------------------------------------------------------------------------------------------
 

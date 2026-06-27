@@ -125,6 +125,12 @@ public sealed class BancoDeHoras : AggregateRoot<BancoDeHorasId>, IMustHaveTenan
     /// <returns>Minutos prescritos (0 quando nada a prescrever).</returns>
     public int PrescreverCreditosAnterioresA(DateOnly limiteData, DateOnly hoje)
     {
+        var referencia = $"prescricao:{limiteData:yyyy-MM-dd}";
+        if (_lancamentos.Any(l => string.Equals(l.Referencia, referencia, StringComparison.Ordinal)))
+        {
+            return 0; // Idempotente por limite: a prescricao DESTE limite ja foi aplicada.
+        }
+
         // So prescreve quando o saldo e positivo: creditos vencidos limitados ao saldo vigente (debitos
         // posteriores ja consumiram parte dos creditos antigos — nao se prescreve o que ja foi usado).
         if (SaldoMinutos <= 0)
@@ -136,16 +142,19 @@ public sealed class BancoDeHoras : AggregateRoot<BancoDeHorasId>, IMustHaveTenan
             .Where(l => l.Tipo == TipoLancamentoBancoHoras.Credito && l.Data < limiteData)
             .Sum(l => l.Minutos);
 
-        var aPrescrever = Math.Min(creditosVencidos, SaldoMinutos);
+        // Desconta o que JA foi prescrito em execucoes anteriores (o job avanca o limite mes a mes e os
+        // lancamentos de credito originais nunca sao removidos). Sem isto, um credito vencido seria contado
+        // de novo a cada limite posterior, prescrevendo a mais e destruindo horas validas (P1-5 da
+        // AUDITORIA-FINAL). Prescreve-se apenas o vencido AINDA NAO prescrito, limitado ao saldo vigente.
+        var jaPrescrito = _lancamentos
+            .Where(l => l.Tipo == TipoLancamentoBancoHoras.Prescricao)
+            .Sum(l => l.Minutos);
+
+        var vencidosNaoPrescritos = creditosVencidos - jaPrescrito;
+        var aPrescrever = Math.Min(vencidosNaoPrescritos, SaldoMinutos);
         if (aPrescrever <= 0)
         {
             return 0;
-        }
-
-        var referencia = $"prescricao:{limiteData:yyyy-MM-dd}";
-        if (_lancamentos.Any(l => string.Equals(l.Referencia, referencia, StringComparison.Ordinal)))
-        {
-            return 0; // Idempotente: prescricao deste limite ja aplicada.
         }
 
         RegistrarLancamento(TipoLancamentoBancoHoras.Prescricao, aPrescrever, hoje, referencia, "Prescricao de creditos nao compensados na janela.");

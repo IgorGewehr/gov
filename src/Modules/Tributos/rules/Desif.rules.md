@@ -23,21 +23,26 @@ integrationEventsConsumed:
   Lançamentos Contábeis (sob demanda). Implementamos a entrega do **Módulo 2** (constitui o crédito).
 - **Subtítulo (`SubtituloDesif`)** — Registro 0430: conta/subtítulo **COSIF**, código de tributação
   DES-IF (Anexo 6), item LC 116 correlato, receita tributável (base), alíquota e ISSQN devido do subtítulo.
-- **ISSQN a recolher** — Registro 0440: devido bruto MENOS deduções da receita, incentivos autorizados em
-  lei e depósitos judiciais (CTN art. 151, II — exigibilidade suspensa da parcela depositada).
+- **ISSQN a recolher** — Registro 0440: apurado na ORDEM da regra-matriz do ISS — as **deduções da receita**
+  reduzem a **BASE DE CÁLCULO** (antes da alíquota), e só os **incentivos** autorizados em lei e os
+  **depósitos judiciais** (CTN art. 151, II — exigibilidade suspensa da parcela depositada) abatem o
+  **imposto** devido. O ISS da dedução de receita é a alíquota EFETIVA da declaração (devido bruto ÷ receita
+  tributável) aplicada à parcela deduzida — abater o valor cheio da dedução do imposto sub-arrecada a
+  parcela [1 − alíquota].
 
 ---
 
 ## 2. Comandos (escrita)
 
 - **`EntregarDesifCommand`** → abre a DES-IF (Módulo 2), escritura os subtítulos COSIF tributáveis,
-  aplica as deduções/incentivos/depósitos (Registro 0440), apura o **ISSQN a recolher** e CONSTITUI o
-  crédito tributário do ISS (`Lancamento` `TipoTributo.Iss` — CTN art. 150, lançamento por homologação).
-  Recusa retificação implícita (já há DES-IF vigente na competência → retificar a existente). Retorna o
-  resumo (receita tributável, devido bruto, a recolher) + o `LancamentoId`.
+  aplica as deduções de receita na BASE e os incentivos/depósitos no IMPOSTO (Registro 0440), apura o
+  **ISSQN a recolher** e CONSTITUI o crédito tributário do ISS (`Lancamento` `TipoTributo.Iss` — CTN
+  art. 150, lançamento por homologação). Recusa retificação implícita (já há DES-IF vigente na competência →
+  retificar a existente). Retorna o resumo (receita tributável, devido bruto, a recolher) + o `LancamentoId`.
 
-> Invariantes: alíquota ∈ [0,100]; deduções+incentivos+depósitos **não excedem** o devido bruto
-> (fail-closed contra base negativa); nenhuma alíquota hardcoded (lei municipal).
+> Invariantes: alíquota ∈ [0,100]; o ISS da dedução de receita (pela alíquota efetiva) somado a
+> incentivos+depósitos **não excede** o devido bruto (fail-closed contra imposto negativo); nenhuma
+> alíquota hardcoded (lei municipal).
 
 ---
 

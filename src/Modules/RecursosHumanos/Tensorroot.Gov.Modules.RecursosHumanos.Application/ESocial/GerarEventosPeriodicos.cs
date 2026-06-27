@@ -48,16 +48,21 @@ public sealed class GerarRemuneracaoFolhaHandler(
                 continue;
             }
 
-            // itensRemun: somado por rubrica (codigo). A folha e a fonte de verdade.
+            // itensRemun (S-1.3): a folha e a fonte de verdade. Agrupa por (codigo da rubrica, TIPO), nunca
+            // so por codigo: um provento e um desconto JAMAIS colapsam num mesmo vrRubr com sinais somados
+            // (correcao P1-4 da AUDITORIA-FINAL — "nao somar desconto como provento"). No leiaute, vrRubr e
+            // SEMPRE positivo; o sinal (provento +/desconto −) vem do tpRubr da rubrica na tabela S-1010
+            // (codRubr+ideTabRubr), nao de um campo de itensRemun. indApurIR=0 (REGRA do MOS: IR apurado no
+            // proprio eSocial); o valor 1 e a EXCECAO (IR apurado fora, via EFD-Reinf) — nao se aplica aqui.
+            const int IndApurIrNoESocial = 0;
             var verbas = grupoServidor
-                .GroupBy(e => e.Rubrica.Codigo)
+                .GroupBy(e => new { e.Rubrica.Codigo, e.Tipo })
                 .Select(g => new ItemVerba(
-                    CodRubr: g.Key,
+                    CodRubr: g.Key.Codigo,
                     IdeTabRubr: p.IdeTabRubricas,
                     QtdRubr: 1m,
                     VrRubr: g.Sum(e => e.Valor),
-                    // // TODO(validar-oficial): indApurIR vem da incidencia IRRF da rubrica (Tabela 21).
-                    IndApurIr: 0))
+                    IndApurIr: IndApurIrNoESocial))
                 .ToList();
 
             var insumo = new InsumoS1200(

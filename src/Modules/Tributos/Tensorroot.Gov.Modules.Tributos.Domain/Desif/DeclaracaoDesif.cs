@@ -116,7 +116,7 @@ public sealed class DeclaracaoDesif : AggregateRoot<DeclaracaoDesifId>, IMustHav
     /// <summary>ISSQN devido BRUTO (Σ por subtítulo, base × alíquota) — antes das deduções (R$).</summary>
     public ValorMonetario IssqnDevidoBruto { get; private set; } = default!;
 
-    /// <summary>Deduções da receita declarada (Registro 0440, R$) — reduzem o ISSQN a recolher.</summary>
+    /// <summary>Deduções da receita declarada (Registro 0440, R$) — reduzem a BASE DE CÁLCULO (antes da alíquota), não o imposto.</summary>
     public ValorMonetario DeducoesReceita { get; private set; } = default!;
 
     /// <summary>Incentivos fiscais autorizados em lei (Registro 0440, R$).</summary>
@@ -198,17 +198,18 @@ public sealed class DeclaracaoDesif : AggregateRoot<DeclaracaoDesifId>, IMustHav
     }
 
     /// <summary>
-    /// ENTREGA (transmite) a DES-IF: aplica as deduções legais (Registro 0440 — deduções da receita
-    /// declarada, incentivos autorizados em lei e depósitos judiciais), apura o ISSQN A RECOLHER líquido,
-    /// fecha a declaração e constitui o crédito por homologação (CTN art. 150). Emite o evento com o
-    /// ISSQN a recolher, que dispara o lançamento a jusante.
+    /// ENTREGA (transmite) a DES-IF: aplica as deduções legais (Registro 0440) na ordem correta da regra do
+    /// ISS — as deduções da receita declarada reduzem a BASE DE CÁLCULO (antes da alíquota), enquanto os
+    /// incentivos autorizados em lei e os depósitos judiciais abatem o IMPOSTO devido —, apura o ISSQN A
+    /// RECOLHER líquido, fecha a declaração e constitui o crédito por homologação (CTN art. 150). Emite o
+    /// evento com o ISSQN a recolher, que dispara o lançamento a jusante.
     /// </summary>
-    /// <param name="deducoesReceita">Deduções da receita declarada (R$).</param>
-    /// <param name="incentivosFiscais">Incentivos fiscais autorizados em lei (R$).</param>
-    /// <param name="depositosJudiciais">Depósitos judiciais — suspendem a exigibilidade (R$).</param>
+    /// <param name="deducoesReceita">Deduções da RECEITA declarada (R$) — reduzem a base antes da alíquota.</param>
+    /// <param name="incentivosFiscais">Incentivos fiscais autorizados em lei (R$) — abatem o imposto.</param>
+    /// <param name="depositosJudiciais">Depósitos judiciais — suspendem a exigibilidade (R$) — abatem o imposto.</param>
     /// <param name="dataEntrega">Data da entrega (data do fato — "hoje" administrativo).</param>
     /// <exception cref="InvalidOperationException">Se não estiver em elaboração ou estiver vazia.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Se as deduções totais excederem o ISSQN devido bruto.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Se o ISS da dedução de receita mais incentivos/depósitos exceder o ISSQN devido bruto.</exception>
     public void Entregar(
         ValorMonetario deducoesReceita,
         ValorMonetario incentivosFiscais,
@@ -228,22 +229,34 @@ public sealed class DeclaracaoDesif : AggregateRoot<DeclaracaoDesifId>, IMustHav
             throw new InvalidOperationException("Não é possível entregar uma DES-IF sem subtítulos escriturados.");
         }
 
-        // O ISSQN A RECOLHER é o devido bruto menos deduções/incentivos/depósitos (Registro 0440). As
-        // deduções nunca podem exceder o imposto devido (não há "crédito negativo" de ISSQN a recolher):
-        // fail-closed contra leiaute inconsistente que geraria base negativa (CLAUDE.md §7).
-        var totalAbatimentos = deducoesReceita.Valor + incentivosFiscais.Valor + depositosJudiciais.Valor;
-        if (totalAbatimentos > IssqnDevidoBruto.Valor)
+        // Apuração do ISSQN A RECOLHER (Registro 0440), na ORDEM correta da regra-matriz do ISS:
+        //   1) DEDUÇÕES DA RECEITA reduzem a BASE DE CÁLCULO (Reg. 0440, campos de dedução da receita) ANTES
+        //      da alíquota — elas NÃO abatem o imposto diretamente. O efeito no ISS é a alíquota aplicada
+        //      sobre a parcela de receita deduzida, e não o valor cheio da dedução (do contrário o município
+        //      sub-arrecada a parcela [1 − alíquota] — correção P1-2 da AUDITORIA-FINAL).
+        //   2) INCENTIVOS autorizados em lei e DEPÓSITOS judiciais (CTN art. 151, II) abatem o IMPOSTO devido.
+        // Como o devido bruto é Σ(base_subtítulo × alíquota_subtítulo) com alíquotas possivelmente distintas,
+        // a redução de base é convertida em ISS pela ALÍQUOTA EFETIVA da declaração (devido bruto ÷ receita
+        // tributável), preservando a equivalência base→imposto sem hardcode de alíquota (CLAUDE.md §7/§16).
+        var issSobreDeducaoReceita = ReceitaTributavelTotal.Valor > 0m
+            ? decimal.Round(deducoesReceita.Valor * IssqnDevidoBruto.Valor / ReceitaTributavelTotal.Valor, 2, MidpointRounding.AwayFromZero)
+            : 0m;
+
+        // Os abatimentos efetivos do imposto nunca podem exceder o devido bruto (não há "crédito negativo"
+        // de ISSQN a recolher): fail-closed contra leiaute inconsistente que geraria imposto negativo.
+        var abatimentoImposto = issSobreDeducaoReceita + incentivosFiscais.Valor + depositosJudiciais.Valor;
+        if (abatimentoImposto > IssqnDevidoBruto.Valor)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(deducoesReceita),
-                totalAbatimentos,
-                $"As deduções/incentivos/depósitos ({totalAbatimentos:0.00}) não podem exceder o ISSQN devido bruto ({IssqnDevidoBruto.Valor:0.00}).");
+                abatimentoImposto,
+                $"O ISS da dedução de receita mais incentivos/depósitos ({abatimentoImposto:0.00}) não pode exceder o ISSQN devido bruto ({IssqnDevidoBruto.Valor:0.00}).");
         }
 
         DeducoesReceita = deducoesReceita;
         IncentivosFiscais = incentivosFiscais;
         DepositosJudiciais = depositosJudiciais;
-        IssqnARecolher = ValorMonetario.De(IssqnDevidoBruto.Valor - totalAbatimentos);
+        IssqnARecolher = ValorMonetario.De(IssqnDevidoBruto.Valor - abatimentoImposto);
         Situacao = SituacaoDesif.Entregue;
         DataEntrega = dataEntrega;
         RaiseDomainEvent(new DeclaracaoDesifEntregue(Id, TenantId, ContribuinteId, IssqnARecolher.Valor));

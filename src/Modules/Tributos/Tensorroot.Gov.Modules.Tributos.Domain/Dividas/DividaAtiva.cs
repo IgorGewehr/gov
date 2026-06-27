@@ -19,31 +19,6 @@ public readonly record struct DividaAtivaId(Guid Value)
     public override string ToString() => Value.ToString();
 }
 
-/// <summary>Situação (estado) da Dívida Ativa.</summary>
-public enum SituacaoDividaAtiva
-{
-    /// <summary>Inscrita em Dívida Ativa.</summary>
-    Inscrita = 1,
-
-    /// <summary>Com Certidão de Dívida Ativa (CDA) emitida.</summary>
-    CdaEmitida = 2,
-
-    /// <summary>Protestada em cartório.</summary>
-    Protestada = 3,
-
-    /// <summary>Em execução fiscal (Lei 6.830/80).</summary>
-    EmExecucaoFiscal = 4,
-
-    /// <summary>Parcelada (REFIS) — exigibilidade suspensa.</summary>
-    Parcelada = 5,
-
-    /// <summary>Quitada.</summary>
-    Quitada = 6,
-
-    /// <summary>Cancelada.</summary>
-    Cancelada = 7,
-}
-
 /// <summary>
 /// Crédito tributário inscrito em Dívida Ativa: título exigível com prazo prescricional de 5 anos a
 /// partir da CONSTITUIÇÃO DEFINITIVA (CTN art. 174), passível de CDA (LEF art. 2º §5º), protesto
@@ -151,6 +126,16 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// <summary>Situação atual.</summary>
     public SituacaoDividaAtiva Situacao { get; private set; }
 
+    /// <summary>
+    /// Execução fiscal GARANTIDA por penhora/depósito suficiente: exigibilidade afastada para certidão (CTN
+    /// art. 206; Súmula 451-STJ) → habilita CPEN, não Positiva. Flag à parte de <see cref="Situacao"/> (não
+    /// suspende a dívida — a execução prossegue garantida). Data em <see cref="DataGarantiaPenhora"/>.
+    /// </summary>
+    public bool Garantida { get; private set; }
+
+    /// <summary>Data da efetivação da garantia/penhora, quando registrada (CTN art. 206).</summary>
+    public DateOnly? DataGarantiaPenhora { get; private set; }
+
     /// <summary>Remessas de protesto geradas (atos auditáveis ao CRA/cartório).</summary>
     public IReadOnlyCollection<RemessaProtesto> RemessasProtesto => _remessasProtesto.AsReadOnly();
 
@@ -164,9 +149,9 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     public DateOnly DataPrescricao => TermoInicialPrescricao.AddYears(AnosPrescricaoParametrizado);
 
     /// <summary>
-    /// Inscreve um crédito vencido em Dívida Ativa com TODOS os dados do crédito exigidos pela CDA
-    /// (origem/natureza, fundamento legal, valor originário, regra de encargos), o marco de constituição
-    /// definitiva (início da prescrição) e o número sequencial da inscrição.
+    /// Inscreve um crédito vencido em Dívida Ativa com os dados exigidos pela CDA (origem/natureza, fundamento
+    /// legal, valor originário, regra de encargos), o marco de constituição definitiva (início da prescrição)
+    /// e o número sequencial da inscrição.
     /// </summary>
     /// <param name="tenantId">Tenant dono do registro.</param>
     /// <param name="contribuinteId">Contribuinte devedor.</param>
@@ -244,9 +229,9 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
         => RegraEncargos.Apurar(ValorOriginario, VencimentoOrigem, dataBaseCalculo);
 
     /// <summary>
-    /// Emite a Certidão de Dívida Ativa (CDA) com os requisitos legais obrigatórios (LEF art. 2º §5º
-    /// I–VI / CTN art. 202). RECUSA se faltar requisito (a própria <see cref="CertidaoDividaAtiva"/> valida).
-    /// O número da CDA fica registrado no agregado e a CDA válida é retornada para impressão/exportação.
+    /// Emite a Certidão de Dívida Ativa (CDA) com os requisitos legais obrigatórios (LEF art. 2º §5º I–VI /
+    /// CTN art. 202) — RECUSA se faltar requisito (<see cref="CertidaoDividaAtiva"/> valida). Registra o
+    /// número da CDA no agregado e retorna a CDA válida para impressão/exportação.
     /// </summary>
     /// <param name="numeroCda">Número da CDA.</param>
     /// <param name="nomeDevedor">Nome do devedor (inc. I).</param>
@@ -365,8 +350,8 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Ajuíza a execução fiscal (Lei 6.830/80) — GANCHO de saída: o ERP gera/exporta a CDA + petição; o
-    /// ajuizamento ocorre no PJe/eproc-RS (integração de saída é decisão de produto). Apenas muda o estado.
+    /// Ajuíza a execução fiscal (Lei 6.830/80) — GANCHO de saída: o ERP gera/exporta a CDA + petição (o
+    /// ajuizamento ocorre no PJe/eproc-RS, decisão de produto); apenas muda o estado para EmExecucaoFiscal.
     /// </summary>
     /// <param name="dataReferencia">Data de referência do ajuizamento (data do fato — afere a prescrição).</param>
     /// <exception cref="InvalidOperationException">Se não houver CDA emitida/protestada ou a dívida não estiver exigível.</exception>
@@ -385,8 +370,34 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     }
 
     /// <summary>
+    /// Registra a GARANTIA da execução fiscal por penhora/depósito suficiente (CTN art. 206; Súmula 451-STJ):
+    /// afasta a exigibilidade para fins de certidão (habilita CPEN, não Positiva) sem extinguir nem suspender a
+    /// dívida — a execução prossegue garantida. Exige execução fiscal e crédito não prescrito (ver rules.md).
+    /// </summary>
+    /// <param name="dataPenhora">Data da efetivação da penhora/garantia (data do fato — afere a prescrição).</param>
+    /// <exception cref="InvalidOperationException">Se a dívida não estiver em execução fiscal.</exception>
+    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita na data informada (CTN art. 174).</exception>
+    public void RegistrarGarantiaPenhora(DateOnly dataPenhora)
+    {
+        if (Situacao != SituacaoDividaAtiva.EmExecucaoFiscal)
+        {
+            throw new InvalidOperationException($"A garantia por penhora só se registra em execução fiscal. Situação atual: {Situacao}.");
+        }
+
+        // Fail-closed: a prescrição extingue o crédito (CTN art. 156, V); penhora não regulariza dívida prescrita.
+        if (EstaPrescrita(dataPenhora))
+        {
+            throw new DividaAtivaPrescritaException(Id, DataPrescricao, dataPenhora);
+        }
+
+        Garantida = true;
+        DataGarantiaPenhora = dataPenhora;
+        RaiseDomainEvent(new GarantiaPenhoraRegistrada(Id, TenantId, dataPenhora));
+    }
+
+    /// <summary>
     /// Firma um parcelamento (REFIS): suspende a exigibilidade e INTERROMPE a prescrição (CTN art. 174 p.ú.
-    /// IV — reconhecimento do débito). O prazo prescricional reinicia da data do reconhecimento.
+    /// IV — reconhecimento do débito), reiniciando o prazo da data do reconhecimento.
     /// </summary>
     /// <param name="dataReconhecimento">Data do reconhecimento/parcelamento (interrompe a prescrição).</param>
     /// <exception cref="InvalidOperationException">Se a dívida não estiver exigível.</exception>
@@ -401,8 +412,8 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Registra a interrupção da prescrição (CTN art. 174 p.ú.: despacho que ordena a citação — retroage
-    /// ao ajuizamento; protesto judicial; mora; reconhecimento do débito). Reinicia o quinquênio.
+    /// Registra a interrupção da prescrição (CTN art. 174 p.ú.: despacho de citação — retroage ao
+    /// ajuizamento; protesto judicial; mora; reconhecimento do débito), reiniciando o quinquênio.
     /// </summary>
     /// <param name="dataInterrupcao">Data do marco interruptivo (data do fato).</param>
     /// <exception cref="InvalidOperationException">Se a dívida já estiver encerrada.</exception>
@@ -431,9 +442,8 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     }
 
     /// <summary>
-    /// Indica se a dívida está prescrita na data informada (CTN art. 174). Considera o termo inicial
-    /// efetivo (constituição definitiva ou última interrupção). Dívida suspensa (parcelada), quitada ou
-    /// cancelada não prescreve.
+    /// Indica se a dívida está prescrita na data informada (CTN art. 174), pelo termo inicial efetivo
+    /// (constituição definitiva ou última interrupção). Dívida suspensa/quitada/cancelada não prescreve.
     /// </summary>
     /// <param name="referencia">Data de referência (informada — sem relógio no domínio).</param>
     /// <returns><c>true</c> se prescrita.</returns>

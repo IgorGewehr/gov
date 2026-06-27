@@ -74,6 +74,12 @@ public sealed record RetornoProtestoProcessado(DividaAtivaId DividaAtivaId, Guid
 /// <param name="NumeroCda">Número da CDA, quando emitida.</param>
 public sealed record ExecucaoFiscalAjuizada(DividaAtivaId DividaAtivaId, Guid TenantId, string? NumeroCda) : IDomainEvent;
 
+/// <summary>Garantia da execução fiscal por penhora/depósito (CTN art. 206; Súmula 451-STJ) — habilita CPEN.</summary>
+/// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="DataPenhora">Data da efetivação da penhora/garantia.</param>
+public sealed record GarantiaPenhoraRegistrada(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataPenhora) : IDomainEvent;
+
 /// <summary>Prescrição interrompida (CTN art. 174 p.ú.) — o quinquênio reinicia.</summary>
 /// <param name="DividaAtivaId">Identificador da dívida ativa.</param>
 /// <param name="TenantId">Tenant dono do registro.</param>

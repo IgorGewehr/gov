@@ -54,18 +54,20 @@ public enum TipoAtoAdmissao
 }
 
 /// <summary>
-/// Codigo do regime juridico de trabalho (campo CD_REGIME_JURIDICO — Tabela 5 do leiaute SIAPES). O
-/// caractere transmitido e' obtido por <see cref="CodigosSiapes.Codigo(RegimeJuridicoSiapes)"/>.
+/// Codigo do regime juridico de trabalho (campo 05 CD_REGIME_JURIDICO — Tabela 5 do leiaute SIAPES). No
+/// "Formato Basico" (Tabela 14) o campo e NUMERICO de 2 bytes: emite-se o valor numerico do enum (correcao
+/// P1-7). O caractere semantico C/E/A (Tabela 5) permanece disponivel via
+/// <see cref="CodigosSiapes.Codigo(RegimeJuridicoSiapes)"/> para exibicao/relatorios.
 /// </summary>
 public enum RegimeJuridicoSiapes
 {
-    /// <summary>C - Celetista.</summary>
+    /// <summary>01 (C) - Celetista.</summary>
     Celetista = 1,
 
-    /// <summary>E - Estatutario.</summary>
+    /// <summary>02 (E) - Estatutario.</summary>
     Estatutario = 2,
 
-    /// <summary>A - Administrativo.</summary>
+    /// <summary>03 (A) - Administrativo.</summary>
     Administrativo = 3,
 }
 

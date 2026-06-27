@@ -56,28 +56,55 @@ public static class LeiauteSiapes
         return construtor.ToString();
     }
 
-    // Linha de ato ("Formato Basico" do leiaute, campos posicionais ate a data de nascimento — nucleo
-    // PoC do leiaute 57). Datas DDMMAAAA; texto a esquerda; numerico a direita preenchido com zeros.
+    // Linha de ato — "Formato Basico" do SIAPES (TCE-RS, Tabela 14 do leiaute "Consist57"). O arquivo e de
+    // LARGURA FIXA por posicao: TODOS os campos 01..25 do nucleo sao emitidos NA ORDEM e LARGURA EXATAS do
+    // leiaute oficial, ainda que vazios — campos posicionais intermediarios omitidos deslocam todos os
+    // offsets seguintes e o arquivo e rejeitado por desalinhamento (correcao P1-7 da AUDITORIA-FINAL).
+    // Convencao oficial: alfanumerico/caracter a esquerda preenchido com brancos; data DDMMAAAA (brancos se
+    // ausente); numerico a direita com zeros quando se aplica e e informado, BRANCOS quando o campo nao se
+    // aplica ao titulo/movimento. Posicoes (Inicio-Fim): 01[1-50] 02[51] 03[52-57] 04[58-59] 05[60-61]
+    // 06[62-63] 07[64-65] 08[66-68] 09[69-74] 10[75-82] 11[83-90] 12[91-98] 13[99-101] 14[102-106] 15[107]
+    // 16[108-142] 17[143-212] 18[213-247] 19[248-317] 20[318-367] 21[368-437] 22[438-452] 23[453-467]
+    // 24[468-482] 25[483-490]. // TODO(M10): campos 26..57 (concurso/fundamentacao/disciplina) e tabelas de
+    // dominio proprias do TCE-RS; o nucleo 01..25 cobre o ato de admissao do PoC.
     private static string MontarLinhaAto(RemessaSicapPessoal remessa, AtoAdmissaoSicap ato)
     {
         var construtor = new StringBuilder();
-        construtor.Append(TextoEsquerda(ato.IdentificadorAto, 50));                                       // 01 IDENTIFICADOR_ATO (50)
-        construtor.Append(CodigosSiapes.Codigo(MovimentoSiapes.Insercao));                                 // 02 CD_MOVIMENTO (1) — "I"
-        construtor.Append(NumericoEsquerda(remessa.CodigoOrgao, 6));                                       // 03 CD_ORGAO (6)
-        construtor.Append(NumericoEsquerda((int)ato.TipoAto, 2));                                          // 04 CD_TIPO_ATO (2)
-        construtor.Append(ato.Regime.Codigo());                                                            // 05 CD_REGIME_JURIDICO (1 util)
-        construtor.Append(ato.MotivoExtincao is { } motivo ? NumericoEsquerda((int)motivo, 2) : Brancos(2)); // 07 CD_EXTINCAO (2)
-        construtor.Append(DataOuBrancos(ato.DataHistorica));                                               // 10 DATA_HISTORICA (8)
-        construtor.Append(DataOuBrancos(ato.DataTermino));                                                 // 11 DATA_TERMINO (8)
-        construtor.Append(ato.DataAto.ToString(FormatoData, CultureInfo.InvariantCulture));                // 12 DATA_ATO (8)
-        construtor.Append(NumericoEsquerda(ato.CargaHorariaSemanal, 3));                                   // 13 CARGA_HORARIA (3)
-        construtor.Append(ato.ClassificacaoConcurso is { } cls ? NumericoEsquerda(cls, 5) : Brancos(5));   // 14 CLASSIFICACAO (5)
-        construtor.Append(TextoEsquerda(ato.DescricaoCargo, 35));                                          // 16 DS_CARGO (35)
-        construtor.Append(TextoEsquerda(ato.Nome, 70));                                                    // 21 NOME (70)
-        construtor.Append(TextoEsquerda(Numeros(ato.Cpf), 15));                                            // 23 CPF (15)
-        construtor.Append(ato.DataNascimento.ToString(FormatoData, CultureInfo.InvariantCulture));         // 25 DATA_NASCIMENTO (8)
+        construtor.Append(TextoEsquerda(ato.IdentificadorAto, 50));                                       // 01 IDENTIFICADOR_ATO  (C,50)
+        construtor.Append(CodigosSiapes.Codigo(MovimentoSiapes.Insercao));                                 // 02 CD_MOVIMENTO       (C,1) "I"
+        construtor.Append(NumericoEsquerda(remessa.CodigoOrgao, 6));                                       // 03 CD_ORGAO           (N,6)
+        construtor.Append(NumericoEsquerda((int)ato.TipoAto, 2));                                          // 04 CD_TIPO_ATO        (N,2)
+        construtor.Append(NumericoEsquerda((int)ato.Regime, 2));                                           // 05 CD_REGIME_JURIDICO (N,2)
+        construtor.Append(Brancos(2));                                                                     // 06 CD_REGIME_JURIDICO_ANT (N,2) n/a PoC
+        construtor.Append(ato.MotivoExtincao is { } motivo ? NumericoEsquerda((int)motivo, 2) : Brancos(2)); // 07 CD_EXTINCAO     (N,2)
+        construtor.Append(Brancos(3));                                                                     // 08 CD_MUNICIPIO_MAE  (N,3) n/a PoC
+        construtor.Append(Brancos(6));                                                                     // 09 CD_ORGAO_ANT      (N,6) n/a PoC
+        construtor.Append(DataOuBrancos(ato.DataHistorica));                                               // 10 DATA_HISTORICA    (D,8)
+        construtor.Append(DataOuBrancos(ato.DataTermino));                                                 // 11 DATA_TERMINO       (D,8)
+        construtor.Append(ato.DataAto.ToString(FormatoData, CultureInfo.InvariantCulture));                // 12 DATA_ATO           (D,8)
+        construtor.Append(NumericoEsquerda(ato.CargaHorariaSemanal, 3));                                   // 13 CARGA_HORARIA      (N,3)
+        construtor.Append(ato.ClassificacaoConcurso is { } cls ? NumericoEsquerda(cls, 5) : Brancos(5));   // 14 CLASSIFICACAO      (N,5)
+        construtor.Append(Brancos(1));                                                                     // 15 CONCURSADO (S/N)   (C,1) n/a PoC
+        construtor.Append(TextoEsquerda(ato.DescricaoCargo, 35));                                          // 16 DS_CARGO           (C,35)
+        construtor.Append(Brancos(70));                                                                    // 17 ESPECIALIZACAO_PROF (C,70) n/a PoC
+        construtor.Append(Brancos(35));                                                                    // 18 DS_CARGO_ANTERIOR  (C,35) n/a PoC
+        construtor.Append(Brancos(70));                                                                    // 19 ESPECIALIZACAO_ANT (C,70) n/a PoC
+        construtor.Append(TextoEsquerda(IdentificadorPessoa(ato), 50));                                    // 20 IDENTIFICADOR_PESSOA (C,50)
+        construtor.Append(TextoEsquerda(ato.Nome, 70));                                                    // 21 NOME              (C,70)
+        construtor.Append(Brancos(15));                                                                    // 22 RG                (C,15) n/a PoC
+        construtor.Append(TextoEsquerda(Numeros(ato.Cpf), 15));                                            // 23 CPF               (C,15)
+        construtor.Append(Brancos(15));                                                                    // 24 TITULO_ELEITOR    (C,15) n/a PoC
+        construtor.Append(ato.DataNascimento.ToString(FormatoData, CultureInfo.InvariantCulture));         // 25 DATA_NASCIMENTO    (D,8)
         return construtor.ToString();
     }
+
+    // IDENTIFICADOR_PESSOA (campo 20): chave unica do servidor no sistema originador. Usa o ServidorId
+    // interno (GUID) quando o ato tem vinculo de rastreio; senao recai no identificador do ato (matricula),
+    // garantindo o campo nao-nulo exigido para os movimentos I/D/U/P/A.
+    private static string IdentificadorPessoa(AtoAdmissaoSicap ato)
+        => ato.ServidorId is { } servidorId
+            ? servidorId.Value.ToString()
+            : ato.IdentificadorAto;
 
     private static string DataOuBrancos(DateOnly? data)
         => data is { } d ? d.ToString(FormatoData, CultureInfo.InvariantCulture) : Brancos(8);
@@ -88,8 +115,22 @@ public static class LeiauteSiapes
         return texto.PadRight(tamanho);
     }
 
+    // Numerico do leiaute: alinhado a direita, preenchido com zeros. FAIL-CLOSED contra overflow/sinal
+    // (correcao P2-6): se o valor nao couber na largura, truncar pegaria os digitos INFERIORES e emitiria
+    // um codigo ERRADO (ex.: outro orgao) silenciosamente; negativo corromperia o campo com o sinal "-".
+    // Rejeita-se a geracao do arquivo — desalinhamento/codigo trocado e rejeicao garantida pelo TCE-RS.
     private static string NumericoEsquerda(int valor, int tamanho)
-        => valor.ToString(CultureInfo.InvariantCulture).PadLeft(tamanho, '0')[^tamanho..];
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(valor);
+        var digitos = valor.ToString(CultureInfo.InvariantCulture);
+        if (digitos.Length > tamanho)
+        {
+            throw new InvalidOperationException(
+                $"Valor numerico {valor} excede a largura de {tamanho} posicoes do campo SIAPES (overflow do leiaute posicional).");
+        }
+
+        return digitos.PadLeft(tamanho, '0');
+    }
 
     private static string Brancos(int tamanho) => new(' ', tamanho);
 

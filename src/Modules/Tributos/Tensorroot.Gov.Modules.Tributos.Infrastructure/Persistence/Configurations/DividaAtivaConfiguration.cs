@@ -45,6 +45,10 @@ public sealed class DividaAtivaConfiguration : IEntityTypeConfiguration<DividaAt
         builder.Property(divida => divida.NumeroCda).HasMaxLength(40);
         builder.Property(divida => divida.Situacao).HasConversion<string>().HasMaxLength(30);
 
+        // Garantia da execução fiscal por penhora (CTN art. 206; Súmula 451-STJ) — habilita CPEN (P2-7).
+        builder.Property(divida => divida.Garantida);
+        builder.Property(divida => divida.DataGarantiaPenhora);
+
         // Regra de encargos (multa/juros/correção) parametrizável — Owned (mesma tabela).
         builder.OwnsOne(divida => divida.RegraEncargos, encargos =>
         {

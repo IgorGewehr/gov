@@ -26,16 +26,23 @@ public static class MapeamentoSiapes
     };
 
     /// <summary>
-    /// Deriva o REGIME JURIDICO (CD_REGIME_JURIDICO — Tabela 5) a partir do regime previdenciario:
-    /// RPPS (efetivo estatutario) => Estatutario; RGPS => Celetista. Comissionados sem vinculo celetista
-    /// devem ser ajustados pelo operador para Administrativo quando for o caso.
+    /// Deriva o REGIME JURIDICO (CD_REGIME_JURIDICO — Tabela 5 do SIAPES) a partir do TIPO DO CARGO, que e
+    /// o atributo proprio do vinculo — NAO do regime previdenciario (correcao P1-6 da AUDITORIA-FINAL): o
+    /// regime juridico (estatutario/celetista/administrativo) e o regime previdenciario (RPPS/RGPS) sao
+    /// dimensoes independentes — um efetivo estatutario num municipio SEM RPPS proprio recolhe ao RGPS e
+    /// ainda assim e ESTATUTARIO. Mapeamento: efetivo => Estatutario (cargo de provimento efetivo, RJU);
+    /// comissionado => Administrativo (provimento em comissao); temporario => Administrativo (contratacao
+    /// administrativa por prazo determinado — CF art. 37, IX). O regime CELETISTA (emprego publico CLT) nao
+    /// decorre de nenhum <see cref="TipoCargo"/> modelado; quando aplicavel, o operador o informa via
+    /// override (ex.: empregado de fundacao/empresa publica).
     /// </summary>
-    /// <param name="regime">Regime previdenciario do servidor.</param>
+    /// <param name="tipoCargo">Tipo do cargo provido pelo servidor.</param>
     /// <returns>Regime juridico SIAPES correspondente (padrao).</returns>
-    public static RegimeJuridicoSiapes RegimePadraoDe(RegimePrevidenciario regime) => regime switch
+    public static RegimeJuridicoSiapes RegimePadraoDe(TipoCargo tipoCargo) => tipoCargo switch
     {
-        RegimePrevidenciario.Rpps => RegimeJuridicoSiapes.Estatutario,
-        RegimePrevidenciario.Rgps => RegimeJuridicoSiapes.Celetista,
+        TipoCargo.Efetivo => RegimeJuridicoSiapes.Estatutario,
+        TipoCargo.Comissionado => RegimeJuridicoSiapes.Administrativo,
+        TipoCargo.Temporario => RegimeJuridicoSiapes.Administrativo,
         _ => RegimeJuridicoSiapes.Administrativo,
     };
 }

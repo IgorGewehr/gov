@@ -9,10 +9,10 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Application.SicapPessoal;
 
 /// <summary>
 /// Acrescenta um ato de admissao a uma remessa SICAP-AP/SIAPES aberta, preenchido AUTOMATICAMENTE a
-/// partir de um servidor existente (CPF/nome/nascimento/cargo/regime/datas). O titulo e o regime
-/// juridico sao derivados do tipo de cargo/regime previdenciario, podendo ser sobrescritos quando o
-/// caso concreto exigir (ex.: admissao por decisao judicial). O identificador do ato (IDENTIFICADOR_ATO)
-/// usa a matricula do servidor.
+/// partir de um servidor existente (CPF/nome/nascimento/cargo/datas). O titulo e o regime juridico sao
+/// derivados do TIPO DO CARGO (atributo proprio do vinculo, nao do regime previdenciario), podendo ser
+/// sobrescritos quando o caso concreto exigir (ex.: admissao por decisao judicial, emprego celetista).
+/// O identificador do ato (IDENTIFICADOR_ATO) usa a matricula do servidor.
 /// </summary>
 /// <param name="RemessaId">Remessa (aberta) destino.</param>
 /// <param name="ServidorId">Servidor de origem dos dados do ato.</param>
@@ -64,7 +64,8 @@ public sealed class AdicionarAtoDeServidorHandler(
             ?? throw new InvalidOperationException("Cargo do servidor nao encontrado.");
 
         var titulo = request.TituloOverride ?? MapeamentoSiapes.TituloPadraoDe(cargo.Tipo);
-        var regime = request.RegimeOverride ?? MapeamentoSiapes.RegimePadraoDe(servidor.Regime);
+        // Regime JURIDICO deriva do TIPO DO CARGO (atributo do vinculo), nao do regime previdenciario (P1-6).
+        var regime = request.RegimeOverride ?? MapeamentoSiapes.RegimePadraoDe(cargo.Tipo);
 
         // DATA_ATO = admissao/exercicio; DATA_HISTORICA = nomeacao (titulo concurso); extincao quando desligado.
         var dataAto = servidor.DataExercicio ?? servidor.DataNomeacao;

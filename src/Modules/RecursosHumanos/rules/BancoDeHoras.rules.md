@@ -20,7 +20,10 @@
 - **BH-2:** lançamento é append-only (auditoria imutável — CLAUDE.md §4); estorno é novo lançamento contrário.
 - **BH-3:** débito de compensação não pode deixar o saldo negativo além do limite parametrizado por tenant.
 - **BH-4:** crédito não compensado prescreve ao fim da janela legal (6 meses / 1 ano), nunca antes.
-- **BH-5:** a prescrição é idempotente por competência — reexecutar não prescreve o mesmo crédito duas vezes.
+- **BH-5:** a prescrição é idempotente — reexecutar o **mesmo limite** não prescreve duas vezes, e cada
+  execução **desconta o já-prescrito** em execuções anteriores antes de calcular o montante a prescrever.
+  Assim, ao avançar o limite mês a mês (lançamentos de crédito originais nunca são removidos), um crédito
+  vencido nunca é prescrito mais de uma vez (só o vencido AINDA NÃO prescrito, limitado ao saldo vigente).
 
 ## Gancho com o ponto
 
