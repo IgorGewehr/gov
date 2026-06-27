@@ -1,6 +1,6 @@
 # ONDA 3 — Largura Operacional Restante (DESIGN implementação-pronto)
 
-> **Autoridade:** `docs/estudo/completude-modulos/PLANO-PROFUNDIDADE.md` (Onda 3, itens 12-16).
+> **Status:** Ondas 0–3 concluídas. Esta spec de design (Onda 3, itens 12-16) é auto-suficiente e permanece como referência do que foi implementado.
 > **Tese:** fechar o "impecável em tudo" — a largura operacional do dia a dia que ainda falta nos 5 setores, **reusando agressivamente** as entidades das Ondas 0-2.
 > **Regra de ouro do design:** operação local sem nenhuma credencial oficial (CLAUDE.md §8). Tudo que depende de RNDS/SI-PNI/HÓRUS/FNDE/INEP/eSocial/MDS/TCE fica **marcado e deferido para M10**.
 > **Restrições de arquitetura (CLAUDE.md):** domínio rico, multi-tenant (`IMustHaveTenant` + Global Query Filter), auditoria imutável, LGPD (dado sensível em Saúde/Assistência/menor), cross-module **só via `*.Contracts`** (Integration Events), 1 DbContext/schema por módulo, CQRS via MediatR, identificadores sem acento.

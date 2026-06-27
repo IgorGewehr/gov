@@ -101,12 +101,9 @@
     ]}
   ],
   "docs": [
-    { "t": "Plano-mestre (10 marcos · 48 workflows)", "p": "../planejamento/PLANO-MESTRE.md" },
-    { "t": "Modelo de Autorização Organizacional", "p": "../planejamento/MODELO-AUTORIZACAO-ORGANIZACIONAL.md" },
-    { "t": "Mapa de Prestação de Contas (TCE + União)", "p": "../planejamento/MAPA-PRESTACAO-CONTAS.md" },
-    { "t": "Benchmark Betha (paridade)", "p": "../planejamento/BENCHMARK-BETHA.md" },
-    { "t": "Diagnóstico — Estado Atual", "p": "../diagnostico/ESTADO-ATUAL.md" },
-    { "t": "Diagnóstico — Gaps e Roadmap", "p": "../diagnostico/GAP-E-ROADMAP.md" },
+    { "t": "Plano-mestre (10 marcos · 48 workflows)", "p": "../PLANO-MESTRE.md" },
+    { "t": "Modelo de Autorização Organizacional", "p": "../architecture/autorizacao/MODELO-AUTORIZACAO-ORGANIZACIONAL.md" },
+    { "t": "Prestação de Contas — inventário de geradores (TCE + União)", "p": "../REVISAO-HUMANA/tce-rs-integracao.md" },
     { "t": "Spec Contabilidade → MSC → TCE", "p": "../architecture/contabilidade-pcasp-tce.md" },
     { "t": "Oficial · PCASP (plano de contas)", "p": "../architecture/specs-oficiais/pcasp-plano-de-contas.md" },
     { "t": "Oficial · MCASP (eventos contábeis)", "p": "../architecture/specs-oficiais/mcasp-eventos-contabeis.md" },

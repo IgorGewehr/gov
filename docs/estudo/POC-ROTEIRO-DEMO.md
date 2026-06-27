@@ -3,8 +3,8 @@
 > **Objetivo:** roteiro **passo-a-passo** para uma PoC / prova de aderência pensada para **impressionar
 > uma comissão de recebimento** (banca técnica nomeada, Lei 14.133/2021 art. 17 §3º / 41 II). Cobre as
 > **duas trilhas que já funcionam fim-a-fim no código**: **Legislativa (Câmara)** e **Municipal (Executivo)**.
-> **Régua:** cruzado com `prova-de-conceito/PLAYBOOK-PROVA-DE-CONCEITO.md` (o que reprova / o que anula) e
-> `prova-de-conceito/AUTOAVALIACAO-POC.md` (prontidão honesta).
+> **Régua:** incorpora os critérios de "o que reprova / o que anula" e a prontidão honesta da PoC
+> (consolidados aqui); o estado real do projeto vive em `docs/progresso/progresso.json`.
 > **Regra de ouro da PoC (3 editais RS/SC/MG):** tudo demonstrado **tem de existir na build** (nativo/
 > parametrizável). Vedado "codar/ajustar durante a apresentação" (Riqueza §14.6.9; SEFAZ-MS §11.5.2.5; Mata §7.16).
 > **Honestidade:** este roteiro só lista o que está **provado em código** (endpoints + handlers + seed +

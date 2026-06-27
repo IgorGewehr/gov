@@ -32,7 +32,7 @@ Leitura: dos **42 itens CRÍTICOS**, **22 já têm paridade ✅**, **7 estão �
 
 ## 3. TABELA MESTRA DE GAPS POR ÁREA
 
-> Detalhe completo por cluster nos docs-fonte: `gap-incumbente-sapi/COMPRAS-PATRIMONIO-FROTA-PROTOCOLO.md` e o corpo desta consolidação. Abaixo, a visão mestra (CRÍTICOS e PARCIAIS em destaque; PÓS-POC sumarizados ao final de cada bloco).
+> Detalhe completo por cluster no corpo desta consolidação. Abaixo, a visão mestra (CRÍTICOS e PARCIAIS em destaque; PÓS-POC sumarizados ao final de cada bloco).
 
 ### 3.1 FISCAL / CONTÁBIL
 
@@ -109,7 +109,7 @@ Leitura: dos **42 itens CRÍTICOS**, **22 já têm paridade ✅**, **7 estão �
 
 ### 3.5 COMPRAS / LICITAÇÕES / PATRIMÔNIO / FROTA / PROTOCOLO
 
-> Fonte detalhada: `gap-incumbente-sapi/COMPRAS-PATRIMONIO-FROTA-PROTOCOLO.md`.
+> Detalhe deste cluster consolidado abaixo.
 
 | Funcionalidade SAPI | Status | Arquivo:linha | Crit-PoC | Esf | Cred? |
 |---|---|---|---|---|---|
@@ -188,6 +188,4 @@ PCASP + lançamentos manuais/automáticos por roteiro · Balancete · Encerramen
 
 ## 6. DOCS-FONTE
 
-- Cluster Compras/Patrimônio/Frota/Protocolo: `docs/estudo/gap-incumbente-sapi/COMPRAS-PATRIMONIO-FROTA-PROTOCOLO.md`
 - Lista priorizada/sequenciada de paridade-PoC: `docs/estudo/PARIDADE-POC.md`
-- Plano de profundidade (largura operacional): `docs/estudo/completude-modulos/PLANO-PROFUNDIDADE.md` (§7 incorpora estes gaps)

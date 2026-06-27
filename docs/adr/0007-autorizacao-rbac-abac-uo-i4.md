@@ -2,7 +2,7 @@
 
 - **Status:** Aceito
 - **Data:** 2026-06-22
-- **Fonte:** `docs/planejamento/MODELO-AUTORIZACAO-ORGANIZACIONAL.md`
+- **Fonte:** `docs/architecture/autorizacao/MODELO-AUTORIZACAO-ORGANIZACIONAL.md`
 
 ## Contexto
 

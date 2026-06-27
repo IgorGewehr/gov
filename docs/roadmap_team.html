@@ -95,7 +95,7 @@
           <b>🚀 Trilha de onboarding sugerida (antes da teoria):</b>
           <ol>
             <li><b>Rode o sistema local</b>: <code>dotnet build</code> + <code>dotnet test</code>; suba a API e o frontend; faça login e crie um registro (veja persistir e auditar).</li>
-            <li><b>Leia a constituição</b>: <code>CLAUDE.md</code> (as regras inegociáveis) e <code>docs/diagnostico/ESTADO-ATUAL.md</code>.</li>
+            <li><b>Leia a constituição</b>: <code>CLAUDE.md</code> (as regras inegociáveis) e <code>docs/progresso/progresso.json</code> (estado atual real do projeto).</li>
             <li><b>Estude os <span style="color:var(--red)">essenciais</span> da Parte II</b> (como NÓS fazemos) — é onde mora a complexidade real.</li>
             <li><b>Faça uma mudança guiada end-to-end</b>: edite um <code>*.rules.md</code> → veja o backend → exponha no frontend → escreva o teste.</li>
             <li>Aprofunde a Parte I (fundamentos) e a Parte III (suporte/debug com IA) conforme a necessidade.</li>
@@ -204,7 +204,7 @@ const C = [
   {id:"adr-authz",t:"Autorização: RBAC dinâmico + ABAC organizacional",pr:"essencial",a:"backend",
    oque:"JWT self-issued (HS256) + provedor de políticas DINÂMICO (perm:&lt;escopo&gt;) + modelo organizacional: Unidade Organizacional (árvore), atribuição de papel COM ESCOPO, e a regra I4.",
    porque:"Prefeito ≠ Câmara (tenants distintos); secretário cria usuário só no próprio escopo; 'não delega o que não tem'. É o requisito-bandeira.",
-   nosso:"<code>PermissionPolicyProvider</code> (BuildingBlocks) gera políticas sob demanda. <code>UnidadeOrganizacional</code>, <code>AtribuicaoDePapel</code>, <code>EscopoEfetivo</code> e <code>AutorizacaoDeConcessao</code> (regra I4) em <code>Modules/Identidade</code>. Filtro de UO em <code>ApplyTenantAndUnidadeQueryFilters</code>. Doc: <code>docs/planejamento/MODELO-AUTORIZACAO-ORGANIZACIONAL.md</code>.",
+   nosso:"<code>PermissionPolicyProvider</code> (BuildingBlocks) gera políticas sob demanda. <code>UnidadeOrganizacional</code>, <code>AtribuicaoDePapel</code>, <code>EscopoEfetivo</code> e <code>AutorizacaoDeConcessao</code> (regra I4) em <code>Modules/Identidade</code>. Filtro de UO em <code>ApplyTenantAndUnidadeQueryFilters</code>. Doc: <code>docs/architecture/autorizacao/MODELO-AUTORIZACAO-ORGANIZACIONAL.md</code>.",
    est:["claims/policy-based auth","PermissionPolicyProvider","ABAC","UnidadeOrganizacional","regra I4 não-delega-o-que-não-tem","separação de poderes por tenant"],
    dom:["Explico a regra I4 e onde ela é provada (domínio, não UI)","Sei a diferença entre RBAC (perm) e o escopo por UO (ABAC)"]},
   {id:"adr-contabilidade",t:"Contabilidade PCASP → MSC → TCE/SICONFI",pr:"essencial",a:"dominio",

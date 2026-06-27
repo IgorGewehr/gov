@@ -1,6 +1,6 @@
 # ONDA 1 — Cadastros-mestres que destravam o resto (BACKEND DESIGN, implementação-pronto)
 
-> **Autoridade:** `docs/estudo/completude-modulos/PLANO-PROFUNDIDADE.md` (Onda 1).
+> **Status:** Ondas 0–3 concluídas. Esta spec de design (Onda 1) é auto-suficiente e permanece como referência do que foi implementado.
 > **Escopo desta spec:** entidades-mestre que faltam e que hoje são "GUID digitado" —
 > Educação (Aluno/Turma/Matrícula real), Saúde (Paciente 1ª classe/Unidade/Profissional),
 > RH (Afastamentos tipados com efeito na folha), Patrimônio (Inventário Lei 4.320 art. 96).

@@ -5,10 +5,9 @@
 > de poderes por tenant** e **segregação LGPD**, com o **GAP vs. o código atual** e um **plano de
 > implementação** (entidades, migrations, UI).
 >
-> Sintetiza e supera as partes de planejamento:
-> - `docs/planejamento/partes/org-funcionamento-municipio.md` (organograma real prefeitura/câmara)
-> - `docs/planejamento/partes/separacao-poderes-e-dados.md` (fundamento jurídico: poderes + LGPD)
-> - `docs/planejamento/partes/modelo-autorizacao.md` (modelo-alvo técnico)
+> Consolida e supera os estudos de planejamento que lhe deram origem (organograma real
+> prefeitura/câmara, fundamento jurídico de separação de poderes + LGPD, e modelo-alvo técnico);
+> o conteúdo durável desses estudos vive aqui e no **ADR-0007**.
 >
 > Lido contra o código real: `src/Modules/Identidade/...Domain/{Usuarios,Papeis,Permissoes}` e
 > `CLAUDE.md` §5/§6. **Não** reescreve a constituição nem o diagnóstico — estende-os.

@@ -1,6 +1,6 @@
 # ONDA 2 — Superfície de alto valor PoC (Backend Design, implementação-pronto)
 
-> **Autoridade:** `docs/estudo/completude-modulos/PLANO-PROFUNDIDADE.md` (Onda 2).
+> **Status:** Ondas 0–3 concluídas. Esta spec de design (Onda 2) é auto-suficiente e permanece como referência do que foi implementado.
 > **Status:** spec de implementação. Read-only sobre o código atual; nada foi executado (`dotnet`/`npm`),
 > a `:5080` da fundação P0 não foi tocada.
 > **Escopo:** três frentes — (1) **Transparência** (portal público + e-SIC + dados abertos + consulta em tempo real);

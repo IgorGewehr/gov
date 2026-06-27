@@ -11,7 +11,7 @@
 
 ## 0. Escopo e fundamentação (das fontes verificadas)
 
-Os 3 gaps abaixo são **CONFIRMADOS literalmente** em editais reais (ver `verificacao-requisitos-legislativo.md`):
+Os 3 gaps abaixo são **CONFIRMADOS literalmente** em editais reais de pregão de software para Câmaras (RS/SC/MG):
 
 | Gap | Evidência verificada | Veredito do auditor |
 |---|---|---|

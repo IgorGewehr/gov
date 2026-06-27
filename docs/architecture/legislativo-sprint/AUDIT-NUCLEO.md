@@ -61,7 +61,7 @@ Deliberação), Sessão (List/Detail/Form/Ações/Modais), Votação (Consulta/D
 
 ## 2. Requisito → estado (ok / parcial / falta) com arquivo
 
-Requisitos recorrentes ("obrigatórios de facto") extraídos de `verificacao-requisitos-legislativo.md`.
+Requisitos recorrentes ("obrigatórios de facto") extraídos de editais reais de pregão de software para Câmaras.
 
 | # | Requisito (fonte verificada) | Estado | Onde está / o que falta |
 |---|---|---|---|

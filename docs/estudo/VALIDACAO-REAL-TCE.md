@@ -5,7 +5,7 @@
 > contra o **OFICIAL**, ser honesto sobre simulação × validação real, dizer o que dá p/ automatizar em
 > CI, traçar o paralelo eSocial e listar EXATAMENTE o que obter e de quem.
 > Regra: toda afirmação tem **[FONTE]** ou **[a confirmar]**. Data: 2026-06-22.
-> Base: `docs/estudo/partes/evalidador-{ferramenta,mt-leiaute,automacao}.md`.
+> Base: inventário de geradores → leiaute/norma em `docs/REVISAO-HUMANA/tce-rs-integracao.md` e a spec oficial `docs/architecture/specs-oficiais/tce-rs-siapc-pad.md` (versão/MT viva do leiaute).
 
 ---
 
