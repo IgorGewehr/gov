@@ -31,8 +31,9 @@ ERP integrado para os dois poderes municipais, com a espinha fiscal completa e o
   Protocolo · Transparência (LAI / dados abertos).
 - **Plataforma:** Cofre A1 (envelope encryption) · Outbox resiliente · auditoria hash-chain imutável.
 
-Build **0 erros / 0 avisos** (warnings=errors) · suíte de testes backend + frontend · fitness functions
-de arquitetura verdes.
+Build **0 erros** (warnings=errors no `src/`) · **1.767 testes** backend + frontend verdes (20 projetos) ·
+fitness functions de arquitetura verdes. *(Há 27 avisos no projeto de testes — 3 são CVEs transitivos a
+tratar antes do go-live; medições e tudo que falta em [`ESTADO-ATUAL-E-PENDENCIAS`](docs/ESTADO-ATUAL-E-PENDENCIAS.md).)*
 
 > **Honestidade "simulado vs oficial":** NFS-e/ADN é integração **real**; as remessas TCE-RS/SICONFI
 > geram o artefato correto com validação **local** (a validação no PAD **oficial** depende do leiaute MT
@@ -41,6 +42,7 @@ de arquitetura verdes.
 > documentadas em [`docs/REVISAO-HUMANA/`](docs/REVISAO-HUMANA/).
 
 ### Por onde começar
+- 📋 **Estado atual e tudo que falta (honesto, medido do código):** [`docs/ESTADO-ATUAL-E-PENDENCIAS.md`](docs/ESTADO-ATUAL-E-PENDENCIAS.md) — leia primeiro.
 - 🚀 **Rodar/testar/depurar:** [`docs/RUNBOOK.md`](docs/RUNBOOK.md) · login demo `admin@tensorroot.gov` / `Mudar@123`.
 - 📐 **Decisões com trade-offs:** [`docs/adr/`](docs/adr/).
 - ✅ **Pontos para revisão humana (contador/jurídico):** [`docs/REVISAO-HUMANA/`](docs/REVISAO-HUMANA/).
@@ -76,6 +78,7 @@ tests/
   ArchitectureTests/            fitness functions (NetArchTest)
 docs/
   CONVENCOES-ENGENHARIA.md      regras estritas de engenharia
+  ESTADO-ATUAL-E-PENDENCIAS.md  estado medido + tudo que falta (honesto, end-to-end)
   adr/                          decisões arquiteturais
   architecture/                 designs por tópico + specs oficiais
   design-system/                Design System Constitution (UI/UX gov.br DS)
