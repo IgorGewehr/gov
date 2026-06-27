@@ -85,6 +85,15 @@ export const rhKeys = {
   pasep: () => [...rhKeys.all, 'pasep'] as const,
   pasepPorAno: (ano: number) => [...rhKeys.pasep(), 'ano', ano] as const,
 
+  sst: () => [...rhKeys.all, 'sst'] as const,
+  sstExames: (servidorId: string) => [...rhKeys.sst(), 'exames', servidorId] as const,
+  sstExposicoes: (servidorId: string) => [...rhKeys.sst(), 'exposicoes', servidorId] as const,
+  sstCat: (servidorId: string) => [...rhKeys.sst(), 'cat', servidorId] as const,
+  sstPpp: (servidorId: string) => [...rhKeys.sst(), 'ppp', servidorId] as const,
+  sstAgendaPcmso: (ate: string) => [...rhKeys.sst(), 'pcmso-agenda', ate] as const,
+
+  bancoDeHoras: (servidorId: string) => [...rhKeys.all, 'banco-de-horas', servidorId] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

@@ -59,10 +59,18 @@ public sealed class PatrimonioModule : IModule
         services.AddScoped<IInventarioRepository, InventarioRepository>();
         services.AddScoped<IPedidoRequisicaoRepository, PedidoRequisicaoRepository>();
         services.AddScoped<IObraRepository, ObraRepository>();
+        services.AddScoped<IPneuRepository, PneuRepository>();
+        services.AddScoped<IApoliceRepository, ApoliceRepository>();
+        services.AddScoped<ICondutorRepository, CondutorRepository>();
 
         // Parametros do art. 94 §3 (Obras) por tenant — sem numero magico (CLAUDE.md §7/§16).
         services.Configure<ObraOptions>(configuration.GetSection(ObraOptions.SecaoConfig));
         services.AddScoped<IParametrosObraProvider, ParametrosObraProvider>();
+
+        // Parametros de gestao de frota (sulco minimo legal; janelas de alerta CNH/apolice) por tenant
+        // — sem numero magico (CLAUDE.md §7/§16). Espelha o provider de Obras.
+        services.Configure<FrotaOptions>(configuration.GetSection(FrotaOptions.SecaoConfig));
+        services.AddScoped<IFrotaParametrosProvider, FrotaParametrosProvider>();
 
         var applicationAssembly = typeof(IncorporarBemCommand).Assembly;
         services.AddMediatR(mediatr => mediatr.RegisterServicesFromAssembly(applicationAssembly));

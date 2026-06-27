@@ -13,8 +13,10 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Domain.Cargos;
 /// </para>
 /// </summary>
 /// <param name="PossuiRppsProprio">
-/// Verdadeiro se o ente possui RPPS proprio instituido por lei municipal. // TODO(confirmar-dono): para
-/// Maximiliano de Almeida, confirmar Sim/Nao (provavel Nao -> SomenteRgps).
+/// Verdadeiro se o ente possui RPPS proprio instituido por lei municipal. CONFIRMADO PELO DONO: para
+/// Maximiliano de Almeida/RS o valor e <c>false</c> — o municipio NAO possui RPPS proprio; TODO o quadro
+/// (inclusive efetivos) recolhe ao RGPS/INSS. O IPE-Prev e RPPS ESTADUAL (servidores do Estado do RS),
+/// nao cobre municipios. A opcao RPPS permanece parametrizada para outros tenants que o instituam por lei.
 /// </param>
 public readonly record struct PoliticaPrevidenciaria(bool PossuiRppsProprio)
 {

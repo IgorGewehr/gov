@@ -85,6 +85,10 @@ public sealed class FinancasModule : IModule
         // Tesouraria (caixa-banco): contas, movimentos, transferências, boletim, conciliação manual.
         services.AddScoped<IContaFinanceiraRepository, ContaFinanceiraRepository>();
 
+        // Credores/fornecedores: cadastro + extrato consolidado (empenhos/liquidações/pagamentos).
+        services.AddScoped<ICredorRepository, CredorRepository>();
+        services.AddScoped<ICredorExtratoConsulta, CredorExtratoConsulta>();
+
         // Contabilidade (PCASP/MCASP).
         services.AddScoped<IContaContabilRepository, ContaContabilRepository>();
         services.AddScoped<ILancamentoContabilRepository, LancamentoContabilRepository>();

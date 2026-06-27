@@ -8,6 +8,7 @@ using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Demonstracoes;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Encerramento;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Msc;
 using Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Queries;
+using Tensorroot.Gov.Modules.Financas.Application.Credores;
 using Tensorroot.Gov.Modules.Financas.Application.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Application.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Application.Fiscal;
@@ -35,10 +36,65 @@ internal static class FinancasEndpoints
         MapearLiquidacoes(grupo);
         MapearPagamentos(grupo);
         MapearRestosAPagar(grupo);
+        MapearCredores(grupo);
         MapearTesouraria(grupo);
         MapearContabilidade(grupo);
         MapearFiscal(grupo);
         FinancasPlanejamentoEndpoints.Map(grupo);
+    }
+
+    private static void MapearCredores(RouteGroupBuilder grupo)
+    {
+        // Cadastro de credor/fornecedor (CPF/CNPJ único por tenant; dados bancários opcionais).
+        grupo.MapPost("/credores", async (
+            CadastrarCredorCommand comando, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
+            .RequirePermission("financas.gerenciar");
+
+        // Atualização de nome/dados bancários.
+        grupo.MapPut("/credores/{credorId:guid}", async (
+            Guid credorId, AtualizarCredorPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(
+                new AtualizarCredorCommand(credorId, payload.Nome, payload.Banco, payload.Agencia, payload.Conta, payload.Pix),
+                cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
+
+        // Inativar / reativar credor.
+        grupo.MapPost("/credores/{credorId:guid}/inativar", async (
+            Guid credorId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new InativarCredorCommand(credorId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
+
+        grupo.MapPost("/credores/{credorId:guid}/reativar", async (
+            Guid credorId, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ReativarCredorCommand(credorId), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("financas.gerenciar");
+
+        // Lista/busca de credores (termo opcional por nome/documento).
+        grupo.MapGet("/credores", async (string? termo, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new ListarCredoresQuery(termo), cancellationToken)))
+            .RequirePermission("financas.ver");
+
+        // Detalhe de um credor.
+        grupo.MapGet("/credores/{credorId:guid}", async (Guid credorId, ISender sender, CancellationToken cancellationToken)
+            => await sender.Send(new ObterCredorQuery(credorId), cancellationToken) is { } resumo
+                ? Results.Ok(resumo)
+                : Results.NotFound())
+            .RequirePermission("financas.ver");
+
+        // Extrato consolidado do credor (empenhos/liquidações/pagamentos; filtro opcional por exercício).
+        grupo.MapGet("/credores/{credorId:guid}/extrato", async (
+            Guid credorId, int? exercicio, ISender sender, CancellationToken cancellationToken)
+            => await sender.Send(new ObterExtratoCredorQuery(credorId, exercicio), cancellationToken) is { } extrato
+                ? Results.Ok(extrato)
+                : Results.NotFound())
+            .RequirePermission("financas.ver");
     }
 
     private static void MapearTesouraria(RouteGroupBuilder grupo)
@@ -379,4 +435,6 @@ internal static class FinancasEndpoints
     private sealed record MovimentoPayload(DateOnly Data, decimal Valor, string Historico, string? Documento);
 
     private sealed record ConciliarPayload(DateOnly DataConciliacao);
+
+    private sealed record AtualizarCredorPayload(string? Nome, string? Banco, string? Agencia, string? Conta, string? Pix);
 }

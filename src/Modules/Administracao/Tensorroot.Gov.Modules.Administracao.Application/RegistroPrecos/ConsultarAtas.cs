@@ -19,14 +19,18 @@ public sealed record AtaResumo(
     DateOnly VigenciaFim,
     int QuantidadeItens);
 
-/// <summary>Item registrado com saldo, para o detalhe da ata.</summary>
+/// <summary>Item registrado com saldos (registrado e de adesao), para o detalhe da ata.</summary>
 /// <param name="ItemAtaId">Identificador do item na ata.</param>
 /// <param name="ItemCatalogoId">Item de catalogo registrado.</param>
 /// <param name="FornecedorBeneficiarioId">Fornecedor beneficiario.</param>
 /// <param name="PrecoRegistrado">Preco unitario registrado.</param>
-/// <param name="QuantidadeRegistrada">Quantidade maxima registrada.</param>
-/// <param name="QuantidadeContratada">Quantidade ja contratada.</param>
-/// <param name="SaldoDisponivel">Saldo ainda disponivel.</param>
+/// <param name="QuantidadeRegistrada">Quantidade maxima registrada (gerenciador + participantes).</param>
+/// <param name="QuantidadeContratada">Quantidade ja contratada (consumo direto).</param>
+/// <param name="SaldoDisponivel">Saldo registrado ainda disponivel.</param>
+/// <param name="QuantidadeAderida">Quantidade ja aderida por orgaos nao participantes (carona).</param>
+/// <param name="LimiteAdesaoPorOrgao">Teto de adesao por orgao aderente (50% do registrado — art. 86, §4º).</param>
+/// <param name="LimiteTotalAdesao">Teto total de adesoes (200% do registrado — art. 86, §5º).</param>
+/// <param name="SaldoAdesaoDisponivel">Saldo de adesao ainda disponivel.</param>
 public sealed record ItemAtaDetalhe(
     Guid ItemAtaId,
     Guid ItemCatalogoId,
@@ -34,31 +38,55 @@ public sealed record ItemAtaDetalhe(
     decimal PrecoRegistrado,
     decimal QuantidadeRegistrada,
     decimal QuantidadeContratada,
-    decimal SaldoDisponivel);
+    decimal SaldoDisponivel,
+    decimal QuantidadeAderida,
+    decimal LimiteAdesaoPorOrgao,
+    decimal LimiteTotalAdesao,
+    decimal SaldoAdesaoDisponivel);
+
+/// <summary>Orgao gerenciador/participante da ata, para o detalhe.</summary>
+/// <param name="CnpjOrgao">CNPJ do orgao.</param>
+/// <param name="NomeOrgao">Nome do orgao.</param>
+/// <param name="Tipo">Papel no SRP (Gerenciador|Participante).</param>
+public sealed record ParticipanteAtaDetalhe(string CnpjOrgao, string NomeOrgao, string Tipo);
 
 /// <summary>Adesao registrada, para o detalhe da ata.</summary>
 /// <param name="ItemCatalogoId">Item objeto da adesao.</param>
-/// <param name="OrgaoAderente">Orgao aderente.</param>
+/// <param name="CnpjOrgaoAderente">CNPJ do orgao aderente.</param>
+/// <param name="OrgaoAderente">Nome do orgao aderente.</param>
 /// <param name="Quantidade">Quantidade aderida.</param>
 /// <param name="Data">Data da adesao.</param>
-public sealed record AdesaoDetalhe(Guid ItemCatalogoId, string OrgaoAderente, decimal Quantidade, DateOnly Data);
+public sealed record AdesaoDetalhe(
+    Guid ItemCatalogoId,
+    string CnpjOrgaoAderente,
+    string OrgaoAderente,
+    decimal Quantidade,
+    DateOnly Data);
 
-/// <summary>Detalhe completo de uma ata (itens, saldos e adesoes).</summary>
+/// <summary>Detalhe completo de uma ata (orgaos, itens, saldos e adesoes).</summary>
 /// <param name="Id">Identificador.</param>
 /// <param name="Numero">Numero da ata.</param>
 /// <param name="LicitacaoId">Licitacao SRP de origem.</param>
+/// <param name="CnpjOrgaoGerenciador">CNPJ do orgao gerenciador.</param>
+/// <param name="NomeOrgaoGerenciador">Nome do orgao gerenciador.</param>
 /// <param name="Situacao">Situacao atual.</param>
 /// <param name="VigenciaInicio">Inicio da vigencia.</param>
 /// <param name="VigenciaFim">Termo final da vigencia.</param>
+/// <param name="Prorrogada">Indica se a ata ja foi prorrogada (art. 84).</param>
+/// <param name="Participantes">Orgaos gerenciador e participantes.</param>
 /// <param name="Itens">Itens registrados com saldos.</param>
 /// <param name="Adesoes">Adesoes (carona) registradas.</param>
 public sealed record AtaDetalhe(
     Guid Id,
     string Numero,
     Guid? LicitacaoId,
+    string CnpjOrgaoGerenciador,
+    string NomeOrgaoGerenciador,
     string Situacao,
     DateOnly VigenciaInicio,
     DateOnly VigenciaFim,
+    bool Prorrogada,
+    IReadOnlyList<ParticipanteAtaDetalhe> Participantes,
     IReadOnlyList<ItemAtaDetalhe> Itens,
     IReadOnlyList<AdesaoDetalhe> Adesoes);
 
@@ -109,9 +137,16 @@ public sealed class ObterAtaPorIdHandler(IAtaRepository atas)
             ata.Id.Value,
             ata.Numero,
             ata.LicitacaoId,
+            ata.CnpjOrgaoGerenciador,
+            ata.NomeOrgaoGerenciador,
             ata.Situacao.ToString(),
             ata.VigenciaInicio,
             ata.VigenciaFim,
+            ata.Prorrogada,
+            ata.Participantes.Select(p => new ParticipanteAtaDetalhe(
+                p.CnpjOrgao,
+                p.NomeOrgao,
+                p.Tipo.ToString())).ToList(),
             ata.Itens.Select(i => new ItemAtaDetalhe(
                 i.Id.Value,
                 i.ItemCatalogoId.Value,
@@ -119,9 +154,14 @@ public sealed class ObterAtaPorIdHandler(IAtaRepository atas)
                 i.PrecoRegistrado.Valor,
                 i.QuantidadeRegistrada,
                 i.QuantidadeContratada,
-                i.SaldoDisponivel)).ToList(),
+                i.SaldoDisponivel,
+                i.QuantidadeAderida,
+                i.LimiteAdesaoPorOrgao,
+                i.LimiteTotalAdesao,
+                i.SaldoAdesaoDisponivel)).ToList(),
             ata.Adesoes.Select(a => new AdesaoDetalhe(
                 a.ItemCatalogoId.Value,
+                a.CnpjOrgaoAderente,
                 a.OrgaoAderente,
                 a.Quantidade,
                 a.Data)).ToList());

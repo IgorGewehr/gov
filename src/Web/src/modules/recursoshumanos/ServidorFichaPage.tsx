@@ -153,6 +153,20 @@ export function ServidorFichaPage() {
             >
               <i className="fas fa-file-signature" aria-hidden="true" /> Consignações
             </Link>
+            <Link
+              className="br-button secondary"
+              to={`/recursoshumanos/servidores/${servidorId}/sst`}
+              state={{ nome: query.data?.dadosPessoais.nome }}
+            >
+              <i className="fas fa-notes-medical" aria-hidden="true" /> SST / Saúde Ocupacional
+            </Link>
+            <Link
+              className="br-button secondary"
+              to={`/recursoshumanos/servidores/${servidorId}/banco-de-horas`}
+              state={{ nome: query.data?.dadosPessoais.nome }}
+            >
+              <i className="fas fa-clock" aria-hidden="true" /> Banco de horas
+            </Link>
             <Link className="br-button secondary" to="/recursoshumanos">
               <i className="fas fa-arrow-left" aria-hidden="true" /> Voltar à lista
             </Link>

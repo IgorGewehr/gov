@@ -14,6 +14,23 @@ public sealed class MatrizSaldosContabeis
     /// <summary>Tolerancia de arredondamento ao conferir o fechamento (centavos).</summary>
     public const decimal ToleranciaFechamento = 0.01m;
 
+    /// <summary>Mes 12 — competencia em que a inscricao de Restos a Pagar deve constar na MSC agregada.</summary>
+    public const int MesInscricaoRestosAPagar = 12;
+
+    // Contas de controle/RP esperadas na MSC AGREGADA de dezembro (Regras Gerais MSC 2026, quadro "Restos
+    // a Pagar", p.13): RPNP a liquidar/em liquidacao/liquidados (6.2.2.1.3.05/06/07), RPNP inscritos
+    // (6.3.1.7.1 a liquidar / 6.3.1.7.2 em liquidacao) e RPP inscritos (6.3.2.7.0). Sao PREFIXOS — a conta
+    // analitica real do ente desce abaixo deles. Normativo (nao magico): documentado contra a norma.
+    private static readonly string[] PrefixosContasRestosAPagar =
+    [
+        "6.2.2.1.3.05",
+        "6.2.2.1.3.06",
+        "6.2.2.1.3.07",
+        "6.3.1.7.1",
+        "6.3.1.7.2",
+        "6.3.2.7.0",
+    ];
+
     private readonly List<LinhaMsc> _linhas;
 
     private MatrizSaldosContabeis(
@@ -192,6 +209,38 @@ public sealed class MatrizSaldosContabeis
 
         // Conta sem digito inicial e impossivel (LinhaMsc exige conta nao vazia); trata como controle.
         return 7;
+    }
+
+    /// <summary>
+    /// Verifica, na MSC AGREGADA de dezembro (mes 12), a presenca das contas de controle de Restos a Pagar
+    /// (Regras Gerais MSC 2026, quadro "Restos a Pagar", p.13): RPNP a liquidar/em liquidacao/liquidados
+    /// (6.2.2.1.3.05/06/07) e RP inscritos (6.3.1.7.1/2, 6.3.2.7.0). A ausencia NAO e bloqueante (um ente
+    /// sem restos a inscrever nao tera essas contas), mas e um alerta de conformidade para o SICONFI: a
+    /// MSC de dezembro de um ente com execucao deve trazer a inscricao de RP. Retorna os prefixos AUSENTES.
+    /// </summary>
+    /// <returns>
+    /// Lista dos prefixos de conta de RP nao encontrados na matriz; vazia se todos presentes (ou se a
+    /// matriz nao for de dezembro — nesse caso a checagem nao se aplica e retorna vazia).
+    /// </returns>
+    public IReadOnlyList<string> ContasRestosAPagarAusentes()
+    {
+        if (Mes != MesInscricaoRestosAPagar)
+        {
+            return [];
+        }
+
+        var ausentes = new List<string>(PrefixosContasRestosAPagar.Length);
+        foreach (var prefixo in PrefixosContasRestosAPagar)
+        {
+            var presente = _linhas.Any(l =>
+                l.ContaPcasp.StartsWith(prefixo, StringComparison.Ordinal));
+            if (!presente)
+            {
+                ausentes.Add(prefixo);
+            }
+        }
+
+        return ausentes;
     }
 
     private decimal SomarSaldoFinal(NaturezaSaldo natureza)

@@ -201,7 +201,12 @@ builder.Services.AddRateLimiter(options =>
 
 // === Documentação (Swagger/OpenAPI) + health ===
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    // Resolve colisao de schemaId entre tipos homonimos em modulos distintos
+    // (ex.: MotivoPayload em Convenios x Administracao), que causava 500 no /swagger.
+    c.CustomSchemaIds(t => t.FullName);
+});
 builder.Services.AddHealthChecks();
 
 // JSON: aceita enums por NOME (ex.: "Secretaria") além de número — melhor DX e menos 400 na borda.

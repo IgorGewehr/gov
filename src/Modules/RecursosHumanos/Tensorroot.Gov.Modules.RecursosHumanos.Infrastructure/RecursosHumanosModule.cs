@@ -111,6 +111,11 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IMarcacaoPontoRepository, MarcacaoPontoRepository>();
         services.AddScoped<IJornadaTrabalhoRepository, JornadaTrabalhoRepository>();
         services.AddScoped<IApuracaoPontoRepository, ApuracaoPontoRepository>();
+
+        // BANCO DE HORAS (saldo vivo por servidor): livro-razao de creditos/debitos/prescricao alimentado
+        // pelo fechamento das apuracoes de ponto (gancho via evento ApuracaoPontoFechada) e por ajustes
+        // manuais; rotina de prescricao respeita a janela parametrizavel (ParametrosPonto).
+        services.AddScoped<IBancoDeHorasRepository, BancoDeHorasRepository>();
         services.AddScoped<IServidorPontoConsulta, ServidorPontoConsulta>();
         services.AddScoped<IParametrosPontoProvider, ParametrosPontoProvider>();
 
@@ -128,6 +133,13 @@ public sealed class RecursosHumanosModule : IModule
         // houver creds de Producao Restrita; manter Polly + mTLS + URLs por IOptions/Key Vault).
         services.AddScoped<IEventoESocialRepository, EventoESocialRepository>();
         services.AddScoped<IEmpregadorESocialProvider, EmpregadorESocialProvider>();
+
+        // SST / SAUDE OCUPACIONAL (paridade SAPI + eSocial SST): ASO (S-2220/PCMSO), exposicao a agentes
+        // nocivos (S-2240/PPP) e CAT (S-2210). Repositorios dos tres agregados; a geracao dos eventos reusa
+        // o GeradorEventoApplicationService (idempotencia/Outbox) e o ACL GeradorEventosSst.
+        services.AddScoped<IExameOcupacionalRepository, ExameOcupacionalRepository>();
+        services.AddScoped<IExposicaoAgenteNocivoRepository, ExposicaoAgenteNocivoRepository>();
+        services.AddScoped<IComunicacaoAcidenteRepository, ComunicacaoAcidenteRepository>();
 
         // PC1: regime previdenciario do quadro = parametro do tenant (tem RPPS proprio?), nao roteamento
         // fixo. Default RGPS/INSS (municipio pequeno sem RPPS proprio — Maximiliano de Almeida).

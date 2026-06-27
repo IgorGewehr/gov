@@ -39,3 +39,33 @@ public sealed record VeiculoReavaliado(VeiculoId VeiculoId, decimal NovoValorCon
 /// <param name="Motivo">Motivo da baixa/alienação.</param>
 /// <param name="ValorContabil">Valor contábil na saída.</param>
 public sealed record VeiculoBaixado(VeiculoId VeiculoId, string Motivo, decimal ValorContabil) : IDomainEvent;
+
+/// <summary>Pneu instalado em uma posição (eixo/lado) de um veículo (controle de posicionamento).</summary>
+/// <param name="PneuId">Identificador do pneu.</param>
+/// <param name="VeiculoId">Veículo onde o pneu foi instalado.</param>
+/// <param name="Posicao">Posição (eixo/lado) de montagem.</param>
+/// <param name="Odometro">Odômetro do veículo na instalação (km).</param>
+public sealed record PneuInstalado(PneuId PneuId, VeiculoId VeiculoId, PosicaoPneu Posicao, int Odometro) : IDomainEvent;
+
+/// <summary>Pneu removido de um veículo (rodízio/reposicionamento/manutenção); acumula km rodados.</summary>
+/// <param name="PneuId">Identificador do pneu.</param>
+/// <param name="VeiculoId">Veículo de onde o pneu foi removido.</param>
+/// <param name="KmRodadosNoCiclo">Quilômetros rodados nesta passagem (ciclo) de instalação.</param>
+public sealed record PneuRemovido(PneuId PneuId, VeiculoId VeiculoId, int KmRodadosNoCiclo) : IDomainEvent;
+
+/// <summary>Pneu descartado/sucateado (fim de vida útil por sulco mínimo ou km), saída do controle.</summary>
+/// <param name="PneuId">Identificador do pneu.</param>
+/// <param name="Motivo">Motivo do descarte.</param>
+/// <param name="KmTotalAcumulado">Quilômetros totais rodados pelo pneu até o descarte.</param>
+public sealed record PneuDescartado(PneuId PneuId, string Motivo, int KmTotalAcumulado) : IDomainEvent;
+
+/// <summary>Apólice de seguro de veículo contratada (cobertura passa a vigente).</summary>
+/// <param name="ApoliceId">Identificador da apólice.</param>
+/// <param name="VeiculoId">Veículo segurado.</param>
+/// <param name="FimVigencia">Data de término da vigência (alvo do alerta de vencimento).</param>
+public sealed record ApoliceContratada(ApoliceId ApoliceId, VeiculoId VeiculoId, DateOnly FimVigencia) : IDomainEvent;
+
+/// <summary>CNH de um condutor renovada/atualizada (efeito direto no bloqueio de viagem por validade).</summary>
+/// <param name="CondutorId">Identificador do condutor.</param>
+/// <param name="NovaValidade">Nova data de validade do exame de aptidão (CNH).</param>
+public sealed record CnhRenovada(CondutorId CondutorId, DateOnly NovaValidade) : IDomainEvent;

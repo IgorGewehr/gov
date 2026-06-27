@@ -391,13 +391,26 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CnpjOrgaoGerenciador")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<Guid?>("LicitacaoId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NomeOrgaoGerenciador")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Numero")
                         .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
+
+                    b.Property<bool>("Prorrogada")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Situacao")
                         .IsRequired()
@@ -411,6 +424,9 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                         .HasColumnType("date");
 
                     b.Property<DateOnly>("VigenciaInicio")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("VigenciaInicioOriginal")
                         .HasColumnType("date");
 
                     b.HasKey("Id");
@@ -941,8 +957,16 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                             b1.Property<Guid>("AtaId")
                                 .HasColumnType("uniqueidentifier");
 
+                            b1.Property<string>("CnpjOrgaoAderente")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
                             b1.Property<DateOnly>("Data")
                                 .HasColumnType("date");
+
+                            b1.Property<Guid>("ItemAtaId")
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<Guid>("ItemCatalogoId")
                                 .HasColumnType("uniqueidentifier");
@@ -958,6 +982,8 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                             b1.HasKey("Id");
 
                             b1.HasIndex("AtaId");
+
+                            b1.HasIndex("ItemAtaId");
 
                             b1.ToTable("AtasAdesoes", "administracao");
 
@@ -982,6 +1008,9 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                             b1.Property<decimal>("PrecoRegistrado")
                                 .HasColumnType("decimal(18,2)");
 
+                            b1.Property<decimal>("QuantidadeAderida")
+                                .HasColumnType("decimal(18,4)");
+
                             b1.Property<decimal>("QuantidadeContratada")
                                 .HasColumnType("decimal(18,4)");
 
@@ -998,9 +1027,44 @@ namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrat
                                 .HasForeignKey("AtaId");
                         });
 
+                    b.OwnsMany("Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos.ParticipanteAta", "Participantes", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("AtaId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("CnpjOrgao")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("NomeOrgao")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("AtaId");
+
+                            b1.ToTable("AtasParticipantes", "administracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AtaId");
+                        });
+
                     b.Navigation("Adesoes");
 
                     b.Navigation("Itens");
+
+                    b.Navigation("Participantes");
                 });
 #pragma warning restore 612, 618
         }

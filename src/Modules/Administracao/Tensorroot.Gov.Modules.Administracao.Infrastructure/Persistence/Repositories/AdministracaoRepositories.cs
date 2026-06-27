@@ -214,6 +214,7 @@ public sealed class AtaRepository(AdministracaoDbContext context) : IAtaReposito
         => context.Atas
             .Include(ata => ata.Itens)
             .Include(ata => ata.Adesoes)
+            .Include(ata => ata.Participantes)
             .FirstOrDefaultAsync(ata => ata.Id == id, cancellationToken);
 
     /// <inheritdoc />

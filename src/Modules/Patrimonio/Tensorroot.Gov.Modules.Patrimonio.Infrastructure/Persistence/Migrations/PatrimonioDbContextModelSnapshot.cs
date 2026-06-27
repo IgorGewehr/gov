@@ -204,6 +204,200 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Infrastructure.Persistence.Migration
                     b.ToTable("ItensEstoque", "patrimonio");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Frota.Apolice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Cobertura")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateOnly>("FimVigencia")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("ImportanciaSegurada")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly>("InicioVigencia")
+                        .HasColumnType("date");
+
+                    b.Property<string>("MotivoCancelamento")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NumeroApolice")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("Premio")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Seguradora")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VeiculoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "FimVigencia");
+
+                    b.HasIndex("TenantId", "VeiculoId");
+
+                    b.ToTable("Apolices", "patrimonio");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Frota.Condutor", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Categorias")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Cpf")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("nvarchar(11)");
+
+                    b.Property<string>("MotivoSuspensao")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NumeroCnh")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid?>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("ValidadeCnh")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "NumeroCnh")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "ValidadeCnh");
+
+                    b.ToTable("Condutores", "patrimonio");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Frota.Pneu", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CustoRecapagens")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly>("DataAquisicao")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Dot")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<int>("KmAcumulado")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Marca")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Medida")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("NumeroFogo")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int?>("OdometroInstalacao")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PosicaoAtual")
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<int>("Recapagens")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("SulcoAtual")
+                        .HasColumnType("decimal(4,1)");
+
+                    b.Property<decimal>("SulcoNovo")
+                        .HasColumnType("decimal(4,1)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ValorAquisicao")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid?>("VeiculoAtualId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("VidaUtilKmEstimada")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "NumeroFogo")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "VeiculoAtualId");
+
+                    b.ToTable("Pneus", "patrimonio");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Patrimonio.Domain.Frota.Veiculo", b =>
                 {
                     b.Property<Guid>("Id")

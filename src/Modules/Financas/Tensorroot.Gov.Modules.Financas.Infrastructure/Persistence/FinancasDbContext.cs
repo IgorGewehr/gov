@@ -6,6 +6,7 @@ using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Encerramento;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.EventosContabeis;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Lancamentos;
 using Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.PlanoDeContas;
+using Tensorroot.Gov.Modules.Financas.Domain.Credores;
 using Tensorroot.Gov.Modules.Financas.Domain.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Domain.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Domain.Liquidacoes;
@@ -77,6 +78,9 @@ public sealed class FinancasDbContext(DbContextOptions<FinancasDbContext> option
 
     /// <summary>Contas da tesouraria (bancárias/caixa) com saldo e extrato de movimentos.</summary>
     public DbSet<ContaFinanceira> ContasFinanceiras => Set<ContaFinanceira>();
+
+    /// <summary>Credores/fornecedores cadastrados (beneficiários de empenhos/pagamentos).</summary>
+    public DbSet<CredorCadastrado> Credores => Set<CredorCadastrado>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -17,6 +17,17 @@ public sealed class CodigoContabil : ValueObject
     private const int NivelTituloFixo = 4;
     private const int MaxDigitosNivelDetalhe = 2;
 
+    // 5o nivel das contas PATRIMONIAIS (classes 1-4) = digito padronizado de consolidacao / saldos
+    // reciprocos (MCASP 11a ed. Parte IV item 3.2.2; Regras Gerais MSC 2026 "Conta Contabil" p.6).
+    // Valores: 1=Consolidacao (saldo nao se anula entre entes), 2=Intra-OFSS (anula dentro do MESMO
+    // ente/OFSS), 3=Inter-OFSS Uniao, 4=Inter-OFSS Estado/DF, 5=Inter-OFSS Municipio. Esse 5o digito so
+    // existe a partir do nivel 5; abaixo dele (niveis 1-4) a conta nao carrega indicador de consolidacao.
+    // Modelado e exposto via IndicadorConsolidacao(); a validacao 1-5 e aplicada pelos consumidores que
+    // sabem que a conta esta no nivel padronizado de saldos reciprocos (nem todo 5o digito patrimonial e
+    // consolidacao — pode ser subtitulo do PCASP Estendido).
+    private const int NivelDigitoConsolidacao = 5;
+    private const int ClassePatrimonialMaxima = 4;
+
     private CodigoContabil(string codigo, int nivel, int classe, string[] segmentos)
     {
         Codigo = codigo;
@@ -100,6 +111,23 @@ public sealed class CodigoContabil : ValueObject
     /// <returns>Devedora (1,3,5,7) ou Credora (2,4,6,8).</returns>
     public NaturezaSaldo NaturezaSaldoDefault()
         => Classe % 2 == 1 ? NaturezaSaldo.Devedora : NaturezaSaldo.Credora;
+
+    /// <summary>
+    /// Indicador de consolidacao / saldos reciprocos (5o digito padronizado) das contas patrimoniais
+    /// (classes 1-4): 1=Consolidacao, 2=Intra-OFSS, 3=Inter-OFSS Uniao, 4=Inter-OFSS Estado/DF,
+    /// 5=Inter-OFSS Municipio (MCASP P.IV item 3.2.2). Retorna <c>null</c> para contas nao patrimoniais
+    /// ou ainda sem o 5o nivel (sinteticas ate o 4o).
+    /// </summary>
+    /// <returns>Indicador 1-5, ou <c>null</c> se nao aplicavel.</returns>
+    public int? IndicadorConsolidacao()
+    {
+        if (Classe > ClassePatrimonialMaxima || Nivel < NivelDigitoConsolidacao)
+        {
+            return null;
+        }
+
+        return int.Parse(_segmentos[NivelDigitoConsolidacao - 1], CultureInfo.InvariantCulture);
+    }
 
     /// <summary>Indica se o código está sob o prefixo informado (para agregação de balancete sintético).</summary>
     /// <param name="prefixo">Prefixo de código (ex.: <c>6.2</c>).</param>

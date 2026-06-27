@@ -22,6 +22,15 @@ public enum TipoEventoESocial
     /// <summary>S-2299 — Desligamento do vinculo.</summary>
     S2299Desligamento = 2299,
 
+    /// <summary>S-2210 — Comunicacao de Acidente de Trabalho (CAT — SST).</summary>
+    S2210Cat = 2210,
+
+    /// <summary>S-2220 — Monitoramento da Saude do Trabalhador (ASO — SST).</summary>
+    S2220MonitoramentoSaude = 2220,
+
+    /// <summary>S-2240 — Condicoes Ambientais do Trabalho / Agentes Nocivos (SST).</summary>
+    S2240AgentesNocivos = 2240,
+
     /// <summary>S-1200 — Remuneracao RGPS (da nossa folha fechada).</summary>
     S1200Remuneracao = 1200,
 

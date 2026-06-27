@@ -21,15 +21,21 @@ public sealed class AtaConfiguration : IEntityTypeConfiguration<Ata>
             .ValueGeneratedNever();
 
         builder.Property(ata => ata.Numero).HasMaxLength(60);
+        builder.Property(ata => ata.CnpjOrgaoGerenciador).HasMaxLength(20);
+        builder.Property(ata => ata.NomeOrgaoGerenciador).HasMaxLength(200);
         builder.Property(ata => ata.Situacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(ata => ata.VigenciaInicio);
+        builder.Property(ata => ata.VigenciaInicioOriginal);
         builder.Property(ata => ata.VigenciaFim);
+        builder.Property(ata => ata.Prorrogada);
 
         builder.OwnsMany(ata => ata.Itens, MapearItens);
         builder.OwnsMany(ata => ata.Adesoes, MapearAdesoes);
+        builder.OwnsMany(ata => ata.Participantes, MapearParticipantes);
 
         builder.Navigation(ata => ata.Itens).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(ata => ata.Adesoes).UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.Navigation(ata => ata.Participantes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasIndex(ata => new { ata.TenantId, ata.Numero }).IsUnique();
         builder.HasIndex(ata => new { ata.TenantId, ata.Situacao });
@@ -50,7 +56,11 @@ public sealed class AtaConfiguration : IEntityTypeConfiguration<Ata>
             .HasColumnType("decimal(18,2)");
         itens.Property(item => item.QuantidadeRegistrada).HasColumnType("decimal(18,4)");
         itens.Property(item => item.QuantidadeContratada).HasColumnType("decimal(18,4)");
+        itens.Property(item => item.QuantidadeAderida).HasColumnType("decimal(18,4)");
         itens.Ignore(item => item.SaldoDisponivel);
+        itens.Ignore(item => item.LimiteTotalAdesao);
+        itens.Ignore(item => item.SaldoAdesaoDisponivel);
+        itens.Ignore(item => item.LimiteAdesaoPorOrgao);
     }
 
     private static void MapearAdesoes(OwnedNavigationBuilder<Ata, Adesao> adesoes)
@@ -61,10 +71,27 @@ public sealed class AtaConfiguration : IEntityTypeConfiguration<Ata>
         adesoes.Property(adesao => adesao.Id)
             .HasConversion(id => id.Value, value => new AdesaoId(value))
             .ValueGeneratedNever();
+        adesoes.Property(adesao => adesao.ItemAtaId)
+            .HasConversion(id => id.Value, value => new ItemAtaId(value));
         adesoes.Property(adesao => adesao.ItemCatalogoId)
             .HasConversion(id => id.Value, value => new ItemCatalogoId(value));
+        adesoes.Property(adesao => adesao.CnpjOrgaoAderente).HasMaxLength(20);
         adesoes.Property(adesao => adesao.OrgaoAderente).HasMaxLength(200);
         adesoes.Property(adesao => adesao.Quantidade).HasColumnType("decimal(18,4)");
         adesoes.Property(adesao => adesao.Data);
+        adesoes.HasIndex(adesao => adesao.ItemAtaId);
+    }
+
+    private static void MapearParticipantes(OwnedNavigationBuilder<Ata, ParticipanteAta> participantes)
+    {
+        participantes.ToTable("AtasParticipantes");
+        participantes.WithOwner().HasForeignKey("AtaId");
+        participantes.HasKey(p => p.Id);
+        participantes.Property(p => p.Id)
+            .HasConversion(id => id.Value, value => new ParticipanteAtaId(value))
+            .ValueGeneratedNever();
+        participantes.Property(p => p.CnpjOrgao).HasMaxLength(20);
+        participantes.Property(p => p.NomeOrgao).HasMaxLength(200);
+        participantes.Property(p => p.Tipo).HasConversion<string>().HasMaxLength(20);
     }
 }

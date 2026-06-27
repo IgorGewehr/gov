@@ -13,7 +13,15 @@ namespace Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Msc;
 /// <param name="EventId">Identificador do evento publicado (ou do registro existente, se idempotente).</param>
 /// <param name="QuantidadeLinhas">Quantidade de linhas da MSC.</param>
 /// <param name="JaExistia">Indica se a MSC já havia sido gerada (idempotência).</param>
-public sealed record GerarMscResultado(Guid EventId, int QuantidadeLinhas, bool JaExistia);
+/// <param name="ContasRestosAPagarAusentes">
+/// Na MSC de dezembro: prefixos das contas de Restos a Pagar (Regras Gerais MSC 2026 p.13) ausentes —
+/// alerta de conformidade não bloqueante. Vazia fora de dezembro ou se todas presentes.
+/// </param>
+public sealed record GerarMscResultado(
+    Guid EventId,
+    int QuantidadeLinhas,
+    bool JaExistia,
+    IReadOnlyList<string>? ContasRestosAPagarAusentes = null);
 
 /// <summary>
 /// Gera a Matriz de Saldos Contábeis (Agregada) de uma competência a partir do balancete e publica o
@@ -80,6 +88,10 @@ public sealed class GerarMscHandler(
             TipoMatrizMsc.Agregada,
             linhasMsc);
 
+        // Alerta de conformidade (nao bloqueante): na MSC de dezembro, conferir a presenca das contas de
+        // inscricao de Restos a Pagar (Regras Gerais MSC 2026 p.13).
+        var restosAusentes = matriz.ContasRestosAPagarAusentes();
+
         var eventId = Guid.NewGuid();
         var evento = new MSCGeradaIntegrationEvent(
             eventId,
@@ -106,7 +118,7 @@ public sealed class GerarMscHandler(
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-        return new GerarMscResultado(eventId, matriz.Linhas.Count, JaExistia: false);
+        return new GerarMscResultado(eventId, matriz.Linhas.Count, JaExistia: false, restosAusentes);
     }
 }
 

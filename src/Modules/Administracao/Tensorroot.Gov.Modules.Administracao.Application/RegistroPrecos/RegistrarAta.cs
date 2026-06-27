@@ -9,11 +9,15 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.RegistroPrecos;
 /// <summary>Registra uma nova Ata de Registro de Precos (ARP), nasce Vigente (art. 82-86, Lei 14.133/2021).</summary>
 /// <param name="Numero">Numero/identificacao da ata (unico por tenant).</param>
 /// <param name="LicitacaoId">Licitacao SRP de origem (opcional).</param>
+/// <param name="CnpjOrgaoGerenciador">CNPJ do orgao gerenciador da ata (art. 86, caput).</param>
+/// <param name="NomeOrgaoGerenciador">Nome do orgao gerenciador da ata.</param>
 /// <param name="VigenciaInicio">Inicio da vigencia.</param>
 /// <param name="VigenciaFim">Termo final da vigencia.</param>
 public sealed record RegistrarAtaCommand(
     string Numero,
     Guid? LicitacaoId,
+    string CnpjOrgaoGerenciador,
+    string NomeOrgaoGerenciador,
     DateOnly VigenciaInicio,
     DateOnly VigenciaFim) : ICommand<Guid>;
 
@@ -24,6 +28,8 @@ public sealed class RegistrarAtaValidator : AbstractValidator<RegistrarAtaComman
     public RegistrarAtaValidator()
     {
         RuleFor(c => c.Numero).NotEmpty().MaximumLength(60);
+        RuleFor(c => c.CnpjOrgaoGerenciador).NotEmpty().MaximumLength(20);
+        RuleFor(c => c.NomeOrgaoGerenciador).NotEmpty().MaximumLength(200);
         RuleFor(c => c.VigenciaFim).GreaterThan(c => c.VigenciaInicio)
             .WithMessage("Vigencia final deve ser posterior ao inicio.");
     }
@@ -42,7 +48,14 @@ public sealed class RegistrarAtaHandler(IAtaRepository atas, IUnitOfWork unitOfW
             throw new InvalidOperationException("Ja existe ata com este numero no tenant.");
         }
 
-        var ata = Ata.Registrar(tenant.TenantId, request.Numero, request.LicitacaoId, request.VigenciaInicio, request.VigenciaFim);
+        var ata = Ata.Registrar(
+            tenant.TenantId,
+            request.Numero,
+            request.LicitacaoId,
+            request.CnpjOrgaoGerenciador,
+            request.NomeOrgaoGerenciador,
+            request.VigenciaInicio,
+            request.VigenciaFim);
         atas.Adicionar(ata);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return ata.Id.Value;

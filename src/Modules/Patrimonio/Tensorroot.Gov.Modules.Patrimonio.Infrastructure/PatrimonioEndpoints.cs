@@ -24,6 +24,8 @@ internal static partial class PatrimonioEndpoints
 
         MapearBens(grupo);
         MapearFrota(grupo);
+        MapearPneus(grupo);
+        MapearApolices(grupo);
         MapearEstoque(grupo);
         MapearInventarios(grupo);
         MapearRequisicoes(grupo);

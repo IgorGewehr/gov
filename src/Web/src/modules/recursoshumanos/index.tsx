@@ -71,6 +71,12 @@ const PortariaDetailPage = lazy(() =>
   import('./PortariaDetailPage').then((m) => ({ default: m.PortariaDetailPage })),
 );
 const PasepPage = lazy(() => import('./PasepPage').then((m) => ({ default: m.PasepPage })));
+const SstServidorPage = lazy(() =>
+  import('./SstServidorPage').then((m) => ({ default: m.SstServidorPage })),
+);
+const BancoDeHorasServidorPage = lazy(() =>
+  import('./BancoDeHorasServidorPage').then((m) => ({ default: m.BancoDeHorasServidorPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -87,6 +93,8 @@ const MODULE: ModuleDefinition = {
         { path: 'servidores/:servidorId/ficha', element: <ServidorFichaPage /> },
         { path: 'servidores/:servidorId/afastamentos', element: <AfastamentosServidorPage /> },
         { path: 'servidores/:servidorId/consignacoes', element: <ConsignacoesServidorPage /> },
+        { path: 'servidores/:servidorId/sst', element: <SstServidorPage /> },
+        { path: 'servidores/:servidorId/banco-de-horas', element: <BancoDeHorasServidorPage /> },
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },

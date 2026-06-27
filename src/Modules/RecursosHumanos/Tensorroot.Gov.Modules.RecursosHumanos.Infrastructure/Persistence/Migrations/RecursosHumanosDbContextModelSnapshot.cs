@@ -569,6 +569,40 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("FolhasDePagamento", "recursoshumanos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Pasep.ApuracaoPasep", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Aliquota")
+                        .HasColumnType("decimal(7,4)");
+
+                    b.Property<decimal>("BaseContribuicao")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Competencia")
+                        .HasColumnType("int")
+                        .HasColumnName("Competencia");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Valor")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Competencia")
+                        .IsUnique();
+
+                    b.ToTable("ApuracoesPasep", "recursoshumanos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto.ApuracaoPonto", b =>
                 {
                     b.Property<Guid>("Id")
@@ -613,6 +647,28 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                         .IsUnique();
 
                     b.ToTable("PontoApuracoes", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto.BancoDeHoras", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SaldoMinutos")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ServidorId")
+                        .IsUnique();
+
+                    b.ToTable("BancosDeHoras", "recursoshumanos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto.JornadaTrabalho", b =>
@@ -755,40 +811,6 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("PontoReps", "recursoshumanos");
                 });
 
-            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Pasep.ApuracaoPasep", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Aliquota")
-                        .HasColumnType("decimal(7,4)");
-
-                    b.Property<decimal>("BaseContribuicao")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Competencia")
-                        .HasColumnType("int")
-                        .HasColumnName("Competencia");
-
-                    b.Property<string>("Situacao")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Valor")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "Competencia")
-                        .IsUnique();
-
-                    b.ToTable("ApuracoesPasep", "recursoshumanos");
-                });
-
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Portarias.Portaria", b =>
                 {
                     b.Property<Guid>("Id")
@@ -809,11 +831,11 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<Guid?>("ServidorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("Sequencial")
                         .HasColumnType("int");
+
+                    b.Property<Guid?>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Situacao")
                         .IsRequired()
@@ -835,12 +857,12 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TenantId", "ServidorId");
+
                     b.HasIndex("TenantId", "Exercicio", "Sequencial")
                         .IsUnique();
 
                     b.HasIndex("TenantId", "Tipo", "Situacao");
-
-                    b.HasIndex("TenantId", "ServidorId");
 
                     b.ToTable("Portarias", "recursoshumanos");
                 });
@@ -995,6 +1017,164 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                         .IsUnique();
 
                     b.ToTable("VinculosServidorUsuario", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.ComunicacaoAcidente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AgenteCausador")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("CatOrigem")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Cid")
+                        .HasMaxLength(4)
+                        .HasColumnType("nvarchar(4)");
+
+                    b.Property<DateTimeOffset>("DataHoraAcidente")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly?>("DataObito")
+                        .HasColumnType("date");
+
+                    b.Property<string>("DescricaoSituacao")
+                        .IsRequired()
+                        .HasMaxLength(999)
+                        .HasColumnType("nvarchar(999)");
+
+                    b.Property<bool>("HouveObito")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MotivoCancelamento")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ParteCorpoAtingida")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TipoAcidente")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TipoCat")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ServidorId");
+
+                    b.ToTable("SstComunicacoesAcidente", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.ExameOcupacional", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("DataExame")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataProximoExame")
+                        .HasColumnType("date");
+
+                    b.Property<string>("MotivoCancelamento")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("_examesComplementares")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ExamesComplementares");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "DataProximoExame");
+
+                    b.HasIndex("TenantId", "ServidorId");
+
+                    b.ToTable("SstExamesOcupacionais", "recursoshumanos");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.ExposicaoAgenteNocivo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("FimExposicao")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("InicioExposicao")
+                        .HasColumnType("date");
+
+                    b.Property<string>("MotivoCancelamento")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SetorAtividade")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "ServidorId");
+
+                    b.ToTable("SstExposicoesAgenteNocivo", "recursoshumanos");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais.TabelaInss", b =>
@@ -1243,6 +1423,51 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.Navigation("Eventos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto.BancoDeHoras", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto.LancamentoBancoHoras", "Lancamentos", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("BancoDeHorasId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<DateOnly>("Data")
+                                .HasColumnType("date");
+
+                            b1.Property<string>("Descricao")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<int>("Minutos")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Referencia")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("nvarchar(100)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("BancoDeHorasId", "Referencia")
+                                .IsUnique();
+
+                            b1.ToTable("BancosDeHorasLancamentos", "recursoshumanos");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BancoDeHorasId");
+                        });
+
+                    b.Navigation("Lancamentos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores.Servidor", b =>
                 {
                     b.OwnsMany("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores.Dependente", "Dependentes", b1 =>
@@ -1333,6 +1558,98 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.Navigation("Dependentes");
 
                     b.Navigation("PensoesAlimenticias");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.ExameOcupacional", b =>
+                {
+                    b.OwnsOne("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.MedicoResponsavel", "Medico", b1 =>
+                        {
+                            b1.Property<Guid>("ExameOcupacionalId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Nome")
+                                .IsRequired()
+                                .HasMaxLength(70)
+                                .HasColumnType("nvarchar(70)")
+                                .HasColumnName("MedicoNome");
+
+                            b1.Property<string>("NrConselho")
+                                .IsRequired()
+                                .HasMaxLength(14)
+                                .HasColumnType("nvarchar(14)")
+                                .HasColumnName("MedicoNrConselho");
+
+                            b1.Property<string>("UfConselho")
+                                .IsRequired()
+                                .HasMaxLength(2)
+                                .HasColumnType("nvarchar(2)")
+                                .HasColumnName("MedicoUfConselho");
+
+                            b1.HasKey("ExameOcupacionalId");
+
+                            b1.ToTable("SstExamesOcupacionais", "recursoshumanos");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ExameOcupacionalId");
+                        });
+
+                    b.Navigation("Medico")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.ExposicaoAgenteNocivo", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst.AgenteNocivo", "Agentes", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(12)
+                                .HasColumnType("nvarchar(12)")
+                                .HasColumnName("Codigo");
+
+                            b1.Property<string>("Descricao")
+                                .IsRequired()
+                                .HasMaxLength(999)
+                                .HasColumnType("nvarchar(999)")
+                                .HasColumnName("Descricao");
+
+                            b1.Property<Guid>("ExposicaoAgenteNocivoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal?>("Intensidade")
+                                .HasColumnType("decimal(18,4)")
+                                .HasColumnName("Intensidade");
+
+                            b1.Property<string>("UnidadeMedida")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("UnidadeMedida");
+
+                            b1.Property<bool>("UtilizaEpc")
+                                .HasColumnType("bit")
+                                .HasColumnName("UtilizaEpc");
+
+                            b1.Property<bool>("UtilizaEpi")
+                                .HasColumnType("bit")
+                                .HasColumnName("UtilizaEpi");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("ExposicaoAgenteNocivoId");
+
+                            b1.ToTable("SstExposicaoAgentes", "recursoshumanos");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ExposicaoAgenteNocivoId");
+                        });
+
+                    b.Navigation("Agentes");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais.TabelaInss", b =>

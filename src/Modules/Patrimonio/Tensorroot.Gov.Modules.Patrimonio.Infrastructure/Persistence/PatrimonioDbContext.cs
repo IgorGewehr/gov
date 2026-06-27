@@ -38,6 +38,15 @@ public sealed class PatrimonioDbContext(DbContextOptions<PatrimonioDbContext> op
     /// <summary>Obras públicas / serviços de engenharia (bens patrimoniais em formação — Lei 14.133/2021).</summary>
     public DbSet<Obra> Obras => Set<Obra>();
 
+    /// <summary>Pneus da frota controlados individualmente (gestão de frota; CONTRAN/CTB).</summary>
+    public DbSet<Pneu> Pneus => Set<Pneu>();
+
+    /// <summary>Apólices de seguro dos veículos da frota (obrigatório/facultativo).</summary>
+    public DbSet<Apolice> Apolices => Set<Apolice>();
+
+    /// <summary>Condutores (motoristas) habilitados da frota (CTB; dado pessoal sob LGPD).</summary>
+    public DbSet<Condutor> Condutores => Set<Condutor>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -90,12 +90,22 @@ internal static partial class AdministracaoEndpoints
             }))
             .RequirePermission("administracao.gerenciar");
 
+        grupo.MapPost("/atas/{ataId:guid}/participantes", async (
+            Guid ataId, IncluirParticipanteAtaPayload payload, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(new
+            {
+                participanteId = await sender.Send(
+                    new IncluirParticipanteAtaCommand(ataId, payload.CnpjOrgao, payload.NomeOrgao),
+                    cancellationToken),
+            }))
+            .RequirePermission("administracao.gerenciar");
+
         grupo.MapPost("/atas/{ataId:guid}/adesoes", async (
             Guid ataId, RegistrarAdesaoPayload payload, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new
             {
                 adesaoId = await sender.Send(
-                    new RegistrarAdesaoCommand(ataId, payload.ItemAtaId, payload.OrgaoAderente, payload.Quantidade),
+                    new RegistrarAdesaoCommand(ataId, payload.ItemAtaId, payload.CnpjOrgaoAderente, payload.NomeOrgaoAderente, payload.Quantidade),
                     cancellationToken),
             }))
             .RequirePermission("administracao.gerenciar");
@@ -104,6 +114,20 @@ internal static partial class AdministracaoEndpoints
             Guid ataId, ContratarItemAtaPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
             await sender.Send(new ContratarItemAtaCommand(ataId, payload.ItemAtaId, payload.Quantidade), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/atas/{ataId:guid}/itens/{itemAtaId:guid}/remanejar", async (
+            Guid ataId, Guid itemAtaId, RemanejarItemAtaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RemanejarItemAtaCommand(ataId, itemAtaId, payload.NovaQuantidadeRegistrada), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/atas/{ataId:guid}/prorrogar", async (
+            Guid ataId, ProrrogarAtaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new ProrrogarAtaCommand(ataId, payload.NovaVigenciaFim, payload.VantajosidadeComprovada), cancellationToken);
             return Results.NoContent();
         }).RequirePermission("administracao.gerenciar");
 
@@ -364,9 +388,15 @@ internal static partial class AdministracaoEndpoints
         decimal PrecoRegistrado,
         decimal QuantidadeRegistrada);
 
-    private sealed record RegistrarAdesaoPayload(Guid ItemAtaId, string OrgaoAderente, decimal Quantidade);
+    private sealed record RegistrarAdesaoPayload(Guid ItemAtaId, string CnpjOrgaoAderente, string NomeOrgaoAderente, decimal Quantidade);
+
+    private sealed record IncluirParticipanteAtaPayload(string CnpjOrgao, string NomeOrgao);
 
     private sealed record ContratarItemAtaPayload(Guid ItemAtaId, decimal Quantidade);
+
+    private sealed record RemanejarItemAtaPayload(decimal NovaQuantidadeRegistrada);
+
+    private sealed record ProrrogarAtaPayload(DateOnly NovaVigenciaFim, bool VantajosidadeComprovada);
 
     private sealed record MotivoPayload(string Motivo);
 

@@ -11,6 +11,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Portarias;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
@@ -59,6 +60,9 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
     /// <summary>Apuracoes de jornada por servidor/competencia (PTRP/banco de horas).</summary>
     public DbSet<ApuracaoPonto> PontoApuracoes => Set<ApuracaoPonto>();
 
+    /// <summary>Bancos de horas (saldo vivo por servidor + livro-razao de creditos/debitos/prescricao).</summary>
+    public DbSet<BancoDeHoras> BancosDeHoras => Set<BancoDeHoras>();
+
     /// <summary>Parque de equipamentos REP cadastrados (coleta de AFD do hardware — Port. 671).</summary>
     public DbSet<RepConfigurado> PontoReps => Set<RepConfigurado>();
 
@@ -88,6 +92,15 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Apuracoes do PASEP por competencia (base = folha bruta; transmissao = M10).</summary>
     public DbSet<ApuracaoPasep> ApuracoesPasep => Set<ApuracaoPasep>();
+
+    /// <summary>ASO (exames ocupacionais) — Saude Ocupacional (S-2220/PCMSO).</summary>
+    public DbSet<ExameOcupacional> SstExamesOcupacionais => Set<ExameOcupacional>();
+
+    /// <summary>Periodos de exposicao a agentes nocivos — condicoes ambientais (S-2240/PPP).</summary>
+    public DbSet<ExposicaoAgenteNocivo> SstExposicoesAgenteNocivo => Set<ExposicaoAgenteNocivo>();
+
+    /// <summary>Comunicacoes de Acidente de Trabalho (CAT — S-2210).</summary>
+    public DbSet<ComunicacaoAcidente> SstComunicacoesAcidente => Set<ComunicacaoAcidente>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

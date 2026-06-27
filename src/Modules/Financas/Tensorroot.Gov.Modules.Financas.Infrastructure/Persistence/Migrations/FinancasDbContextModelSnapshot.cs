@@ -373,6 +373,44 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                     b.ToTable("ContasContabeis", "financas");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Credores.CredorCadastrado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Documento")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "Nome");
+
+                    b.ToTable("Credores", "financas");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Dotacoes.DotacaoOrcamentaria", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1251,6 +1289,47 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                         });
 
                     b.Navigation("Partidas");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Credores.CredorCadastrado", b =>
+                {
+                    b.OwnsOne("Tensorroot.Gov.Modules.Financas.Domain.ValueObjects.ContaBancaria", "DadosBancarios", b1 =>
+                        {
+                            b1.Property<Guid>("CredorCadastradoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Agencia")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Agencia");
+
+                            b1.Property<string>("Banco")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)")
+                                .HasColumnName("Banco");
+
+                            b1.Property<string>("Conta")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)")
+                                .HasColumnName("ContaNumero");
+
+                            b1.Property<string>("Pix")
+                                .HasMaxLength(140)
+                                .HasColumnType("nvarchar(140)")
+                                .HasColumnName("Pix");
+
+                            b1.HasKey("CredorCadastradoId");
+
+                            b1.ToTable("Credores", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CredorCadastradoId");
+                        });
+
+                    b.Navigation("DadosBancarios");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Dotacoes.DotacaoOrcamentaria", b =>
