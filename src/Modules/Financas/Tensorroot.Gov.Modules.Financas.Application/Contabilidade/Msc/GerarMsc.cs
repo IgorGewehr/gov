@@ -30,7 +30,10 @@ public sealed record GerarMscResultado(
 /// </summary>
 /// <param name="Exercicio">Exercício.</param>
 /// <param name="Mes">Mês da competência (1-12).</param>
-/// <param name="PoderOrgao">Código Poder/Órgão (PO) do ente. // TODO(validar-oficial) tabela PO.</param>
+/// <param name="PoderOrgao">
+/// Código Poder/Órgão (PO, 5 dígitos = 2 poder + 3 órgão) do ente. A MSC é enviada SOMENTE pelo Executivo
+/// (Regras Gerais MSC 2026): quando omitido, assume o PO do Executivo (<see cref="PoderOrgaoMsc.Executivo"/>).
+/// </param>
 public sealed record GerarMscCommand(int Exercicio, int Mes, string? PoderOrgao = null)
     : ICommand<GerarMscResultado>;
 
@@ -42,6 +45,9 @@ public sealed class GerarMscValidator : AbstractValidator<GerarMscCommand>
     {
         RuleFor(c => c.Exercicio).GreaterThanOrEqualTo(1900);
         RuleFor(c => c.Mes).InclusiveBetween(1, 12);
+        RuleFor(c => c.PoderOrgao)
+            .Must(po => po is null || InformacoesComplementaresMsc.PoderOrgaoValido(po))
+            .WithMessage("Poder/Orgao (PO) deve ter 5 digitos (2 poder + 3 orgao) — Regras Gerais MSC 2026, IC nº1.");
     }
 }
 

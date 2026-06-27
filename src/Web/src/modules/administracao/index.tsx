@@ -48,6 +48,13 @@ const AtaListPage = lazy(() => import('./ata/AtaListPage').then((m) => ({ defaul
 const AtaDetailPage = lazy(() => import('./ata/AtaDetailPage').then((m) => ({ default: m.AtaDetailPage })));
 const PcaPage = lazy(() => import('./pca/PcaPage').then((m) => ({ default: m.PcaPage })));
 
+const CredenciamentoListPage = lazy(() =>
+  import('./credenciamento/CredenciamentoListPage').then((m) => ({ default: m.CredenciamentoListPage })),
+);
+const CredenciamentoDetailPage = lazy(() =>
+  import('./credenciamento/CredenciamentoDetailPage').then((m) => ({ default: m.CredenciamentoDetailPage })),
+);
+
 const MODULE: ModuleDefinition = {
   id: 'administracao',
   nav: {
@@ -72,6 +79,8 @@ const MODULE: ModuleDefinition = {
         { path: 'atas', element: <AtaListPage /> },
         { path: 'atas/:id', element: <AtaDetailPage /> },
         { path: 'pca', element: <PcaPage /> },
+        { path: 'credenciamentos', element: <CredenciamentoListPage /> },
+        { path: 'credenciamentos/:id', element: <CredenciamentoDetailPage /> },
       ],
     },
   ],

@@ -15,7 +15,9 @@ namespace Tensorroot.Gov.Modules.Financas.Application.Contabilidade.Msc;
 /// Outbox. Idempotente por (Tenant, Exercicio, Mes=13, Tipo=Encerramento). DESIGN §6.
 /// </summary>
 /// <param name="Exercicio">Exercício encerrado.</param>
-/// <param name="PoderOrgao">Código Poder/Órgão (PO) do ente. // TODO(validar-oficial) tabela PO.</param>
+/// <param name="PoderOrgao">
+/// Código Poder/Órgão (PO, 5 dígitos) do ente. Omitido ⇒ PO do Executivo (único emissor da MSC).
+/// </param>
 public sealed record GerarMscEncerramentoCommand(int Exercicio, string? PoderOrgao = null)
     : ICommand<GerarMscResultado>;
 
@@ -23,7 +25,13 @@ public sealed record GerarMscEncerramentoCommand(int Exercicio, string? PoderOrg
 public sealed class GerarMscEncerramentoValidator : AbstractValidator<GerarMscEncerramentoCommand>
 {
     /// <summary>Define as regras.</summary>
-    public GerarMscEncerramentoValidator() => RuleFor(c => c.Exercicio).GreaterThanOrEqualTo(1900);
+    public GerarMscEncerramentoValidator()
+    {
+        RuleFor(c => c.Exercicio).GreaterThanOrEqualTo(1900);
+        RuleFor(c => c.PoderOrgao)
+            .Must(po => po is null || InformacoesComplementaresMsc.PoderOrgaoValido(po))
+            .WithMessage("Poder/Orgao (PO) deve ter 5 digitos (2 poder + 3 orgao) — Regras Gerais MSC 2026, IC nº1.");
+    }
 }
 
 /// <summary>

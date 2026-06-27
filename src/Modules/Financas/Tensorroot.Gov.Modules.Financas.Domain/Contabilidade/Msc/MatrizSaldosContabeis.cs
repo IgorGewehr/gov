@@ -85,6 +85,7 @@ public sealed class MatrizSaldosContabeis
     /// <param name="tipoMatriz">Tipo da matriz.</param>
     /// <param name="linhas">Linhas derivadas do balancete.</param>
     /// <returns>Nova matriz validada.</returns>
+    /// <exception cref="MatrizSaldosSemPoderOrgaoException">Se alguma linha nao carrega o Poder/Orgao (PO).</exception>
     /// <exception cref="MatrizSaldosDesbalanceadaException">Se o fechamento D=C global nao confere.</exception>
     /// <exception cref="MatrizSaldosClasseDesbalanceadaException">Se alguma classe contabil nao fecha D=C.</exception>
     /// <exception cref="MatrizSaldosContaInconsistenteException">Se SI+movimento != SF em alguma conta.</exception>
@@ -98,6 +99,10 @@ public sealed class MatrizSaldosContabeis
         ArgumentNullException.ThrowIfNull(linhas);
 
         var matriz = new MatrizSaldosContabeis(tenantId, exercicio, mes, tipoMatriz, linhas.ToList());
+
+        // Regra dura SICONFI #0: o Poder/Orgao (PO) e associado a TODAS as contas do PCASP (Regras Gerais
+        // MSC 2026, IC nº1). Sem PO a linha seria rejeitada na recepcao — bloqueia a montagem.
+        matriz.ValidarPoderOrgaoObrigatorio();
 
         // Regra geral: o total D=C deve fechar (partida dobrada do balancete consolidado).
         if (!matriz.EstaBalanceada)
@@ -116,6 +121,19 @@ public sealed class MatrizSaldosContabeis
         matriz.ValidarConsistenciaSaldoPorConta();
 
         return matriz;
+    }
+
+    // Regra dura SICONFI #0 (Regras Gerais MSC 2026, IC nº1): o Poder/Orgao (PO) e associado a TODAS as
+    // contas do PCASP. Toda linha da MSC deve carregar um PO valido (5 digitos) — caso contrario rejeicao.
+    private void ValidarPoderOrgaoObrigatorio()
+    {
+        foreach (var linha in _linhas)
+        {
+            if (!linha.Complementares.TemPoderOrgao())
+            {
+                throw new MatrizSaldosSemPoderOrgaoException(linha.ContaPcasp);
+            }
+        }
     }
 
     // Regra dura SICONFI #1 (Regras Gerais MSC 2026): em cada classe contabil (Patrimonial=1-4,

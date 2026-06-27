@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Administracao.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AdministracaoDbContext))]
-    partial class AdministracaoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260627011426_CredenciamentoEPcaVinculoRevisao")]
+    partial class CredenciamentoEPcaVinculoRevisao
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

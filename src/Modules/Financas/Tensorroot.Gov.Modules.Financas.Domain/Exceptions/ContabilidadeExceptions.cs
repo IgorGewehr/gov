@@ -151,6 +151,39 @@ public sealed class MatrizSaldosContaInconsistenteException : ContabilidadeExcep
 }
 
 /// <summary>
+/// Lançada quando uma linha da MSC não carrega o Poder/Órgão (PO). A informação complementar PO é
+/// associada a TODAS as contas do PCASP (Regras Gerais MSC 2026, IC nº1 "Poder ou Órgão") — uma MSC com
+/// linhas sem PO seria rejeitada pelo SICONFI. Bloqueia a montagem da matriz.
+/// </summary>
+public sealed class MatrizSaldosSemPoderOrgaoException : ContabilidadeException
+{
+    /// <summary>Cria a exceção identificando a conta sem PO.</summary>
+    /// <param name="contaPcasp">Conta PCASP da linha sem Poder/Órgão.</param>
+    public MatrizSaldosSemPoderOrgaoException(string contaPcasp)
+        : base($"MSC: linha da conta {contaPcasp} sem Poder/Orgao (PO). O PO e obrigatorio em TODAS as "
+            + "contas do PCASP (Regras Gerais MSC 2026, IC nº1).")
+    {
+    }
+}
+
+/// <summary>
+/// Lançada quando o 5º dígito (indicador de consolidação / saldos recíprocos) de uma conta patrimonial
+/// está fora do domínio oficial {1..5} (Consolidação, Intra-OFSS, Inter-OFSS União/Estados/Municípios —
+/// Regras Gerais MSC 2026, "Conta Contábil"; MCASP P.IV item 3.2.2).
+/// </summary>
+public sealed class IndicadorConsolidacaoInvalidoException : ContabilidadeException
+{
+    /// <summary>Cria a exceção identificando a conta e o indicador inválido.</summary>
+    /// <param name="codigoConta">Conta PCASP ofensora.</param>
+    /// <param name="indicador">Indicador de consolidação encontrado (fora de 1..5).</param>
+    public IndicadorConsolidacaoInvalidoException(string codigoConta, int indicador)
+        : base($"Conta {codigoConta}: indicador de consolidacao (5º digito) {indicador} invalido; "
+            + "esperado 1..5 (1=Consolidacao, 2=Intra-OFSS, 3=Inter-Uniao, 4=Inter-Estados, 5=Inter-Municipios).")
+    {
+    }
+}
+
+/// <summary>
 /// Lançada quando uma demonstração DCASP não fecha o invariante esperado (ex.: BP Ativo ≠ Passivo+PL,
 /// BO Receita ≠ Despesa, BF Ingressos ≠ Dispêndios) — indica balancete inconsistente ou mapa incorreto.
 /// </summary>

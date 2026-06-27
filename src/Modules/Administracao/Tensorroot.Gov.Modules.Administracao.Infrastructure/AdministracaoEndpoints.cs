@@ -13,6 +13,7 @@ using Tensorroot.Gov.Modules.Administracao.Application.RegistroPrecos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
+using Tensorroot.Gov.Modules.Administracao.Domain.Pca;
 using Tensorroot.Gov.Modules.Administracao.Domain.RegistroPrecos;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure.Authorization;
 
@@ -37,6 +38,7 @@ internal static partial class AdministracaoEndpoints
         MapCatalogo(grupo);
         MapAtas(grupo);
         MapPca(grupo);
+        MapCredenciamentos(grupo);
     }
 
     private static void MapCatalogo(RouteGroupBuilder grupo)
@@ -186,6 +188,22 @@ internal static partial class AdministracaoEndpoints
             Guid pcaId, NumeroPncpPayload payload, ISender sender, CancellationToken cancellationToken) =>
         {
             await sender.Send(new PublicarPcaNoPncpCommand(pcaId, payload.NumeroPncp), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/pca/{pcaId:guid}/revisar", async (
+            Guid pcaId, MotivoPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(new RevisarPcaCommand(pcaId, payload.Motivo), cancellationToken);
+            return Results.NoContent();
+        }).RequirePermission("administracao.gerenciar");
+
+        grupo.MapPost("/pca/{pcaId:guid}/itens/{itemPcaId:guid}/vincular-contratacao", async (
+            Guid pcaId, Guid itemPcaId, VincularContratacaoItemPcaPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            await sender.Send(
+                new VincularContratacaoItemPcaCommand(pcaId, itemPcaId, payload.Fonte, payload.ReferenciaId, payload.Identificacao),
+                cancellationToken);
             return Results.NoContent();
         }).RequirePermission("administracao.gerenciar");
 
@@ -408,4 +426,9 @@ internal static partial class AdministracaoEndpoints
         string? Justificativa);
 
     private sealed record NumeroPncpPayload(string NumeroPncp);
+
+    private sealed record VincularContratacaoItemPcaPayload(
+        FonteContratacaoPca Fonte,
+        Guid ReferenciaId,
+        string? Identificacao);
 }

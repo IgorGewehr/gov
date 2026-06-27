@@ -11,13 +11,19 @@ namespace Tensorroot.Gov.Modules.Administracao.Application.Pca;
 /// <param name="ValorEstimado">Valor estimado total.</param>
 /// <param name="TrimestreDesejado">Trimestre desejado (1 a 4).</param>
 /// <param name="Justificativa">Justificativa da necessidade.</param>
+/// <param name="FonteContratacao">Natureza da contratacao que concretizou o item, quando vinculada.</param>
+/// <param name="ContratacaoReferenciaId">Identificador do instrumento gerado, quando vinculado.</param>
+/// <param name="ContratacaoIdentificacao">Identificacao legivel do instrumento, quando vinculada.</param>
 public sealed record ItemPcaDetalhe(
     Guid ItemPcaId,
     Guid ItemCatalogoId,
     decimal Quantidade,
     decimal ValorEstimado,
     int TrimestreDesejado,
-    string? Justificativa);
+    string? Justificativa,
+    string? FonteContratacao,
+    Guid? ContratacaoReferenciaId,
+    string? ContratacaoIdentificacao);
 
 /// <summary>Detalhe completo do PCA (itens e total estimado).</summary>
 /// <param name="Id">Identificador.</param>
@@ -26,12 +32,16 @@ public sealed record ItemPcaDetalhe(
 /// <param name="NumeroPncp">Numero de controle no PNCP, quando publicado.</param>
 /// <param name="ValorTotalEstimado">Soma dos valores estimados dos itens.</param>
 /// <param name="Itens">Itens de contratacao pretendida.</param>
+/// <param name="NumeroRevisao">Numero de revisoes formais ja concluidas sobre o plano.</param>
+/// <param name="MotivoRevisaoAtual">Motivacao da revisao em curso, quando o plano esta EmRevisao.</param>
 public sealed record PcaDetalhe(
     Guid Id,
     int Exercicio,
     string Situacao,
     string? NumeroPncp,
     decimal ValorTotalEstimado,
+    int NumeroRevisao,
+    string? MotivoRevisaoAtual,
     IReadOnlyList<ItemPcaDetalhe> Itens);
 
 /// <summary>Obtem o PCA de um exercicio (com itens).</summary>
@@ -58,12 +68,17 @@ public sealed class ObterPcaPorExercicioHandler(IPcaRepository planos)
             plano.Situacao.ToString(),
             plano.NumeroPncp,
             plano.ValorTotalEstimado.Valor,
+            plano.NumeroRevisao,
+            plano.MotivoRevisaoAtual,
             plano.Itens.Select(i => new ItemPcaDetalhe(
                 i.Id.Value,
                 i.ItemCatalogoId.Value,
                 i.Quantidade,
                 i.ValorEstimado.Valor,
                 i.TrimestreDesejado,
-                i.Justificativa)).ToList());
+                i.Justificativa,
+                i.ContratacaoVinculada?.Fonte.ToString(),
+                i.ContratacaoVinculada?.ReferenciaId,
+                i.ContratacaoVinculada?.Identificacao)).ToList());
     }
 }

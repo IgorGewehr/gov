@@ -28,6 +28,12 @@ public sealed class CodigoContabil : ValueObject
     private const int NivelDigitoConsolidacao = 5;
     private const int ClassePatrimonialMaxima = 4;
 
+    // Dominio oficial do 5o digito de consolidacao das contas patrimoniais: 1=Consolidacao, 2=Intra-OFSS,
+    // 3=Inter-OFSS Uniao, 4=Inter-OFSS Estados/DF, 5=Inter-OFSS Municipios (Regras Gerais MSC 2026, "Conta
+    // Contabil"; MCASP P.IV item 3.2.2). Fora desse intervalo o 5o digito NAO e indicador de consolidacao.
+    private const int IndicadorConsolidacaoMinimo = 1;
+    private const int IndicadorConsolidacaoMaximo = 5;
+
     private CodigoContabil(string codigo, int nivel, int classe, string[] segmentos)
     {
         Codigo = codigo;
@@ -127,6 +133,34 @@ public sealed class CodigoContabil : ValueObject
         }
 
         return int.Parse(_segmentos[NivelDigitoConsolidacao - 1], CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// Indica se o 5º dígito desta conta patrimonial corresponde a um indicador de consolidação válido
+    /// (1..5). Retorna <c>false</c> para contas não patrimoniais, sintéticas (sem 5º nível) ou cujo 5º
+    /// dígito seja subtítulo do PCASP Estendido fora do intervalo de saldos recíprocos.
+    /// </summary>
+    /// <returns><c>true</c> se o 5º dígito é um indicador de consolidação oficial (1..5).</returns>
+    public bool EhContaDeConsolidacao()
+    {
+        var indicador = IndicadorConsolidacao();
+        return indicador is >= IndicadorConsolidacaoMinimo and <= IndicadorConsolidacaoMaximo;
+    }
+
+    /// <summary>
+    /// Valida que, se esta conta patrimonial expõe um 5º dígito tratado como indicador de consolidação,
+    /// ele está no domínio oficial {1..5} (Regras Gerais MSC 2026, "Conta Contábil"; MCASP P.IV item 3.2.2).
+    /// Não lança para contas não patrimoniais nem para 5º dígito que seja subtítulo legítimo do PCASP
+    /// Estendido (qualquer outro valor é aceito como subtítulo, não como consolidação).
+    /// </summary>
+    /// <param name="indicador">Valor do 5º dígito a validar como indicador de consolidação.</param>
+    /// <exception cref="Tensorroot.Gov.Modules.Financas.Domain.Exceptions.IndicadorConsolidacaoInvalidoException">Se o indicador estiver fora de 1..5.</exception>
+    public void ExigirIndicadorConsolidacaoValido(int indicador)
+    {
+        if (indicador is < IndicadorConsolidacaoMinimo or > IndicadorConsolidacaoMaximo)
+        {
+            throw new Tensorroot.Gov.Modules.Financas.Domain.Exceptions.IndicadorConsolidacaoInvalidoException(Codigo, indicador);
+        }
     }
 
     /// <summary>Indica se o código está sob o prefixo informado (para agregação de balancete sintético).</summary>

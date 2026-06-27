@@ -11,6 +11,11 @@ namespace Tensorroot.Gov.Modules.Financas.Domain.Contabilidade.Msc;
 /// </summary>
 public sealed class InformacoesComplementaresMsc : ValueObject
 {
+    // Poder/Orgao (PO): 5 digitos = 2 (poder) + 3 (orgao), conforme Regras Gerais MSC 2026 (Anexo I
+    // Port. STN 642/2019, IC nº1 "Poder ou Orgao"). A norma associa o PO a TODAS as contas do PCASP;
+    // logo nao e magico nem opcional — e o formato fixo da tabela PO do SICONFI.
+    private const int DigitosPoderOrgao = 5;
+
     private InformacoesComplementaresMsc(
         string? poderOrgao,
         string? atributoSuperavitFinanceiro,
@@ -81,7 +86,16 @@ public sealed class InformacoesComplementaresMsc : ValueObject
         string? naturezaDespesa = null,
         string? funcaoSubfuncao = null,
         string? anoInscricaoRp = null)
-        => new(
+    {
+        // PO, quando informado, deve respeitar o formato oficial (5 digitos). Atributos vazios ficam nulos.
+        if (poderOrgao is not null && !PoderOrgaoValido(poderOrgao))
+        {
+            throw new ArgumentException(
+                $"Poder/Orgao (PO) '{poderOrgao}' invalido: esperado {DigitosPoderOrgao} digitos (Regras Gerais MSC 2026, IC nº1).",
+                nameof(poderOrgao));
+        }
+
+        return new(
             poderOrgao,
             atributoSuperavitFinanceiro,
             dividaConsolidada,
@@ -91,6 +105,7 @@ public sealed class InformacoesComplementaresMsc : ValueObject
             naturezaDespesa,
             funcaoSubfuncao,
             anoInscricaoRp);
+    }
 
     /// <summary>
     /// Representacao textual canonica das informacoes complementares presentes (formato <c>CHAVE=valor</c>
@@ -111,6 +126,19 @@ public sealed class InformacoesComplementaresMsc : ValueObject
         Adicionar(partes, "AI", AnoInscricaoRp);
         return partes.Count == 0 ? null : string.Join(';', partes);
     }
+
+    /// <summary>
+    /// Indica se o Poder/Orgao (PO) esta presente e valido. A MSC do SICONFI exige PO em TODAS as contas
+    /// (Regras Gerais MSC 2026, IC nº1) — uma linha sem PO seria rejeitada na recepcao.
+    /// </summary>
+    /// <returns><c>true</c> se o PO esta preenchido e no formato de 5 digitos.</returns>
+    public bool TemPoderOrgao() => PoderOrgaoValido(PoderOrgao);
+
+    /// <summary>Valida o formato do Poder/Orgao (PO): exatamente 5 digitos (2 poder + 3 orgao).</summary>
+    /// <param name="poderOrgao">Codigo PO candidato.</param>
+    /// <returns><c>true</c> se valido.</returns>
+    public static bool PoderOrgaoValido(string? poderOrgao)
+        => poderOrgao is { Length: DigitosPoderOrgao } && poderOrgao.All(char.IsAsciiDigit);
 
     private static void Adicionar(List<string> partes, string chave, string? valor)
     {

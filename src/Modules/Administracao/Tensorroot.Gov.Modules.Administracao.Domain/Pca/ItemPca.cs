@@ -58,6 +58,37 @@ public sealed class ItemPca : Entity<ItemPcaId>
     /// <summary>Justificativa da necessidade (opcional).</summary>
     public string? Justificativa { get; private set; }
 
+    /// <summary>
+    /// Contratacao que concretizou este item (licitacao/ata/dispensa/inexigibilidade), quando ja houve
+    /// execucao do planejado. <c>null</c> enquanto o item nao foi materializado em instrumento. Rastreia
+    /// o cumprimento do PCA (art. 12, VII; Dec. 11.246/2022).
+    /// </summary>
+    public ContratacaoVinculada? ContratacaoVinculada { get; private set; }
+
+    /// <summary>Indica se o item ja foi concretizado em uma contratacao (licitacao/ata gerada).</summary>
+    public bool FoiContratado => ContratacaoVinculada is not null;
+
+    /// <summary>
+    /// Vincula este item a contratacao que o concretizou (licitacao/ata/dispensa/inexigibilidade). Cada
+    /// item materializa-se uma unica vez; revincular exige antes desvincular (correcao de erro).
+    /// </summary>
+    /// <param name="contratacao">Vinculo da contratacao gerada.</param>
+    /// <exception cref="ArgumentNullException">Vinculo nulo.</exception>
+    /// <exception cref="InvalidOperationException">Item ja vinculado a uma contratacao.</exception>
+    public void VincularContratacao(ContratacaoVinculada contratacao)
+    {
+        ArgumentNullException.ThrowIfNull(contratacao);
+        if (ContratacaoVinculada is not null)
+        {
+            throw new InvalidOperationException("Item ja vinculado a uma contratacao; desvincule antes de revincular.");
+        }
+
+        ContratacaoVinculada = contratacao;
+    }
+
+    /// <summary>Remove o vinculo de contratacao do item (correcao de erro de vinculacao).</summary>
+    public void DesvincularContratacao() => ContratacaoVinculada = null;
+
     /// <summary>Cria um item do PCA.</summary>
     /// <param name="itemCatalogoId">Item de catalogo a contratar.</param>
     /// <param name="quantidade">Quantidade pretendida (positiva).</param>

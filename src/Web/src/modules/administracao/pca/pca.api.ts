@@ -5,13 +5,25 @@ import { http } from '../../../api/http';
 import { ApiError } from '../../../api/problemDetails';
 
 /** Situacao do PCA (enum SituacaoPca). */
-export type SituacaoPca = 'EmElaboracao' | 'Aprovado' | 'Publicado';
+export type SituacaoPca = 'EmElaboracao' | 'Aprovado' | 'Publicado' | 'EmRevisao';
 
 /** Rotulos de situacao para exibicao. */
 export const SITUACAO_PCA_LABEL: Record<SituacaoPca, string> = {
   EmElaboracao: 'Em elaboração',
   Aprovado: 'Aprovado',
   Publicado: 'Publicado',
+  EmRevisao: 'Em revisão',
+};
+
+/** Natureza da contratacao vinculada a um item do PCA (enum FonteContratacaoPca). */
+export type FonteContratacaoPca = 'Licitacao' | 'AtaRegistroPrecos' | 'Dispensa' | 'Inexigibilidade';
+
+/** Rotulos da fonte de contratacao para exibicao. */
+export const FONTE_CONTRATACAO_LABEL: Record<FonteContratacaoPca, string> = {
+  Licitacao: 'Licitação',
+  AtaRegistroPrecos: 'Ata de Registro de Preços',
+  Dispensa: 'Dispensa',
+  Inexigibilidade: 'Inexigibilidade / Credenciamento',
 };
 
 /** Item do PCA (ItemPcaDetalhe). */
@@ -22,6 +34,9 @@ export interface ItemPcaDetalhe {
   valorEstimado: number;
   trimestreDesejado: number;
   justificativa: string | null;
+  fonteContratacao: FonteContratacaoPca | null;
+  contratacaoReferenciaId: string | null;
+  contratacaoIdentificacao: string | null;
 }
 
 /** Detalhe do PCA (PcaDetalhe). */
@@ -31,7 +46,16 @@ export interface PcaDetalhe {
   situacao: SituacaoPca;
   numeroPncp: string | null;
   valorTotalEstimado: number;
+  numeroRevisao: number;
+  motivoRevisaoAtual: string | null;
   itens: ItemPcaDetalhe[];
+}
+
+/** Input de vínculo de contratação a um item do PCA. */
+export interface VincularContratacaoItemInput {
+  fonte: FonteContratacaoPca;
+  referenciaId: string;
+  identificacao?: string | null;
 }
 
 /** IncluirItemPcaPayload. */
@@ -76,6 +100,14 @@ function aprovarPca(pcaId: string): Promise<void> {
 
 function publicarPca(pcaId: string, numeroPncp: string): Promise<void> {
   return http.post<void>(`/administracao/pca/${pcaId}/publicar-pncp`, { numeroPncp });
+}
+
+function revisarPca(pcaId: string, motivo: string): Promise<void> {
+  return http.post<void>(`/administracao/pca/${pcaId}/revisar`, { motivo });
+}
+
+function vincularContratacao(pcaId: string, itemPcaId: string, input: VincularContratacaoItemInput): Promise<void> {
+  return http.post<void>(`/administracao/pca/${pcaId}/itens/${itemPcaId}/vincular-contratacao`, input);
 }
 
 /** ObterPcaPorExercicio — o PCA do exercicio (ou null se inexistente). */
@@ -127,6 +159,25 @@ export function usePublicarPca(pcaId: string, exercicio: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (numeroPncp: string) => publicarPca(pcaId, numeroPncp),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: pcaKeys.exercicio(exercicio) }),
+  });
+}
+
+/** RevisarPca — reabre o plano vigente para revisão formal de itens. */
+export function useRevisarPca(pcaId: string, exercicio: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (motivo: string) => revisarPca(pcaId, motivo),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: pcaKeys.exercicio(exercicio) }),
+  });
+}
+
+/** VincularContratacaoItemPca — vincula um item à licitação/ata/dispensa/inexigibilidade gerada. */
+export function useVincularContratacaoItemPca(pcaId: string, exercicio: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemPcaId, input }: { itemPcaId: string; input: VincularContratacaoItemInput }) =>
+      vincularContratacao(pcaId, itemPcaId, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: pcaKeys.exercicio(exercicio) }),
   });
 }

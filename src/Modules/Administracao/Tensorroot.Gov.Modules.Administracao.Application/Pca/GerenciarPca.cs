@@ -41,6 +41,27 @@ public sealed record AprovarPcaCommand(Guid PcaId) : ICommand;
 /// <param name="NumeroPncp">Numero de controle no PNCP.</param>
 public sealed record PublicarPcaNoPncpCommand(Guid PcaId, string NumeroPncp) : ICommand;
 
+/// <summary>Reabre o PCA vigente para revisao formal (alteracao de itens apos aprovacao/publicacao).</summary>
+/// <param name="PcaId">Identificador do plano.</param>
+/// <param name="Motivo">Motivacao do ato administrativo de revisao.</param>
+public sealed record RevisarPcaCommand(Guid PcaId, string Motivo) : ICommand;
+
+/// <summary>
+/// Vincula um item do PCA a contratacao que o concretizou (licitacao/ata/dispensa/inexigibilidade),
+/// rastreando o cumprimento do planejamento (art. 12, VII; Dec. 11.246/2022).
+/// </summary>
+/// <param name="PcaId">Identificador do plano.</param>
+/// <param name="ItemPcaId">Item planejado a concretizar.</param>
+/// <param name="Fonte">Natureza do instrumento (licitacao/ata/dispensa/inexigibilidade).</param>
+/// <param name="ReferenciaId">Identificador do agregado gerado.</param>
+/// <param name="Identificacao">Identificacao legivel do instrumento (opcional).</param>
+public sealed record VincularContratacaoItemPcaCommand(
+    Guid PcaId,
+    Guid ItemPcaId,
+    FonteContratacaoPca Fonte,
+    Guid ReferenciaId,
+    string? Identificacao) : ICommand;
+
 /// <summary>Regras de validacao da abertura do PCA.</summary>
 public sealed class AbrirPcaValidator : AbstractValidator<AbrirPcaCommand>
 {
@@ -157,6 +178,63 @@ public sealed class PublicarPcaNoPncpHandler(IPcaRepository planos, IUnitOfWork 
         var plano = await planos.ObterPorIdAsync(new PlanoContratacoesId(request.PcaId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("PCA nao encontrado.");
         plano.PublicarNoPncp(request.NumeroPncp);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+}
+
+/// <summary>Validacao da revisao do PCA.</summary>
+public sealed class RevisarPcaValidator : AbstractValidator<RevisarPcaCommand>
+{
+    /// <summary>Define as regras.</summary>
+    public RevisarPcaValidator()
+    {
+        RuleFor(c => c.PcaId).NotEmpty();
+        RuleFor(c => c.Motivo).NotEmpty().MaximumLength(1000);
+    }
+}
+
+/// <summary>Validacao do vinculo de contratacao a item do PCA.</summary>
+public sealed class VincularContratacaoItemPcaValidator : AbstractValidator<VincularContratacaoItemPcaCommand>
+{
+    /// <summary>Define as regras.</summary>
+    public VincularContratacaoItemPcaValidator()
+    {
+        RuleFor(c => c.PcaId).NotEmpty();
+        RuleFor(c => c.ItemPcaId).NotEmpty();
+        RuleFor(c => c.Fonte).IsInEnum();
+        RuleFor(c => c.ReferenciaId).NotEmpty();
+        RuleFor(c => c.Identificacao).MaximumLength(200);
+    }
+}
+
+/// <summary>Handler da revisao do PCA (reabre o plano vigente para alteracao formal de itens).</summary>
+public sealed class RevisarPcaHandler(IPcaRepository planos, IUnitOfWork unitOfWork)
+    : ICommandHandler<RevisarPcaCommand>
+{
+    /// <inheritdoc />
+    public async Task Handle(RevisarPcaCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var plano = await planos.ObterPorIdAsync(new PlanoContratacoesId(request.PcaId), cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("PCA nao encontrado.");
+        plano.Revisar(request.Motivo);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+}
+
+/// <summary>Handler do vinculo de contratacao a item do PCA (rastreabilidade planejamento -> execucao).</summary>
+public sealed class VincularContratacaoItemPcaHandler(IPcaRepository planos, IUnitOfWork unitOfWork)
+    : ICommandHandler<VincularContratacaoItemPcaCommand>
+{
+    /// <inheritdoc />
+    public async Task Handle(VincularContratacaoItemPcaCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var plano = await planos.ObterPorIdAsync(new PlanoContratacoesId(request.PcaId), cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("PCA nao encontrado.");
+        plano.VincularContratacaoItem(
+            new ItemPcaId(request.ItemPcaId),
+            ContratacaoVinculada.Criar(request.Fonte, request.ReferenciaId, request.Identificacao));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 }

@@ -23,6 +23,8 @@ public sealed class PcaConfiguration : IEntityTypeConfiguration<PlanoContratacoe
         builder.Property(plano => plano.Exercicio);
         builder.Property(plano => plano.Situacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(plano => plano.NumeroPncp).HasMaxLength(60);
+        builder.Property(plano => plano.NumeroRevisao);
+        builder.Property(plano => plano.MotivoRevisaoAtual).HasMaxLength(1000);
         builder.Ignore(plano => plano.ValorTotalEstimado);
 
         builder.OwnsMany(plano => plano.Itens, MapearItens);
@@ -47,5 +49,14 @@ public sealed class PcaConfiguration : IEntityTypeConfiguration<PlanoContratacoe
             .HasColumnType("decimal(18,2)");
         itens.Property(item => item.TrimestreDesejado);
         itens.Property(item => item.Justificativa).HasMaxLength(2000);
+        itens.Ignore(item => item.FoiContratado);
+
+        // Vinculo planejamento -> execucao (licitacao/ata/dispensa/inexigibilidade gerada), opcional.
+        itens.OwnsOne(item => item.ContratacaoVinculada, vinculo =>
+        {
+            vinculo.Property(v => v.Fonte).HasConversion<string>().HasMaxLength(30).HasColumnName("ContratacaoFonte");
+            vinculo.Property(v => v.ReferenciaId).HasColumnName("ContratacaoReferenciaId");
+            vinculo.Property(v => v.Identificacao).HasMaxLength(200).HasColumnName("ContratacaoIdentificacao");
+        });
     }
 }

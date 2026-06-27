@@ -64,6 +64,7 @@ public sealed class AdministracaoModule : IModule
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IAtaRepository, AtaRepository>();
         services.AddScoped<IPcaRepository, PcaRepository>();
+        services.AddScoped<ICredenciamentoRepository, CredenciamentoRepository>();
 
         // Anti-Corruption Layer (Receita Federal): consulta de CNPJ resiliente em producao; simulada para dev/testes.
         services.AddSingleton<IReceitaCnpjGateway, SimuladoReceitaCnpjGateway>();

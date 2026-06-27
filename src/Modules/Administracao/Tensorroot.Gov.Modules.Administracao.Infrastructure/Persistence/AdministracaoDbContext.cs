@@ -3,6 +3,7 @@ using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Infrastructure;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Credenciamentos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
@@ -41,6 +42,9 @@ public sealed class AdministracaoDbContext(DbContextOptions<AdministracaoDbConte
 
     /// <summary>Planos de Contratacoes Anuais (PCA — art. 12, VII, Lei 14.133/2021).</summary>
     public DbSet<PlanoContratacoes> PlanosContratacoes => Set<PlanoContratacoes>();
+
+    /// <summary>Editais de credenciamento (art. 78, I e art. 79, Lei 14.133/2021).</summary>
+    public DbSet<Credenciamento> Credenciamentos => Set<Credenciamento>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -138,7 +138,10 @@ public sealed class MscDerivacaoTests
 
     // ---- Regras duras do SICONFI (Regras Gerais MSC 2026, "Observacoes Importantes") ----
 
-    private static InformacoesComplementaresMsc Ic() => InformacoesComplementaresMsc.Criar();
+    // PO valido (5 digitos) em todas as linhas — o PO e obrigatorio na MSC (Regras Gerais MSC 2026, IC
+    // nº1); sem ele a montagem falha antes de chegar nas regras de balanco/consistencia testadas aqui.
+    private static InformacoesComplementaresMsc Ic()
+        => InformacoesComplementaresMsc.Criar(poderOrgao: PoderOrgaoMsc.Executivo);
 
     private static LinhaMsc Reg(string conta, NaturezaSaldo lado, TipoValorMsc tipo, decimal valor)
         => LinhaMsc.Criar(conta, lado, tipo, valor, Ic())!;
@@ -181,5 +184,48 @@ public sealed class MscDerivacaoTests
         var acao = () => MatrizSaldosContabeis.Montar(Tenant, 2026, 3, TipoMatrizMsc.Agregada, linhas);
 
         acao.Should().Throw<MatrizSaldosContaInconsistenteException>();
+    }
+
+    [Fact]
+    public void Linha_sem_poder_orgao_bloqueia_a_matriz()
+    {
+        // PO e associado a TODAS as contas do PCASP (Regras Gerais MSC 2026, IC nº1): sem PO ha rejeicao.
+        var semPo = InformacoesComplementaresMsc.Criar();
+        var linhas = new[]
+        {
+            LinhaMsc.Criar("1.1.1.1.01", NaturezaSaldo.Devedora, TipoValorMsc.SaldoFinal, 300m, semPo)!,
+            LinhaMsc.Criar("2.1.3.1.01", NaturezaSaldo.Credora, TipoValorMsc.SaldoFinal, 300m, semPo)!,
+        };
+
+        var acao = () => MatrizSaldosContabeis.Montar(Tenant, 2026, 3, TipoMatrizMsc.Agregada, linhas);
+
+        acao.Should().Throw<MatrizSaldosSemPoderOrgaoException>();
+    }
+
+    [Fact]
+    public void Derivacao_sem_po_assume_o_executivo()
+    {
+        // A MSC e enviada SOMENTE pelo Executivo: na ausencia de PO, todas as linhas saem com 01001.
+        var linhas = DerivadorMsc.Derivar(BalanceteBalanceado(), poderOrgao: null);
+
+        linhas.Should().OnlyContain(l => l.Complementares.PoderOrgao == PoderOrgaoMsc.Executivo);
+    }
+
+    [Fact]
+    public void Po_fora_do_formato_de_cinco_digitos_e_rejeitado()
+    {
+        var acao = () => InformacoesComplementaresMsc.Criar(poderOrgao: "123");
+
+        acao.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("1.1.1.1.1", true)]   // 5o digito = 1 (Consolidacao) -> indicador valido
+    [InlineData("1.1.1.1.5", true)]   // 5o digito = 5 (Inter-OFSS Municipios) -> valido
+    [InlineData("1.1.1.1.7", false)]  // 5o digito = 7 -> subtitulo do Estendido, NAO consolidacao
+    [InlineData("6.2.1.1.1", false)]  // classe orcamentaria -> nao patrimonial, sem consolidacao
+    public void Quinto_digito_consolidacao_so_e_valido_entre_1_e_5(string codigo, bool esperado)
+    {
+        CodigoContabil.De(codigo).EhContaDeConsolidacao().Should().Be(esperado);
     }
 }

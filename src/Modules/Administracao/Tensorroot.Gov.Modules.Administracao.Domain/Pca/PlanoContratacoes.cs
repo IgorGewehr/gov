@@ -51,6 +51,12 @@ public sealed class PlanoContratacoes : AggregateRoot<PlanoContratacoesId>, IMus
     /// <summary>Numero de controle do PCA no PNCP, quando publicado.</summary>
     public string? NumeroPncp { get; private set; }
 
+    /// <summary>Numero de revisoes formais ja concluidas sobre o plano (versionamento das alteracoes).</summary>
+    public int NumeroRevisao { get; private set; }
+
+    /// <summary>Motivacao da revisao em curso (ato administrativo), quando o plano esta EmRevisao.</summary>
+    public string? MotivoRevisaoAtual { get; private set; }
+
     /// <summary>Itens de contratacao pretendida no exercicio.</summary>
     public IReadOnlyCollection<ItemPca> Itens => _itens;
 
@@ -92,7 +98,7 @@ public sealed class PlanoContratacoes : AggregateRoot<PlanoContratacoesId>, IMus
         int trimestreDesejado,
         string? justificativa)
     {
-        GarantirEmElaboracao();
+        GarantirEditavel();
         if (_itens.Any(i => i.ItemCatalogoId == itemCatalogoId))
         {
             throw new InvalidOperationException("Item de catalogo ja consta no plano; ajuste o item existente.");
@@ -108,10 +114,45 @@ public sealed class PlanoContratacoes : AggregateRoot<PlanoContratacoesId>, IMus
     /// <exception cref="InvalidOperationException">Se o plano nao estiver EmElaboracao ou o item nao existir.</exception>
     public void RemoverItem(ItemPcaId itemPcaId)
     {
-        GarantirEmElaboracao();
+        GarantirEditavel();
         var item = _itens.FirstOrDefault(i => i.Id == itemPcaId)
             ?? throw new InvalidOperationException("Item nao pertence a este plano.");
+        if (item.FoiContratado)
+        {
+            throw new InvalidOperationException("Item ja vinculado a uma contratacao nao pode ser removido do plano (rastreabilidade).");
+        }
+
         _itens.Remove(item);
+    }
+
+    /// <summary>
+    /// Vincula um item do plano a contratacao que o concretizou (licitacao/ata/dispensa/inexigibilidade),
+    /// materializando a rastreabilidade planejamento -> execucao (art. 12, VII; Dec. 11.246/2022). So apos
+    /// o plano estar vigente (Aprovado/Publicado/EmRevisao): nao se vincula execucao a rascunho.
+    /// </summary>
+    /// <param name="itemPcaId">Item planejado a concretizar.</param>
+    /// <param name="contratacao">Vinculo da contratacao gerada.</param>
+    /// <exception cref="InvalidOperationException">Plano em rascunho ou item inexistente.</exception>
+    public void VincularContratacaoItem(ItemPcaId itemPcaId, ContratacaoVinculada contratacao)
+    {
+        if (Situacao == SituacaoPca.EmElaboracao)
+        {
+            throw new InvalidOperationException("So e possivel vincular contratacao a item de plano ja aprovado/vigente.");
+        }
+
+        var item = _itens.FirstOrDefault(i => i.Id == itemPcaId)
+            ?? throw new InvalidOperationException("Item nao pertence a este plano.");
+        item.VincularContratacao(contratacao);
+    }
+
+    /// <summary>Desvincula a contratacao de um item (correcao de erro de vinculacao).</summary>
+    /// <param name="itemPcaId">Item a desvincular.</param>
+    /// <exception cref="InvalidOperationException">Item inexistente.</exception>
+    public void DesvincularContratacaoItem(ItemPcaId itemPcaId)
+    {
+        var item = _itens.FirstOrDefault(i => i.Id == itemPcaId)
+            ?? throw new InvalidOperationException("Item nao pertence a este plano.");
+        item.DesvincularContratacao();
     }
 
     /// <summary>
@@ -120,13 +161,44 @@ public sealed class PlanoContratacoes : AggregateRoot<PlanoContratacoesId>, IMus
     /// <exception cref="InvalidOperationException">Se o plano nao estiver EmElaboracao ou estiver vazio.</exception>
     public void Aprovar()
     {
-        GarantirEmElaboracao();
+        if (Situacao is not (SituacaoPca.EmElaboracao or SituacaoPca.EmRevisao))
+        {
+            throw new InvalidOperationException($"A aprovacao exige plano EmElaboracao ou EmRevisao. Situacao atual: {Situacao}.");
+        }
+
         if (_itens.Count == 0)
         {
             throw new InvalidOperationException("Plano sem itens nao pode ser aprovado.");
         }
 
+        // Concluir uma revisao incrementa a versao e limpa a motivacao corrente (versionamento das alteracoes).
+        if (Situacao == SituacaoPca.EmRevisao)
+        {
+            NumeroRevisao++;
+            MotivoRevisaoAtual = null;
+        }
+
         Situacao = SituacaoPca.Aprovado;
+    }
+
+    /// <summary>
+    /// Reabre o plano vigente (Aprovado/Publicado) para REVISAO FORMAL (inclusao/exclusao/ajuste de itens),
+    /// passando a <c>EmRevisao</c> com a motivacao registrada. Concluida a revisao, chama-se <see cref="Aprovar"/>
+    /// (incrementando <see cref="NumeroRevisao"/>) e, se necessario, republica-se no PNCP.
+    /// </summary>
+    /// <param name="motivo">Motivacao do ato administrativo de revisao.</param>
+    /// <exception cref="ArgumentException">Motivo vazio.</exception>
+    /// <exception cref="InvalidOperationException">Plano nao esta Aprovado/Publicado.</exception>
+    public void Revisar(string motivo)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(motivo);
+        if (Situacao is not (SituacaoPca.Aprovado or SituacaoPca.Publicado))
+        {
+            throw new InvalidOperationException($"A revisao exige plano Aprovado ou Publicado. Situacao atual: {Situacao}.");
+        }
+
+        Situacao = SituacaoPca.EmRevisao;
+        MotivoRevisaoAtual = motivo.Trim();
     }
 
     /// <summary>
@@ -147,11 +219,13 @@ public sealed class PlanoContratacoes : AggregateRoot<PlanoContratacoesId>, IMus
         Situacao = SituacaoPca.Publicado;
     }
 
-    private void GarantirEmElaboracao()
+    private void GarantirEditavel()
     {
-        if (Situacao != SituacaoPca.EmElaboracao)
+        // Itens sao editaveis em rascunho (EmElaboracao) ou durante uma revisao formal (EmRevisao).
+        if (Situacao is not (SituacaoPca.EmElaboracao or SituacaoPca.EmRevisao))
         {
-            throw new InvalidOperationException($"Operacao exige plano EmElaboracao. Situacao atual: {Situacao}.");
+            throw new InvalidOperationException(
+                $"Operacao exige plano EmElaboracao ou EmRevisao; revise o plano antes de altera-lo. Situacao atual: {Situacao}.");
         }
     }
 }

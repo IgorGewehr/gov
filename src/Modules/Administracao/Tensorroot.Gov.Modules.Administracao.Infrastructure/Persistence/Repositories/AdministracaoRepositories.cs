@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Domain.Catalogo;
 using Tensorroot.Gov.Modules.Administracao.Domain.Contratos;
+using Tensorroot.Gov.Modules.Administracao.Domain.Credenciamentos;
 using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.Licitacoes;
@@ -265,4 +266,37 @@ public sealed class PcaRepository(AdministracaoDbContext context) : IPcaReposito
     /// <inheritdoc />
     public Task<bool> ExistePorExercicioAsync(int exercicio, CancellationToken cancellationToken)
         => context.PlanosContratacoes.AnyAsync(plano => plano.Exercicio == exercicio, cancellationToken);
+}
+
+/// <summary>Implementacao EF Core do repositorio do agregado <see cref="Credenciamento"/> (art. 79).</summary>
+public sealed class CredenciamentoRepository(AdministracaoDbContext context) : ICredenciamentoRepository
+{
+    /// <inheritdoc />
+    public void Adicionar(Credenciamento credenciamento)
+    {
+        ArgumentNullException.ThrowIfNull(credenciamento);
+        context.Credenciamentos.Add(credenciamento);
+    }
+
+    /// <inheritdoc />
+    public Task<Credenciamento?> ObterPorIdAsync(CredenciamentoId id, CancellationToken cancellationToken)
+        => context.Credenciamentos
+            .Include(c => c.Itens)
+            .Include(c => c.Credenciados)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Credenciamento>> ListarAsync(SituacaoCredenciamento? situacao, CancellationToken cancellationToken)
+    {
+        var consulta = context.Credenciamentos.Include(c => c.Credenciados).AsQueryable();
+        if (situacao is { } s)
+        {
+            consulta = consulta.Where(c => c.Situacao == s);
+        }
+
+        return await consulta
+            .OrderByDescending(c => c.VigenciaInicio)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 }

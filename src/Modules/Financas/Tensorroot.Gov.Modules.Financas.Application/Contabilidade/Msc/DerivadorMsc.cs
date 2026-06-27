@@ -18,24 +18,31 @@ public static class DerivadorMsc
     /// sinteticas do balancete (se houver) sao ignoradas para nao duplicar saldos.
     /// </summary>
     /// <param name="linhasBalancete">Linhas do balancete da competencia.</param>
-    /// <param name="poderOrgao">Codigo Poder/Orgao (PO) do tenant. // TODO(validar-oficial) tabela PO.</param>
-    /// <returns>Linhas da MSC (valores &gt;= 0).</returns>
+    /// <param name="poderOrgao">
+    /// Codigo Poder/Orgao (PO) do tenant. A MSC e enviada SOMENTE pelo Executivo (Regras Gerais MSC 2026);
+    /// quando nulo, assume o PO do Executivo (<see cref="PoderOrgaoMsc.Executivo"/>) — o PO e obrigatorio em
+    /// TODAS as contas do PCASP (IC nº1), nunca nulo na MSC final.
+    /// </param>
+    /// <returns>Linhas da MSC (valores &gt;= 0), todas com PO preenchido.</returns>
     public static IReadOnlyList<LinhaMsc> Derivar(
         IEnumerable<LinhaBalancete> linhasBalancete,
         string? poderOrgao)
     {
         ArgumentNullException.ThrowIfNull(linhasBalancete);
 
+        // PO e obrigatorio em toda linha: na ausencia, default do Executivo (unico emissor da MSC).
+        var po = string.IsNullOrWhiteSpace(poderOrgao) ? PoderOrgaoMsc.Executivo : poderOrgao.Trim();
+
         var linhas = new List<LinhaMsc>();
         foreach (var balancete in linhasBalancete)
         {
-            DerivarLinha(balancete, poderOrgao, linhas);
+            DerivarLinha(balancete, po, linhas);
         }
 
         return linhas;
     }
 
-    private static void DerivarLinha(LinhaBalancete balancete, string? poderOrgao, List<LinhaMsc> destino)
+    private static void DerivarLinha(LinhaBalancete balancete, string poderOrgao, List<LinhaMsc> destino)
     {
         var complementares = ComplementaresPara(balancete, poderOrgao);
 
@@ -78,7 +85,7 @@ public static class DerivadorMsc
                 complementares));
     }
 
-    private static InformacoesComplementaresMsc ComplementaresPara(LinhaBalancete balancete, string? poderOrgao)
+    private static InformacoesComplementaresMsc ComplementaresPara(LinhaBalancete balancete, string poderOrgao)
     {
         // FP so se aplica as classes 1 e 2 (Ativo/Passivo). A conta carrega o indicador F/P;
         // o balancete nao snapshota o indicador, entao no M3 derivamos FP por classe quando aplicavel.

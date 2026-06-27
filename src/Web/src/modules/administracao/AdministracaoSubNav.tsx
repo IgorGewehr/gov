@@ -10,6 +10,7 @@ const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/administracao/fornecedores', label: 'Fornecedores' },
   { to: '/administracao/catalogo', label: 'Catálogo' },
   { to: '/administracao/atas', label: 'Atas de Preços' },
+  { to: '/administracao/credenciamentos', label: 'Credenciamento' },
   { to: '/administracao/pca', label: 'PCA' },
 ];
 
