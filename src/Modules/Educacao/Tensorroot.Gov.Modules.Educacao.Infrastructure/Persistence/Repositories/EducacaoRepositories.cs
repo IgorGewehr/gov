@@ -5,6 +5,7 @@ using Tensorroot.Gov.Modules.Educacao.Domain.Escolas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
 using Tensorroot.Gov.Modules.Educacao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Educacao.Infrastructure.Persistence.Repositories;
 
@@ -269,10 +270,12 @@ public sealed class AlunoRepository(EducacaoDbContext context) : IAlunoRepositor
             .FirstOrDefaultAsync(aluno => aluno.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public Task<bool> ExisteCpfAsync(string cpf, CancellationToken cancellationToken)
+    public Task<bool> ExisteCpfAsync(Cpf cpf, CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(cpf);
-        return context.Alunos.AnyAsync(aluno => aluno.Cpf != null && aluno.Cpf.Digitos == cpf, cancellationToken);
+        ArgumentNullException.ThrowIfNull(cpf);
+        // Cpf e mapeado por value converter (VO -> string): a igualdade do VO inteiro e translatavel para SQL;
+        // navegar em aluno.Cpf.Digitos NAO seria traduzivel (a propriedade nao vira coluna). Tenant-scoped pelo filtro global.
+        return context.Alunos.AnyAsync(aluno => aluno.Cpf == cpf, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -288,17 +291,14 @@ public sealed class AlunoRepository(EducacaoDbContext context) : IAlunoRepositor
         if (!string.IsNullOrWhiteSpace(termo))
         {
             var termoNormalizado = termo.Trim();
+            // Cpf e mapeado por value converter (VO -> string), nao fatiavel por LIKE/Contains (a propriedade
+            // Digitos nao vira coluna): casa por igualdade exata do VO quando o termo for um CPF valido completo;
+            // o nome casa por trecho.
             var digitos = new string(termoNormalizado.Where(char.IsDigit).ToArray());
-            if (digitos.Length > 0)
-            {
-                consulta = consulta.Where(aluno =>
-                    aluno.DadosCivis.Nome.Contains(termoNormalizado)
-                    || (aluno.Cpf != null && aluno.Cpf.Digitos.Contains(digitos)));
-            }
-            else
-            {
-                consulta = consulta.Where(aluno => aluno.DadosCivis.Nome.Contains(termoNormalizado));
-            }
+            var cpfExato = Cpf.TryCreate(digitos, out var cpf) ? cpf : null;
+            consulta = consulta.Where(aluno =>
+                aluno.DadosCivis.Nome.Contains(termoNormalizado)
+                || (cpfExato != null && aluno.Cpf == cpfExato));
         }
 
         if (situacao is { } situacaoFiltro)

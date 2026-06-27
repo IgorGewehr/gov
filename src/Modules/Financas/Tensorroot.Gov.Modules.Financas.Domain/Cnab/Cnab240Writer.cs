@@ -45,8 +45,12 @@ public static class Cnab240Writer
             linhas.Add(SegmentoB(remessa, favorecido, sequencial));
         }
 
-        // Trailer de lote: quantidade = header lote + detalhes (A+B) + trailer lote.
-        var quantidadeRegistrosLote = 2 + (remessa.Favorecidos.Count * 2) + 1;
+        // Trailer de lote: quantidade de registros do lote = Header de Lote (tipo 1, UM registro) +
+        // detalhes A+B (tipo 3, 2 por favorecido) + Trailer de Lote (tipo 5, UM registro) = 1 + 2N + 1
+        // (= 2N+2). FEBRABAN CNAB240: a contagem inclui os registros 1+3+5 do lote. Correcao P1-1 da
+        // AUDITORIA-FINAL (era 2N+3 — contava o Header de Lote como 2 registros; o banco rejeitava por
+        // "Quantidade de Registros divergente").
+        var quantidadeRegistrosLote = 1 + (remessa.Favorecidos.Count * 2) + 1;
         var somatorio = remessa.Favorecidos.Sum(f => f.Valor);
         linhas.Add(TrailerLote(remessa, quantidadeRegistrosLote, somatorio));
 

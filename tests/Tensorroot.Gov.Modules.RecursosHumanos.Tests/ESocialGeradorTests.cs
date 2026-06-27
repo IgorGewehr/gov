@@ -61,28 +61,44 @@ public sealed class ESocialGeradorTests
     private static readonly InscricaoEmpregador Empregador = new((int)TipoInscricao.Cnpj, "11222333000181");
     private static readonly EstabelecimentoLotacao EstabLot = new((int)TipoInscricao.Cnpj, "11222333000181", "1");
 
-    [Fact] // S-2200: ideEmpregador + marcos estatutarios (tpProv/dtNomeacao/dtPosse/dtExercicio) do S-1.3.
-    public void S2200_gera_admissao()
+    [Fact] // P0-4/P2-5: S-2200 — infoRegimeTrab IRMAO de infoContrato (ANTES dele) + tpRegTrab obrigatorio.
+    public void S2200_gera_admissao_com_estrutura_de_vinculo_do_xsd_s13()
     {
         var insumo = new InsumoS2200(
             "12345678901", "Fulano", new DateOnly(1990, 1, 1), "MAT1",
-            new DateOnly(2026, 1, 5), "301", RoteadorRemuneracao.TpRegPrevRpps, "CARGO1", 5000m,
-            Empregador, TpProv: "1", DataPosse: new DateOnly(2026, 1, 10), DataExercicio: new DateOnly(2026, 1, 12));
+            new DateOnly(2026, 1, 5), "301", RoteadorRemuneracao.TpRegTrabEstatutario, RoteadorRemuneracao.TpRegPrevRpps,
+            "CARGO1", 5000m, Empregador, TpProv: "1", DataExercicio: new DateOnly(2026, 1, 12));
 
         var xml = GeradorEventosESocial.GerarS2200(insumo, Id);
         var doc = Parse(xml);
 
         Raiz(doc).Elements().Single().Name.LocalName.Should().Be("evtAdmissao");
         doc.Descendants().Single(e => e.Name.LocalName == "cpfTrab").Value.Should().Be("12345678901");
-        doc.Descendants().Single(e => e.Name.LocalName == "tpRegPrev").Value.Should().Be("2");
         doc.Descendants().Single(e => e.Name.LocalName == "codCateg").Value.Should().Be("301");
-        // ideEmpregador obrigatorio (S-1.3): nrInsc do empregador presente.
         doc.Descendants().Any(e => e.Name.LocalName == "ideEmpregador").Should().BeTrue();
-        // Marcos estatutarios.
+
+        // tpRegTrab OBRIGATORIO (1=CLT,2=Estatutario) e tpRegPrev — ambos filhos DIRETOS de vinculo.
+        var vinculo = doc.Descendants().Single(e => e.Name.LocalName == "vinculo");
+        var filhosVinculo = vinculo.Elements().Select(e => e.Name.LocalName).ToList();
+        filhosVinculo.Should().Contain("tpRegTrab");
+        vinculo.Elements().Single(e => e.Name.LocalName == "tpRegTrab").Value.Should().Be("2");
+        vinculo.Elements().Single(e => e.Name.LocalName == "tpRegPrev").Value.Should().Be("2");
+
+        // infoRegimeTrab e IRMAO de infoContrato (filho direto de vinculo) e vem ANTES dele (sequence XSD).
+        filhosVinculo.Should().Contain("infoRegimeTrab");
+        filhosVinculo.Should().Contain("infoContrato");
+        filhosVinculo.IndexOf("infoRegimeTrab").Should().BeLessThan(
+            filhosVinculo.IndexOf("infoContrato"),
+            "no XSD S-1.3 a sequence de vinculo poe infoRegimeTrab ANTES de infoContrato");
+        // infoRegimeTrab NAO pode estar aninhado dentro de infoContrato (o bug P0-4).
+        doc.Descendants().Single(e => e.Name.LocalName == "infoContrato")
+            .Descendants().Any(e => e.Name.LocalName == "infoRegimeTrab").Should().BeFalse();
+
+        // infoEstatutario conforme XSD: tpProv + dtExercicio; SEM dtNomeacao/dtPosse (nao existem no S-1.3).
         doc.Descendants().Single(e => e.Name.LocalName == "tpProv").Value.Should().Be("1");
-        doc.Descendants().Single(e => e.Name.LocalName == "dtNomeacao").Value.Should().Be("2026-01-05");
-        doc.Descendants().Single(e => e.Name.LocalName == "dtPosse").Value.Should().Be("2026-01-10");
         doc.Descendants().Single(e => e.Name.LocalName == "dtExercicio").Value.Should().Be("2026-01-12");
+        doc.Descendants().Any(e => e.Name.LocalName == "dtNomeacao").Should().BeFalse();
+        doc.Descendants().Any(e => e.Name.LocalName == "dtPosse").Should().BeFalse();
     }
 
     [Fact] // S-1200 (RGPS): evtRemun com ideEmpregador + remunPerApur > itensRemun (S-1.3, nao detVerbas direto).
@@ -110,8 +126,8 @@ public sealed class ESocialGeradorTests
             .Elements().Single(e => e.Name.LocalName == "matricula").Value.Should().Be("MAT1");
     }
 
-    [Fact] // S-1202 (RPPS): roteado para evtRmnRPPS.
-    public void S1202_rpps_gera_evento_rpps()
+    [Fact] // P0-3/P2-5: S-1202 (RPPS) usa ESTRUTURA PROPRIA — ideEstab (tpInsc/nrInsc), NAO ideEstabLot/codLotacao.
+    public void S1202_rpps_gera_evento_com_ideEstab_proprio()
     {
         var insumo = new InsumoS1200("12345678901", "MAT1", "301", "2026-06", [new("VENC", "RUBRICAS", 1m, 8000m, 0)], Empregador, EstabLot);
 
@@ -119,6 +135,22 @@ public sealed class ESocialGeradorTests
         var doc = Parse(xml);
 
         Raiz(doc).Elements().Single().Name.LocalName.Should().Be("evtRmnRPPS");
+        // ESTRUTURA PROPRIA do S-1202: ideEstab presente; ideEstabLot e codLotacao do S-1200 AUSENTES.
+        var ideEstab = doc.Descendants().Single(e => e.Name.LocalName == "ideEstab");
+        doc.Descendants().Any(e => e.Name.LocalName == "ideEstabLot").Should().BeFalse("S-1202 nao usa ideEstabLot");
+        doc.Descendants().Any(e => e.Name.LocalName == "codLotacao").Should().BeFalse("S-1202 nao tem lotacao tributaria");
+        // ideEstab carrega tpInsc/nrInsc do estabelecimento.
+        ideEstab.Elements().Any(e => e.Name.LocalName == "tpInsc").Should().BeTrue();
+        ideEstab.Elements().Single(e => e.Name.LocalName == "nrInsc").Value.Should().Be("11222333000181");
+        // remunPerApur > itensRemun mantidos sob ideEstab.
+        ideEstab.Descendants().Any(e => e.Name.LocalName == "remunPerApur").Should().BeTrue();
+        doc.Descendants().Count(e => e.Name.LocalName == "itensRemun").Should().Be(1);
+
+        // Sanidade: o S-1200 (RGPS) continua com a estrutura ideEstabLot/codLotacao (nao regrediu).
+        var rgps = Parse(GeradorEventosESocial.GerarS1200(insumo, Id, rpps: false));
+        rgps.Descendants().Any(e => e.Name.LocalName == "ideEstabLot").Should().BeTrue();
+        rgps.Descendants().Single(e => e.Name.LocalName == "codLotacao").Value.Should().Be("1");
+        rgps.Descendants().Any(e => e.Name.LocalName == "ideEstab").Should().BeFalse("S-1200 usa ideEstabLot, nao ideEstab");
     }
 
     [Fact] // S-1210: dtPgto e vrLiq do pagamento.

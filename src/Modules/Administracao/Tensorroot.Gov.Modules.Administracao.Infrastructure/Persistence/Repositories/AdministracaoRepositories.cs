@@ -27,12 +27,21 @@ public sealed class LicitacaoRepository(AdministracaoDbContext context) : ILicit
         => context.Licitacoes.FirstOrDefaultAsync(licitacao => licitacao.Id == id, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Licitacao>> ListarPorSituacaoAsync(SituacaoLicitacao situacao, CancellationToken cancellationToken)
-        => await context.Licitacoes
-            .Where(licitacao => licitacao.Situacao == situacao)
+    public async Task<IReadOnlyList<Licitacao>> ListarPorSituacaoAsync(SituacaoLicitacao? situacao, CancellationToken cancellationToken)
+    {
+        var consulta = context.Licitacoes.AsQueryable();
+
+        // Sem situacao informada => sem filtro: retorna todas as licitacoes do tenant (Global Query Filter).
+        if (situacao is { } situacaoFiltro)
+        {
+            consulta = consulta.Where(licitacao => licitacao.Situacao == situacaoFiltro);
+        }
+
+        return await consulta
             .OrderBy(licitacao => licitacao.Objeto)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+    }
 }
 
 /// <summary>Implementacao EF Core do repositorio do agregado <see cref="DispensaEletronica"/>.</summary>

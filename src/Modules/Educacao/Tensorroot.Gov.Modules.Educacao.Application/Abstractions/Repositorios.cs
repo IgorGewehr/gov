@@ -1,6 +1,7 @@
 using Tensorroot.Gov.Modules.Educacao.Domain.Alunos;
 using Tensorroot.Gov.Modules.Educacao.Domain.Matriculas;
 using Tensorroot.Gov.Modules.Educacao.Domain.Turmas;
+using Tensorroot.Gov.SharedKernel.ValueObjects;
 
 namespace Tensorroot.Gov.Modules.Educacao.Application.Abstractions;
 
@@ -136,10 +137,10 @@ public interface IAlunoRepository
     Task<Aluno?> ObterPorIdAsync(AlunoId id, CancellationToken cancellationToken);
 
     /// <summary>Indica se ja existe aluno com o CPF informado no tenant (I-A4).</summary>
-    /// <param name="cpf">CPF (somente digitos).</param>
+    /// <param name="cpf">CPF (objeto de valor) a verificar.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns><c>true</c> se o CPF ja estiver cadastrado.</returns>
-    Task<bool> ExisteCpfAsync(string cpf, CancellationToken cancellationToken);
+    Task<bool> ExisteCpfAsync(Cpf cpf, CancellationToken cancellationToken);
 
     /// <summary>Busca paginada de alunos por nome/CPF/data de nascimento (picker do front).</summary>
     /// <param name="termo">Termo livre (nome ou CPF); nulo lista tudo.</param>

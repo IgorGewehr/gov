@@ -14,12 +14,16 @@ namespace Tensorroot.Gov.Modules.Transparencia.Tests;
 /// valores de informacao complementar (IC) carregam texto de origem externa; uma celula iniciada por
 /// <c>= + - @</c> (ou TAB/CR) vira FORMULA executavel ao abrir no Excel/LibreOffice/Sheets. O gerador deve
 /// neutralizar o gatilho (prefixo aspa simples) e citar campos com CR isolado (RFC 4180 §2.6) para nao
-/// quebrar a linha do dataset. O payload e injetado como VALOR de um par IC oficial (<c>PO=&lt;payload&gt;</c>),
-/// que vira a celula <c>IC1</c> do leiaute (Regras Gerais MSC 2026).
+/// quebrar a linha do dataset. O payload e injetado como VALOR de um par IC oficial (<c>FR=&lt;payload&gt;</c>),
+/// que vira uma celula <c>IC</c> do leiaute (Regras Gerais MSC 2026). O PO obrigatorio (5 digitos) e
+/// fornecido valido em TODAS as linhas, pois o gerador agora valida fail-closed o PO antes de emitir (P0-1).
 /// </summary>
 public sealed class GeradorMscCsvSegurancaTests
 {
     private static readonly Guid TenantA = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    // PO valido (5 digitos) exigido em todas as linhas pela validacao dura do SICONFI (IC nº1).
+    private const string PoderOrgaoValido = "01001";
 
     // Fake do provedor de Cod.Siconfi (IBGE + EX): determinístico, sem configuração.
     private sealed class IdentificacaoEnteSiconfiFake : IIdentificacaoEnteSiconfi
@@ -30,7 +34,8 @@ public sealed class GeradorMscCsvSegurancaTests
 
     private static string GerarCsv(string payload)
     {
-        // Matriz balanceada minima (debito == credito) com o texto suspeito como VALOR do par IC "PO".
+        // Matriz balanceada minima (debito == credito), com PO valido em ambas as linhas (exigencia dura do
+        // SICONFI) e o texto suspeito como VALOR do par IC "FR" (Fonte de Recurso). Patrimonial fecha D=C.
         var declaracao = DeclaracaoFiscal.ConsolidarMatriz(
             TenantA,
             TipoDeclaracaoFiscal.Msc,
@@ -42,8 +47,8 @@ public sealed class GeradorMscCsvSegurancaTests
             new DateOnly(2026, 6, 5),
             MatrizSaldos.Montar(
             [
-                LinhaContabil.Criar("1.1.1.1.01.00", NaturezaSaldo.Devedor, ValorMonetario.De(1000m), "PO=" + payload),
-                LinhaContabil.Criar("2.1.1.1.01.00", NaturezaSaldo.Credor, ValorMonetario.De(1000m)),
+                LinhaContabil.Criar("1.1.1.1.01.00", NaturezaSaldo.Devedor, ValorMonetario.De(1000m), $"PO={PoderOrgaoValido};FR={payload}"),
+                LinhaContabil.Criar("2.1.1.1.01.00", NaturezaSaldo.Credor, ValorMonetario.De(1000m), $"PO={PoderOrgaoValido}"),
             ]));
 
         var artefato = new GeradorMscCsv(new IdentificacaoEnteSiconfiFake())

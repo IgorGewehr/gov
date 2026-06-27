@@ -140,34 +140,37 @@ public static class GeradorEventosESocial
             w.WriteElementString("dtNascto", EscritorXmlEvento.Data(insumo.DataNascimento)); // // TODO(validar-oficial: grupo nascimento).
             w.WriteEndElement(); // trabalhador
 
+            // S-1.3, XSD evtAdmissao, sequence de vinculo (CONFIRMADO no XSD oficial v_S_01_03_00):
+            //   matricula -> tpRegTrab -> tpRegPrev -> cadIni -> infoRegimeTrab -> infoContrato.
+            // infoRegimeTrab e IRMAO de infoContrato (vem ANTES dele); NAO e aninhado dentro de infoContrato.
+            // tpRegTrab (1=CLT, 2=Estatutario) e OBRIGATORIO. Correcao P0-4 da AUDITORIA-FINAL.
             w.WriteStartElement("vinculo");
             w.WriteElementString("matricula", insumo.Matricula);
+            w.WriteElementString("tpRegTrab", insumo.TpRegTrab.ToString(System.Globalization.CultureInfo.InvariantCulture)); // 1=CLT,2=Estatutario.
             w.WriteElementString("tpRegPrev", insumo.TpRegPrev.ToString(System.Globalization.CultureInfo.InvariantCulture)); // 1=RGPS,2=RPPS,3=Ext,4=SPSMFA.
+            // cadIni: S=Cadastramento Inicial (carga de vinculo preexistente), N=Admissao corrente. O gerador
+            // produz evento de admissao corrente. // TODO(validar-oficial): expor carga inicial (S) por insumo.
+            w.WriteElementString("cadIni", "N");
+
+            // infoRegimeTrab e um <choice> infoCeletista | infoEstatutario. O municipio efetivo (RPPS) usa
+            // infoEstatutario; sequence do XSD: tpProv -> dtExercicio (ambos obrigatorios) -> tpPlanRP?/
+            // indTetoRGPS?/indAbonoPerm? (opcionais). NAO existe dtNomeacao/dtPosse em infoEstatutario no
+            // S-1.3 — emiti-los rejeitaria o evento. // TODO(validar-oficial): roteamento infoCeletista p/ CLT.
+            w.WriteStartElement("infoRegimeTrab");
+            w.WriteStartElement("infoEstatutario");
+            w.WriteElementString("tpProv", insumo.TpProv);
+            w.WriteElementString("dtExercicio", EscritorXmlEvento.Data(insumo.DataExercicio));
+            w.WriteEndElement(); // infoEstatutario
+            w.WriteEndElement(); // infoRegimeTrab
+
+            // infoContrato vem DEPOIS de infoRegimeTrab. // TODO(validar-oficial): sequence completa de
+            // infoContrato (codCargo/codCateg/remuneracao/duracao/localTrabalho/horContratual...) no XSD travado.
             w.WriteStartElement("infoContrato");
             w.WriteElementString("codCargo", insumo.CodCargo);
             w.WriteElementString("codCateg", insumo.CodCateg); // // TODO(validar-oficial: Tabela 01).
             w.WriteStartElement("remuneracao");
             w.WriteElementString("vrSalFx", EscritorXmlEvento.Valor(insumo.VrSalFx));
             w.WriteEndElement(); // remuneracao
-            w.WriteStartElement("infoRegimeTrab");
-            w.WriteStartElement("infoEstatutario");
-            // S-1.3 (MOS): infoEstatutario exige tpProv + os marcos da nomeacao/posse/exercicio. dtPosse e
-            // dtExercicio sao condicionais (so quando ja ocorreram). // TODO(M10-validate): tpPlanRP/indTetoRGPS/
-            // indAbonoPerm e o dominio de tpProv (Tabela 14) no XSD travado.
-            w.WriteElementString("tpProv", insumo.TpProv);
-            w.WriteElementString("dtNomeacao", EscritorXmlEvento.Data(insumo.DataAdmissao));
-            if (insumo.DataPosse is { } dtPosse)
-            {
-                w.WriteElementString("dtPosse", EscritorXmlEvento.Data(dtPosse));
-            }
-
-            if (insumo.DataExercicio is { } dtExercicio)
-            {
-                w.WriteElementString("dtExercicio", EscritorXmlEvento.Data(dtExercicio));
-            }
-
-            w.WriteEndElement(); // infoEstatutario
-            w.WriteEndElement(); // infoRegimeTrab
             w.WriteEndElement(); // infoContrato
             w.WriteEndElement(); // vinculo
         });
@@ -202,31 +205,31 @@ public static class GeradorEventosESocial
     public static byte[] GerarS1200(InsumoS1200 insumo, string idEvento, bool rpps)
     {
         ArgumentNullException.ThrowIfNull(insumo);
-        var nomeEvento = rpps ? "evtRmnRPPS" : "evtRemun";
-        var ns = rpps ? Ns("evtRmnRPPS/v_S_01_03_00") : Ns("evtRemun/v_S_01_03_00");
-        return EscritorXmlEvento.Escrever(nomeEvento, ns, idEvento, w =>
-        {
-            w.WriteStartElement("ideEvento");
-            w.WriteElementString("indRetif", "1"); // // TODO(validar-oficial: 1=original, 2=retificacao).
-            w.WriteElementString("perApur", insumo.PerApur);
-            EscreverProcEmiVerProc(w);
-            w.WriteEndElement(); // ideEvento
 
+        // S-1200 (RGPS) e S-1202 (RPPS) tem ESTRUTURAS PROPRIAS no S-1.3 — nao basta trocar a raiz/namespace.
+        // S-1200 usa ideEstabLot (com codLotacao tributaria); S-1202 usa ideEstab (so tpInsc/nrInsc, sem
+        // lotacao) e o indApurIR vem APOS vrRubr. Correcao P0-3 da AUDITORIA-FINAL.
+        return rpps ? GerarS1202Rpps(insumo, idEvento) : GerarS1200Rgps(insumo, idEvento);
+    }
+
+    // S-1200 (evtRemun, RGPS): dmDev > infoPerApur > ideEstabLot (tpInsc/nrInsc/codLotacao) > remunPerApur
+    // (matricula) > itensRemun. O grupo remunPerApur e itensRemun sao obrigatorios (o XSD rejeita detVerbas
+    // direto sob ideEstabLot). // TODO(M10-validate): indSimples e demais campos de ideEstabLot no XSD travado.
+    private static byte[] GerarS1200Rgps(InsumoS1200 insumo, string idEvento)
+        => EscritorXmlEvento.Escrever("evtRemun", Ns("evtRemun/v_S_01_03_00"), idEvento, w =>
+        {
+            EscreverIdeEventoRemun(w, insumo.PerApur);
             EscreverIdeEmpregador(w, insumo.Empregador);
 
             w.WriteStartElement("ideTrabalhador");
             w.WriteElementString("cpfTrab", insumo.CpfTrab);
             w.WriteEndElement(); // ideTrabalhador
 
-            // dmDev: demonstrativo de valores devidos (1 por matricula/categoria). // TODO(validar-oficial).
             w.WriteStartElement("dmDev");
             w.WriteElementString("ideDmDev", insumo.Matricula);
             w.WriteElementString("codCateg", insumo.CodCateg);
             w.WriteStartElement("infoPerApur");
 
-            // S-1.3 (MOS): dmDev > infoPerApur > ideEstabLot > remunPerApur > itensRemun. O grupo intermediario
-            // remunPerApur (com matricula) e itensRemun (rubricas) sao OBRIGATORIOS — o XSD rejeita detVerbas
-            // diretamente sob ideEstabLot. // TODO(M10-validate): confirmar codLotacao/indSimples no XSD travado.
             w.WriteStartElement("ideEstabLot");
             w.WriteElementString("tpInsc", insumo.EstabLotacao.TpInsc.ToString(System.Globalization.CultureInfo.InvariantCulture));
             w.WriteElementString("nrInsc", insumo.EstabLotacao.NrInsc);
@@ -234,24 +237,71 @@ public static class GeradorEventosESocial
 
             w.WriteStartElement("remunPerApur");
             w.WriteElementString("matricula", insumo.Matricula);
-
-            // itensRemun: somado por rubrica/incidencia — a folha E a fonte de verdade (ESOCIAL-SPEC §1.6).
-            foreach (var v in insumo.Verbas)
-            {
-                w.WriteStartElement("itensRemun");
-                w.WriteElementString("codRubr", v.CodRubr);
-                w.WriteElementString("ideTabRubr", v.IdeTabRubr);
-                w.WriteElementString("qtdRubr", EscritorXmlEvento.Valor(v.QtdRubr));
-                w.WriteElementString("vrRubr", EscritorXmlEvento.Valor(v.VrRubr));
-                w.WriteElementString("indApurIR", v.IndApurIr.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                w.WriteEndElement(); // itensRemun
-            }
-
+            EscreverItensRemun(w, insumo.Verbas);
             w.WriteEndElement(); // remunPerApur
             w.WriteEndElement(); // ideEstabLot
             w.WriteEndElement(); // infoPerApur
             w.WriteEndElement(); // dmDev
         });
+
+    // S-1202 (evtRmnRPPS, RPPS) — ESTRUTURA PROPRIA (CONFIRMADA no XSD oficial evtRmnRPPS v_S_01_03_00):
+    //   evtRmnRPPS > ideEvento, ideEmpregador, ideTrabalhador(cpfTrab),
+    //     dmDev > ideDmDev, codCateg, infoPerApur > ideEstab(tpInsc, nrInsc, remunPerApur(matricula?,
+    //       itensRemun(codRubr, ideTabRubr, qtdRubr?, fatorRubr?, vrRubr, indApurIR, descFolha?))).
+    // Diferenca-chave vs S-1200: usa ideEstab (tpInsc/nrInsc) — NAO ideEstabLot/codLotacao — e indApurIR vem
+    // APOS vrRubr (obrigatorio). // TODO(validar-oficial): infoPerAnt/infoRRA do RPPS no XSD travado.
+    private static byte[] GerarS1202Rpps(InsumoS1200 insumo, string idEvento)
+        => EscritorXmlEvento.Escrever("evtRmnRPPS", Ns("evtRmnRPPS/v_S_01_03_00"), idEvento, w =>
+        {
+            EscreverIdeEventoRemun(w, insumo.PerApur);
+            EscreverIdeEmpregador(w, insumo.Empregador);
+
+            w.WriteStartElement("ideTrabalhador");
+            w.WriteElementString("cpfTrab", insumo.CpfTrab);
+            w.WriteEndElement(); // ideTrabalhador
+
+            w.WriteStartElement("dmDev");
+            w.WriteElementString("ideDmDev", insumo.Matricula);
+            w.WriteElementString("codCateg", insumo.CodCateg);
+            w.WriteStartElement("infoPerApur");
+
+            // ideEstab: identificacao do estabelecimento por inscricao (sem lotacao tributaria no RPPS).
+            w.WriteStartElement("ideEstab");
+            w.WriteElementString("tpInsc", insumo.EstabLotacao.TpInsc.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            w.WriteElementString("nrInsc", insumo.EstabLotacao.NrInsc);
+
+            w.WriteStartElement("remunPerApur");
+            w.WriteElementString("matricula", insumo.Matricula);
+            EscreverItensRemun(w, insumo.Verbas);
+            w.WriteEndElement(); // remunPerApur
+            w.WriteEndElement(); // ideEstab
+            w.WriteEndElement(); // infoPerApur
+            w.WriteEndElement(); // dmDev
+        });
+
+    private static void EscreverIdeEventoRemun(XmlWriter w, string perApur)
+    {
+        w.WriteStartElement("ideEvento");
+        w.WriteElementString("indRetif", "1"); // // TODO(validar-oficial: 1=original, 2=retificacao).
+        w.WriteElementString("perApur", perApur);
+        EscreverProcEmiVerProc(w);
+        w.WriteEndElement(); // ideEvento
+    }
+
+    // itensRemun (S-1200/S-1202): a folha E a fonte de verdade (ESOCIAL-SPEC §1.6). codRubr -> ideTabRubr ->
+    // qtdRubr -> vrRubr -> indApurIR (no S-1202 o indApurIR vem APOS vrRubr, confirmado no XSD evtRmnRPPS).
+    private static void EscreverItensRemun(XmlWriter w, IReadOnlyList<ItemVerba> verbas)
+    {
+        foreach (var v in verbas)
+        {
+            w.WriteStartElement("itensRemun");
+            w.WriteElementString("codRubr", v.CodRubr);
+            w.WriteElementString("ideTabRubr", v.IdeTabRubr);
+            w.WriteElementString("qtdRubr", EscritorXmlEvento.Valor(v.QtdRubr));
+            w.WriteElementString("vrRubr", EscritorXmlEvento.Valor(v.VrRubr));
+            w.WriteElementString("indApurIR", v.IndApurIr.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            w.WriteEndElement(); // itensRemun
+        }
     }
 
     /// <summary>Gera o XML do S-1210 (Pagamentos de Rendimentos do Trabalho).</summary>

@@ -19,9 +19,9 @@ public sealed record LicitacaoResumo(
     decimal ValorEstimado,
     string? NumeroEditalPncp);
 
-/// <summary>Lista as licitacoes do tenant na situacao informada (tenant-scoped).</summary>
-/// <param name="Situacao">Situacao a filtrar.</param>
-public sealed record ListarLicitacoesPorSituacaoQuery(SituacaoLicitacao Situacao)
+/// <summary>Lista as licitacoes do tenant, opcionalmente filtradas por situacao (tenant-scoped).</summary>
+/// <param name="Situacao">Situacao a filtrar; <c>null</c> retorna todas as licitacoes do tenant.</param>
+public sealed record ListarLicitacoesPorSituacaoQuery(SituacaoLicitacao? Situacao)
     : IQuery<IReadOnlyList<LicitacaoResumo>>;
 
 /// <summary>Handler da consulta de licitacoes por situacao.</summary>

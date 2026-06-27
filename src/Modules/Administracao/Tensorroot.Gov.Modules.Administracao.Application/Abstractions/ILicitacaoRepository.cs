@@ -15,9 +15,9 @@ public interface ILicitacaoRepository
     /// <returns>A licitacao, ou <c>null</c> se inexistente no tenant.</returns>
     Task<Licitacao?> ObterPorIdAsync(LicitacaoId id, CancellationToken cancellationToken);
 
-    /// <summary>Lista as licitacoes do tenant na situacao informada.</summary>
-    /// <param name="situacao">Situacao a filtrar.</param>
+    /// <summary>Lista as licitacoes do tenant, opcionalmente filtradas por situacao.</summary>
+    /// <param name="situacao">Situacao a filtrar; <c>null</c> retorna todas as licitacoes do tenant.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    /// <returns>Licitacoes do tenant na situacao informada.</returns>
-    Task<IReadOnlyList<Licitacao>> ListarPorSituacaoAsync(SituacaoLicitacao situacao, CancellationToken cancellationToken);
+    /// <returns>Licitacoes do tenant (todas, ou apenas as da situacao informada).</returns>
+    Task<IReadOnlyList<Licitacao>> ListarPorSituacaoAsync(SituacaoLicitacao? situacao, CancellationToken cancellationToken);
 }

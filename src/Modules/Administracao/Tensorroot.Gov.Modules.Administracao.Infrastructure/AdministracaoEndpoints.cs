@@ -296,7 +296,7 @@ internal static partial class AdministracaoEndpoints
             .RequirePermission("administracao.ver");
 
         grupo.MapGet("/licitacoes", async (
-            SituacaoLicitacao situacao, ISender sender, CancellationToken cancellationToken)
+            SituacaoLicitacao? situacao, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(await sender.Send(new ListarLicitacoesPorSituacaoQuery(situacao), cancellationToken)))
             .RequirePermission("administracao.ver");
     }

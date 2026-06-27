@@ -48,13 +48,13 @@ public sealed record InsumoS1005(
 /// <param name="Matricula">Matricula do vinculo.</param>
 /// <param name="DataAdmissao">Data de admissao (nomeacao/posse — // TODO(validar-oficial: dtAdm = qual marco)).</param>
 /// <param name="CodCateg">Categoria do trabalhador (Tabela 01). // TODO(validar-oficial: codCateg real do municipio).</param>
+/// <param name="TpRegTrab">Tipo de regime trabalhista (S-1.3 <c>vinculo/tpRegTrab</c>, irmao de tpRegPrev): 1=CLT, 2=Estatutario/regimes proprios (Tabela TS_tpRegTrab do XSD S-1.3).</param>
 /// <param name="TpRegPrev">Regime previdenciario (1=RGPS, 2=RPPS, 3=Exterior, 4=SPSMFA).</param>
 /// <param name="CodCargo">Codigo do cargo.</param>
 /// <param name="VrSalFx">Valor do salario fixo/vencimento.</param>
 /// <param name="Empregador">Inscricao do empregador (<c>ideEmpregador</c>) — obrigatoria no S-1.3.</param>
 /// <param name="TpProv">Tipo de provimento do estatutario (Tabela 14; ex.: 1=nomeacao em cargo efetivo). // TODO(validar-oficial: dominio).</param>
-/// <param name="DataPosse">Data da posse (<c>dtPosse</c>); nula quando ainda nao houve posse.</param>
-/// <param name="DataExercicio">Data de inicio de exercicio (<c>dtExercicio</c>); nula quando ainda nao houve exercicio.</param>
+/// <param name="DataExercicio">Data de inicio de exercicio (<c>infoEstatutario/dtExercicio</c>) — OBRIGATORIA no XSD S-1.3 (sem ela o evento e rejeitado).</param>
 public sealed record InsumoS2200(
     string CpfTrab,
     string NomeTrab,
@@ -62,13 +62,13 @@ public sealed record InsumoS2200(
     string Matricula,
     DateOnly DataAdmissao,
     string CodCateg,
+    int TpRegTrab,
     int TpRegPrev,
     string CodCargo,
     decimal VrSalFx,
     InscricaoEmpregador Empregador,
     string TpProv,
-    DateOnly? DataPosse,
-    DateOnly? DataExercicio);
+    DateOnly DataExercicio);
 
 /// <summary>
 /// Inscricao do empregador/declarante para o grupo <c>ideEmpregador</c> presente em todos os eventos do

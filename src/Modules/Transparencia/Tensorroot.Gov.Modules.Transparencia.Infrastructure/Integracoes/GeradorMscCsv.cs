@@ -46,6 +46,13 @@ public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) :
     {
         ArgumentNullException.ThrowIfNull(declaracao);
 
+        // FAIL-CLOSED (P0-1): aplica as validacoes DURAS do SICONFI ANTES de emitir. A ponte de integracao
+        // Financas->Transparencia descarta as linhas de saldo inicial/movimento e a estrutura de PO; logo o
+        // CSV NAO pode herdar as validacoes do agregado de Financas. Re-impomos aqui (PO obrigatorio por
+        // linha, balanco D=C por classe e global) sobre os dados que o CSV possui. Lanca se inconsistente —
+        // jamais gerar um artefato que o e-Validador SICONFI rejeitaria.
+        ValidadorMscCsv.GarantirValida(declaracao.Matriz, ExtrairPoderOrgao);
+
         var codigoSiconfi = await identificacaoEnte
             .ObterCodigoSiconfiAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -89,7 +96,7 @@ public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) :
         foreach (var linha in declaracao.Matriz.Linhas)
         {
             var naturezaInformacao = NaturezaInformacaoDe(linha.ContaPcasp);
-            var pares = ExtrairInformacoesComplementares(linha.InformacaoComplementar);
+            var slots = MontarSlotsInformacoesComplementares(linha.InformacaoComplementar);
 
             construtor
                 .Append(periodo).Append(Separador)
@@ -99,10 +106,12 @@ public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) :
                 .Append("saldo_final").Append(Separador) // unica especie consolidada nesta camada.
                 .Append(linha.Valor.Valor.ToString("0.00", CultureInfo.InvariantCulture));
 
-            // Emite SEMPRE os 6 pares (preenchidos ou vazios) — nº/ordem de colunas FIXO no leiaute oficial.
+            // Emite SEMPRE os 6 pares (preenchidos ou vazios) em SLOT FIXO por codigo — o PO sai SEMPRE em
+            // TIPO1/IC1 (P0-2); o numero/ordem de colunas e FIXO no leiaute oficial e NAO segue a ordem do
+            // texto livre das informacoes complementares.
             for (var i = 0; i < QuantidadeInformacoesComplementares; i++)
             {
-                var (tipo, valor) = i < pares.Count ? pares[i] : (string.Empty, string.Empty);
+                var (tipo, valor) = slots[i];
                 construtor
                     .Append(Separador).Append(Escapar(tipo))
                     .Append(Separador).Append(Escapar(valor));
@@ -159,16 +168,52 @@ public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) :
             : bruto + SufixoExecutivo;
     }
 
-    // Converte o texto canonico "CHAVE=valor;CHAVE=valor" (de InformacoesComplementaresMsc.ParaTexto) nos
-    // pares (TIPO, IC) do leiaute: TIPO = codigo do atributo (PO/FP/DC/FR/CO/NR/ND/FS/AI), IC = o valor.
-    private static List<(string Tipo, string Valor)> ExtrairInformacoesComplementares(string? texto)
+    // Ordem FIXA dos codigos de informacao complementar (IC) nos slots do leiaute oficial: o Poder/Orgao
+    // (PO) e SEMPRE o primeiro (TIPO1/IC1), seguido dos demais atributos do quadro MSC (Anexo II Port. STN
+    // 642/2019) em ordem canonica. O slot e por CODIGO, nunca pela ordem do texto livre (P0-2). Sao 9
+    // codigos para 6 slots: os 6 primeiros presentes (na ordem canonica, com PO garantido em 1º) sao emitidos.
+    private static readonly string[] OrdemSlotsIc = ["PO", "FP", "DC", "FR", "CO", "NR", "ND", "FS", "AI"];
+
+    // Monta os 6 pares (TIPO, IC) do leiaute em SLOT FIXO por codigo: percorre a ordem canonica
+    // (PO primeiro) e emite os codigos PRESENTES; os slots restantes saem vazios. Garante PO em TIPO1/IC1.
+    private static (string Tipo, string Valor)[] MontarSlotsInformacoesComplementares(string? texto)
     {
-        if (string.IsNullOrWhiteSpace(texto))
+        var atributos = ParsearInformacoesComplementares(texto);
+        var slots = new (string Tipo, string Valor)[QuantidadeInformacoesComplementares];
+        Array.Fill(slots, (string.Empty, string.Empty));
+
+        var slot = 0;
+        foreach (var codigo in OrdemSlotsIc)
         {
-            return [];
+            if (slot >= QuantidadeInformacoesComplementares)
+            {
+                break;
+            }
+
+            if (atributos.TryGetValue(codigo, out var valor) && !string.IsNullOrWhiteSpace(valor))
+            {
+                slots[slot] = (codigo, valor);
+                slot++;
+            }
         }
 
-        var pares = new List<(string Tipo, string Valor)>(QuantidadeInformacoesComplementares);
+        return slots;
+    }
+
+    // Extrai o valor do Poder/Orgao (PO) do texto canonico — usado pela validacao fail-closed (P0-1).
+    private static string? ExtrairPoderOrgao(string? texto)
+        => ParsearInformacoesComplementares(texto).GetValueOrDefault(ValidadorMscCsv.CodigoIcPoderOrgao);
+
+    // Converte o texto canonico "CHAVE=valor;CHAVE=valor" (de InformacoesComplementaresMsc.ParaTexto) num
+    // mapa codigo->valor (PO/FP/DC/FR/CO/NR/ND/FS/AI). O ultimo valor vence em caso de chave repetida.
+    private static Dictionary<string, string> ParsearInformacoesComplementares(string? texto)
+    {
+        var atributos = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(texto))
+        {
+            return atributos;
+        }
+
         foreach (var parte in texto.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var igual = parte.IndexOf('=', StringComparison.Ordinal);
@@ -177,10 +222,10 @@ public sealed class GeradorMscCsv(IIdentificacaoEnteSiconfi identificacaoEnte) :
                 continue;
             }
 
-            pares.Add((parte[..igual], parte[(igual + 1)..]));
+            atributos[parte[..igual]] = parte[(igual + 1)..];
         }
 
-        return pares;
+        return atributos;
     }
 
     // Caracteres que, no INICIO de uma celula, fazem o Excel/LibreOffice/Sheets interpretar

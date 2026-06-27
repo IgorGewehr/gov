@@ -61,7 +61,7 @@ public sealed class CadastrarAlunoHandler(
         var cpf = AlunoMapeamento.CriarCpfOuNulo(request.Cpf);
 
         // I-A4: unicidade por CPF quando informado.
-        if (cpf is not null && await alunos.ExisteCpfAsync(cpf.Digitos, cancellationToken).ConfigureAwait(false))
+        if (cpf is not null && await alunos.ExisteCpfAsync(cpf, cancellationToken).ConfigureAwait(false))
         {
             throw new InvalidOperationException("CPF ja cadastrado para outro aluno.");
         }

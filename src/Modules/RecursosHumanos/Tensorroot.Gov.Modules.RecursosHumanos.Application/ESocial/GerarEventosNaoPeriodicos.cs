@@ -39,16 +39,19 @@ public sealed class GerarS2200Handler(
             servidor.DadosPessoais.Nome,
             servidor.DadosPessoais.DataNascimento,
             servidor.Matricula.Valor,
-            // dtNomeacao do estatutario (marco de provimento). dtPosse/dtExercicio vao em campos proprios.
             servidor.DataNomeacao,
             request.CodCateg,
+            // tpRegTrab (1=CLT/2=Estatutario): derivado do regime (proxy estatutario/celetista do RH).
+            RoteadorRemuneracao.DerivarTpRegTrab(servidor.Regime),
             RoteadorRemuneracao.DerivarTpRegPrev(servidor.Regime),
             request.CodCargo,
             request.VrSalFx,
             InscricaoEmpregadorFactory.De(p),
             request.TpProv,
-            servidor.DataPosse,
-            servidor.DataExercicio);
+            // dtExercicio e OBRIGATORIO no XSD S-1.3 (infoEstatutario). Quando o exercicio ainda nao foi
+            // registrado, usa a data de nomeacao como marco minimo. // TODO(validar-oficial): so emitir
+            // S-2200 apos o exercicio (a admissao no eSocial pressupoe entrada em exercicio).
+            servidor.DataExercicio ?? servidor.DataNomeacao);
 
         var chave = ChaveIdempotenciaEvento.Criar(TipoEventoESocial.S2200Admissao, servidor.Id.Value.ToString());
         var xml = GeradorEventosESocial.GerarS2200(insumo, idEvento: "PENDENTE");
