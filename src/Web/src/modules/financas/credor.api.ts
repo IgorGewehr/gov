@@ -71,10 +71,11 @@ function obterExtratoCredor(
 }
 
 /** Lista/busca credores do tenant (termo opcional por nome/documento). */
-export function useCredores(termo: string) {
+export function useCredores(termo: string, enabled = true) {
   return useQuery({
     queryKey: financasKeys.credoresPorTermo(termo),
     queryFn: ({ signal }) => listarCredores(termo, signal),
+    enabled,
   });
 }
 

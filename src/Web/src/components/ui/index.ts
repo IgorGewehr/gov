@@ -54,6 +54,11 @@ export type { TagProps, TagVariant } from './Tag';
 export { QueryState, errorMessage } from './QueryState';
 export type { QueryStateProps } from './QueryState';
 
+export { EntityPicker } from './EntityPicker';
+export type { EntityPickerProps, EntityPickerQuery } from './EntityPicker';
+
+export { useDebouncedValue } from './useDebouncedValue';
+
 export { SubNav } from './SubNav';
 export type { SubNavProps, SubNavItem } from './SubNav';
 
