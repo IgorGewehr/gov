@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using Tensorroot.Gov.Modules.Transparencia.Application.Abstractions;
 using Tensorroot.Gov.Modules.Transparencia.Domain.RemessasTce;
@@ -15,6 +16,14 @@ namespace Tensorroot.Gov.Modules.Transparencia.Infrastructure.Integracoes;
 public sealed class SimuladoLeiauteCatalogo(IConfiguration configuration) : ILeiauteCatalogo
 {
     private const string CodigoSuportado = "SIAPC";
+
+    /// <summary>
+    /// Prazo legal padrão de remessa: <b>30 dias corridos após o encerramento do período de competência</b>
+    /// (TCE-RS Resolução 1099/2018 — folha mensal desde jan/2019). Usado quando o tenant não parametriza o
+    /// prazo. Não é número mágico de cálculo: é o default normativo, sobrescrevível por
+    /// <c>Transparencia:Tce:DiasPrazoRemessa</c> (CLAUDE.md §7 — parametrizável por tenant).
+    /// </summary>
+    private const int DiasPrazoRemessaPadraoRes1099 = 30;
 
     /// <inheritdoc />
     public Task<bool> SuportaAsync(Leiaute leiaute, CancellationToken cancellationToken)
@@ -53,17 +62,25 @@ public sealed class SimuladoLeiauteCatalogo(IConfiguration configuration) : ILei
     {
         ArgumentNullException.ThrowIfNull(periodo);
 
-        var mesReferencia = periodo.Tipo switch
-        {
-            TipoPeriodo.Mensal => periodo.Numero,
-            TipoPeriodo.Bimestre => Math.Min(12, periodo.Numero * 2),
-            TipoPeriodo.Quadrimestre => Math.Min(12, periodo.Numero * 4),
-            _ => 12,
-        };
+        // TCE-RS Res. 1099/2018: prazo = encerramento do período + N dias CORRIDOS (folha mensal: 30 dias).
+        // N é parametrizável por tenant (config); o default normativo (30) só vale se não houver parâmetro.
+        var diasPrazo = ResolverDiasPrazoRemessa();
+        var (_, fimPeriodo) = IntervaloPeriodo(periodo);
+        var dataLimite = fimPeriodo.AddDays(diasPrazo);
+        return Task.FromResult(dataLimite);
+    }
 
-        var primeiroDiaMes = new DateOnly(periodo.Exercicio, mesReferencia, 1);
-        var ultimoDiaSubsequente = primeiroDiaMes.AddMonths(2).AddDays(-1);
-        return Task.FromResult(ultimoDiaSubsequente);
+    /// <summary>
+    /// Resolve o nº de dias de prazo da remessa, parametrizado por tenant via
+    /// <c>Transparencia:Tce:DiasPrazoRemessa</c>; default = <see cref="DiasPrazoRemessaPadraoRes1099"/>
+    /// (Res. 1099/2018). Valor inválido (≤ 0 ou não numérico) cai no default normativo.
+    /// </summary>
+    private int ResolverDiasPrazoRemessa()
+    {
+        var bruto = configuration["Transparencia:Tce:DiasPrazoRemessa"];
+        return int.TryParse(bruto, NumberStyles.Integer, CultureInfo.InvariantCulture, out var dias) && dias > 0
+            ? dias
+            : DiasPrazoRemessaPadraoRes1099;
     }
 
     /// <inheritdoc />

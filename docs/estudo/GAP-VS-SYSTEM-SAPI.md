@@ -53,7 +53,8 @@ Leitura: dos **42 itens CRÍTICOS**, **22 já têm paridade ✅**, **7 estão �
 | Lançamentos em lote | 🔴 | `RegistrarLancamentoManual.cs` registra 1 por chamada | DESEJÁVEL | P | Não |
 | Balancete receita/despesa por rubrica | 🟡 | demonstrativos em `MapaDemonstrativosCatalogo.cs:18`, sem balancete dedicado formato SAPI | DESEJÁVEL | M | Não |
 | Termos abertura/encerramento de livro | 🔴 | há encerramento de exercício, não termos de livro Diário/Razão p/ TCE | DESEJÁVEL | P | Não |
-| PÓS-POC: SINCO, SIGA, Auditoria Previdência RPPS | 🔴 | grep `SINCO`/`SIGA`/gerador previdenciário=0 | PÓS-POC | M–G | parcial |
+| ~~SINCO, SIGA~~ → **OBSOLETO/NÃO-TCE-RS** (ver `normas/CONFORMIDADE-ACHADOS.md` §4.4) | ⚪ | SINCO=coleta contábil RFB legada (superada por SPED-ECD; setor público=MSC/SICONFI, já temos); SIGA=acrônimo ambíguo, sem geração contábil vigente do TCE-RS | N/A | — | — |
+| Auditoria Previdência RPPS (geração) | 🔴 | grep `gerador previdenciário`=0 | PÓS-POC | M–G | parcial |
 
 ### 3.2 FINANCEIRO / TESOURARIA
 

@@ -83,6 +83,23 @@ const CertidoesTempoServidorPage = lazy(() =>
 const CertidaoDetailPage = lazy(() =>
   import('./CertidaoDetailPage').then((m) => ({ default: m.CertidaoDetailPage })),
 );
+const PlanosCarreiraListPage = lazy(() =>
+  import('./PlanosCarreiraListPage').then((m) => ({ default: m.PlanosCarreiraListPage })),
+);
+const PlanoCarreiraDetailPage = lazy(() =>
+  import('./PlanoCarreiraDetailPage').then((m) => ({ default: m.PlanoCarreiraDetailPage })),
+);
+const ProcessosTrabalhistasListPage = lazy(() =>
+  import('./ProcessosTrabalhistasListPage').then((m) => ({
+    default: m.ProcessosTrabalhistasListPage,
+  })),
+);
+const RemessasSicapListPage = lazy(() =>
+  import('./RemessasSicapListPage').then((m) => ({ default: m.RemessasSicapListPage })),
+);
+const RemessaSicapDetailPage = lazy(() =>
+  import('./RemessaSicapDetailPage').then((m) => ({ default: m.RemessaSicapDetailPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -109,6 +126,11 @@ const MODULE: ModuleDefinition = {
         { path: 'portarias', element: <PortariasListPage /> },
         { path: 'portarias/:portariaId', element: <PortariaDetailPage /> },
         { path: 'pasep', element: <PasepPage /> },
+        { path: 'planos-carreira', element: <PlanosCarreiraListPage /> },
+        { path: 'planos-carreira/:planoId', element: <PlanoCarreiraDetailPage /> },
+        { path: 'processos-trabalhistas', element: <ProcessosTrabalhistasListPage /> },
+        { path: 'sicap-pessoal', element: <RemessasSicapListPage /> },
+        { path: 'sicap-pessoal/:remessaId', element: <RemessaSicapDetailPage /> },
         { path: 'rubricas', element: <RubricasListPage /> },
         { path: 'tabelas-legais', element: <TabelasLegaisPage /> },
         { path: 'folhas', element: <FolhaListPage /> },

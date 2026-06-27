@@ -101,6 +101,27 @@ export const rhKeys = {
   certidaoValidacao: (codigo: string) =>
     [...rhKeys.certidoesTempo(), 'validar', codigo] as const,
 
+  planosCarreira: () => [...rhKeys.all, 'planos-carreira'] as const,
+  planoCarreira: (id: string) => [...rhKeys.planosCarreira(), 'detalhe', id] as const,
+  enquadramentoServidor: (servidorId: string) =>
+    [...rhKeys.planosCarreira(), 'enquadramento', servidorId] as const,
+
+  processosTrabalhistas: () => [...rhKeys.all, 'processos-trabalhistas'] as const,
+  processosTrabalhistasBusca: (
+    situacao: string,
+    prognostico: string,
+    termo: string,
+    pagina: number,
+  ) =>
+    [...rhKeys.processosTrabalhistas(), 'busca', situacao, prognostico, termo, pagina] as const,
+  processoTrabalhista: (id: string) =>
+    [...rhKeys.processosTrabalhistas(), 'detalhe', id] as const,
+  provisaoTrabalhista: () => [...rhKeys.processosTrabalhistas(), 'demonstrativo-provisao'] as const,
+
+  sicapPessoal: () => [...rhKeys.all, 'sicap-pessoal'] as const,
+  remessasSicap: (situacao: string) => [...rhKeys.sicapPessoal(), 'remessas', situacao] as const,
+  remessaSicap: (id: string) => [...rhKeys.sicapPessoal(), 'remessa', id] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

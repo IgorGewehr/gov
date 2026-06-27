@@ -129,6 +129,39 @@ Legenda: ✅ CONFORME · 🟡 DIVERGENTE · 🔴 AUSENTE
 
 ---
 
+## 4.4 SINCO / SIGA — VEREDITO DE VIGÊNCIA (NÃO CONSTRUIR — OBSOLETO)
+
+> Investigação dedicada (jun/2026, fontes ao vivo). O SAPI (incumbente) lista "SINCO" e "SIGA" como gerações;
+> a pergunta era se são **gerações contábeis VIGENTES do TCE-RS** que devamos modelar. **Resposta: NÃO.**
+
+- **SINCO = "Sistema Integrado de COleta — Arquivos Contábeis" da Receita Federal (RFB).** É a ferramenta legada de
+  **importação/validação de arquivos contábeis** da RFB, antecessora do **SPED Contábil (ECD)**. **Não é remessa do
+  TCE-RS.** Para o setor público, a coleta contábil ao Tesouro/órgãos já migrou para **SICONFI/MSC** (Port. STN 642/2019),
+  que **nós já implementamos** (MSC Agregada + Encerramento, `Financas/Msc/*`, derivação SICONFI). Construir um "gerador
+  SINCO" seria reconstruir um pipeline RFB **superado** — e duplicar, em formato obsoleto, o que a MSC já entrega.
+- **SIGA = acrônimo ambíguo, sem geração contábil vigente do TCE-RS.** Cada ocorrência é um sistema distinto e não-contábil-municipal:
+  **SIGA-ES** (administrativo estadual ES — *descontinuado, substituído pelo SIADES*), **SIGA-SP** (saúde municipal SP),
+  **SIGA-RS** (serviços gaúchos / SEFAZ), **SIGA-CE** (autorregularização SEFAZ-CE). **Nenhum** é remessa contábil de
+  município ao TCE-RS.
+- **Stack canônico VIGENTE do TCE-RS para município** (confirmado em `FONTES-NORMATIVAS.md` §B, nota de nomenclatura):
+  **SIAPC/PAD + MCI + LicitaCon + SISCAD + SIAPESweb/SAPIEM**, validados pelo **e-Validador**. SINCO/SIGA **não constam**.
+  Tudo o que o TCE-RS efetivamente cobra na prestação contábil/fiscal já está coberto por **SIAPC/PAD** (remessa) e
+  **MSC/SICONFI** (matriz) — ambos implementados.
+
+**Decisão de engenharia:** **não modelar estrutura de remessa SINCO/SIGA** (seria construir obsoleto). O `GAP-VS-SYSTEM-SAPI.md`
+já os marcava como **PÓS-POC**; reclassificam-se aqui como **OBSOLETO/NÃO-APLICÁVEL ao TCE-RS** — fora do escopo do PoC e do
+go-live. O tempo foi redirecionado ao P2 contábil/fiscal (prazo Res. 1099 — ver abaixo).
+
+## 4.5 P2 CONTÁBIL/FISCAL CORRIGIDOS NESTA RODADA
+
+- **Prazo de remessa folha-TCE (Res. 1099/2018) — parametrizado por tenant + cálculo correto.**
+  `SimuladoLeiauteCatalogo.ObterDataLimiteAsync` calculava a data-limite como "último dia do 2º mês subsequente"
+  (`AddMonths(2).AddDays(-1)`) — **número mágico** e **errado** vs. a norma. Res. 1099/2018 (folha mensal desde jan/2019)
+  define **"até 30 dias corridos após o encerramento do período de competência"**. Corrigido para
+  `fimDoPeriodo.AddDays(N)`, com **N parametrizável por tenant** via `Transparencia:Tce:DiasPrazoRemessa` e **default
+  normativo 30** (`DiasPrazoRemessaPadraoRes1099`). Sem número mágico de cálculo; default é a regra legal explícita,
+  documentada e sobrescrevível (CLAUDE.md §7 — parametrizável por tenant). Fonte: TCE-RS Res. 1099/2018; SIAPC FAQ.
+
 ## 5. NOTA DE MÉTODO E FONTES
 
 Os PDFs oficiais (MSC Regras Gerais 2026 e SIAPC Vol.V) foram lidos ao vivo via WebFetch + extração local com `pdftotext` (WebFetch nativo não decodifica o stream comprimido / binário grande). Achados ancorados em página/seção exata da norma e linha do nosso código. O MT SIAPC Vol.V da folha (TCE_4810/4820) não renderiza por WebFetch (binário 2.5 MB) — grade oficial a extrair localmente.

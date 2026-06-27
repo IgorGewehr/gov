@@ -146,6 +146,20 @@ public sealed class RecursosHumanosModule : IModule
         // numera sequencialmente por exercicio e sela um codigo de autenticacao para validacao publica.
         services.AddScoped<ICertidaoTempoServicoRepository, CertidaoTempoServicoRepository>();
 
+        // PLANO DE CARGOS E SALARIOS (PCCS): a matriz salarial (classe x referencia, vencimento derivado
+        // sem numero magico) e o enquadramento do servidor com progressao horizontal (referencia) e
+        // promocao vertical (classe). O efeito remuneratorio reusa Cargo.AlterarVencimento (auditado).
+        services.AddScoped<IPlanoCarreiraRepository, PlanoCarreiraRepository>();
+        services.AddScoped<IEnquadramentoServidorRepository, EnquadramentoServidorRepository>();
+
+        // PROCESSOS TRABALHISTAS: cadastro/acompanhamento (numero CNJ, vara, reclamante, objeto, valores,
+        // situacao) com provisao contabil (NBC TG 25/CPC 25): so o prognostico PROVAVEL gera provisao.
+        services.AddScoped<IProcessoTrabalhistaRepository, ProcessoTrabalhistaRepository>();
+
+        // SICAP-AP / SIAPESweb (auditoria de pessoal TCE-RS): remessa de atos de admissao no leiaute
+        // estadual 57 posicoes (cabecalho + corpo + finalizador). Transmissao real ao SIAPESweb = M10.
+        services.AddScoped<IRemessaSicapPessoalRepository, RemessaSicapPessoalRepository>();
+
         // PC1: regime previdenciario do quadro = parametro do tenant (tem RPPS proprio?), nao roteamento
         // fixo. Default RGPS/INSS (municipio pequeno sem RPPS proprio — Maximiliano de Almeida).
         services.AddScoped<IPoliticaPrevidenciariaProvider, PoliticaPrevidenciariaProvider>();

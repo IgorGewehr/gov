@@ -8,7 +8,10 @@ import { PERM_RH_AUTOSSERVICO } from './recursosHumanos.helpers';
 const ABAS: ReadonlyArray<SubNavItem> = [
   { to: '/recursoshumanos', label: 'Servidores', end: true },
   { to: '/recursoshumanos/cargos', label: 'Cargos' },
+  { to: '/recursoshumanos/planos-carreira', label: 'Planos de Carreira' },
   { to: '/recursoshumanos/portarias', label: 'Portarias' },
+  { to: '/recursoshumanos/processos-trabalhistas', label: 'Processos Trab.' },
+  { to: '/recursoshumanos/sicap-pessoal', label: 'SICAP-AP' },
   { to: '/recursoshumanos/rubricas', label: 'Rubricas' },
   { to: '/recursoshumanos/tabelas-legais', label: 'Tabelas Legais' },
   { to: '/recursoshumanos/folhas', label: 'Folha de Pagamento' },

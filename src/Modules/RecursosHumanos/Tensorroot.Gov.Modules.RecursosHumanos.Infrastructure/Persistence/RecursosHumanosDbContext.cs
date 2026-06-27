@@ -7,8 +7,11 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Consignacoes;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ESocial;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Folha;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Pasep;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.PlanoCarreira;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Ponto;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Portarias;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.ProcessosTrabalhistas;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.SicapPessoal;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst;
@@ -105,6 +108,18 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Certidoes de Tempo de Servico/Contribuicao (CTC) — apuracao do tempo do servidor com autenticacao.</summary>
     public DbSet<CertidaoTempoServico> CertidoesTempoServico => Set<CertidaoTempoServico>();
+
+    /// <summary>Planos de Cargos, Carreiras e Salarios (PCCS): matriz salarial classe x referencia + regras.</summary>
+    public DbSet<PlanoCarreira> PlanosCarreira => Set<PlanoCarreira>();
+
+    /// <summary>Enquadramentos dos servidores na carreira (posicao vigente + livro-razao de movimentacoes).</summary>
+    public DbSet<EnquadramentoServidor> EnquadramentosCarreira => Set<EnquadramentoServidor>();
+
+    /// <summary>Processos trabalhistas do ente (cadastro/acompanhamento + provisao contabil NBC TG 25).</summary>
+    public DbSet<ProcessoTrabalhista> ProcessosTrabalhistas => Set<ProcessoTrabalhista>();
+
+    /// <summary>Remessas de auditoria de pessoal ao TCE-RS (SICAP-AP / SIAPESweb — leiaute 57 posicoes).</summary>
+    public DbSet<RemessaSicapPessoal> RemessasSicapPessoal => Set<RemessaSicapPessoal>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

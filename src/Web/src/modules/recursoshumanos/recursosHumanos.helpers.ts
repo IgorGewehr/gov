@@ -275,3 +275,90 @@ export const MESES: SelectOption[] = [
   { value: '11', label: 'Novembro' },
   { value: '12', label: 'Dezembro' },
 ];
+
+// --------------------------------------------------------------------------
+// PLANO DE CARGOS E SALARIOS (PCCS)
+// --------------------------------------------------------------------------
+
+/** Opções de critério de progressão horizontal (rótulo → enum numérico do backend). */
+export const CRITERIOS_PROGRESSAO: SelectOption[] = [
+  { value: '1', label: 'Tempo de serviço' },
+  { value: '2', label: 'Avaliação de desempenho' },
+  { value: '3', label: 'Tempo e avaliação' },
+];
+
+/** Mapeia a situação do plano de carreira para a variante semântica da Tag. */
+export function situacaoPlanoCarreiraTagVariant(situacao: string): TagVariant {
+  return situacao === 'Revogado' ? 'danger' : 'success';
+}
+
+// --------------------------------------------------------------------------
+// PROCESSOS TRABALHISTAS
+// --------------------------------------------------------------------------
+
+/** Opções de prognóstico de perda (NBC TG 25; rótulo → enum numérico do backend). */
+export const PROGNOSTICOS_PERDA: SelectOption[] = [
+  { value: '1', label: 'Provável' },
+  { value: '2', label: 'Possível' },
+  { value: '3', label: 'Remota' },
+];
+
+/** Opções de situação processual (rótulo → enum numérico do backend). */
+export const SITUACOES_PROCESSO: SelectOption[] = [
+  { value: '1', label: 'Em andamento' },
+  { value: '2', label: 'Acordo' },
+  { value: '3', label: 'Condenado' },
+  { value: '4', label: 'Improcedente' },
+  { value: '5', label: 'Arquivado' },
+];
+
+/** Mapeia o prognóstico de perda para a variante semântica da Tag. */
+export function prognosticoTagVariant(prognostico: string): TagVariant {
+  switch (prognostico) {
+    case 'Provavel':
+      return 'danger';
+    case 'Possivel':
+      return 'warning';
+    default:
+      return 'info';
+  }
+}
+
+/** Mapeia a situação processual para a variante semântica da Tag. */
+export function situacaoProcessoTagVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'EmAndamento':
+      return 'warning';
+    case 'Condenado':
+      return 'danger';
+    case 'Acordo':
+      return 'info';
+    case 'Improcedente':
+      return 'success';
+    default:
+      return 'default';
+  }
+}
+
+// --------------------------------------------------------------------------
+// SICAP-AP / SIAPESweb (auditoria de pessoal TCE-RS)
+// --------------------------------------------------------------------------
+
+/** Opções de situação da remessa de pessoal (rótulo → enum numérico do backend). */
+export const SITUACOES_REMESSA_SICAP: SelectOption[] = [
+  { value: '1', label: 'Aberta' },
+  { value: '2', label: 'Gerada' },
+  { value: '3', label: 'Transmitida' },
+];
+
+/** Mapeia a situação da remessa de pessoal para a variante semântica da Tag. */
+export function situacaoRemessaSicapTagVariant(situacao: string): TagVariant {
+  switch (situacao) {
+    case 'Transmitida':
+      return 'success';
+    case 'Gerada':
+      return 'info';
+    default:
+      return 'warning';
+  }
+}
