@@ -66,6 +66,12 @@ export const financasKeys = {
   restos: () => [...financasKeys.all, 'restos-a-pagar'] as const,
   restosPorExercicio: (exercicio: number) =>
     [...financasKeys.restos(), 'exercicio', exercicio] as const,
+
+  credores: () => [...financasKeys.all, 'credores'] as const,
+  credoresPorTermo: (termo: string) => [...financasKeys.credores(), 'busca', termo] as const,
+  credor: (id: string) => [...financasKeys.credores(), 'detalhe', id] as const,
+  credorExtrato: (id: string, exercicio: number | null) =>
+    [...financasKeys.credor(id), 'extrato', exercicio ?? 'todos'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -77,3 +83,4 @@ export * from './empenho.api';
 export * from './liquidacao.api';
 export * from './pagamento.api';
 export * from './restoApagar.api';
+export * from './credor.api';

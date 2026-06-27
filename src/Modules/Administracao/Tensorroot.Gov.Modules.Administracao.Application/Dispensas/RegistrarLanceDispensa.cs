@@ -5,6 +5,7 @@ using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
 using Tensorroot.Gov.Modules.Administracao.Domain.ValueObjects;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Dispensas;
 
@@ -37,6 +38,7 @@ public sealed class RegistrarLanceDispensaHandler(
     IDispensaRepository dispensas,
     IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<RegistrarLanceDispensaCommand, Guid>
 {
@@ -48,12 +50,15 @@ public sealed class RegistrarLanceDispensaHandler(
         var dispensa = await dispensas.ObterPorIdAsync(new DispensaEletronicaId(request.DispensaId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Dispensa nao encontrada.");
 
+        // Instante absoluto do lance (ordenacao da disputa) -> UTC. P2-9: a afericao da sancao (dia CIVIL)
+        // usa a data do FUSO do tenant (UTC-3) via IDataHojeTenant, nunca o UTC cru — perto da meia-noite
+        // o "hoje" UTC ja virou o dia seguinte e mascararia o impedimento vigente.
         var agora = timeProvider.GetUtcNow();
 
         // Fail-closed: aferir a aptidao do fornecedor (sancao impeditiva vigente) no limite de agregado e
         // passa-la a Dispensa, que recusa a cotacao de impedido (art. 14/156 Lei 14.133/2021).
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(request.FornecedorId), cancellationToken).ConfigureAwait(false);
-        var fornecedorImpedido = fornecedor is not null && fornecedor.EstaImpedido(DateOnly.FromDateTime(agora.UtcDateTime));
+        var fornecedorImpedido = fornecedor is not null && fornecedor.EstaImpedido(dataHoje.Hoje());
 
         var cotacaoId = dispensa.RegistrarLance(
             request.FornecedorId,

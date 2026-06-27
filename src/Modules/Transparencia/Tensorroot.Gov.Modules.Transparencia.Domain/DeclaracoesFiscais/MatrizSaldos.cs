@@ -21,6 +21,12 @@ public readonly record struct MatrizSaldosId(Guid Value)
 /// </summary>
 public sealed class MatrizSaldos : Entity<MatrizSaldosId>
 {
+    // Tolerancia de arredondamento ao conferir o fechamento (centavos): a partida dobrada do MCASP admite
+    // diferenca de centavos por arredondamento. Alinhada a MatrizSaldosContabeis (Financas,
+    // ToleranciaFechamento=0.01) e a ValidadorMscCsv (Transparencia). Correcao P2-1 da AUDITORIA-FINAL
+    // (antes usava Equals exato, divergindo do agregado de Financas).
+    private const decimal ToleranciaFechamento = 0.01m;
+
     private readonly List<LinhaContabil> _linhas = [];
 
     private MatrizSaldos()
@@ -49,7 +55,8 @@ public sealed class MatrizSaldos : Entity<MatrizSaldosId>
             .Aggregate(ValorMonetario.Zero, (acumulado, linha) => acumulado.Somar(linha.Valor));
 
     /// <summary>Indica se a matriz esta balanceada (partidas dobradas, PCASP): debitos == creditos.</summary>
-    public bool EstaBalanceada => TotalDebitos.Equals(TotalCreditos);
+    public bool EstaBalanceada
+        => Math.Abs(TotalDebitos.Valor - TotalCreditos.Valor) <= ToleranciaFechamento;
 
     /// <summary>Monta uma matriz de saldos a partir das linhas informadas.</summary>
     /// <param name="linhas">Linhas contabeis (saldos recebidos).</param>

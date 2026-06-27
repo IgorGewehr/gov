@@ -1,11 +1,11 @@
 using FluentValidation;
-using MediatR;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Administracao.Application.Abstractions;
 using Tensorroot.Gov.Modules.Administracao.Contracts;
 using Tensorroot.Gov.Modules.Administracao.Domain.Dispensas;
 using Tensorroot.Gov.Modules.Administracao.Domain.Fornecedores;
+using Tensorroot.Gov.SharedKernel.Tempo;
 
 namespace Tensorroot.Gov.Modules.Administracao.Application.Dispensas;
 
@@ -32,8 +32,9 @@ public sealed class HomologarDispensaHandler(
     IDispensaRepository dispensas,
     IFornecedorRepository fornecedores,
     IUnitOfWork unitOfWork,
-    IPublisher publisher,
+    IIntegrationEventWriter integrationEvents,
     ITenantContext tenant,
+    IDataHojeTenant dataHoje,
     TimeProvider timeProvider)
     : ICommandHandler<HomologarDispensaCommand>
 {
@@ -45,35 +46,43 @@ public sealed class HomologarDispensaHandler(
         var dispensa = await dispensas.ObterPorIdAsync(new DispensaEletronicaId(request.DispensaId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Dispensa nao encontrada.");
 
-        var agora = timeProvider.GetUtcNow().UtcDateTime;
+        // Instante ABSOLUTO do Integration Event (Outbox/ordenacao global) -> UTC. P2-9: a afericao da
+        // sancao (dia CIVIL) usa a data do FUSO do tenant (UTC-3) via IDataHojeTenant, nunca o UTC cru:
+        // a noite no Brasil, o "hoje" UTC ja virou o dia seguinte e mascararia/anteciparia o impedimento.
+        var agoraUtc = timeProvider.GetUtcNow().UtcDateTime;
+        var hoje = dataHoje.Hoje();
 
         // Fail-closed: rechecar a aptidao do vencedor no ato da homologacao (sancao impeditiva pode ter
         // sobrevindo). Limite de agregado: consulta o Fornecedor e passa a aptidao a Dispensa, que recusa
         // (art. 14/156 Lei 14.133/2021).
         var vencedorId = dispensa.FornecedorVencedorId();
         var vencedorImpedido = vencedorId is { } vid
-            && await EstaImpedidoAsync(vid, agora, cancellationToken).ConfigureAwait(false);
+            && await EstaImpedidoAsync(vid, hoje, cancellationToken).ConfigureAwait(false);
 
         dispensa.Homologar(request.VencedorHabilitado, vencedorImpedido);
-        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         var fornecedorVencedorId = dispensa.FornecedorVencedorId() ?? Guid.Empty;
         var valorAdjudicado = dispensa.ValorAdjudicado();
 
-        await publisher.Publish(
+        // P1-3: Integration Event enfileirado no Outbox na MESMA transacao do SaveChanges (consistencia
+        // transacional — CLAUDE.md §8/§10), como o irmao PublicarContratoNoPncp. Antes era publicado
+        // in-process via IPublisher APOS o commit: um crash entre commit e publish perdia o evento (sem
+        // retry/idempotencia). O OutboxPublisher despacha ao consumidor ao drenar (at-least-once).
+        integrationEvents.Enfileirar(
             new DispensaHomologadaIntegrationEvent(
                 Guid.NewGuid(),
-                agora,
+                agoraUtc,
                 tenant.TenantId,
                 dispensa.Id.Value,
                 fornecedorVencedorId,
-                valorAdjudicado),
-            cancellationToken).ConfigureAwait(false);
+                valorAdjudicado));
+
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<bool> EstaImpedidoAsync(Guid fornecedorId, DateTime referencia, CancellationToken cancellationToken)
+    private async Task<bool> EstaImpedidoAsync(Guid fornecedorId, DateOnly referencia, CancellationToken cancellationToken)
     {
         var fornecedor = await fornecedores.ObterPorIdAsync(new FornecedorId(fornecedorId), cancellationToken).ConfigureAwait(false);
-        return fornecedor is not null && fornecedor.EstaImpedido(DateOnly.FromDateTime(referencia));
+        return fornecedor is not null && fornecedor.EstaImpedido(referencia);
     }
 }

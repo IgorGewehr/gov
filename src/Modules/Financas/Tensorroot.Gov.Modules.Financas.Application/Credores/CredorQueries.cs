@@ -25,20 +25,26 @@ public sealed record CredorResumo(
     string? Pix,
     string Situacao);
 
-/// <summary>Extrato consolidado do credor (cabeçalho + empenhos + totais).</summary>
+/// <summary>Extrato consolidado do credor (cabeçalho + empenhos + retenções + totais).</summary>
 /// <param name="Credor">Dados do credor.</param>
 /// <param name="Itens">Empenhos com execução acumulada.</param>
+/// <param name="Retencoes">Retenções/consignações do credor agrupadas por natureza.</param>
 /// <param name="TotalEmpenhado">Soma do empenhado (líquido de anulações).</param>
 /// <param name="TotalLiquidado">Soma do liquidado.</param>
 /// <param name="TotalPago">Soma do pago.</param>
-/// <param name="SaldoAPagar">Liquidado − Pago.</param>
+/// <param name="SaldoAPagar">Liquidado − Pago (bruto, antes das retenções em aberto).</param>
+/// <param name="TotalRetido">Soma de tudo o que foi retido do credor (todas as naturezas).</param>
+/// <param name="TotalRetidoAReter">Soma das retenções ainda não recolhidas a terceiros.</param>
 public sealed record CredorExtrato(
     CredorResumo Credor,
     IReadOnlyList<CredorExtratoItem> Itens,
+    IReadOnlyList<CredorRetencaoResumo> Retencoes,
     decimal TotalEmpenhado,
     decimal TotalLiquidado,
     decimal TotalPago,
-    decimal SaldoAPagar);
+    decimal SaldoAPagar,
+    decimal TotalRetido,
+    decimal TotalRetidoAReter);
 
 /// <summary>Lista credores do tenant (filtro opcional por termo nome/documento).</summary>
 /// <param name="Termo">Termo de busca; <c>null</c> = todos.</param>
@@ -114,6 +120,10 @@ public sealed class ObterExtratoCredorHandler(
             .ListarEmpenhosDoCredorAsync(credor.Documento, request.Exercicio, cancellationToken)
             .ConfigureAwait(false);
 
+        var retencoes = await extratoConsulta
+            .ListarRetencoesDoCredorAsync(credor.Documento, request.Exercicio, cancellationToken)
+            .ConfigureAwait(false);
+
         var totalEmpenhado = itens.Sum(i => i.ValorEmpenhado - i.ValorAnulado);
         var totalLiquidado = itens.Sum(i => i.ValorLiquidado);
         var totalPago = itens.Sum(i => i.ValorPago);
@@ -121,9 +131,12 @@ public sealed class ObterExtratoCredorHandler(
         return new CredorExtrato(
             CredorMapper.Mapear(credor),
             itens,
+            retencoes,
             totalEmpenhado,
             totalLiquidado,
             totalPago,
-            SaldoAPagar: totalLiquidado - totalPago);
+            SaldoAPagar: totalLiquidado - totalPago,
+            TotalRetido: retencoes.Sum(r => r.ValorRetido),
+            TotalRetidoAReter: retencoes.Sum(r => r.ValorAReter));
     }
 }

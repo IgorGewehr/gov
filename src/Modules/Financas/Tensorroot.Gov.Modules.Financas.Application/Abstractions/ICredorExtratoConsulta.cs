@@ -21,9 +21,21 @@ public sealed record CredorExtratoItem(
     decimal ValorLiquidado,
     decimal ValorPago);
 
+/// <summary>Retenções/consignações de um credor agrupadas por natureza, para o extrato.</summary>
+/// <param name="Natureza">Natureza da retenção (IRRF-PJ, INSS, ISS, CSLL/COFINS/PIS, caução…).</param>
+/// <param name="ValorRetido">Soma do valor retido na natureza (todas as liquidações do credor).</param>
+/// <param name="ValorRecolhido">Soma já recolhida a terceiro (retenções baixadas por guia).</param>
+/// <param name="ValorAReter">Saldo a recolher (retido − recolhido) — passivo extra-orçamentário em aberto.</param>
+public sealed record CredorRetencaoResumo(
+    string Natureza,
+    decimal ValorRetido,
+    decimal ValorRecolhido,
+    decimal ValorAReter);
+
 /// <summary>
 /// Consulta de leitura do extrato do credor — consolida os empenhos (com liquidação/pagamento acumulados)
-/// de um credor identificado pelo documento normalizado. Lê dos agregados de execução da despesa.
+/// e as retenções/consignações de um credor identificado pelo documento normalizado. Lê dos agregados de
+/// execução da despesa (Empenho/Liquidacao) sem quebrar o isolamento de tenant (Global Query Filter).
 /// </summary>
 public interface ICredorExtratoConsulta
 {
@@ -33,6 +45,19 @@ public interface ICredorExtratoConsulta
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>Itens do extrato.</returns>
     Task<IReadOnlyList<CredorExtratoItem>> ListarEmpenhosDoCredorAsync(
+        string documento,
+        int? exercicio,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Consolida as retenções do credor (via Liquidacao→Empenho→Credor.Documento) agrupadas por natureza,
+    /// opcionalmente filtrando pelo exercício do empenho.
+    /// </summary>
+    /// <param name="documento">Documento (CPF/CNPJ) normalizado do credor.</param>
+    /// <param name="exercicio">Exercício a filtrar; <c>null</c> = todos.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Retenções por natureza.</returns>
+    Task<IReadOnlyList<CredorRetencaoResumo>> ListarRetencoesDoCredorAsync(
         string documento,
         int? exercicio,
         CancellationToken cancellationToken);
