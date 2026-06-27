@@ -1,7 +1,7 @@
-# CLAUDE.md — Constituição de Engenharia do **Tensorroot.Gov**
+# Convenções de Engenharia — Tensorroot.Gov
 
 > **Regras ESTRITAS e inegociáveis.** Este documento tem precedência sobre qualquer
-> convenção *default*. Toda contribuição — humana ou de agente de IA — DEVE aderir.
+> convenção *default*. Toda contribuição DEVE aderir.
 > Violar isolamento de módulo, multi-tenancy ou auditoria é **bug crítico**, não preferência.
 
 ---
@@ -9,7 +9,7 @@
 ## 0. Missão & Contexto
 
 Tensorroot.Gov é um **ERP GovTech SaaS multi-tenant** para **Prefeituras (Poder Executivo)**
-e **Câmaras de Vereadores (Poder Legislativo)** do Brasil. Opera em **PRODUÇÃO**, processando
+e **Câmaras de Vereadores (Poder Legislativo)** do Brasil. Opera em **produção**, processando
 **dinheiro público** e **dados sensíveis** sob escrutínio do **Tribunal de Contas (foco TCE-RS
 e padrão nacional)**. Piloto: **Município de Maximiliano de Almeida/RS**.
 
@@ -35,7 +35,7 @@ auditabilidade**. Não há espaço para atalhos nessas dimensões.
 
 - **Estilo:** Monolito Modular + **Clean Architecture** + **DDD Tático**.
 - **Comunicação intra-processo:** **MediatR** — *Domain Events* in-process; *Integration Events* via **Outbox Pattern** (consistência transacional).
-- **Regra de dependência por módulo (verificada por NetArchTest na Fase 6):**
+- **Regra de dependência por módulo (verificada por NetArchTest):**
 
   ```
   Domain  ←  Application  ←  Infrastructure
@@ -120,7 +120,7 @@ não-licenciado → **404/403 auditado**.
 - **AuthN:** JWT Bearer. **AuthZ:** *policy-based* + RBAC (`Usuário → Departamento → Roles`). Negar por padrão.
 - **Auditoria:** `AuditSaveChangesInterceptor` grava *Audit Trail* (JSON antes/depois, usuário, IP, timestamp) — **imutável**, para o Tribunal de Contas.
 - **Certificados A1 (.pfx):** **Azure Key Vault**, por tenant. Usados para **eSocial**, **remessas TCE-RS** e **assinatura de documentos no Protocolo**.
-  - ⚠️ **NFS-e NÃO é mais assinada por nós** (nasce e é assinada no Ambiente Nacional — ver §8).
+  - ⚠️ **NFS-e NÃO é assinada por nós** (nasce e é assinada no Ambiente Nacional — ver §8).
 - **LGPD:** dados sensíveis (Saúde, Assistência Social, menores na Educação) com base legal explícita, minimização e **trilha de acesso** (quem leu o quê, quando, por quê).
 - **Anti-SQLi:** sempre parametrizado/EF. **Proibido** SQL concatenado com entrada do usuário.
 
@@ -143,10 +143,12 @@ não-licenciado → **404/403 auditado**.
 - **NFS-e Nacional (ADN) — integração PASSIVA.** O Worker `NfseSync` baixa **diariamente** os XMLs do
   **Ambiente de Dados Nacional / Receita Federal** para os CNPJs do tenant, deduplica por chave de acesso,
   persiste e alimenta o **painel fiscal (Tributos)** e a **Dívida Ativa**.
-  **Nós NÃO emitimos nem assinamos NFS-e.** Emissão/recepção padrão **ABRASF: REMOVIDO** do escopo.
+  **Nós NÃO emitimos nem assinamos NFS-e.** Emissão/recepção padrão ABRASF está **fora** do escopo.
 - **eSocial / remessas TCE-RS (SIAPC/PAD) / SICONFI (MSC):** XML assinado (A1) + SOAP/REST, com **Polly**
   (retry + circuit breaker) e **Anti-Corruption Layer**. Eventos via **Outbox**.
 - Toda integração externa: **idempotente, resiliente, atrás de ACL**, com mapeamento explícito de erros.
+- Em dúvida sobre regra fiscal/legal ou layout de integração: **pesquisar a fonte oficial** (planalto,
+  gov.br, STN, TCE-RS) e **confirmar layout/versão atual** antes de implementar — nunca inventar.
 
 ---
 
@@ -195,27 +197,3 @@ não-licenciado → **404/403 auditado**.
 - **Idioma:** linguagem ubíqua/domínio em **PT-BR** (identificadores **sem acento**: `DividaAtiva`, `Empenho`);
   termos técnicos em EN. Comentários e documentação em **PT-BR**.
 - **Commits:** Conventional Commits. Branch por feature. PR com checklist (segurança, tenant, auditoria, testes).
-
----
-
-## 15. Roadmap de Fases (status)
-
-| Fase | Descrição | Status |
-|---|---|---|
-| **1** | Constituição, Pesquisa, Topologia (.sln) e Specs (READMEs/BDD) | ✅ concluída |
-| **2** | Core, SharedKernel e Infraestrutura base (ApiHost, EF, MediatR, Serilog, OTel) | ✅ concluída (compila + sobe) |
-| **3** | Engenharia de Domínio por módulo (entidades ricas) | ✅ **Tributos** (padrão de referência a replicar) |
-| **4** | Casos de Uso, Mensageria e Banco (Handlers, DbContexts, Interceptors) | ✅ **Tributos** (padrão a replicar) |
-| **5** | Integrações Governamentais (`NfseSync`/ADN, eSocial, remessas TCE) | ✅ NFS-e/ADN no Tributos (demais a fazer) |
-| **6** | Testes de Arquitetura & CI/CD Azure | ✅ Fitness Functions (NetArchTest) + pipelines + Bicep |
-
-> **Regra de ouro:** **não avançar de fase sem autorização explícita do dono do produto.**
-
----
-
-## 16. Para o Agente de IA
-
-- **Antes de codar:** pesquisar o domínio em fontes oficiais (planalto, gov.br, STN, TCE-RS) e **confirmar layout/versão atual** de cada integração governamental.
-- **Nunca** quebrar isolamento de módulo ou multi-tenancy "para facilitar".
-- **Sempre** preservar a trilha de auditoria e os Global Query Filters.
-- Em dúvida sobre regra fiscal/legal: **parar e pesquisar**, não inventar.
