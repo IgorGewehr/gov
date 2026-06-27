@@ -50,6 +50,21 @@ public sealed class SaldoLiquidacaoInsuficienteException : SaldoInsuficienteExce
 }
 
 /// <summary>
+/// Lançada ao tentar reter, sobre uma liquidação, mais do que o valor liquidado
+/// (a soma das consignações não pode exceder o bruto — geraria líquido negativo).
+/// </summary>
+public sealed class RetencaoExcedeLiquidacaoException : InvalidOperationException
+{
+    /// <summary>Cria a exceção com os valores envolvidos.</summary>
+    /// <param name="valorLiquidacao">Valor liquidado (bruto).</param>
+    /// <param name="totalRetencoes">Soma das retenções que excede o bruto.</param>
+    public RetencaoExcedeLiquidacaoException(decimal valorLiquidacao, decimal totalRetencoes)
+        : base($"Total de retencoes {totalRetencoes:0.00} excede o valor liquidado {valorLiquidacao:0.00}.")
+    {
+    }
+}
+
+/// <summary>
 /// Lançada ao tentar cancelar um Resto a Pagar fora da janela legal de prazo/decadência
 /// (Decreto 93.872/86 e normas TCE-RS, parametrizável por tenant). Fail-closed.
 /// </summary>

@@ -23,3 +23,4 @@ export * from './portaria.api';
 export * from './pasep.api';
 export * from './sst.api';
 export * from './bancoDeHoras.api';
+export * from './certidaoTempo.api';

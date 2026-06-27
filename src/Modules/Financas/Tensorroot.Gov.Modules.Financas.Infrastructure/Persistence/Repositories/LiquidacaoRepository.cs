@@ -17,11 +17,14 @@ public sealed class LiquidacaoRepository(FinancasDbContext context) : ILiquidaca
 
     /// <inheritdoc />
     public Task<Liquidacao?> ObterPorIdAsync(LiquidacaoId id, CancellationToken cancellationToken)
-        => context.Liquidacoes.FirstOrDefaultAsync(liquidacao => liquidacao.Id == id, cancellationToken);
+        => context.Liquidacoes
+            .Include(liquidacao => liquidacao.Retencoes)
+            .FirstOrDefaultAsync(liquidacao => liquidacao.Id == id, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Liquidacao>> ListarPorEmpenhoAsync(EmpenhoId empenhoId, CancellationToken cancellationToken)
         => await context.Liquidacoes
+            .Include(liquidacao => liquidacao.Retencoes)
             .Where(liquidacao => liquidacao.EmpenhoId == empenhoId)
             .OrderBy(liquidacao => liquidacao.DataLiquidacao)
             .ToListAsync(cancellationToken)

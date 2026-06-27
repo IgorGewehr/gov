@@ -77,6 +77,12 @@ const SstServidorPage = lazy(() =>
 const BancoDeHorasServidorPage = lazy(() =>
   import('./BancoDeHorasServidorPage').then((m) => ({ default: m.BancoDeHorasServidorPage })),
 );
+const CertidoesTempoServidorPage = lazy(() =>
+  import('./CertidoesTempoServidorPage').then((m) => ({ default: m.CertidoesTempoServidorPage })),
+);
+const CertidaoDetailPage = lazy(() =>
+  import('./CertidaoDetailPage').then((m) => ({ default: m.CertidaoDetailPage })),
+);
 
 const MODULE: ModuleDefinition = {
   id: 'recursoshumanos',
@@ -95,6 +101,8 @@ const MODULE: ModuleDefinition = {
         { path: 'servidores/:servidorId/consignacoes', element: <ConsignacoesServidorPage /> },
         { path: 'servidores/:servidorId/sst', element: <SstServidorPage /> },
         { path: 'servidores/:servidorId/banco-de-horas', element: <BancoDeHorasServidorPage /> },
+        { path: 'servidores/:servidorId/certidoes-tempo', element: <CertidoesTempoServidorPage /> },
+        { path: 'certidoes-tempo/:certidaoId', element: <CertidaoDetailPage /> },
         { path: 'servidores/:matricula', element: <ServidorDetailPage /> },
         { path: 'cargos', element: <CargosListPage /> },
         { path: 'cargos/:id', element: <CargoDetailPage /> },

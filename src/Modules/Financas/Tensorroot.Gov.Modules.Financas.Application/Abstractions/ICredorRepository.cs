@@ -21,6 +21,12 @@ public interface ICredorRepository
     /// <returns><c>true</c> se já existe.</returns>
     Task<bool> ExisteComDocumentoAsync(string documento, CancellationToken cancellationToken);
 
+    /// <summary>Obtém um credor pelo documento normalizado (CPF/CNPJ sem máscara).</summary>
+    /// <param name="documento">Documento normalizado.</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>O credor, ou <c>null</c>.</returns>
+    Task<CredorCadastrado?> ObterPorDocumentoAsync(string documento, CancellationToken cancellationToken);
+
     /// <summary>Lista credores do tenant, opcionalmente filtrando por termo (nome/documento).</summary>
     /// <param name="termo">Termo de busca (nome ou documento); <c>null</c> = todos.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>

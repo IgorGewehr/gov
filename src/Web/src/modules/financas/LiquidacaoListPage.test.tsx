@@ -56,9 +56,12 @@ const LIQUIDACOES: LiquidacaoResumo[] = [
     valor: 5000,
     valorPago: 0,
     saldoAPagar: 5000,
+    totalRetido: 0,
+    valorLiquido: 5000,
     dataLiquidacao: '2026-03-10',
     documento: 'NF 000123',
     situacao: 'Liquidada',
+    retencoes: [],
   },
 ];
 

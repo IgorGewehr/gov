@@ -94,6 +94,13 @@ export const rhKeys = {
 
   bancoDeHoras: (servidorId: string) => [...rhKeys.all, 'banco-de-horas', servidorId] as const,
 
+  certidoesTempo: () => [...rhKeys.all, 'certidoes-tempo'] as const,
+  certidoesDoServidor: (servidorId: string) =>
+    [...rhKeys.certidoesTempo(), 'servidor', servidorId] as const,
+  certidao: (certidaoId: string) => [...rhKeys.certidoesTempo(), 'detalhe', certidaoId] as const,
+  certidaoValidacao: (codigo: string) =>
+    [...rhKeys.certidoesTempo(), 'validar', codigo] as const,
+
   ponto: () => [...rhKeys.all, 'ponto'] as const,
   jornadaVigente: (servidorId: string, ano: number, mes: number) =>
     [...rhKeys.ponto(), 'jornada', servidorId, ano, mes] as const,

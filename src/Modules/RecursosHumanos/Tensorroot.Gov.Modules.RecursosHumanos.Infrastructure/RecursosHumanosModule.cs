@@ -141,6 +141,11 @@ public sealed class RecursosHumanosModule : IModule
         services.AddScoped<IExposicaoAgenteNocivoRepository, ExposicaoAgenteNocivoRepository>();
         services.AddScoped<IComunicacaoAcidenteRepository, ComunicacaoAcidenteRepository>();
 
+        // CERTIDAO DE TEMPO DE SERVICO/CONTRIBUICAO (CTC — paridade RH-ops SAPI / atos de pessoal): apura o
+        // tempo do servidor (efetivo exercicio proprio + averbado, com fatores e abatimento de nao-computaveis),
+        // numera sequencialmente por exercicio e sela um codigo de autenticacao para validacao publica.
+        services.AddScoped<ICertidaoTempoServicoRepository, CertidaoTempoServicoRepository>();
+
         // PC1: regime previdenciario do quadro = parametro do tenant (tem RPPS proprio?), nao roteamento
         // fixo. Default RGPS/INSS (municipio pequeno sem RPPS proprio — Maximiliano de Almeida).
         services.AddScoped<IPoliticaPrevidenciariaProvider, PoliticaPrevidenciariaProvider>();

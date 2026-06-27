@@ -5,6 +5,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../api/http';
 import { financasKeys } from './financas.api';
 
+/** Retenção apurada sobre a liquidação (RetencaoResumo). */
+export interface RetencaoResumo {
+  id: string;
+  natureza: string;
+  valor: number;
+  codigoReceita: string | null;
+  recolhida: boolean;
+}
+
 /** Projeção de resumo/detalhe (LiquidacaoResumo). */
 export interface LiquidacaoResumo {
   id: string;
@@ -12,10 +21,13 @@ export interface LiquidacaoResumo {
   valor: number;
   valorPago: number;
   saldoAPagar: number;
+  totalRetido: number;
+  valorLiquido: number;
   /** Data ISO yyyy-mm-dd. */
   dataLiquidacao: string;
   documento: string;
   situacao: string;
+  retencoes: RetencaoResumo[];
 }
 
 /** LiquidarDespesaCommand. `tipoDocumento` é valor numérico do enum. */

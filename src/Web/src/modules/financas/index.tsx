@@ -39,6 +39,9 @@ const PagamentoDetailPage = lazy(() =>
 const RestosAPagarListPage = lazy(() =>
   import('./RestosAPagarListPage').then((m) => ({ default: m.RestosAPagarListPage })),
 );
+const GuiasRecolhimentoPage = lazy(() =>
+  import('./GuiasRecolhimentoPage').then((m) => ({ default: m.GuiasRecolhimentoPage })),
+);
 const PlanoDeContasPage = lazy(() =>
   import('./contabilidade/PlanoDeContasPage').then((m) => ({ default: m.PlanoDeContasPage })),
 );
@@ -88,6 +91,7 @@ const MODULE: ModuleDefinition = {
         { path: 'liquidacoes/:id', element: <LiquidacaoDetailPage /> },
         { path: 'pagamentos', element: <PagamentoListPage /> },
         { path: 'pagamentos/:id', element: <PagamentoDetailPage /> },
+        { path: 'retencoes/guias', element: <GuiasRecolhimentoPage /> },
         { path: 'restos-a-pagar', element: <RestosAPagarListPage /> },
         { path: 'tesouraria/contas', element: <ContasFinanceirasPage /> },
         { path: 'tesouraria/contas/:contaId', element: <ExtratoContaPage /> },

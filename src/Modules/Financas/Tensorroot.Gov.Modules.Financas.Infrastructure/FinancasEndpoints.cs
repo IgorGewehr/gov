@@ -13,6 +13,7 @@ using Tensorroot.Gov.Modules.Financas.Application.Dotacoes;
 using Tensorroot.Gov.Modules.Financas.Application.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Application.Fiscal;
 using Tensorroot.Gov.Modules.Financas.Application.Liquidacoes;
+using Tensorroot.Gov.Modules.Financas.Application.Cnab;
 using Tensorroot.Gov.Modules.Financas.Application.Pagamentos;
 using Tensorroot.Gov.Modules.Financas.Application.RestosAPagar;
 using Tensorroot.Gov.Modules.Financas.Application.Tesouraria;
@@ -25,7 +26,7 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure;
 /// (Lei 4.320/64): dotação → empenho → liquidação → pagamento → restos a pagar.
 /// Leituras exigem "financas.ver"; mutações exigem "financas.gerenciar".
 /// </summary>
-internal static class FinancasEndpoints
+internal static partial class FinancasEndpoints
 {
     public static void Map(IEndpointRouteBuilder endpoints)
     {
@@ -35,6 +36,7 @@ internal static class FinancasEndpoints
         MapearEmpenhos(grupo);
         MapearLiquidacoes(grupo);
         MapearPagamentos(grupo);
+        MapearRetencoes(grupo);
         MapearRestosAPagar(grupo);
         MapearCredores(grupo);
         MapearTesouraria(grupo);
@@ -388,6 +390,33 @@ internal static class FinancasEndpoints
                 ? Results.Ok(resumo)
                 : Results.NotFound())
             .RequirePermission("financas.ver");
+
+        // Geração da remessa bancária CNAB240 (FEBRABAN) a partir da ordem de pagamento.
+        // Transmissão real ao banco diferida (M10); aqui produz o arquivo de remessa (.rem).
+        grupo.MapPost("/ordens-pagamento/{ordemId:guid}/cnab240", async (
+            Guid ordemId, GerarCnabPayload payload, ISender sender, CancellationToken cancellationToken) =>
+        {
+            var remessa = await sender.Send(
+                new GerarRemessaCnab240Query(
+                    ordemId,
+                    payload.FormaLancamento,
+                    payload.SequencialArquivo,
+                    new PagadorPayload(
+                        payload.CodigoBanco,
+                        payload.TipoInscricao,
+                        payload.NumeroInscricao,
+                        payload.Convenio,
+                        payload.DvAgencia ?? string.Empty,
+                        payload.DvConta ?? string.Empty,
+                        payload.DvAgenciaConta ?? string.Empty,
+                        payload.NomeEmpresa)),
+                cancellationToken);
+
+            return Results.File(
+                System.Text.Encoding.Latin1.GetBytes(remessa.Conteudo),
+                "text/plain",
+                remessa.NomeArquivo);
+        }).RequirePermission("financas.gerenciar");
     }
 
     private static void MapearRestosAPagar(RouteGroupBuilder grupo)
@@ -437,4 +466,5 @@ internal static class FinancasEndpoints
     private sealed record ConciliarPayload(DateOnly DataConciliacao);
 
     private sealed record AtualizarCredorPayload(string? Nome, string? Banco, string? Agencia, string? Conta, string? Pix);
+
 }

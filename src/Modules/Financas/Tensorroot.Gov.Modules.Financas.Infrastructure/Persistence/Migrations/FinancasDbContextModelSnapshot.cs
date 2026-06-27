@@ -1036,6 +1036,51 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                     b.ToTable("ReceitasArrecadadas", "financas");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Recolhimentos.GuiaRecolhimento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoReceita")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateOnly>("Competencia")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataRecolhimento")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("DataVencimento")
+                        .HasColumnType("date");
+
+                    b.Property<string>("FavorecidoDocumento")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Natureza")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ValorTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Situacao");
+
+                    b.ToTable("GuiasRecolhimento", "financas");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.RestosAPagar.RestoAPagar", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1082,6 +1127,31 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                     b.HasIndex("TenantId", "ExercicioInscricao");
 
                     b.ToTable("RestosAPagar", "financas");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Retencoes.TabelaIrrfServicos", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("ValorMinimoRetencao")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly?>("VigenciaFim")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("VigenciaInicio")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "VigenciaInicio")
+                        .IsUnique();
+
+                    b.ToTable("TabelasIrrfServicos", "financas");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Tesouraria.ContaFinanceira", b =>
@@ -1420,6 +1490,59 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Liquidacoes.Liquidacao", b =>
                 {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Financas.Domain.Retencoes.Retencao", "Retencoes", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal?>("Aliquota")
+                                .HasColumnType("decimal(9,6)");
+
+                            b1.Property<decimal>("BaseCalculo")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<string>("CodigoReceita")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Descricao")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("FavorecidoDocumento")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<Guid?>("GuiaRecolhimentoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("LiquidacaoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Natureza")
+                                .IsRequired()
+                                .HasMaxLength(30)
+                                .HasColumnType("nvarchar(30)");
+
+                            b1.Property<bool>("Recolhida")
+                                .HasColumnType("bit");
+
+                            b1.Property<decimal>("Valor")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("GuiaRecolhimentoId");
+
+                            b1.HasIndex("LiquidacaoId");
+
+                            b1.ToTable("Retencoes", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("LiquidacaoId");
+                        });
+
                     b.OwnsOne("Tensorroot.Gov.Modules.Financas.Domain.ValueObjects.DocumentoComprobatorio", "Documento", b1 =>
                         {
                             b1.Property<Guid>("LiquidacaoId")
@@ -1455,6 +1578,8 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
 
                     b.Navigation("Documento")
                         .IsRequired();
+
+                    b.Navigation("Retencoes");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Pagamentos.OrdemDePagamento", b =>
@@ -1683,6 +1808,87 @@ namespace Tensorroot.Gov.Modules.Financas.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PpaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Recolhimentos.GuiaRecolhimento", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Financas.Domain.Recolhimentos.ItemGuiaRecolhimento", "Itens", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<Guid>("GuiaRecolhimentoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("LiquidacaoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("RetencaoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<decimal>("Valor")
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("GuiaRecolhimentoId");
+
+                            b1.HasIndex("RetencaoId");
+
+                            b1.ToTable("ItensGuiaRecolhimento", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("GuiaRecolhimentoId");
+                        });
+
+                    b.Navigation("Itens");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Retencoes.TabelaIrrfServicos", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.Financas.Domain.Retencoes.FaixaIrrfServicos", "Faixas", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<decimal>("Aliquota")
+                                .HasColumnType("decimal(9,6)");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(40)
+                                .HasColumnType("nvarchar(40)");
+
+                            b1.Property<string>("CodigoReceitaDarf")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("nvarchar(10)");
+
+                            b1.Property<string>("Descricao")
+                                .IsRequired()
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<Guid>("TabelaIrrfServicosId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("TabelaIrrfServicosId");
+
+                            b1.ToTable("FaixasIrrfServicos", "financas");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TabelaIrrfServicosId");
+                        });
+
+                    b.Navigation("Faixas");
                 });
 
             modelBuilder.Entity("Tensorroot.Gov.Modules.Financas.Domain.Tesouraria.ContaFinanceira", b =>

@@ -13,6 +13,7 @@ using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Rubricas;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Servidores;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.Sst;
 using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TabelasLegais;
+using Tensorroot.Gov.Modules.RecursosHumanos.Domain.TempoServico;
 
 namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence;
 
@@ -101,6 +102,9 @@ public sealed class RecursosHumanosDbContext(DbContextOptions<RecursosHumanosDbC
 
     /// <summary>Comunicacoes de Acidente de Trabalho (CAT — S-2210).</summary>
     public DbSet<ComunicacaoAcidente> SstComunicacoesAcidente => Set<ComunicacaoAcidente>();
+
+    /// <summary>Certidoes de Tempo de Servico/Contribuicao (CTC) — apuracao do tempo do servidor com autenticacao.</summary>
+    public DbSet<CertidaoTempoServico> CertidoesTempoServico => Set<CertidaoTempoServico>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

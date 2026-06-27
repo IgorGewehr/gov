@@ -20,6 +20,7 @@ import { useCancelarOrdem, useEfetuarPagamento, useOrdemDePagamento } from './fi
 import type { ItemPagamento, OrdemDePagamentoResumo } from './financas.api';
 import { mensagemErro, situacaoTagVariant } from './financas.helpers';
 import { FinancasSubNav } from './FinancasSubNav';
+import { CnabRemessaModal } from './CnabRemessaModal';
 
 type Confirmacao = 'efetuar' | 'cancelar' | null;
 
@@ -44,6 +45,7 @@ export function PagamentoDetailPage() {
   const efetuar = useEfetuarPagamento(id);
   const cancelar = useCancelarOrdem(id);
   const [confirmando, setConfirmando] = useState<Confirmacao>(null);
+  const [cnabAberto, setCnabAberto] = useState(false);
 
   function aoEfetuar(): void {
     efetuar.mutate(undefined, {
@@ -125,6 +127,9 @@ export function PagamentoDetailPage() {
                       <Button variant="danger" onClick={() => setConfirmando('cancelar')}>
                         Cancelar ordem
                       </Button>
+                      <Button variant="secondary" onClick={() => setCnabAberto(true)}>
+                        <i className="fas fa-file-arrow-down" aria-hidden="true" /> Remessa CNAB240
+                      </Button>
                     </Toolbar>
                   )}
                 </Can>
@@ -149,6 +154,8 @@ export function PagamentoDetailPage() {
           </>
         )}
       </QueryState>
+
+      <CnabRemessaModal open={cnabAberto} onClose={() => setCnabAberto(false)} ordemId={id} />
     </>
   );
 }

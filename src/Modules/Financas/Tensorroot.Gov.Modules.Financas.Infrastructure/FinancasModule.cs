@@ -89,6 +89,10 @@ public sealed class FinancasModule : IModule
         services.AddScoped<ICredorRepository, CredorRepository>();
         services.AddScoped<ICredorExtratoConsulta, CredorExtratoConsulta>();
 
+        // Retenções/consignações (IRRF IN RFB 1234/2012, INSS, ISS, caução) + recolhimento extra-orçamentário.
+        services.AddScoped<ITabelaIrrfServicosRepository, TabelaIrrfServicosRepository>();
+        services.AddScoped<IGuiaRecolhimentoRepository, GuiaRecolhimentoRepository>();
+
         // Contabilidade (PCASP/MCASP).
         services.AddScoped<IContaContabilRepository, ContaContabilRepository>();
         services.AddScoped<ILancamentoContabilRepository, LancamentoContabilRepository>();

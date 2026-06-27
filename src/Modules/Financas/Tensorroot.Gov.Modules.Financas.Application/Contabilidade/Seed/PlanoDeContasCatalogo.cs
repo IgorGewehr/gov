@@ -27,6 +27,17 @@ public static class PlanoDeContasCatalogo
         Sint("2.1.3", "Fornecedores e Contas a Pagar de Curto Prazo", "Obrigacoes com fornecedores.", "Credita na liquidacao; debita no pagamento.", IndicadorSuperavitFinanceiro.Financeiro),
         Anal("2.1.3.1.01", "Fornecedores Nacionais a Pagar", "Fornecedores nacionais.", "Credita na liquidacao; debita no pagamento.", IndicadorSuperavitFinanceiro.Financeiro),
 
+        // ---- Consignacoes / retencoes a recolher (extra-orcamentario) — passivo financeiro ----
+        // PCASP 2.1.8.8 (Consignacoes). Recebe a parcela retida do credor (IRRF/INSS/ISS/caucao) ate o
+        // recolhimento a terceiros. Ingresso/dispendio EXTRA-orcamentario (Lei 4.320/64). [validar-plano-oficial]
+        Sint("2.1.8", "Demais Obrigacoes a Curto Prazo", "Demais obrigacoes ate 12 meses.", "Credita por incorrer; debita por baixar.", IndicadorSuperavitFinanceiro.Financeiro),
+        Sint("2.1.8.8", "Consignacoes", "Valores retidos de terceiros a recolher.", "Credita na retencao; debita no recolhimento.", IndicadorSuperavitFinanceiro.Financeiro),
+        Sint("2.1.8.8.1", "Consignacoes", "Consignacoes a recolher.", "Credita na retencao; debita no recolhimento.", IndicadorSuperavitFinanceiro.Financeiro),
+        Anal("2.1.8.8.1.04", "IRRF a Recolher", "IRRF retido na fonte de terceiros a recolher (IN RFB 1.234/2012).", "Credita na liquidacao com retencao; debita no recolhimento (DARF).", IndicadorSuperavitFinanceiro.Financeiro),
+        Anal("2.1.8.8.1.05", "INSS a Recolher", "INSS retido a recolher (Lei 8.212/91).", "Credita na liquidacao com retencao; debita no recolhimento (GPS).", IndicadorSuperavitFinanceiro.Financeiro),
+        Anal("2.1.8.8.1.06", "ISS a Recolher", "ISS retido na fonte a recolher (LC 116/2003).", "Credita na liquidacao com retencao; debita no recolhimento.", IndicadorSuperavitFinanceiro.Financeiro),
+        Anal("2.1.8.8.1.99", "Outras Consignacoes a Recolher", "Demais retencoes/consignacoes a recolher.", "Credita na retencao; debita no recolhimento.", IndicadorSuperavitFinanceiro.Financeiro),
+
         // ---- Patrimonio Liquido — Resultados Acumulados (2.3.7) — IPC 03 §§19-28 ----
         // Permanentes (NAO encerram): o resultado do exercicio e apurado aqui em 31/12 e
         // transferido para exercicios anteriores na abertura. F/P = Permanente (PL).

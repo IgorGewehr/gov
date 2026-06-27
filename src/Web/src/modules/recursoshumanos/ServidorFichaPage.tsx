@@ -167,6 +167,13 @@ export function ServidorFichaPage() {
             >
               <i className="fas fa-clock" aria-hidden="true" /> Banco de horas
             </Link>
+            <Link
+              className="br-button secondary"
+              to={`/recursoshumanos/servidores/${servidorId}/certidoes-tempo`}
+              state={{ nome: query.data?.dadosPessoais.nome }}
+            >
+              <i className="fas fa-file-contract" aria-hidden="true" /> Certidões de tempo
+            </Link>
             <Link className="br-button secondary" to="/recursoshumanos">
               <i className="fas fa-arrow-left" aria-hidden="true" /> Voltar à lista
             </Link>

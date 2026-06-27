@@ -1261,6 +1261,72 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                     b.ToTable("TabelasRpps", "recursoshumanos");
                 });
 
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TempoServico.CertidaoTempoServico", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodigoAutenticacao")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasColumnName("CodigoAutenticacao");
+
+                    b.Property<DateOnly>("DataEmissao")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Exercicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Finalidade")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FinalidadeDescrita")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("MotivoAnulacao")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Observacao")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OrgaoEmissor")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Sequencial")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ServidorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "CodigoAutenticacao")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId", "ServidorId");
+
+                    b.HasIndex("TenantId", "Exercicio", "Sequencial")
+                        .IsUnique();
+
+                    b.ToTable("CertidoesTempoServico", "recursoshumanos");
+                });
+
             modelBuilder.Entity("Tensorroot.Gov.SharedKernel.InboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1786,6 +1852,59 @@ namespace Tensorroot.Gov.Modules.RecursosHumanos.Infrastructure.Persistence.Migr
                         });
 
                     b.Navigation("Faixas");
+                });
+
+            modelBuilder.Entity("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TempoServico.CertidaoTempoServico", b =>
+                {
+                    b.OwnsMany("Tensorroot.Gov.Modules.RecursosHumanos.Domain.TempoServico.PeriodoTempo", "Periodos", b1 =>
+                        {
+                            b1.Property<Guid>("CertidaoTempoServicoId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<int>("DiasNaoComputaveis")
+                                .HasColumnType("int");
+
+                            b1.Property<decimal>("Fator")
+                                .HasColumnType("decimal(5,2)");
+
+                            b1.Property<DateOnly>("Fim")
+                                .HasColumnType("date");
+
+                            b1.Property<DateOnly>("Inicio")
+                                .HasColumnType("date");
+
+                            b1.Property<string>("Natureza")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.Property<string>("Observacao")
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)");
+
+                            b1.Property<string>("Origem")
+                                .HasMaxLength(200)
+                                .HasColumnType("nvarchar(200)");
+
+                            b1.Property<string>("RegimeOrigem")
+                                .HasMaxLength(20)
+                                .HasColumnType("nvarchar(20)");
+
+                            b1.HasKey("CertidaoTempoServicoId", "Id");
+
+                            b1.ToTable("CertidoesTempoServicoPeriodos", "recursoshumanos");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CertidaoTempoServicoId");
+                        });
+
+                    b.Navigation("Periodos");
                 });
 #pragma warning restore 612, 618
         }

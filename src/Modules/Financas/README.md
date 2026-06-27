@@ -45,6 +45,13 @@ O contexto **Financas** materializa o ciclo orçamentário-contábil do ente pú
   - Entidade: `PartidaPCASP`.
   - VO: `ContaContabil`.
   - Evento: **MSCGerada**.
+- **Retencao** [entidade-filha de `Liquidacao`] + **GuiaRecolhimento** [raiz · `IMustHaveTenant`]
+  - VOs/tabela: `TabelaIrrfServicos`/`FaixaIrrfServicos` (IRRF/PJ — **IN RFB 1.234/2012**, alterada pela IN 2.145/2023; alíquotas 1,2%/0,24%/2,4%/4,8% e códigos DARF 6147/9060/6188/6175/6190; dispensa abaixo de R$ 10,00 — art. 3º, §6º).
+  - Naturezas: IRRF (PJ/PF), INSS, ISS retido, contribuições federais, caução.
+  - Ciclo **extra-orçamentário**: a retenção apurada na liquidação reduz o líquido a pagar e nasce como passivo a recolher (consignação — PCASP **2.1.8.8.1.xx**); o recolhimento (`GuiaRecolhimento`) baixa o passivo.
+  - Eventos: **RetencaoApurada**, **GuiaRecolhimentoEmitida**, **RecolhimentoEfetuado**.
+- **RemessaCnab240** [serviço de domínio — `Cnab240Writer`]
+  - Geração do arquivo de remessa bancária **CNAB240 (FEBRABAN)** de pagamento a fornecedores/servidores a partir da `OrdemDePagamento` (Header de Arquivo/Lote, Segmentos A/B, Trailers; 240 posições). **Transmissão real ao banco = M10.**
 
 Relações: `Empenho` referencia `DotacaoOrcamentaria` por Id (sem navegação cross-aggregate); cada estágio gera um `LancamentoContabil` por reação a evento de domínio.
 
@@ -61,6 +68,8 @@ Relações: `Empenho` referencia `DotacaoOrcamentaria` por Id (sem navegação c
 - Despesas não pagas até 31/12 viram restos a pagar: **processados** se liquidadas, **não processados** caso contrário.
 - LRF veda criação de despesa obrigatória continuada sem indicação de fonte/custeio.
 - Segregação de funções: quem empenha ≠ quem liquida ≠ quem paga.
+- **Retenção na fonte (consignação)**: a soma das retenções não excede o valor liquidado; retenção só antes do pagamento. Contábil (patrimonial, balanceado, idempotente): no pagamento, D Caixa / C Consignação a Recolher (2.1.8.8.1.xx) pela parcela retida — o líquido sai do caixa e o retido fica como passivo extra-orçamentário; no recolhimento, D Consignação / C Caixa. O ciclo orçamentário (5/6) permanece pelo bruto. IRRF/PJ calculado pela tabela vigente da **IN RFB 1.234/2012** (parametrizável por tenant; sem número mágico).
+- **SICAP (auditoria de pessoal TCE-RS)**: remessa de **pessoal**, alimentada pelo módulo **RecursosHumanos** (admissões/folha/atos). Por isolamento de módulo, a estrutura/transmissão pertence a RH/Transparência via `*.Contracts` — **fora do escopo de edição de Finanças**; pendente nesse módulo.
 
 ## 6. Multi-Tenancy, Segurança & Auditoria
 Todas as raízes implementam `IMustHaveTenant`; `TenantId` aplicado por global query filter e nunca aceito do cliente. Operações sensíveis exigem claims distintas (`financas.empenhar`, `financas.liquidar`, `financas.pagar`) reforçando a segregação de funções. Trilha de auditoria imutável registra autor, timestamp e valores anteriores/novos de cada estágio; eventos de domínio versionados garantem rastreabilidade fiscal.

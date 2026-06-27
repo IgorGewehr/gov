@@ -1,6 +1,8 @@
 using Tensorroot.Gov.Modules.Financas.Domain.Empenhos;
 using Tensorroot.Gov.Modules.Financas.Domain.Events;
 using Tensorroot.Gov.Modules.Financas.Domain.Exceptions;
+using Tensorroot.Gov.Modules.Financas.Domain.Retencoes;
+using Tensorroot.Gov.Modules.Financas.Domain.Retencoes.Events;
 using Tensorroot.Gov.Modules.Financas.Domain.ValueObjects;
 using Tensorroot.Gov.SharedKernel;
 using Tensorroot.Gov.SharedKernel.Primitives;
@@ -41,6 +43,8 @@ public enum SituacaoLiquidacao
 /// </summary>
 public sealed class Liquidacao : AggregateRoot<LiquidacaoId>, IMustHaveTenant
 {
+    private readonly List<Retencao> _retencoes = [];
+
     private Liquidacao()
     {
     }
@@ -88,6 +92,16 @@ public sealed class Liquidacao : AggregateRoot<LiquidacaoId>, IMustHaveTenant
     /// <summary>Saldo a pagar = Valor − Pago.</summary>
     public ValorMonetario SaldoAPagar => Valor.Subtrair(ValorPago);
 
+    /// <summary>Retenções/consignações apuradas sobre esta liquidação (IRRF, INSS, ISS, caução).</summary>
+    public IReadOnlyCollection<Retencao> Retencoes => _retencoes.AsReadOnly();
+
+    /// <summary>Total retido (soma das retenções) — passivo extra-orçamentário a recolher.</summary>
+    public ValorMonetario TotalRetido =>
+        _retencoes.Aggregate(ValorMonetario.Zero, (acc, r) => acc.Somar(r.Valor));
+
+    /// <summary>Valor líquido a pagar ao credor = Valor liquidado − Total retido.</summary>
+    public ValorMonetario ValorLiquido => Valor.Subtrair(TotalRetido);
+
     /// <summary>Registra uma liquidação de despesa.</summary>
     /// <param name="tenantId">Tenant dono do registro.</param>
     /// <param name="empenhoId">Empenho vinculado.</param>
@@ -110,6 +124,37 @@ public sealed class Liquidacao : AggregateRoot<LiquidacaoId>, IMustHaveTenant
         }
 
         return new Liquidacao(LiquidacaoId.New(), tenantId, empenhoId, valor, dataLiquidacao, documento);
+    }
+
+    /// <summary>
+    /// Adiciona uma retenção/consignação (IRRF, INSS, ISS, caução) sobre esta liquidação. A retenção é
+    /// apurada no momento da liquidação e reduz o líquido a pagar; o valor retido nasce como passivo
+    /// extra-orçamentário a recolher (consignação — Lei 4.320/64). Só admitida antes de qualquer pagamento.
+    /// </summary>
+    /// <param name="retencao">Retenção apurada.</param>
+    /// <exception cref="InvalidOperationException">Se já houver pagamento ou estiver estornada.</exception>
+    /// <exception cref="RetencaoExcedeLiquidacaoException">Se a soma das retenções exceder o valor liquidado.</exception>
+    public void AdicionarRetencao(Retencao retencao)
+    {
+        ArgumentNullException.ThrowIfNull(retencao);
+        if (Situacao is SituacaoLiquidacao.Estornada)
+        {
+            throw new InvalidOperationException("Liquidacao estornada nao admite retencao.");
+        }
+
+        if (ValorPago.EhPositivo())
+        {
+            throw new InvalidOperationException("Nao e possivel adicionar retencao apos inicio do pagamento.");
+        }
+
+        var novoTotal = TotalRetido.Somar(retencao.Valor);
+        if (novoTotal.EhMaiorQue(Valor))
+        {
+            throw new RetencaoExcedeLiquidacaoException(Valor.Valor, novoTotal.Valor);
+        }
+
+        _retencoes.Add(retencao);
+        RaiseDomainEvent(new RetencaoApurada(Id, retencao.Id, retencao.Natureza, retencao.Valor.Valor, DataLiquidacao));
     }
 
     /// <summary>Registra o pagamento de parcela desta liquidação.</summary>

@@ -8,6 +8,7 @@ import { useEstornarLiquidacao, useLiquidacao } from './financas.api';
 import type { LiquidacaoResumo } from './financas.api';
 import { mensagemErro, situacaoTagVariant } from './financas.helpers';
 import { FinancasSubNav } from './FinancasSubNav';
+import { RetencaoFormModal } from './RetencaoFormModal';
 
 function Campo({ rotulo, children }: { rotulo: string; children: React.ReactNode }) {
   return (
@@ -24,6 +25,7 @@ export function LiquidacaoDetailPage() {
   const query = useLiquidacao(id);
   const estornar = useEstornarLiquidacao(id);
   const [confirmando, setConfirmando] = useState(false);
+  const [retencaoAberta, setRetencaoAberta] = useState(false);
 
   function aoEstornar(): void {
     estornar.mutate(undefined, {
@@ -90,15 +92,57 @@ export function LiquidacaoDetailPage() {
               <Campo rotulo="Empenho">
                 <Link to={`/financas/empenhos/${liquidacao.empenhoId}`}>{liquidacao.empenhoId}</Link>
               </Campo>
-              <Campo rotulo="Valor">{formatarMoeda(liquidacao.valor)}</Campo>
+              <Campo rotulo="Valor bruto">{formatarMoeda(liquidacao.valor)}</Campo>
+              <Campo rotulo="Total retido">{formatarMoeda(liquidacao.totalRetido)}</Campo>
+              <Campo rotulo="Valor líquido">{formatarMoeda(liquidacao.valorLiquido)}</Campo>
               <Campo rotulo="Valor pago">{formatarMoeda(liquidacao.valorPago)}</Campo>
               <Campo rotulo="Saldo a pagar">{formatarMoeda(liquidacao.saldoAPagar)}</Campo>
               <Campo rotulo="Data da liquidação">{formatarData(liquidacao.dataLiquidacao)}</Campo>
               <Campo rotulo="Identificador">{liquidacao.id}</Campo>
             </dl>
+
+            <div className="d-flex justify-content-between align-items-center mt-3 mb-2">
+              <strong>Retenções / consignações</strong>
+              <Can permission="financas.gerenciar">
+                {liquidacao.valorPago === 0 && liquidacao.situacao !== 'Estornada' ? (
+                  <Button variant="secondary" size="sm" onClick={() => setRetencaoAberta(true)}>
+                    <i className="fas fa-plus" aria-hidden="true" /> Adicionar retenção
+                  </Button>
+                ) : null}
+              </Can>
+            </div>
+
+            {liquidacao.retencoes.length === 0 ? (
+              <p className="text-gray-60 text-down-01">Nenhuma retenção apurada nesta liquidação.</p>
+            ) : (
+              <table className="br-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Natureza</th>
+                    <th scope="col">Cód. receita</th>
+                    <th scope="col" className="text-right">Valor</th>
+                    <th scope="col">Recolhida</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liquidacao.retencoes.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.natureza}</td>
+                      <td>{r.codigoReceita ?? '—'}</td>
+                      <td className="text-right">{formatarMoeda(r.valor)}</td>
+                      <td>
+                        <Tag variant={r.recolhida ? 'success' : 'warning'}>{r.recolhida ? 'Sim' : 'Pendente'}</Tag>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </Card>
         )}
       </QueryState>
+
+      <RetencaoFormModal open={retencaoAberta} onClose={() => setRetencaoAberta(false)} liquidacaoId={id} />
     </>
   );
 }

@@ -16,6 +16,8 @@ using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ldo;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Loa;
 using Tensorroot.Gov.Modules.Financas.Domain.Planejamento.Ppa;
 using Tensorroot.Gov.Modules.Financas.Domain.Receitas;
+using Tensorroot.Gov.Modules.Financas.Domain.Recolhimentos;
+using Tensorroot.Gov.Modules.Financas.Domain.Retencoes;
 using Tensorroot.Gov.Modules.Financas.Domain.RestosAPagar;
 using Tensorroot.Gov.Modules.Financas.Domain.Tesouraria;
 
@@ -81,6 +83,12 @@ public sealed class FinancasDbContext(DbContextOptions<FinancasDbContext> option
 
     /// <summary>Credores/fornecedores cadastrados (beneficiários de empenhos/pagamentos).</summary>
     public DbSet<CredorCadastrado> Credores => Set<CredorCadastrado>();
+
+    /// <summary>Tabelas de IRRF sobre serviços/PJ (IN RFB 1.234/2012).</summary>
+    public DbSet<TabelaIrrfServicos> TabelasIrrfServicos => Set<TabelaIrrfServicos>();
+
+    /// <summary>Guias de recolhimento de consignações/retenções (extra-orçamentário).</summary>
+    public DbSet<GuiaRecolhimento> GuiasRecolhimento => Set<GuiaRecolhimento>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

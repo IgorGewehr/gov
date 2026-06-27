@@ -23,6 +23,10 @@ public sealed class CredorRepository(FinancasDbContext context) : ICredorReposit
         => context.Credores.AnyAsync(credor => credor.Documento == documento, cancellationToken);
 
     /// <inheritdoc />
+    public Task<CredorCadastrado?> ObterPorDocumentoAsync(string documento, CancellationToken cancellationToken)
+        => context.Credores.FirstOrDefaultAsync(credor => credor.Documento == documento, cancellationToken);
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<CredorCadastrado>> ListarAsync(string? termo, CancellationToken cancellationToken)
     {
         var consulta = context.Credores.AsQueryable();

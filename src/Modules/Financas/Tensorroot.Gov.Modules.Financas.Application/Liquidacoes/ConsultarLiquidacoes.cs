@@ -5,24 +5,38 @@ using Tensorroot.Gov.Modules.Financas.Domain.Liquidacoes;
 
 namespace Tensorroot.Gov.Modules.Financas.Application.Liquidacoes;
 
+/// <summary>Retenção apurada sobre a liquidação (para leitura).</summary>
+/// <param name="Id">Identificador.</param>
+/// <param name="Natureza">Natureza (texto do enum).</param>
+/// <param name="Valor">Valor retido.</param>
+/// <param name="CodigoReceita">Código de receita (DARF/guia).</param>
+/// <param name="Recolhida">Se já recolhida.</param>
+public sealed record RetencaoResumo(Guid Id, string Natureza, decimal Valor, string? CodigoReceita, bool Recolhida);
+
 /// <summary>Resumo de uma liquidação para leitura.</summary>
 /// <param name="Id">Identificador.</param>
 /// <param name="EmpenhoId">Empenho vinculado.</param>
-/// <param name="Valor">Valor liquidado.</param>
+/// <param name="Valor">Valor liquidado (bruto).</param>
 /// <param name="ValorPago">Valor pago.</param>
 /// <param name="SaldoAPagar">Saldo a pagar.</param>
+/// <param name="TotalRetido">Total retido (consignações).</param>
+/// <param name="ValorLiquido">Valor líquido a pagar ao credor.</param>
 /// <param name="DataLiquidacao">Data da liquidação.</param>
 /// <param name="Documento">Documento comprobatório (texto).</param>
 /// <param name="Situacao">Situação atual.</param>
+/// <param name="Retencoes">Retenções apuradas.</param>
 public sealed record LiquidacaoResumo(
     Guid Id,
     Guid EmpenhoId,
     decimal Valor,
     decimal ValorPago,
     decimal SaldoAPagar,
+    decimal TotalRetido,
+    decimal ValorLiquido,
     DateOnly DataLiquidacao,
     string Documento,
-    string Situacao);
+    string Situacao,
+    IReadOnlyList<RetencaoResumo> Retencoes);
 
 /// <summary>Obtém uma liquidação por identificador.</summary>
 /// <param name="LiquidacaoId">Identificador.</param>
@@ -41,9 +55,17 @@ internal static class LiquidacaoResumoMapper
         l.Valor.Valor,
         l.ValorPago.Valor,
         l.SaldoAPagar.Valor,
+        l.TotalRetido.Valor,
+        l.ValorLiquido.Valor,
         l.DataLiquidacao,
         l.Documento.ToString(),
-        l.Situacao.ToString());
+        l.Situacao.ToString(),
+        l.Retencoes.Select(r => new RetencaoResumo(
+            r.Id.Value,
+            r.Natureza.ToString(),
+            r.Valor.Valor,
+            r.CodigoReceita,
+            r.Recolhida)).ToList());
 }
 
 /// <summary>Handler da consulta de liquidação.</summary>

@@ -41,6 +41,7 @@ internal static partial class RecursosHumanosEndpoints
         MapearMinhaFolha(grupo);
         MapearSst(grupo);
         MapearBancoDeHoras(grupo);
+        MapearTempoServico(grupo);
     }
 
     private static void MapearMinhaFolha(RouteGroupBuilder grupo)
