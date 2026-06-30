@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.Platform.Tenancy;
 
 namespace Tensorroot.Gov.Platform.Persistence;
@@ -18,6 +19,9 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
 
     /// <summary>Índice central email → tenant para resolução do tenant no login (Identidade).</summary>
     public DbSet<UsuarioTenantIndex> UsuariosTenantIndex => Set<UsuarioTenantIndex>();
+
+    /// <summary>Trilha de auditoria imutável (hash-chain) das mutações do control-plane (R3).</summary>
+    public DbSet<AuditTrail> AuditTrail => Set<AuditTrail>();
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -51,6 +55,24 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             // O e-mail e a chave global: um endereco pertence a no maximo um tenant.
             builder.HasKey(indice => indice.Email);
             builder.Property(indice => indice.Email).HasMaxLength(254);
+        });
+
+        // R3: trilha de auditoria do control-plane — MESMA forma da trilha dos módulos. Como as
+        // entidades da plataforma não têm tenant, o interceptor as sela numa cadeia ÚNICA (Guid.Empty).
+        // Índice único filtrado em (TenantId, Sequencia > 0) preserva o "último selo" e barra bifurcação.
+        modelBuilder.Entity<AuditTrail>(builder =>
+        {
+            builder.ToTable("AuditTrail");
+            builder.HasKey(trail => trail.Id);
+            builder.Property(trail => trail.EntityName).HasMaxLength(256);
+            builder.Property(trail => trail.Action).HasMaxLength(20);
+            builder.Property(trail => trail.HashAnterior).HasMaxLength(64);
+            builder.Property(trail => trail.HashAtual).HasMaxLength(64);
+            builder.HasIndex(trail => new { trail.TenantId, trail.TimestampUtc });
+            builder
+                .HasIndex(trail => new { trail.TenantId, trail.Sequencia })
+                .IsUnique()
+                .HasFilter("[Sequencia] > 0");
         });
 
         base.OnModelCreating(modelBuilder);

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
+using Tensorroot.Gov.BuildingBlocks.Infrastructure.Auditing;
 using Tensorroot.Gov.Platform.Persistence;
 using Tensorroot.Gov.Platform.Tenancy;
 
@@ -20,7 +21,7 @@ public static class PlatformServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-        services.AddDbContext<PlatformDbContext>(options =>
+        services.AddDbContext<PlatformDbContext>((sp, options) =>
         {
             if (string.Equals(provider, "SqlServer", StringComparison.OrdinalIgnoreCase))
             {
@@ -30,6 +31,14 @@ public static class PlatformServiceCollectionExtensions
             {
                 options.UseSqlite(connectionString);
             }
+
+            // R3: auditoria imutável (hash-chain) TAMBÉM no control-plane — provisionamento de tenant,
+            // licenças de módulo e índice email→tenant deixam de ficar fora da trilha. Reusa o
+            // interceptor das módulos; entidades sem tenant são seladas numa cadeia única (Guid.Empty)
+            // no banco da plataforma (schema "plataforma").
+            options.AddInterceptors(new AuditSaveChangesInterceptor(
+                sp.GetRequiredService<ICurrentUser>(),
+                sp.GetRequiredService<TimeProvider>()));
         });
 
         services.AddScoped<ITenantModuleProvider, TenantModuleProvider>();

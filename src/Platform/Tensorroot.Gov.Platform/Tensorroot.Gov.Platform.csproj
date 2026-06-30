@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="../../SharedKernel/Tensorroot.Gov.SharedKernel.csproj" />
     <ProjectReference Include="../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Application/Tensorroot.Gov.BuildingBlocks.Application.csproj" />
+    <!-- R3: reuso da trilha de auditoria hash-chain (AuditTrail + AuditSaveChangesInterceptor) no control-plane. -->
+    <ProjectReference Include="../../BuildingBlocks/Tensorroot.Gov.BuildingBlocks.Infrastructure/Tensorroot.Gov.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
