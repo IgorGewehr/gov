@@ -1,4 +1,5 @@
 using FluentValidation;
+using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Identidade.Application.Abstractions;
 using Tensorroot.Gov.Modules.Identidade.Application.Internal;
@@ -66,12 +67,19 @@ public sealed class AutenticarHandler(
     IUnidadeRepository unidades,
     ISenhaHasher hasher,
     IEmissorToken emissorToken,
+    IUnitOfWork unitOfWork,
     TimeProvider clock)
     : ICommandHandler<AutenticarCommand, ResultadoAutenticacao>
 {
     // Hash "falso" usado para igualar o custo de verificacao quando o usuario nao existe
     // (defesa contra enumeracao de contas por analise de tempo de resposta).
     private const string SenhaFalsaParaTimingEstavel = "senha-inexistente-para-timing-estavel";
+
+    // P7 — politica de bloqueio por excesso de tentativas. TODO(prod:parametrizar-por-tenant):
+    // hoje fixo; idealmente vem da configuracao/tenant (convencao "sem numeros magicos").
+    // 5 falhas consecutivas -> 15 min de bloqueio.
+    private const int LimiteTentativasLogin = 5;
+    private static readonly TimeSpan DuracaoBloqueioLogin = TimeSpan.FromMinutes(15);
 
     /// <inheritdoc />
     public async Task<ResultadoAutenticacao> Handle(AutenticarCommand request, CancellationToken cancellationToken)
@@ -96,14 +104,42 @@ public sealed class AutenticarHandler(
             throw new AutenticacaoFalhouException();
         }
 
-        var senhaConfere = hasher.Verificar(request.Senha, usuario.SenhaHash);
-        if (!senhaConfere || !usuario.Ativo)
+        var agora = clock.GetUtcNow();
+
+        // P7 — bloqueio por excesso de tentativas (anti brute-force). Mesmo bloqueada, executa a
+        // verificacao de hash para manter o tempo de resposta ESTAVEL (nao vaza por timing que a
+        // conta existe/esta bloqueada). Mensagem generica preservada.
+        if (usuario.EstaBloqueado(agora))
         {
+            hasher.Verificar(request.Senha, usuario.SenhaHash);
             throw new AutenticacaoFalhouException();
         }
 
+        var senhaConfere = hasher.Verificar(request.Senha, usuario.SenhaHash);
+        if (!senhaConfere)
+        {
+            // Conta a falha; ao atingir o limite, bloqueia. A mutacao e auditada (hash-chain) e
+            // persistida na unidade de trabalho do modulo.
+            usuario.RegistrarFalhaDeLogin(agora, LimiteTentativasLogin, DuracaoBloqueioLogin);
+            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            throw new AutenticacaoFalhouException();
+        }
+
+        if (!usuario.Ativo)
+        {
+            // Senha correta porem conta inativa: nao e brute-force — nao conta falha.
+            throw new AutenticacaoFalhouException();
+        }
+
+        // Sucesso: zera contador/bloqueio SE houver algo a limpar (evita gravar a cada login normal).
+        if (usuario.AccessFailedCount > 0 || usuario.LockoutEnd is not null)
+        {
+            usuario.RegistrarAutenticacaoBemSucedida();
+            await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         var permissoesEfetivas = await CalculadoraPermissoesEfetivas
-            .ResolverAsync(usuario, papeis, unidades, clock.GetUtcNow(), cancellationToken)
+            .ResolverAsync(usuario, papeis, unidades, agora, cancellationToken)
             .ConfigureAwait(false);
 
         var token = emissorToken.Emitir(

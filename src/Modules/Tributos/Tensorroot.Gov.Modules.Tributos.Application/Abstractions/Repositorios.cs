@@ -32,6 +32,16 @@ public interface IContribuinteRepository
     /// <param name="cancellationToken">Token de cancelamento.</param>
     /// <returns>O contribuinte, ou <c>null</c> se inexistente no tenant.</returns>
     Task<Contribuinte?> ObterPorIdAsync(ContribuinteId id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Busca contribuintes por termo — nome (LIKE) ou CPF/CNPJ (por dígitos) — para o picker do balcão
+    /// (P1). Tenant-scoped pelo Global Query Filter; limitado a <paramref name="limite"/> resultados.
+    /// </summary>
+    /// <param name="termo">Termo de busca (nome ou documento); nulo/vazio retorna os primeiros por nome.</param>
+    /// <param name="limite">Máximo de resultados (teto do picker).</param>
+    /// <param name="cancellationToken">Token de cancelamento.</param>
+    /// <returns>Contribuintes correspondentes, ordenados por nome.</returns>
+    Task<IReadOnlyList<Contribuinte>> BuscarAsync(string? termo, int limite, CancellationToken cancellationToken);
 }
 
 /// <summary>Repositório do agregado <see cref="Lancamento"/>.</summary>

@@ -49,6 +49,16 @@ public sealed class DividaAtivaConfiguration : IEntityTypeConfiguration<DividaAt
         builder.Property(divida => divida.Garantida);
         builder.Property(divida => divida.DataGarantiaPenhora);
 
+        // R5 — prescrição intercorrente (LEF art. 40). Datas opcionais do trilho intercorrente.
+        builder.Property(divida => divida.DataSuspensaoExecucao);
+        builder.Property(divida => divida.DataArquivamentoExecucao);
+
+        // CTN art. 151 — suspensão da exigibilidade (overlay). Causa como string nullable; acumulador
+        // de dias pausados com default 0 (back-fill seguro das linhas legadas).
+        builder.Property(divida => divida.CausaSuspensao).HasConversion<string>().HasMaxLength(40);
+        builder.Property(divida => divida.DataSuspensaoExigibilidade);
+        builder.Property(divida => divida.DiasPrescricaoSuspensos).HasDefaultValue(0);
+
         // Regra de encargos (multa/juros/correção) parametrizável — Owned (mesma tabela).
         builder.OwnsOne(divida => divida.RegraEncargos, encargos =>
         {

@@ -90,7 +90,8 @@ public sealed class ConsultaTributariaCidadao(
                 // Encargos apurados deterministicamente pela regra do dominio na data-base informada.
                 divida.ApurarEncargos(dataBase).ValorAtualizado.Valor,
                 divida.Situacao.ToString(),
-                divida.Situacao == SituacaoDividaAtiva.Parcelada,
+                // CTN art. 151 — qualquer causa de suspensão da exigibilidade (não só parcelamento).
+                divida.ExigibilidadeSuspensa,
                 divida.DataInscricao))
             .ToList();
     }

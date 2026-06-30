@@ -60,7 +60,7 @@ internal static class IdentidadeEndpoints
             {
                 return Results.Json(new { erro = "Credenciais invalidas." }, statusCode: StatusCodes.Status401Unauthorized);
             }
-        }).AllowAnonymous();
+        }).AllowAnonymous().RequireRateLimiting("login");
 
         // === Administracao de usuarios e papeis (RBAC: identidade.usuarios.gerenciar) ===
         var admin = grupo.MapGroup(string.Empty).RequirePermission(Permissoes.IdentidadeUsuariosGerenciar);

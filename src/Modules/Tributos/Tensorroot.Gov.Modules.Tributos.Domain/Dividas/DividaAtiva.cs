@@ -27,7 +27,7 @@ public readonly record struct DividaAtivaId(Guid Value)
 /// pela CDA. A prescrição é calculada por DATAS DO FATO + eventos de interrupção (CTN art. 174 p.ú.),
 /// nunca pelo relógio do servidor (CLAUDE.md §16).
 /// </summary>
-public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
+public sealed partial class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
 {
     /// <summary>Prazo prescricional do crédito tributário, em anos (CTN art. 174). // TODO(validar-oficial): parametrizável por tenant via <see cref="AnosPrescricaoParametrizado"/>.</summary>
     public const int AnosPrescricao = 5;
@@ -145,8 +145,11 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     /// </summary>
     public DateOnly TermoInicialPrescricao => DataUltimaInterrupcaoPrescricao ?? DataConstituicaoDefinitiva;
 
-    /// <summary>Data-limite da prescrição = termo inicial + prazo parametrizado (anos).</summary>
-    public DateOnly DataPrescricao => TermoInicialPrescricao.AddYears(AnosPrescricaoParametrizado);
+    /// <summary>
+    /// Data-limite da prescrição ORDINÁRIA = termo inicial + prazo (anos), DESLOCADA pelos dias em que a
+    /// exigibilidade ficou suspensa (CTN art. 151 pausa o curso da prescrição).
+    /// </summary>
+    public DateOnly DataPrescricao => TermoInicialPrescricao.AddYears(AnosPrescricaoParametrizado).AddDays(DiasPrescricaoSuspensos);
 
     /// <summary>
     /// Inscreve um crédito vencido em Dívida Ativa com os dados exigidos pela CDA (origem/natureza, fundamento
@@ -406,6 +409,10 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
     {
         // Fail-closed: a prescrição extingue o crédito (CTN art. 156, V); não se parcela dívida prescrita.
         GarantirExigivel(dataReconhecimento);
+        // Parcelamento é causa de suspensão da exigibilidade (CTN art. 151, VI) E interrompe a prescrição
+        // (CTN art. 174 p.ú. IV — reconhecimento do débito): única causa que TAMBÉM reinicia o termo.
+        CausaSuspensao = CausaSuspensaoExigibilidade.Parcelamento;
+        DataSuspensaoExigibilidade = dataReconhecimento;
         DataUltimaInterrupcaoPrescricao = dataReconhecimento;
         Situacao = SituacaoDividaAtiva.Parcelada;
         RaiseDomainEvent(new ParcelamentoFirmado(Id));
@@ -441,40 +448,8 @@ public sealed class DividaAtiva : AggregateRoot<DividaAtivaId>, IMustHaveTenant
         RaiseDomainEvent(new DividaQuitada(Id));
     }
 
-    /// <summary>
-    /// Indica se a dívida está prescrita na data informada (CTN art. 174), pelo termo inicial efetivo
-    /// (constituição definitiva ou última interrupção). Dívida suspensa/quitada/cancelada não prescreve.
-    /// </summary>
-    /// <param name="referencia">Data de referência (informada — sem relógio no domínio).</param>
-    /// <returns><c>true</c> se prescrita.</returns>
-    public bool EstaPrescrita(DateOnly referencia)
-        => Situacao is not (SituacaoDividaAtiva.Quitada or SituacaoDividaAtiva.Parcelada or SituacaoDividaAtiva.Cancelada)
-        && referencia > DataPrescricao;
-
     private RemessaProtesto ObterRemessa(RemessaProtestoId remessaId)
         => _remessasProtesto.FirstOrDefault(remessa => remessa.Id == remessaId)
         ?? throw new InvalidOperationException("Remessa de protesto não pertence a esta dívida.");
 
-    /// <summary>
-    /// Invariante de exigibilidade do crédito inscrito (fail-closed). Recusa a cobrança quando a dívida
-    /// está suspensa/encerrada OU quando está PRESCRITA na data de referência (CTN art. 174): a prescrição
-    /// extingue o próprio crédito tributário (CTN art. 156, V), de modo que protesto/execução/CDA de
-    /// dívida prescrita são vedados. A data de referência é informada (data do fato — sem relógio no
-    /// domínio, CLAUDE.md §16).
-    /// </summary>
-    /// <param name="referencia">Data de referência do ato de cobrança (data do fato).</param>
-    /// <exception cref="DividaAtivaPrescritaException">Se a dívida estiver prescrita.</exception>
-    /// <exception cref="InvalidOperationException">Se a dívida não estiver exigível por situação.</exception>
-    private void GarantirExigivel(DateOnly referencia)
-    {
-        if (Situacao is SituacaoDividaAtiva.Quitada or SituacaoDividaAtiva.Cancelada or SituacaoDividaAtiva.Parcelada)
-        {
-            throw new InvalidOperationException($"A dívida não está exigível. Situação atual: {Situacao}.");
-        }
-
-        if (EstaPrescrita(referencia))
-        {
-            throw new DividaAtivaPrescritaException(Id, DataPrescricao, referencia);
-        }
-    }
 }

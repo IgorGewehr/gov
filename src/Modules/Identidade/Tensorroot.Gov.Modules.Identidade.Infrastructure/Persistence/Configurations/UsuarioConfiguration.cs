@@ -45,6 +45,11 @@ public sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         builder.Property(usuario => usuario.SenhaHash).HasMaxLength(200).IsRequired();
         builder.Property(usuario => usuario.Ativo).IsRequired();
 
+        // P7 — bloqueio por excesso de tentativas. Default 0 cobre o back-fill das linhas legadas;
+        // LockoutEnd e opcional (null = sem bloqueio).
+        builder.Property(usuario => usuario.AccessFailedCount).HasDefaultValue(0).IsRequired();
+        builder.Property(usuario => usuario.LockoutEnd);
+
         // E-mail unico POR TENANT (a unicidade global e garantida pelo indice central da plataforma).
         builder.HasIndex(usuario => new { usuario.TenantId, usuario.Email }).IsUnique();
 

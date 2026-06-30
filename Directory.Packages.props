@@ -80,4 +80,21 @@
     <PackageVersion Include="WireMock.Net" Version="1.6.7" />
   </ItemGroup>
 
+  <ItemGroup Label="Correções de CVE — pin transitivo explícito (P9)">
+    <!-- GHSA-g94r-2vxg-569j (CVE-2026-40894, DoS por alocação excessiva em headers de propagação):
+         OpenTelemetry.Api < 1.15.3. Puxado em PRODUÇÃO (ApiHost) via OpenTelemetry.Extensions.Hosting 1.9.0.
+         Pinning transitivo central força 1.15.3 em todo o grafo (SDK 1.9.0 usa a Api de forma aditiva). -->
+    <PackageVersion Include="OpenTelemetry.Api" Version="1.15.3" />
+    <!-- GHSA-4cv2-4hjh-77rx (CVE-2024-51417, acesso indevido a membros via reflexão):
+         System.Linq.Dynamic.Core < 1.6.0. Transitivo SOMENTE em testes (WireMock.Net). -->
+    <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.6.0" />
+    <!-- GHSA-24c8-4792-22hx (DoS em array.insert_at): Scriban(.Signed) <= 7.1.0 → 7.2.0.
+         Transitivo SOMENTE em testes (WireMock.Net). -->
+    <PackageVersion Include="Scriban.Signed" Version="7.2.0" />
+    <!-- GHSA-2m69-gcr7-jv3q (CVE-2025-6965): SQLitePCLRaw.lib.e_sqlite3 <= 2.1.11.
+         SEM wrapper corrigido upstream (patched: none) — NÃO-PINÁVEL hoje.
+         Exposição limitada: SQLite é só DEV/PoC; produção usa Azure SQL (SqlServer).
+         Acompanhar upstream do SQLitePCLRaw para wrapper com SQLite >= 3.50.2. -->
+  </ItemGroup>
+
 </Project>

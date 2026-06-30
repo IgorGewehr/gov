@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(TributosDbContext))]
-    partial class TributosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629222338_DecadenciaIssHomologacaoR4")]
+    partial class DecadenciaIssHomologacaoR4
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -452,15 +455,8 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.Property<int>("AnosPrescricaoParametrizado")
                         .HasColumnType("int");
 
-                    b.Property<string>("CausaSuspensao")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
                     b.Property<Guid>("ContribuinteId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly?>("DataArquivamentoExecucao")
-                        .HasColumnType("date");
 
                     b.Property<DateOnly>("DataConstituicaoDefinitiva")
                         .HasColumnType("date");
@@ -471,19 +467,8 @@ namespace Tensorroot.Gov.Modules.Tributos.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly>("DataInscricao")
                         .HasColumnType("date");
 
-                    b.Property<DateOnly?>("DataSuspensaoExecucao")
-                        .HasColumnType("date");
-
-                    b.Property<DateOnly?>("DataSuspensaoExigibilidade")
-                        .HasColumnType("date");
-
                     b.Property<DateOnly?>("DataUltimaInterrupcaoPrescricao")
                         .HasColumnType("date");
-
-                    b.Property<int>("DiasPrescricaoSuspensos")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
 
                     b.Property<string>("FundamentoLegal")
                         .IsRequired()

@@ -338,7 +338,7 @@ Cada item vira teste.
 
 <!-- manifest
 commands: CadastrarContribuintePessoaFisica
-queries: 
+queries: BuscarContribuintes
 domainEvents: ContribuinteCadastrado
 integrationEventsPublished: 
 integrationEventsConsumed: 

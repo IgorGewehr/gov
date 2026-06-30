@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.Options;
+using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.Modules.Identidade.Application.Abstractions;
 using Tensorroot.Gov.Modules.Identidade.Application.Autenticacao;
 using Tensorroot.Gov.Modules.Identidade.Domain.Papeis;
@@ -32,7 +33,7 @@ public sealed class AutenticarHandlerTests
             Options.Create(new JwtOptions { Secret = Segredo, DuracaoMinutos = 60 }),
             TimeProvider.System);
 
-        return new AutenticarHandler(usuarios, papeis, new UnidadeRepositoryFake(), _hasher, emissor, TimeProvider.System);
+        return new AutenticarHandler(usuarios, papeis, new UnidadeRepositoryFake(), _hasher, emissor, new UnitOfWorkFake(), TimeProvider.System);
     }
 
     private Usuario CriarUsuario(string email, string senha, bool ativo = true, IEnumerable<PapelId>? papeis = null)
@@ -119,6 +120,28 @@ public sealed class AutenticarHandlerTests
     }
 
     [Fact]
+    public async Task Apos_exceder_o_limite_de_tentativas_a_conta_e_bloqueada_mesmo_com_senha_correta()
+    {
+        // P7: 5 falhas consecutivas (limite do handler) -> bloqueio; depois nem a senha correta passa.
+        var usuario = CriarUsuario("maria@x.gov.br", "Senha@Forte123");
+        var handler = CriarHandler(new UsuarioRepositoryFake(usuario), new PapelRepositoryFake());
+
+        for (var tentativa = 0; tentativa < 5; tentativa++)
+        {
+            var erro = () => handler.Handle(
+                new AutenticarCommand(TenantA, "maria@x.gov.br", "SenhaErrada"), CancellationToken.None);
+            await erro.Should().ThrowAsync<AutenticacaoFalhouException>();
+        }
+
+        usuario.LockoutEnd.Should().NotBeNull("apos 5 falhas consecutivas a conta deve bloquear");
+
+        // Mesmo com a senha CORRETA, a conta bloqueada e negada (com a mesma excecao generica).
+        var aindaBloqueado = () => handler.Handle(
+            new AutenticarCommand(TenantA, "maria@x.gov.br", "Senha@Forte123"), CancellationToken.None);
+        await aindaBloqueado.Should().ThrowAsync<AutenticacaoFalhouException>();
+    }
+
+    [Fact]
     public async Task Autenticar_de_outro_tenant_nao_encontra_o_usuario()
     {
         var outroTenant = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -130,6 +153,18 @@ public sealed class AutenticarHandlerTests
             CancellationToken.None);
 
         await acao.Should().ThrowAsync<AutenticacaoFalhouException>();
+    }
+}
+
+/// <summary>Unidade de trabalho em memoria (no-op): a mutacao do agregado ja ocorre no objeto fake.</summary>
+internal sealed class UnitOfWorkFake : IUnitOfWork
+{
+    public int Confirmacoes { get; private set; }
+
+    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        Confirmacoes++;
+        return Task.FromResult(0);
     }
 }
 

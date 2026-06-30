@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tensorroot.Gov.Modules.Identidade.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Tensorroot.Gov.Modules.Identidade.Infrastructure.Persistence;
 namespace Tensorroot.Gov.Modules.Identidade.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IdentidadeDbContext))]
-    partial class IdentidadeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629221507_LockoutLoginP7")]
+    partial class LockoutLoginP7
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -109,15 +109,20 @@ public sealed class ApurarIssMensalHandler(
             var dataFatoGerador = new DateOnly(competencia.Ano, competencia.Mes, DateTime.DaysInMonth(competencia.Ano, competencia.Mes));
             var hoje = dataHoje.Hoje();
 
-            var lancamento = Lancamento.Lancar(
+            // R4 [revisao-humana-juridica]: o ISS é lançamento por HOMOLOGAÇÃO (CTN art. 150). A
+            // decadência conta do fato gerador SE houve pagamento antecipado e sem dolo (§4º); senão,
+            // CTN 173, I. Conservador/fail-closed: houvePagamentoAntecipado=false enquanto não houver
+            // fonte confiável de recolhimento antecipado (recai no 173, I — mais favorável ao Fisco).
+            // TODO(prod:ligar-fonte-pagamento-antecipado-iss): derivar do recolhimento real da competência.
+            var lancamento = Lancamento.LancarIssPorHomologacao(
                 tenant.TenantId,
                 contribuinteId,
-                TipoTributo.Iss,
                 competencia,
                 apuracao.IssProprio,
                 request.VencimentoIssProprio,
                 dataFatoGerador,
-                hoje);
+                hoje,
+                houvePagamentoAntecipado: false);
             lancamentos.Adicionar(lancamento);
             lancamentoId = lancamento.Id.Value;
         }

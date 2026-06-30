@@ -23,6 +23,19 @@ public sealed record UsuarioAtivado(UsuarioId UsuarioId) : IDomainEvent;
 /// <param name="TenantId">Tenant dono do registro.</param>
 public sealed record UsuarioDesligado(UsuarioId UsuarioId, Guid TenantId) : IDomainEvent;
 
+/// <summary>
+/// Conta bloqueada temporariamente por excesso de tentativas de login malsucedidas (anti
+/// brute-force, P7) — evento sensivel para auditoria/seguranca. Emitido APENAS na transicao para
+/// bloqueada (nao a cada falha), evitando amplificacao de Outbox sob ataque.
+/// </summary>
+/// <param name="UsuarioId">Identificador do usuario.</param>
+/// <param name="TenantId">Tenant dono do registro.</param>
+/// <param name="LockoutEnd">Instante ate o qual a conta permanece bloqueada.</param>
+public sealed record UsuarioBloqueadoPorTentativas(
+    UsuarioId UsuarioId,
+    Guid TenantId,
+    DateTimeOffset LockoutEnd) : IDomainEvent;
+
 /// <summary>Papeis (perfis RBAC) do usuario redefinidos.</summary>
 /// <param name="UsuarioId">Identificador do usuario.</param>
 public sealed record PapeisDoUsuarioDefinidos(UsuarioId UsuarioId) : IDomainEvent;

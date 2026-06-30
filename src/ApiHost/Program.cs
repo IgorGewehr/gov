@@ -197,6 +197,20 @@ builder.Services.AddRateLimiter(options =>
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 2,
             }));
+
+    // Policy DEDICADA "login" (P7): o login é anônimo e é o alvo nº 1 de brute-force/credential
+    // stuffing. Complementa o lockout por conta com um teto por IP MUITO mais restritivo que o
+    // global: poucas tentativas por minuto, sem fila (rejeita 429 em vez de enfileirar abuso).
+    options.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            }));
 });
 
 // === Documentação (Swagger/OpenAPI) + health ===
@@ -257,6 +271,41 @@ builder.Services.AddSingleton(OutboxHandlerRegistry.Construir(builder.Services))
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
+
+// === Cabeçalhos de segurança (P8) — defesa-em-profundidade na borda da aplicação ===
+// Registrados via Response.OnStarting para serem aplicados JUST-IN-TIME antes do flush — assim
+// sobrevivem inclusive às respostas que o UseExceptionHandler (logo abaixo) reescreve em erro.
+// HSTS e CSP são emitidos MANUALMENTE (não via app.UseHsts()): atrás do TLS-termination do Azure
+// App Service a requisição chega como HTTP, então o HstsMiddleware (que checa IsHttps) não emitiria
+// o header. Emitir manualmente é proxy-safe. HttpsRedirect fica delegado à borda Azure (httpsOnly),
+// evitando loop de redirect sem ForwardedHeaders.
+// Em Development NÃO emitimos CSP/HSTS (Swagger usa scripts/estilos inline; HSTS quebraria localhost).
+var emitirCspHsts = !app.Environment.IsDevelopment();
+app.Use((context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+        headers["X-Permitted-Cross-Domain-Policies"] = "none";
+        if (emitirCspHsts)
+        {
+            // HSTS 1 ano + subdomínios + preload. Só em produção (quebraria http://localhost em DEV).
+            headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
+            // CSP defensiva: bloqueia framing, objetos, base-uri e origens cruzadas. style-src inline
+            // liberado (portais gov costumam usar estilos inline). [validar-portal] antes do go-live.
+            headers["Content-Security-Policy"] =
+                "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; "
+                + "form-action 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:";
+        }
+
+        return Task.CompletedTask;
+    });
+
+    return next();
+});
 
 // Tratamento global de erros — PRIMEIRO middleware após o logging, para capturar exceções de TODO o
 // resto do pipeline (autenticação, gating de licença, endpoints e handlers MediatR). Responde

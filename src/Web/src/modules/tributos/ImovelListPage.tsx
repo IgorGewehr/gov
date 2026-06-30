@@ -9,9 +9,7 @@ import {
   Card,
   DataTable,
   EmptyState,
-  FormField,
   FormRow,
-  Input,
   PageHeader,
   Tag,
   Toolbar,
@@ -21,6 +19,7 @@ import { errorMessage } from '../../components/ui';
 import { Can } from '../../auth/Can';
 import { useImoveisPorContribuinte } from './iptu.api';
 import type { ImovelResumo } from './iptu.api';
+import { ContribuintePicker } from './ContribuintePicker';
 import { USO_IMOVEL_LABEL, formatarArea, usoTagVariant } from './iptu.helpers';
 import { TributosSubNav } from './TributosSubNav';
 import { ImovelFormModal } from './ImovelFormModal';
@@ -110,18 +109,12 @@ export function ImovelListPage() {
               </Button>
             }
           >
-            <FormField label="Identificador do contribuinte" required>
-              {({ id, describedBy, invalid }) => (
-                <Input
-                  id={id}
-                  aria-describedby={describedBy}
-                  invalid={invalid}
-                  value={contribuinteId}
-                  onChange={(e) => setContribuinteId(e.target.value)}
-                  placeholder="00000000-0000-0000-0000-000000000000"
-                />
-              )}
-            </FormField>
+            <ContribuintePicker
+              value={contribuinteId}
+              onChange={setContribuinteId}
+              label="Contribuinte"
+              required
+            />
           </FormRow>
         </form>
       </Card>
@@ -130,7 +123,7 @@ export function ImovelListPage() {
         <EmptyState
           icon="fas fa-magnifying-glass"
           title="Faça uma consulta"
-          description="Informe o identificador do contribuinte e clique em Consultar."
+          description="Busque e selecione um contribuinte (por nome ou CPF/CNPJ) e clique em Consultar."
         />
       ) : (
         <DataTable

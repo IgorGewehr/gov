@@ -35,6 +35,15 @@ public sealed class LancamentoConfiguration : IEntityTypeConfiguration<Lancament
 
         builder.Property(lancamento => lancamento.Situacao).HasConversion<string>().HasMaxLength(30);
 
+        // R4 [revisao-humana-juridica] — modalidade do lançamento + flags que regem a decadência por
+        // homologação. Default "Oficio"/false faz o back-fill seguro das linhas legadas (valor de enum
+        // válido). A reclassificação fina do ISS histórico para Homologacao é ponto de revisão humana.
+        builder.Property(lancamento => lancamento.TipoLancamento)
+            .HasConversion<string>().HasMaxLength(20)
+            .HasDefaultValue(TipoLancamento.Oficio);
+        builder.Property(lancamento => lancamento.HouvePagamentoAntecipado).HasDefaultValue(false);
+        builder.Property(lancamento => lancamento.DoloFraudeSimulacao).HasDefaultValue(false);
+
         builder.Property(lancamento => lancamento.ImovelId)
             .HasConversion(
                 id => id == null ? (Guid?)null : id.Value.Value,

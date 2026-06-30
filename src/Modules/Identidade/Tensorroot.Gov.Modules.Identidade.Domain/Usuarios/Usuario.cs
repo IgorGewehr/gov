@@ -73,6 +73,18 @@ public sealed class Usuario : AggregateRoot<UsuarioId>, IMustHaveTenant
     public bool Ativo { get; private set; }
 
     /// <summary>
+    /// Tentativas de login malsucedidas CONSECUTIVAS desde o ultimo sucesso ou bloqueio (P7).
+    /// Zera ao bloquear e ao autenticar com sucesso.
+    /// </summary>
+    public int AccessFailedCount { get; private set; }
+
+    /// <summary>
+    /// Instante (UTC) ate o qual a conta esta bloqueada para autenticacao por excesso de tentativas
+    /// (P7). <c>null</c> = sem bloqueio. Comparado contra um instante INJETADO (sem relogio no dominio).
+    /// </summary>
+    public DateTimeOffset? LockoutEnd { get; private set; }
+
+    /// <summary>
     /// Papeis (perfis RBAC) atribuidos ao usuario — visao PLANA e DERIVADA (apenas os
     /// <see cref="PapelId"/> distintos, sem escopo). Mantida por compatibilidade com o
     /// enforcement/persistencia atuais; o escopo organizacional esta em <see cref="Atribuicoes"/>.
@@ -147,6 +159,54 @@ public sealed class Usuario : AggregateRoot<UsuarioId>, IMustHaveTenant
 
         Ativo = false;
         RaiseDomainEvent(new UsuarioDesligado(Id, TenantId));
+    }
+
+    /// <summary>
+    /// Indica se a conta esta sob bloqueio temporario por excesso de tentativas de login (P7).
+    /// </summary>
+    /// <param name="agora">Instante de referencia (INJETADO — o dominio nao consulta o relogio).</param>
+    /// <returns><c>true</c> se ha bloqueio vigente em <paramref name="agora"/>.</returns>
+    public bool EstaBloqueado(DateTimeOffset agora) => LockoutEnd is { } fim && agora < fim;
+
+    /// <summary>
+    /// Registra UMA tentativa de login malsucedida (P7). Ao atingir <paramref name="limiteTentativas"/>
+    /// falhas consecutivas, bloqueia a conta por <paramref name="duracaoBloqueio"/> a partir de
+    /// <paramref name="agora"/> e zera o contador. So emite evento na TRANSICAO para bloqueada
+    /// (evita amplificacao de Outbox sob brute-force).
+    /// </summary>
+    /// <param name="agora">Instante da tentativa (injetado).</param>
+    /// <param name="limiteTentativas">Numero de falhas que dispara o bloqueio (>= 1).</param>
+    /// <param name="duracaoBloqueio">Duracao do bloqueio a partir de <paramref name="agora"/>.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Se o limite for menor que 1.</exception>
+    public void RegistrarFalhaDeLogin(DateTimeOffset agora, int limiteTentativas, TimeSpan duracaoBloqueio)
+    {
+        if (limiteTentativas < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(limiteTentativas), "O limite de tentativas deve ser >= 1.");
+        }
+
+        AccessFailedCount++;
+        if (AccessFailedCount >= limiteTentativas)
+        {
+            LockoutEnd = agora + duracaoBloqueio;
+            AccessFailedCount = 0;
+            RaiseDomainEvent(new UsuarioBloqueadoPorTentativas(Id, TenantId, LockoutEnd.Value));
+        }
+    }
+
+    /// <summary>
+    /// Zera o estado de falhas/bloqueio apos uma autenticacao bem-sucedida (P7). Idempotente: nao
+    /// faz nada (nem suja o agregado) quando ja esta limpo.
+    /// </summary>
+    public void RegistrarAutenticacaoBemSucedida()
+    {
+        if (AccessFailedCount == 0 && LockoutEnd is null)
+        {
+            return;
+        }
+
+        AccessFailedCount = 0;
+        LockoutEnd = null;
     }
 
     /// <summary>

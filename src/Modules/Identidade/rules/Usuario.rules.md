@@ -160,7 +160,7 @@ Lista NUMERADA. Cada item `I-n` vira `[Fact] Invariante_n_*`.
 <!-- manifest
 commands: CriarUsuario, EditarUsuario, AtivarUsuario, DesativarUsuario, AlterarSenha, DefinirPapeisDoUsuario, AtribuirPapelAoUsuario, RevogarAtribuicao
 queries: ListarUsuarios, ObterUsuario, ObterPermissoesEfetivasDoUsuario
-domainEvents: UsuarioCriado, UsuarioEditado, UsuarioAtivado, UsuarioDesligado, PapeisDoUsuarioDefinidos, PapelAtribuido, PapelRevogado, SenhaTrocada, AtribuicoesReancoradasNaRaiz
+domainEvents: UsuarioCriado, UsuarioEditado, UsuarioAtivado, UsuarioDesligado, PapeisDoUsuarioDefinidos, PapelAtribuido, PapelRevogado, SenhaTrocada, AtribuicoesReancoradasNaRaiz, UsuarioBloqueadoPorTentativas
 integrationEventsPublished: 
 integrationEventsConsumed: 
 -->

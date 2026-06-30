@@ -19,6 +19,28 @@ public sealed class ContribuinteRepository(TributosDbContext context) : IContrib
     /// <inheritdoc />
     public Task<Contribuinte?> ObterPorIdAsync(ContribuinteId id, CancellationToken cancellationToken)
         => context.Contribuintes.FirstOrDefaultAsync(contribuinte => contribuinte.Id == id, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Contribuinte>> BuscarAsync(string? termo, int limite, CancellationToken cancellationToken)
+    {
+        var consulta = context.Contribuintes.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(termo))
+        {
+            var texto = termo.Trim();
+            var digitos = new string(texto.Where(char.IsDigit).ToArray());
+            var padraoNome = $"%{texto}%";
+            consulta = consulta.Where(contribuinte =>
+                EF.Functions.Like(contribuinte.Nome, padraoNome)
+                || (digitos.Length > 0 && contribuinte.Documento.Contains(digitos)));
+        }
+
+        return await consulta
+            .OrderBy(contribuinte => contribuinte.Nome)
+            .Take(limite)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
 }
 
 /// <summary>Implementação EF Core do repositório de lançamentos.</summary>

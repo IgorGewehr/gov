@@ -22,6 +22,12 @@ internal static class TributosEndpoints
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))
             .RequirePermission("tributos.gerenciar");
 
+        // Picker do balcão (P1): busca por nome ou CPF/CNPJ. Sem termo, retorna os primeiros (teto no handler).
+        grupo.MapGet("/contribuintes", async (
+            string? termo, ISender sender, CancellationToken cancellationToken)
+            => Results.Ok(await sender.Send(new BuscarContribuintesQuery(termo), cancellationToken)))
+            .RequirePermission("tributos.ver");
+
         grupo.MapPost("/lancamentos", async (
             LancarCreditoCommand comando, ISender sender, CancellationToken cancellationToken)
             => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }))

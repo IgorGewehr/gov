@@ -86,6 +86,21 @@ public sealed record GarantiaPenhoraRegistrada(DividaAtivaId DividaAtivaId, Guid
 /// <param name="DataInterrupcao">Data do marco interruptivo.</param>
 public sealed record PrescricaoInterrompida(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataInterrupcao) : IDomainEvent;
 
+/// <summary>Execução fiscal suspensa por 1 ano (LEF art. 40 §1º) — início do trilho intercorrente (R5).</summary>
+public sealed record ExecucaoFiscalSuspensa(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataCiencia) : IDomainEvent;
+
+/// <summary>Execução fiscal arquivada (LEF art. 40 §2º) — corre a prescrição intercorrente (R5).</summary>
+public sealed record ExecucaoFiscalArquivada(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataArquivamento) : IDomainEvent;
+
+/// <summary>Constrição efetiva/citação registrada — interrompe o trilho intercorrente (REsp 1.340.553/RS) (R5).</summary>
+public sealed record ConstricaoOuCitacaoRegistrada(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly Data) : IDomainEvent;
+
+/// <summary>Exigibilidade do crédito suspensa (CTN art. 151) — habilita CPEN e pausa a prescrição (CTN151).</summary>
+public sealed record ExigibilidadeDividaSuspensa(DividaAtivaId DividaAtivaId, Guid TenantId, CausaSuspensaoExigibilidade Causa, DateOnly DataSuspensao) : IDomainEvent;
+
+/// <summary>Exigibilidade restabelecida (cessada a causa do art. 151) — a prescrição retoma deslocada (CTN151).</summary>
+public sealed record ExigibilidadeDividaRestabelecida(DividaAtivaId DividaAtivaId, Guid TenantId, DateOnly DataCessacao) : IDomainEvent;
+
 /// <summary>Imóvel cadastrado no cadastro imobiliário.</summary>
 /// <param name="ImovelId">Identificador do imóvel.</param>
 /// <param name="TenantId">Tenant dono do registro.</param>

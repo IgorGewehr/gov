@@ -109,6 +109,14 @@ public sealed class SituacaoFiscalConsulta(TributosDbContext context) : ISituaca
         var suspensas = 0;
         foreach (var divida in dividas)
         {
+            // CTN art. 151 — exigibilidade SUSPENSA (moratória, depósito, recurso adm., liminar ou
+            // parcelamento) → habilita CPEN, não CND. Testado ANTES do ciclo de cobrança (overlay).
+            if (divida.ExigibilidadeSuspensa)
+            {
+                suspensas++;
+                continue;
+            }
+
             switch (divida.Situacao)
             {
                 case SituacaoDividaAtiva.Quitada:
@@ -116,7 +124,7 @@ public sealed class SituacaoFiscalConsulta(TributosDbContext context) : ISituaca
                     // Extintas/canceladas não pesam na regularidade.
                     break;
                 case SituacaoDividaAtiva.Parcelada:
-                    // Exigibilidade SUSPENSA (CTN art. 151, VI) → habilita CPEN, não CND.
+                    // Retrocompat: parcelada legada sem overlay de causa → suspensa (CTN art. 151, VI).
                     suspensas++;
                     break;
                 case SituacaoDividaAtiva.EmExecucaoFiscal when divida.Garantida && !divida.EstaPrescrita(dataBase):
@@ -125,7 +133,8 @@ public sealed class SituacaoFiscalConsulta(TributosDbContext context) : ISituaca
                     suspensas++;
                     break;
                 default:
-                    // Inscrita/CdaEmitida/Protestada/EmExecucaoFiscal (sem garantia): exigível se NÃO prescrita.
+                    // Inscrita/CdaEmitida/Protestada/EmExecucaoFiscal/ExecucaoSuspensa/ExecucaoArquivada (a
+                    // suspensão do art. 40 é PROCESSUAL, não da exigibilidade): exigível se NÃO prescrita.
                     if (!divida.EstaPrescrita(dataBase))
                     {
                         exigiveis++;
