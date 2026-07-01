@@ -239,8 +239,17 @@ public sealed class Processo : AggregateRoot<ProcessoId>, IMustHaveTenant
             throw new InvalidOperationException($"Reativacao exige processo Sobrestado. Situacao atual: {Situacao}.");
         }
 
+        // Um processo EmTramitacao DEVE ter setor responsável (Lei 9.784/1999 — rastreabilidade). Um
+        // processo apenas Autuado (nunca tramitado) sobrestado não pode "reativar" para tramitação sem
+        // destino: emitir ProcessoTramitado com SetorDestino=Guid.Empty invalidaria a trilha.
+        if (SetorAtualId is null)
+        {
+            throw new InvalidOperationException(
+                "Nao e possivel reativar um processo que nunca foi tramitado a um setor.");
+        }
+
         Situacao = SituacaoProcesso.EmTramitacao;
-        RaiseDomainEvent(new ProcessoTramitado(Id, SetorAtualId ?? Guid.Empty));
+        RaiseDomainEvent(new ProcessoTramitado(Id, SetorAtualId.Value));
     }
 
     /// <summary>

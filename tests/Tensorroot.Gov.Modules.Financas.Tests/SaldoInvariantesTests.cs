@@ -64,6 +64,18 @@ public sealed class SaldoInvariantesTests
         dotacao.SaldoDisponivel.Valor.Should().Be(0m);
     }
 
+    [Fact] // Bug hunt: LiberarEmpenho acima do empenhado deve FALHAR, não truncar a zero (fail-closed).
+    public void Liberar_mais_do_que_empenhado_e_rejeitado_em_vez_de_truncar()
+    {
+        var dotacao = DotacaoOrcamentaria.Criar(TenantA, 2026, Classificacao(), ValorMonetario.De(1000m));
+        dotacao.ReservarEmpenho(ValorMonetario.De(400m));
+
+        var acao = () => dotacao.LiberarEmpenho(ValorMonetario.De(500m));
+
+        acao.Should().Throw<InvalidOperationException>();
+        dotacao.ValorEmpenhadoLiquido.Valor.Should().Be(400m, "o saldo empenhado nao pode ser truncado a zero");
+    }
+
     [Fact]
     public void Empenhos_sucessivos_nao_podem_estourar_a_dotacao()
     {

@@ -32,6 +32,17 @@ public sealed class ProcessoFluxoTests : ProtocoloTestBase
             origemId,
             Hoje);
 
+    [Fact] // Bug hunt: Autuado -> Sobrestar -> Reativar (nunca tramitado) deve FALHAR, nao emitir setor Guid.Empty.
+    public void Reativar_processo_nunca_tramitado_e_rejeitado()
+    {
+        var processo = NovoProcesso();
+        processo.Sobrestar("aguardando documento");
+
+        var acao = () => processo.Reativar();
+
+        acao.Should().Throw<InvalidOperationException>();
+    }
+
     // ---------- Invariantes ----------
 
     [Fact] // I-2 + Cenario 1: a autuacao nasce em Autuado, gera NUP e emite ProcessoAutuado.

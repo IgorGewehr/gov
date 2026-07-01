@@ -155,6 +155,10 @@ public sealed class SituacaoFiscalConsulta(TributosDbContext context) : ISituaca
             return Task.FromResult<Contribuinte?>(null);
         }
 
-        return context.Contribuintes.FirstOrDefaultAsync(c => c.Documento == documento, cancellationToken);
+        // Defesa-em-profundidade (contexto fiscal sensível — CND/CPEN): filtra o tenant EXPLICITAMENTE
+        // além do Global Query Filter, já que um mesmo CPF/CNPJ pode existir em municípios distintos.
+        var tenantId = context.CurrentTenantId;
+        return context.Contribuintes.FirstOrDefaultAsync(
+            c => c.TenantId == tenantId && c.Documento == documento, cancellationToken);
     }
 }

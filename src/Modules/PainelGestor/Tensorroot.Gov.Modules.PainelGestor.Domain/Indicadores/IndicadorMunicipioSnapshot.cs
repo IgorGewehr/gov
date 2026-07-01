@@ -225,7 +225,9 @@ public sealed class IndicadorMunicipioSnapshot : AggregateRoot<IndicadorMunicipi
             throw new ArgumentOutOfRangeException(nameof(mesReferencia), "Mês de referência deve estar entre 1 e 12.");
         }
 
-        if (mesReferencia >= RclMesReferencia)
+        // Só um mês ESTRITAMENTE mais recente sobrescreve a RCL — reprocessar o mesmo mês (mesmo com
+        // valor diferente, ex.: 2 eventos distintos p/ o mês 5) NÃO altera o denominador LRF já fixado.
+        if (mesReferencia > RclMesReferencia)
         {
             ReceitaCorrenteLiquida = valorRcl;
             RclMesReferencia = mesReferencia;

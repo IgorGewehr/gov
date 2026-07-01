@@ -56,6 +56,11 @@ public sealed class RegistroNota : Entity<RegistroNotaId>
             throw new ArgumentException("Componente curricular invalido.", nameof(componente));
         }
 
+        // Invariante de domínio: nota no intervalo [0, 10]. Protege o cálculo de médias/aprovação
+        // (DiarioClasse.MediasSuficientes) contra valores inválidos — não confia só na camada Application.
+        ArgumentOutOfRangeException.ThrowIfLessThan(valor, 0m);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(valor, 10m);
+
         return new RegistroNota(RegistroNotaId.New(), componente, periodo, valor);
     }
 }

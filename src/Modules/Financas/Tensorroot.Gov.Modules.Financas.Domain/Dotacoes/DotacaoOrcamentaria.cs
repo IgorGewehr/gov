@@ -211,9 +211,16 @@ public sealed class DotacaoOrcamentaria : AggregateRoot<DotacaoOrcamentariaId>, 
     public void LiberarEmpenho(ValorMonetario valor)
     {
         ArgumentNullException.ThrowIfNull(valor);
-        ValorEmpenhadoLiquido = valor.EhMaiorQue(ValorEmpenhadoLiquido)
-            ? ValorMonetario.Zero
-            : ValorEmpenhadoLiquido.Subtrair(valor);
+
+        // Fail-closed (como ReservarEmpenho/AnularCredito): liberar mais do que está empenhado é estado
+        // ilegal — rejeita em vez de truncar silenciosamente a zero (que corromperia o saldo orçamentário).
+        if (valor.EhMaiorQue(ValorEmpenhadoLiquido))
+        {
+            throw new InvalidOperationException(
+                $"Nao e possivel liberar {valor.Valor} de um saldo empenhado de {ValorEmpenhadoLiquido.Valor}.");
+        }
+
+        ValorEmpenhadoLiquido = ValorEmpenhadoLiquido.Subtrair(valor);
     }
 
     /// <summary>Bloqueia a dotação (veda novos empenhos temporariamente).</summary>
