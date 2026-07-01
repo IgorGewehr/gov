@@ -108,6 +108,17 @@ public sealed class UsuarioTenantIndexService(PlatformDbContext context) : IUsua
             return;
         }
 
+        // Integridade referencial (control-plane): não registra índice para tenant inexistente — um
+        // órfão faria o login falhar de forma indistinguível de e-mail não cadastrado (o JOIN com
+        // Tenants em ResolverTenantDetalhePorEmailAsync retornaria null silenciosamente).
+        var tenantExiste = await context.Tenants
+            .AnyAsync(item => item.Id == tenantId, cancellationToken)
+            .ConfigureAwait(false);
+        if (!tenantExiste)
+        {
+            throw new InvalidOperationException($"Tenant {tenantId} nao encontrado para registrar o indice de login.");
+        }
+
         context.UsuariosTenantIndex.Add(new UsuarioTenantIndex(normalizado, tenantId));
         await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }

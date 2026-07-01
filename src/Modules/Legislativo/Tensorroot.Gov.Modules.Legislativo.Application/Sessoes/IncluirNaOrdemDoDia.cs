@@ -26,6 +26,7 @@ public sealed class IncluirNaOrdemDoDiaValidator : AbstractValidator<IncluirNaOr
 /// <summary>Handler da inclusao em Ordem do Dia.</summary>
 public sealed class IncluirNaOrdemDoDiaHandler(
     ISessaoRepository sessoes,
+    IProposicaoRepository proposicoes,
     IUnitOfWork unitOfWork)
     : ICommandHandler<IncluirNaOrdemDoDiaCommand>
 {
@@ -36,6 +37,11 @@ public sealed class IncluirNaOrdemDoDiaHandler(
 
         var sessao = await sessoes.ObterPorIdAsync(new SessaoId(request.SessaoId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Sessao nao encontrada.");
+
+        // Integridade referencial + isolamento: a proposição deve EXISTIR no tenant (o repositório
+        // aplica o Global Query Filter) antes de ser pautada — evita Ordem do Dia com referência órfã.
+        _ = await proposicoes.ObterPorIdAsync(new ProposicaoId(request.ProposicaoId), cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Proposicao nao encontrada.");
 
         sessao.IncluirNaOrdemDoDia(new ProposicaoId(request.ProposicaoId));
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

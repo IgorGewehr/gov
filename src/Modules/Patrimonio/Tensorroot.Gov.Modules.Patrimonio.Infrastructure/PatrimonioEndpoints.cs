@@ -431,7 +431,7 @@ internal static partial class PatrimonioEndpoints
 
     private sealed record CederBemPayload(Guid TerceiroId, bool Gratuito, DateOnly DataInicio, DateOnly? DataFim);
 
-    private sealed record BaixarBemPayload(int MotivoBaixa, string LaudoUri, Guid AutorizacaoId);
+    private sealed record BaixarBemPayload(MotivoBaixa MotivoBaixa, string LaudoUri, Guid AutorizacaoId);
 
     private sealed record AlienarBemPayload(Guid AvaliacaoPreviaId, bool PorLeilao, decimal ValorAlienacao);
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using FluentValidation;
 using MediatR;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
@@ -16,7 +15,7 @@ namespace Tensorroot.Gov.Modules.Patrimonio.Application.Bens;
 /// <param name="AutorizacaoId">Identificador da autorização (obrigatório).</param>
 public sealed record BaixarBemCommand(
     Guid BemPatrimonialId,
-    int MotivoBaixa,
+    MotivoBaixa MotivoBaixa,
     string LaudoUri,
     Guid AutorizacaoId) : ICommand;
 
@@ -49,7 +48,8 @@ public sealed class BaixarBemHandler(
         var bem = await bens.ObterPorIdAsync(new BemPatrimonialId(request.BemPatrimonialId), cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Bem não encontrado.");
 
-        var motivo = request.MotivoBaixa.ToString(CultureInfo.InvariantCulture);
+        // Enum já validado por IsInEnum() no validador; grava o NOME do motivo (legível) na trilha.
+        var motivo = request.MotivoBaixa.ToString();
         bem.Baixar(motivo, request.LaudoUri, request.AutorizacaoId);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
