@@ -2,7 +2,9 @@ using FluentValidation;
 using Tensorroot.Gov.BuildingBlocks.Application.Abstractions;
 using Tensorroot.Gov.BuildingBlocks.Application.Messaging;
 using Tensorroot.Gov.Modules.Identidade.Application.Abstractions;
+using Tensorroot.Gov.Modules.Identidade.Application.Internal;
 using Tensorroot.Gov.Modules.Identidade.Domain.Papeis;
+using Tensorroot.Gov.Modules.Identidade.Domain.Unidades;
 using Tensorroot.Gov.Modules.Identidade.Domain.Usuarios;
 using Tensorroot.Gov.Modules.Identidade.Domain.ValueObjects;
 
@@ -43,7 +45,9 @@ public sealed class CriarUsuarioHandler(
     IRegistroLoginCentral registroLoginCentral,
     IUnitOfWork unitOfWork,
     IUnidadeRepository unidades,
-    ITenantContext tenant)
+    ITenantContext tenant,
+    ICurrentUser currentUser,
+    TimeProvider clock)
     : ICommandHandler<CriarUsuarioCommand, Guid>
 {
     /// <inheritdoc />
@@ -59,9 +63,22 @@ public sealed class CriarUsuarioHandler(
         }
 
         var papeisIds = (request.PapeisIds ?? []).Select(id => new PapelId(id)).ToArray();
+        var unidadesDoTenant = await unidades.ListarAsync(cancellationToken).ConfigureAwait(false);
+        var raiz = unidadesDoTenant.FirstOrDefault(unidade => unidade.UnidadePaiId is null);
+
         if (papeisIds.Length > 0)
         {
-            await GarantirPapeisExistemAsync(papeisIds, cancellationToken).ConfigureAwait(false);
+            var encontrados = await papeis.ObterPorIdsAsync(papeisIds, cancellationToken).ConfigureAwait(false);
+            if (encontrados.Count != papeisIds.Distinct().Count())
+            {
+                throw new InvalidOperationException("Um ou mais papeis informados nao existem no tenant.");
+            }
+
+            // S1 — REGRA I4 ("nao delega o que nao tem"): os papeis INICIAIS sao atribuidos no escopo
+            // GLOBAL (raiz + subarvore), logo o concedente (usuario atual) precisa provar cobertura I4 de
+            // CADA papel — o MESMO teste do POST /usuarios/{id}/atribuicoes e do DefinirPapeis. Antes,
+            // criar-com-papeis pulava essa prova, permitindo escalacao lateral. Negar por padrao.
+            await ProvarCoberturaI4GlobalAsync(encontrados, unidadesDoTenant, raiz, cancellationToken).ConfigureAwait(false);
         }
 
         // Reserva a unicidade GLOBAL do e-mail no indice central ANTES de persistir o usuario no
@@ -74,14 +91,9 @@ public sealed class CriarUsuarioHandler(
         // Âncora na UO RAIZ REAL do tenant: a ponte de compatibilidade cria as atribuições na
         // sentinela RaizPendente (Guid.Empty); reancoramos na raiz (mesmo tratamento do seed) para
         // que o escopo seja resolvível server-side e a regra de escopo/I4 valha para este usuário.
-        if (papeisIds.Length > 0)
+        if (papeisIds.Length > 0 && raiz is not null)
         {
-            var unidadesDoTenant = await unidades.ListarAsync(cancellationToken).ConfigureAwait(false);
-            var raiz = unidadesDoTenant.FirstOrDefault(unidade => unidade.UnidadePaiId is null);
-            if (raiz is not null)
-            {
-                usuario.ReancorarAtribuicoesPendentesNaRaiz(raiz.Id);
-            }
+            usuario.ReancorarAtribuicoesPendentesNaRaiz(raiz.Id);
         }
 
         usuarios.Adicionar(usuario);
@@ -90,12 +102,51 @@ public sealed class CriarUsuarioHandler(
         return usuario.Id.Value;
     }
 
-    private async Task GarantirPapeisExistemAsync(IReadOnlyCollection<PapelId> ids, CancellationToken cancellationToken)
+    // Prova I4 GLOBAL — replica o teste de DefinirPapeisDoUsuarioHandler (fonte da regra). O concedente
+    // precisa cobrir, no escopo raiz+subarvore, cada papel que esta concedendo.
+    private async Task ProvarCoberturaI4GlobalAsync(
+        IReadOnlyList<Papel> papeisAlvo,
+        IReadOnlyList<UnidadeOrganizacional> unidadesDoTenant,
+        UnidadeOrganizacional? raiz,
+        CancellationToken cancellationToken)
     {
-        var encontrados = await papeis.ObterPorIdsAsync(ids, cancellationToken).ConfigureAwait(false);
-        if (encontrados.Count != ids.Distinct().Count())
+        if (raiz is null)
         {
-            throw new InvalidOperationException("Um ou mais papeis informados nao existem no tenant.");
+            throw new ConcessaoNaoAutorizadaException(
+                ResultadoConcessao.Negar(MotivoConcessaoNegada.ForaDoEscopoAdministrativo));
         }
+
+        var concedente = await ResolverConcedenteAsync(cancellationToken).ConfigureAwait(false);
+        var escopoConcedente = await CalculadoraPermissoesEfetivas
+            .ResolverEscopoAsync(concedente, papeis, unidades, clock.GetUtcNow(), cancellationToken)
+            .ConfigureAwait(false);
+
+        var arvore = ArvoreUnidades.Construir(unidadesDoTenant);
+
+        foreach (var papel in papeisAlvo)
+        {
+            var resultado = AutorizacaoDeConcessao.Verificar(
+                escopoConcedente,
+                papel.Permissoes,
+                raiz.Id,
+                incluiSubunidades: true,
+                arvore);
+
+            if (!resultado.Permitida)
+            {
+                throw new ConcessaoNaoAutorizadaException(resultado);
+            }
+        }
+    }
+
+    private async Task<Usuario> ResolverConcedenteAsync(CancellationToken cancellationToken)
+    {
+        if (!Guid.TryParse(currentUser.UserId, out var concedenteGuid))
+        {
+            throw new InvalidOperationException("Concedente nao identificado no contexto da requisicao.");
+        }
+
+        return await usuarios.ObterPorIdAsync(new UsuarioId(concedenteGuid), cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Concedente nao encontrado no tenant.");
     }
 }

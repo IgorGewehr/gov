@@ -3,7 +3,7 @@
 > Itens de segurança confirmados mas **deliberadamente não corrigidos numa leva rápida** por terem
 > blast radius alto ou dependerem de credencial/infra. Documentados para tratamento dedicado.
 
-## S1 — Escalação lateral de papéis na criação de usuário (ALTA) — CONFIRMADO
+## S1 — Escalação lateral de papéis na criação de usuário (ALTA) — ✅ RESOLVIDO (2026-07-01)
 
 **Onde:** `src/Modules/Identidade/.../Application/Usuarios/CriarUsuario.cs` (handler).
 
@@ -14,15 +14,15 @@ papéis **sem validar a regra I4 ("não delega o que não tem")**. Diferentement
 Um administrador com apenas `identidade.usuarios.gerenciar` pode criar um usuário já com papéis de
 Finanças/Saúde que ele próprio não possui.
 
-**Por que não foi corrigido numa leva:** o fix correto exige (a) injetar `ICurrentUser` + reusar a prova
-I4 (`AutorizacaoDeConcessao.Verificar` + escopo efetivo do concedente), (b) o endpoint `POST /usuarios`
-tratar `ConcessaoNaoAutorizadaException` → 403, e (c) atualizar os testes existentes de criação-com-papéis
-que **não montam concedente** (hoje passariam a falhar na prova I4). O **seed do admin é seguro** (usa
-`Usuario.Criar` direto — `IdentidadeModule.cs:218` — sem passar pelo handler).
+**✅ RESOLVIDO (2026-07-01):** o `CriarUsuarioHandler` agora injeta `ICurrentUser` + `TimeProvider` e
+executa a MESMA prova I4 global do `DefinirPapeisDoUsuarioHandler` (`ProvarCoberturaI4GlobalAsync` +
+`AutorizacaoDeConcessao.Verificar` sobre o escopo efetivo do concedente) para os papéis INICIAIS; o
+endpoint `POST /usuarios` passou a mapear `ConcessaoNaoAutorizadaException` → 403. Blast radius foi
+zero (nenhum teste construía `CriarUsuarioCommand`; o seed usa `Usuario.Criar` direto). Coberto por 2
+testes (`AutorizacaoAdminUsuarioTests`: admin escopado nega; admin pleno concede). Suíte completa verde.
 
-**Fix recomendado:** extrair a prova I4 (`ProvarCoberturaI4Global`) para um serviço compartilhado
-`Application/Autorizacao/` e chamá-lo em **CriarUsuario** e **DefinirPapeis**; adicionar o `catch` no
-endpoint; cobrir com teste (concedente sem escopo → 403; com escopo → 201). Esforço: M.
+> Follow-up opcional (dívida técnica leve): a prova I4 hoje está replicada em `CriarUsuario` e
+> `DefinirPapeis` — extrair para um serviço compartilhado `Application/Autorizacao/` numa próxima passada.
 
 ## S2 — Race na rotação de certificado A1 (ALTA) — ✅ RESOLVIDO (2026-07-01)
 

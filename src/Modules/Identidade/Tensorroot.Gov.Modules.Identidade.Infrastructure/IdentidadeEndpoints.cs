@@ -78,8 +78,20 @@ internal static class IdentidadeEndpoints
             => Results.Ok(await sender.Send(new ObterPermissoesEfetivasDoUsuarioQuery(usuarioId), cancellationToken)));
 
         admin.MapPost("/usuarios", async (
-            CriarUsuarioCommand comando, ISender sender, CancellationToken cancellationToken)
-            => Results.Ok(new { id = await sender.Send(comando, cancellationToken) }));
+            CriarUsuarioCommand comando, ISender sender, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(new { id = await sender.Send(comando, cancellationToken) });
+            }
+            catch (ConcessaoNaoAutorizadaException excecao)
+            {
+                // S1: papeis iniciais fora do escopo I4 do concedente → 403 (nao delega o que nao tem).
+                return Results.Json(
+                    new { erro = excecao.Message, motivo = excecao.Motivo.ToString() },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+        });
 
         admin.MapPut("/usuarios/{usuarioId:guid}", async (
             Guid usuarioId, EditarUsuarioPayload payload, ISender sender, CancellationToken cancellationToken) =>

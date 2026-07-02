@@ -139,6 +139,43 @@ public sealed class AutorizacaoAdminUsuarioTests
         cenario.Salvou.Should().BeFalse();
     }
 
+    // === S1 (achado AA-2): criar usuario COM papeis iniciais tambem aplica a prova I4 ===
+
+    [Fact]
+    public async Task CriarUsuario_admin_escopado_NAO_concede_papel_fora_do_seu_escopo()
+    {
+        // Admin escopado (so identidade.usuarios.gerenciar na Fazenda) tenta CRIAR usuario ja com um
+        // papel de Financas — permissao que ele nao possui. Antes do S1, criar-com-papeis pulava a I4.
+        var cenario = Cenario.Novo();
+        var papelFinancas = cenario.SemearPapel("Tesoureiro", DomainPermissoes.FinancasGerenciar);
+        var handler = cenario.CriarUsuarioHandlerComoAdminEscopado();
+
+        var acao = async () => await handler.Handle(
+            new CriarUsuarioCommand("Novo", "novo@x.gov.br", "SenhaForte123", [papelFinancas.Id.Value]),
+            CancellationToken.None);
+
+        var excecao = await acao.Should().ThrowAsync<ConcessaoNaoAutorizadaException>();
+        excecao.Which.Motivo.Should().BeOneOf(
+            MotivoConcessaoNegada.PermissaoNaoPossuida, MotivoConcessaoNegada.ForaDoEscopoAdministrativo);
+        cenario.Salvou.Should().BeFalse("nada e persistido quando a autorizacao nega");
+    }
+
+    [Fact]
+    public async Task CriarUsuario_admin_pleno_concede_papel_inicial()
+    {
+        // Caminho legitimo: admin pleno (Permissoes.Todas na raiz) cobre o escopo global e concede.
+        var cenario = Cenario.Novo();
+        var papelSaude = cenario.SemearPapel("OperadorSaude", DomainPermissoes.SaudeVer);
+        var handler = cenario.CriarUsuarioHandlerComoAdminPleno();
+
+        var id = await handler.Handle(
+            new CriarUsuarioCommand("Zelia", "zelia@x.gov.br", "SenhaForte123", [papelSaude.Id.Value]),
+            CancellationToken.None);
+
+        id.Should().NotBe(Guid.Empty);
+        cenario.Salvou.Should().BeTrue("o admin pleno cobre o escopo global — caminho legitimo");
+    }
+
     // === Cenario in-memory ===
     private sealed class Cenario
     {
@@ -224,6 +261,19 @@ public sealed class AutorizacaoAdminUsuarioTests
 
         public DesativarUsuarioHandler DesativarUsuarioHandlerComoAdminEscopado()
             => new(_usuarios, Guarda(_adminEscopado), _uow);
+
+        public Papel SemearPapel(string nome, params string[] permissoes)
+        {
+            var papel = Papel.Criar(Tenant, nome, permissoes);
+            _papeis.Seed(papel);
+            return papel;
+        }
+
+        public CriarUsuarioHandler CriarUsuarioHandlerComoAdminEscopado()
+            => new(_usuarios, _papeis, _hasher, _loginCentral, _uow, _unidades, new TenantFake(), new CurrentUserDe(_adminEscopado), TimeProvider.System);
+
+        public CriarUsuarioHandler CriarUsuarioHandlerComoAdminPleno()
+            => new(_usuarios, _papeis, _hasher, _loginCentral, _uow, _unidades, new TenantFake(), new CurrentUserDe(_adminPleno), TimeProvider.System);
 
         private Application.Internal.AutorizacaoAdminUsuario Guarda(Usuario admin)
             => new(
