@@ -46,9 +46,11 @@ public sealed class CertificadoA1CofreConfiguration : IEntityTypeConfiguration<C
 
         builder.HasIndex(certificado => new { certificado.TenantId, certificado.Thumbprint }).IsUnique();
 
-        // Indice de busca do certificado Ativo do tenant (A1-DESIGN §3.2). A invariante "UM unico
-        // Ativo por tenant" e garantida no fluxo de rotacao (o anterior vira Substituido na mesma
-        // transacao) — sem filtro provider-especifico aqui, mantendo a portabilidade Sqlite/SqlServer.
-        builder.HasIndex(certificado => new { certificado.TenantId, certificado.Status });
+        // S2: indice UNICO FILTRADO — garante NO BANCO a invariante "no maximo UM Ativo por tenant"
+        // (barra race na rotacao concorrente), alem de indexar a busca do Ativo. Filtro [Status]='Ativo'
+        // e portavel Sqlite/SqlServer (mesmo padrao do AuditTrail).
+        builder.HasIndex(certificado => new { certificado.TenantId, certificado.Status })
+            .IsUnique()
+            .HasFilter("[Status] = 'Ativo'");
     }
 }

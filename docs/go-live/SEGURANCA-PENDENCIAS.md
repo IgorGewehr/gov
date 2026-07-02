@@ -24,17 +24,17 @@ que **não montam concedente** (hoje passariam a falhar na prova I4). O **seed d
 `Application/Autorizacao/` e chamá-lo em **CriarUsuario** e **DefinirPapeis**; adicionar o `catch` no
 endpoint; cobrir com teste (concedente sem escopo → 403; com escopo → 201). Esforço: M.
 
-## S2 — Race na rotação de certificado A1 (ALTA) — CONFIRMADO (índice único filtrado)
+## S2 — Race na rotação de certificado A1 (ALTA) — ✅ RESOLVIDO (2026-07-01)
 
-**Onde:** `src/Modules/Cofre/.../ServicoCustodiaCertificado.cs` + `CertificadoA1CofreConfiguration.cs`.
+**Onde:** `CertificadoA1CofreConfiguration.cs` + migration `CertificadoA1UnicoAtivoS2`.
 
-**Problema:** invariante "um único certificado Ativo por tenant" é garantida só logicamente (sem lock
-pessimista e sem índice ÚNICO no banco). Duas rotações concorrentes podem gravar 2 Ativos.
+**Era:** invariante "um único certificado Ativo por tenant" garantida só no fluxo (sem constraint no
+banco) — duas rotações concorrentes podiam gravar 2 Ativos.
 
-**Fix recomendado:** índice ÚNICO filtrado `(TenantId, Status)` para `Status = 'Ativo'` (SqlServer
-`HasFilter`) + migration; o `SaveChanges` concorrente passa a falhar com violação de constraint.
-Esforço: P-M (migration + verificar comportamento no SQLite de dev). Pendente por ser mudança de schema
-em módulo sensível (Cofre) — merece verificação cuidadosa do índice filtrado no provider de dev.
+**Correção aplicada:** índice ÚNICO FILTRADO `(TenantId, Status)` com filtro `[Status] = 'Ativo'`
+(portável Sqlite/SqlServer, mesmo padrão do AuditTrail) — o `SaveChanges` concorrente que criaria um
+2º Ativo agora falha com violação de constraint. Verificado que **não quebra a rotação** (o EF ordena
+o UPDATE do anterior→Substituído antes do INSERT do novo→Ativo; os 31 testes do Cofre seguem verdes).
 
 ## Deferidos da Onda 3 (já registrados)
 
