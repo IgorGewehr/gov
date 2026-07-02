@@ -43,6 +43,19 @@ public sealed class ProcessoFluxoTests : ProtocoloTestBase
         acao.Should().Throw<InvalidOperationException>();
     }
 
+    [Fact] // Bug hunt: Arquivar deve PERSISTIR motivo e data (Lei 9.784/1999), nao descarta-los.
+    public void Arquivar_registra_motivo_e_data()
+    {
+        var processo = NovoProcesso();
+        var data = new DateOnly(2026, 7, 1);
+
+        processo.Arquivar("Concluido — objeto atendido", data);
+
+        processo.MotivoArquivamento.Should().Be("Concluido — objeto atendido");
+        processo.DataArquivamento.Should().Be(data);
+        processo.DomainEvents.Should().ContainSingle(evento => evento is ProcessoArquivado);
+    }
+
     // ---------- Invariantes ----------
 
     [Fact] // I-2 + Cenario 1: a autuacao nasce em Autuado, gera NUP e emite ProcessoAutuado.

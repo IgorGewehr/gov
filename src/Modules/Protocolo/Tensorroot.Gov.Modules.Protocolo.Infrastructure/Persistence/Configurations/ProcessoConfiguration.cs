@@ -31,6 +31,10 @@ public sealed class ProcessoConfiguration : IEntityTypeConfiguration<Processo>
         builder.Property(processo => processo.Situacao).HasConversion<string>().HasMaxLength(20);
         builder.Property(processo => processo.OrigemModulo).HasMaxLength(60);
 
+        // Arquivamento (Lei 9.784/1999): motivo + data do ato, persistidos (antes eram descartados).
+        builder.Property(processo => processo.MotivoArquivamento).HasMaxLength(1000);
+        builder.Property(processo => processo.DataArquivamento);
+
         // Interessado/parte (CPF/CNPJ, somente digitos): ancora do "meus processos" do Portal do Cidadao.
         builder.Property(processo => processo.InteressadoDocumento).HasMaxLength(14);
 

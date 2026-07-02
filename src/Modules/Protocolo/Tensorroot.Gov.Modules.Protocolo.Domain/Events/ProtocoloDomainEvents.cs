@@ -46,4 +46,6 @@ public sealed record ProcessoSobrestado(ProcessoId ProcessoId, string Motivo) : 
 
 /// <summary>Processo arquivado (terminal); guarda regida pela Tabela de Temporalidade (TTD/CONARQ). Emitido por <see cref="Processo.Arquivar"/> (I-7).</summary>
 /// <param name="ProcessoId">Identificador do processo.</param>
-public sealed record ProcessoArquivado(ProcessoId ProcessoId) : IDomainEvent;
+/// <param name="Motivo">Motivo do arquivamento (Lei 9.784/1999).</param>
+/// <param name="Data">Data do arquivamento.</param>
+public sealed record ProcessoArquivado(ProcessoId ProcessoId, string? Motivo, DateOnly Data) : IDomainEvent;

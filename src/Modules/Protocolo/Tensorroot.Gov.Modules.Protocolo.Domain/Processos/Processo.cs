@@ -252,6 +252,12 @@ public sealed class Processo : AggregateRoot<ProcessoId>, IMustHaveTenant
         RaiseDomainEvent(new ProcessoTramitado(Id, SetorAtualId.Value));
     }
 
+    /// <summary>Motivo do arquivamento (registro do ato — Lei 9.784/1999). Nulo enquanto não arquivado.</summary>
+    public string? MotivoArquivamento { get; private set; }
+
+    /// <summary>Data do arquivamento. Nula enquanto não arquivado.</summary>
+    public DateOnly? DataArquivamento { get; private set; }
+
     /// <summary>
     /// Arquiva o processo (estado terminal), passando a <see cref="SituacaoProcesso.Arquivado"/> e
     /// emitindo <see cref="ProcessoArquivado"/>. A guarda/eliminacao posterior segue a TTD/CONARQ (I-7).
@@ -266,10 +272,11 @@ public sealed class Processo : AggregateRoot<ProcessoId>, IMustHaveTenant
             throw new InvalidOperationException("Processo ja esta arquivado.");
         }
 
-        _ = motivo;
-        _ = data;
+        // Persiste motivo e data (dados legalmente obrigatorios do ato — Lei 9.784/1999) em vez de descarta-los.
+        MotivoArquivamento = motivo;
+        DataArquivamento = data;
         Situacao = SituacaoProcesso.Arquivado;
-        RaiseDomainEvent(new ProcessoArquivado(Id));
+        RaiseDomainEvent(new ProcessoArquivado(Id, motivo, data));
     }
 
     private void GarantirEmAndamento()
