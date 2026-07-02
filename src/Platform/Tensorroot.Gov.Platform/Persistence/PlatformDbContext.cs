@@ -47,6 +47,9 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             builder.ToTable("TenantModules");
             builder.HasKey(vinculo => new { vinculo.TenantId, vinculo.ModuleName });
             builder.Property(vinculo => vinculo.ModuleName).HasMaxLength(60);
+            // #3: integridade referencial — não pode existir licença de módulo para tenant inexistente.
+            builder.HasOne<Tenant>().WithMany().HasForeignKey(vinculo => vinculo.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<UsuarioTenantIndex>(builder =>
@@ -55,6 +58,9 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             // O e-mail e a chave global: um endereco pertence a no maximo um tenant.
             builder.HasKey(indice => indice.Email);
             builder.Property(indice => indice.Email).HasMaxLength(254);
+            // #3: integridade referencial — índice de login não pode apontar para tenant inexistente.
+            builder.HasOne<Tenant>().WithMany().HasForeignKey(indice => indice.TenantId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // R3: trilha de auditoria do control-plane — MESMA forma da trilha dos módulos. Como as
