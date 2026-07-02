@@ -67,7 +67,7 @@ Compilado com SDK .NET 10.0.301 (`DOTNET_ROLL_FORWARD=LatestMajor`), suíte inte
 | **Segurança (design)** | 8,5 | Envelope encryption, KEK fail-fast, BCrypt 12, deny-by-default — acima da média. |
 | **Hardening de produção** | 5,0 | Sem HSTS/headers, Azure SQL público, login sem lockout, control-plane sem auditoria, 3 CVEs transitivos. |
 | **Cobertura de testes** | 9,0 | 1.767 testes verdes incl. E2E de isolamento cross-tenant e ciclo da despesa. |
-| **Front-end (operação)** | 6,0 | 247 páginas SPA; pickers existem em RH/Saúde/Patrimônio mas **faltam em Tributos** (balcão); SPA cidadão rasa; PainelGestor/BI quase vazio. |
+| **Front-end (operação)** | 6,0 | 247 páginas SPA. *[atualizado 2026-07-01: picker de Tributos/balcão agora EXISTE (P1); PainelGestor/BI e SPA cidadão JÁ construídos e testados — as 3 lacunas apontadas aqui foram fechadas; ver §5.1]*. |
 
 ---
 
@@ -110,8 +110,8 @@ Completude, compliance fina e operação diária. A PoC é demonstrável; para u
 | **Legislativo** | Assinatura/publicação DOM real; integração TCE pessoal Câmara. |
 | **Convênios** | Gateway Transferegov real (`SimuladoTransferegovGateway.cs`). |
 | **Protocolo** | gov.br/peticionamento externo; assinatura cidadão. |
-| **Cidadão/Portal** | SPA cidadão rasa (4 páginas); login gov.br; emissão de guias/2ª via; carnê IPTU online. |
-| **PainelGestor/BI** | Praticamente vazio (1 endpoint, 1 página) — BI/indicadores reais, drill-down, dashboards executivos. |
+| **Cidadão/Portal** | *[verificado 2026-07-01: portal JÁ construído — login, meus débitos, **2ª via de DAM/carnê** (busca por código, revalidação de titularidade anti-IDOR + LGPD, modal com parcelas/impressão), dívida ativa, meus processos; SPA builda e testes a11y verdes].* Gap real que resta: **login gov.br** (cred-gated) e renderização do boleto/PIX. |
+| **PainelGestor/BI** | *[verificado 2026-07-01: JÁ construído — dashboard executivo com **5 KPIs** (execução orçamentária, mínimos Saúde/Educação, arrecadação/dívida, pessoal/%RCL-LRF por janela móvel de 12m, prontidão TCE), dataviz + semáforo, teste a11y verde].* Nice-to-have: drill-down por competência e limite de dívida consolidada (art. 3 Res. Senado 40/2001). |
 | **Cofre / Identidade** | Cobertura de testes fina; MFA; NetArchTest cego na regra de referência cruzada. |
 
 ### 5.2 Compliance jurídica fina (corrigir antes de cobrar/baixar créditos do município)
@@ -176,7 +176,7 @@ Completude, compliance fina e operação diária. A PoC é demonstrável; para u
 ### Fase D — Cuidar do município inteiro (operação diária)
 14. **Trocar gateways simulados por reais** (cred-gated): SICONFI, PNCP, Receita/CNPJ, CadÚnico, Transferegov, e-SUS/CNES, DETRAN, SIOPE/Educacenso.
 15. **PCASP completo 2026** + RREO/RGF (MDF) + EFD-Reinf R-4000.
-16. **PainelGestor/BI** e **SPA cidadão** (guias/2ª via, carnê IPTU, login gov.br).
+16. ~~**PainelGestor/BI** e **SPA cidadão** (guias/2ª via, carnê IPTU)~~ — *[verificado 2026-07-01: AMBOS já construídos e testados; ver §5.1]*. Resta apenas **login gov.br** (cred-gated).
 17. **MSC 3 espécies** (saldo_inicial/movimento/saldo_final — hoje hardcoded `saldo_final` em `GeradorMscCsv.cs:106`).
 
 ---
