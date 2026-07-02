@@ -91,11 +91,12 @@ public sealed partial class Contrato
             }
         }
 
-        // BUG-A5: supressao que zere/negative o valor vigente e estado impossivel — rejeitar (nao clampar).
-        if (tipo == TipoAditivo.Supressao && !valorDelta.MenorQue(ValorAtual))
+        // BUG-A5 / #16: supressao OU reequilibrio-para-menor que zere/negative o valor vigente e estado
+        // impossivel — rejeitar (nao clampar).
+        if ((tipo is TipoAditivo.Supressao or TipoAditivo.ReequilibrioReducao) && !valorDelta.MenorQue(ValorAtual))
         {
             throw new InvalidOperationException(
-                $"Supressao de {valorDelta} excede ou anula o valor vigente do contrato ({ValorAtual}); operacao rejeitada.");
+                $"Reducao de {valorDelta} excede ou anula o valor vigente do contrato ({ValorAtual}); operacao rejeitada.");
         }
 
         // BUG-A6: aditivo de Prazo exige nova data informada e estritamente posterior a vigencia atual.
@@ -125,6 +126,7 @@ public sealed partial class Contrato
                 ValorAtual = ValorAtual.Somar(valorDelta);
                 break;
             case TipoAditivo.Supressao:
+            case TipoAditivo.ReequilibrioReducao:
                 ValorAtual = ValorAtual.Subtrair(valorDelta);
                 break;
             case TipoAditivo.Prazo:

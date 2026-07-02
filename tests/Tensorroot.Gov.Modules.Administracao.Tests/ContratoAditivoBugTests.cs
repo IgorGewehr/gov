@@ -33,6 +33,30 @@ public sealed class ContratoAditivoBugTests : AdministracaoTestBase
         return contrato;
     }
 
+    // ---------- #16: reequilibrio economico-financeiro para MENOR (art. 124-126) ----------
+
+    [Fact] // #16: reequilibrio para MENOR reduz o valor do contrato (deflacao/reducao de custo).
+    public void Reequilibrio_para_menor_reduz_o_valor_do_contrato()
+    {
+        var contrato = ContratoEficaz(100000m);
+
+        contrato.CelebrarAditivo(
+            TipoAditivo.ReequilibrioReducao, ValorMonetario.De(15000m), null, "Deflacao de insumo", new DateOnly(2026, 6, 1));
+
+        contrato.ValorAtual.Valor.Should().Be(85000m);
+    }
+
+    [Fact] // #16: reducao que zere/negative o valor vigente e rejeitada.
+    public void Reequilibrio_para_menor_nao_pode_anular_o_valor()
+    {
+        var contrato = ContratoEficaz(100000m);
+
+        var acao = () => contrato.CelebrarAditivo(
+            TipoAditivo.ReequilibrioReducao, ValorMonetario.De(100000m), null, "Reducao total", new DateOnly(2026, 6, 1));
+
+        acao.Should().Throw<InvalidOperationException>();
+    }
+
     // ---------- BUG-A1: percentual derivado do valorDelta (fonte unica) ----------
 
     [Fact] // BUG-A1: valorDelta de 80% sobre o valor original estoura o teto, mesmo "parecendo" pequeno.

@@ -44,11 +44,14 @@ public enum TipoAditivo
     /// <summary>Prorrogacao de prazo (nao conta para o limite quantitativo).</summary>
     Prazo = 3,
 
-    /// <summary>Reequilibrio economico-financeiro (recomposicao da equacao economica).</summary>
+    /// <summary>Reequilibrio economico-financeiro para MAIOR (recomposicao da equacao — art. 124-126). Nao conta no teto do art. 125.</summary>
     Reequilibrio = 4,
 
     /// <summary>Alteracao qualitativa (nao quantitativa) do objeto.</summary>
     Qualitativo = 5,
+
+    /// <summary>Reequilibrio economico-financeiro para MENOR (deflacao/reducao de custo — art. 124-126). Nao conta no teto do art. 125.</summary>
+    ReequilibrioReducao = 6,
 }
 
 /// <summary>Tipo do apostilamento — alteracao que dispensa termo aditivo (Lei 14.133/2021, art. 136).</summary>
